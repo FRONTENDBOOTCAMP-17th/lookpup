@@ -45,6 +45,7 @@ const POST = {
     "반려동물에 대한 애정이 있으신 분",
   ],
   author: {
+    id: 1,
     name: "김민수",
     initial: "김",
     district: "마포구",
@@ -290,9 +291,12 @@ export default function BoardDetailPage() {
                     </div>
                   </div>
                 </div>
-                <button className="w-full h-11 border border-orange-500 rounded-[10px] text-orange-500 text-base font-semibold hover:bg-orange-50 transition-colors">
+                <Link
+                  href={`/petsitters/${POST.author.id}`}
+                  className="w-full h-11 border border-orange-500 rounded-[10px] text-orange-500 text-base font-semibold hover:bg-orange-50 transition-colors flex items-center justify-center"
+                >
                   프로필 보기
-                </button>
+                </Link>
               </div>
 
               {/* 비슷한 구인글 */}
