@@ -64,7 +64,7 @@ const OWNER_MENU: MenuItem[] = [
     id: "pets",
     icon: Dog,
     label: "내 반려동물",
-    link: "/my-pets",
+    link: "/mypets",
     color: "#F59E0B",
   },
   {
@@ -442,6 +442,7 @@ export default function MyProfilePage() {
                             m.id !== "profile" &&
                             m.id !== "report" &&
                             m.id !== "withdraw",
+                          /* 해당 부분들 추가 관련하여 추후 논의할 것 */
                         )
                         .map((item) => {
                           const Icon = item.icon;
