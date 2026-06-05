@@ -33,9 +33,9 @@ export default function Header() {
             </span>
           </button>
 
-          <button className="w-10 h-10 bg-orange-50 rounded-full border border-orange-100 flex items-center justify-center hover:border-orange-300 transition-colors">
+          <Link href="/myprofile" className="w-10 h-10 bg-orange-50 rounded-full border border-orange-100 flex items-center justify-center hover:border-orange-300 transition-colors">
             <span className="text-orange-500 text-base font-semibold">김</span>
-          </button>
+          </Link>
 
           <Link
             href="/chat"
