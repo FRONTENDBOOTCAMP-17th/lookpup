@@ -72,7 +72,7 @@ function NotificationRow({ label, description, enabled }: { label: string; descr
   return (
     <div className="w-full p-4 bg-orange-50 rounded-xl flex justify-between items-center gap-4">
       <div className="flex flex-col gap-1">
-        <p className={cn('text-stone-900 text-lg font-semibold leading-6', PRETENDARD)}>{label}</p>
+        <p className={cn('text-stone-900 text-lg font-normal lg:font-semibold leading-6', PRETENDARD)}>{label}</p>
         <p className={cn('text-gray-500 text-sm font-normal leading-5', PRETENDARD)}>{description}</p>
       </div>
       <Toggle enabled={enabled} />
@@ -87,14 +87,14 @@ export default function SettingsPage() {
     <div className="min-h-screen bg-orange-50">
       {/* 헤더 */}
       <header className="bg-white border-b border-orange-100 shadow-[0px_1px_8px_0px_rgba(232,116,42,0.08)]">
-        <div className="max-w-7xl mx-auto px-10 h-16 flex justify-between items-center">
+        <div className="max-w-7xl mx-auto px-5 md:px-10 h-16 flex justify-between items-center">
           <span className={cn('text-orange-500 text-xl font-bold leading-9', PRETENDARD)}>봐주개 🐾</span>
           <nav className="flex items-center gap-8">
             {['펫시터 찾기', '구인게시판', '서비스 소개'].map((item) => (
               <span key={item} className={cn('text-gray-500 text-base font-medium leading-6 cursor-pointer', PRETENDARD)}>{item}</span>
             ))}
           </nav>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
             <div className="relative p-2">
               <Bell className="size-5 text-gray-500" />
               <span className={cn('absolute top-0 right-0 size-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-medium leading-4', PRETENDARD)}>3</span>
@@ -108,15 +108,15 @@ export default function SettingsPage() {
       </header>
 
       {/* 본문 */}
-      <main className="max-w-5xl mx-auto px-8 py-12">
+      <main className="max-w-5xl mx-auto px-5 md:px-8 py-8 md:py-12">
         <div className="mb-8">
           <h1 className={cn('text-stone-900 text-3xl font-bold leading-9', PRETENDARD)}>프로필 설정</h1>
           <p className={cn('mt-2 text-gray-500 text-base font-normal leading-6', PRETENDARD)}>계정 정보 및 설정을 관리하세요</p>
         </div>
 
-        <div className="flex gap-8 items-start">
+        <div className="flex flex-col gap-6 lg:flex-row lg:gap-8 lg:items-start">
           {/* 사이드바 */}
-          <aside className={cn(CARD, 'w-72 shrink-0')}>
+          <aside className={cn(CARD, 'w-full lg:w-72 lg:shrink-0')}>
             <div className="flex flex-col items-center">
               <div className="relative mb-4">
                 <div className="size-24 bg-orange-50 rounded-full border-2 border-orange-100 flex justify-center items-center">
