@@ -96,7 +96,7 @@ function Toggle({
       className={`relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0 ${enabled ? "bg-[#E8742A]" : "bg-[#D1D5DB]"}`}
     >
       <span
-        className={`absolute top-[2px] w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${enabled ? "translate-x-[20px]" : "translate-x-[2px]"}`}
+        className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${enabled ? "translate-x-5" : "translate-x-0.5"}`}
       />
     </button>
   );
@@ -122,7 +122,7 @@ function DeleteModal({
 }) {
   return (
     <Backdrop>
-      <div className="bg-white rounded-[20px] w-[460px] max-w-full p-8 shadow-[0_12px_32px_rgba(0,0,0,0.12)]">
+      <div className="bg-white rounded-[20px] w-115 max-w-full p-8 shadow-[0_12px_32px_rgba(0,0,0,0.12)]">
         <div className="flex flex-col items-center text-center">
           <div className="w-14 h-14 bg-[#FFF0E8] rounded-full flex items-center justify-center mb-4">
             <AlertTriangle size={28} className="text-[#E8742A]" />
@@ -181,7 +181,7 @@ function SuccessModal({
 }) {
   return (
     <Backdrop>
-      <div className="bg-white rounded-[20px] w-[480px] max-w-full p-8 shadow-[0_12px_32px_rgba(0,0,0,0.12)]">
+      <div className="bg-white rounded-[20px] w-120 max-w-full p-8 shadow-[0_12px_32px_rgba(0,0,0,0.12)]">
         <div className="flex flex-col items-center text-center">
           <div className="w-16 h-16 bg-[#FFF0E8] rounded-full flex items-center justify-center mb-4">
             <CheckCircle2 size={36} className="text-[#E8742A]" />
@@ -237,7 +237,7 @@ function GuideModal({
 }) {
   return (
     <Backdrop>
-      <div className="bg-white rounded-[20px] w-[520px] max-w-full p-8 shadow-[0_12px_32px_rgba(0,0,0,0.12)]">
+      <div className="bg-white rounded-[20px] w-130 max-w-full p-8 shadow-[0_12px_32px_rgba(0,0,0,0.12)]">
         <div className="flex flex-col items-center text-center">
           <div className="w-24 h-24 bg-[#FFF0E8] rounded-full flex items-center justify-center mb-6 relative">
             <PawPrint size={42} className="text-[#E8742A]" />
@@ -287,7 +287,7 @@ function SelectionModal({
 
   return (
     <Backdrop>
-      <div className="bg-white rounded-[20px] w-[900px] max-w-full shadow-[0_12px_32px_rgba(0,0,0,0.12)] overflow-hidden">
+      <div className="bg-white rounded-[20px] w-225 max-w-full shadow-[0_12px_32px_rgba(0,0,0,0.12)] overflow-hidden">
         {/* 헤더 */}
         <div className="px-8 pt-8 pb-5 border-b border-[#FFE9D6] flex items-start justify-between">
           <div>
@@ -319,7 +319,7 @@ function SelectionModal({
                 }`}
               >
                 <div
-                  className="h-[120px] w-full flex items-center justify-center text-4xl"
+                  className="h-30 w-full flex items-center justify-center text-4xl"
                   style={{
                     background: `linear-gradient(135deg, ${pet.bgFrom}, ${pet.bgTo})`,
                   }}
@@ -348,7 +348,7 @@ function SelectionModal({
           })}
 
           {/* 반려동물 추가 카드 */}
-          <button className="flex flex-col items-center justify-center gap-2 h-[200px] rounded-xl border-2 border-dashed border-[#FFE9D6] hover:border-[#E8742A]/60 hover:bg-[#FFFAF7] transition-all group">
+          <button className="flex flex-col items-center justify-center gap-2 h-50 rounded-xl border-2 border-dashed border-[#FFE9D6] hover:border-[#E8742A]/60 hover:bg-[#FFFAF7] transition-all group">
             <div className="w-10 h-10 rounded-full bg-[#FFF8F3] flex items-center justify-center group-hover:bg-[#FFF0E8] transition-colors">
               <Plus size={20} className="text-[#E8742A]" />
             </div>
@@ -401,7 +401,7 @@ function EditModal({
 
   return (
     <Backdrop>
-      <div className="bg-white rounded-[20px] w-[720px] max-w-full shadow-[0_12px_32px_rgba(0,0,0,0.12)] overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="bg-white rounded-[20px] w-180 max-w-full shadow-[0_12px_32px_rgba(0,0,0,0.12)] overflow-hidden flex flex-col max-h-[90vh]">
         {/* 헤더 */}
         <div className="px-8 pt-7 pb-5 border-b border-[#FFE9D6] flex items-center justify-between shrink-0">
           <h3 className="text-xl font-bold text-[#281A0E]">
@@ -428,7 +428,7 @@ function EditModal({
           <div className="flex flex-col items-center mb-6">
             <div className="relative">
               <div
-                className="w-[100px] h-[100px] rounded-full flex items-center justify-center text-5xl"
+                className="w-25 h-25 rounded-full flex items-center justify-center text-5xl"
                 style={{
                   background: `linear-gradient(135deg, ${form.bgFrom}, ${form.bgTo})`,
                 }}
@@ -582,7 +582,7 @@ function PetCard({
     <div className="group bg-white border border-[#FFE9D6] rounded-2xl overflow-hidden hover:border-[#E8742A] hover:shadow-[0_2px_12px_rgba(232,116,42,0.10)] transition-all cursor-default">
       {/* 사진 영역 */}
       <div
-        className="relative h-[180px] flex items-center justify-center text-6xl"
+        className="relative h-45 flex items-center justify-center text-6xl"
         style={{
           background: `linear-gradient(135deg, ${pet.bgFrom}, ${pet.bgTo})`,
         }}
