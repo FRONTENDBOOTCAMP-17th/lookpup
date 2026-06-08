@@ -1,0 +1,12 @@
+{
+  "name": "lookpup-review-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "description": "리뷰 전용 E2E (교육생 테스트와 별개). git에 올리지 않음.",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0"
+  }
+}
