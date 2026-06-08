@@ -346,6 +346,7 @@ export default function BoardWritePage() {
                 <div className="bg-white rounded-2xl border border-[#ffe9d6] p-7">
                   <h2 className="text-lg font-semibold text-[#281a0e]">날짜 · 시간</h2>
 
+                  {/* TODO: 추후 공통 컴포넌트로 교체 예정 */}
                   {/* 달력 2개 — Anima: gap-4 pt-5, 자연 너비 사용 */}
                   <div className="flex flex-nowrap items-start gap-4 pt-5" style={calendarVars}>
                     {/* 시작일 */}
