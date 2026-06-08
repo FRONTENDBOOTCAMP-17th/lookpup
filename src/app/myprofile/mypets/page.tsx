@@ -93,7 +93,7 @@ function Toggle({
     <button
       type="button"
       onClick={onChange}
-      className={`relative w-11 h-[24px] rounded-full transition-colors duration-200 flex-shrink-0 ${enabled ? "bg-[#E8742A]" : "bg-[#D1D5DB]"}`}
+      className={`relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0 ${enabled ? "bg-[#E8742A]" : "bg-[#D1D5DB]"}`}
     >
       <span
         className={`absolute top-[2px] w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${enabled ? "translate-x-[20px]" : "translate-x-[2px]"}`}
@@ -137,7 +137,7 @@ function DeleteModal({
           {/* 반려동물 미리보기 */}
           <div className="w-full flex items-center gap-3 p-4 bg-[#FFF8F3] rounded-xl mb-6">
             <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl flex-shrink-0"
+              className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0"
               style={{
                 background: `linear-gradient(135deg, ${pet.bgFrom}, ${pet.bgTo})`,
               }}
@@ -195,7 +195,7 @@ function SuccessModal({
 
           <div className="w-full flex items-center gap-3 p-4 bg-[#FFF8F3] rounded-xl mb-6">
             <div
-              className="w-14 h-14 rounded-xl flex items-center justify-center text-3xl flex-shrink-0"
+              className="w-14 h-14 rounded-xl flex items-center justify-center text-3xl shrink-0"
               style={{
                 background: `linear-gradient(135deg, ${pet.bgFrom}, ${pet.bgTo})`,
               }}
@@ -403,7 +403,7 @@ function EditModal({
     <Backdrop>
       <div className="bg-white rounded-[20px] w-[720px] max-w-full shadow-[0_12px_32px_rgba(0,0,0,0.12)] overflow-hidden flex flex-col max-h-[90vh]">
         {/* 헤더 */}
-        <div className="px-8 pt-7 pb-5 border-b border-[#FFE9D6] flex items-center justify-between flex-shrink-0">
+        <div className="px-8 pt-7 pb-5 border-b border-[#FFE9D6] flex items-center justify-between shrink-0">
           <h3 className="text-xl font-bold text-[#281A0E]">
             반려동물 정보 수정
           </h3>
@@ -530,7 +530,7 @@ function EditModal({
         </div>
 
         {/* 푸터 */}
-        <div className="px-8 pb-7 pt-5 border-t border-[#FFE9D6] flex gap-3 flex-shrink-0">
+        <div className="px-8 pb-7 pt-5 border-t border-[#FFE9D6] flex gap-3 shrink-0">
           <button
             onClick={onClose}
             className="flex-1 h-12 rounded-xl border border-[#FFE9D6] text-[#6B7280] font-medium hover:border-[#E8742A]/50 transition-colors"
@@ -539,7 +539,7 @@ function EditModal({
           </button>
           <button
             onClick={() => onSave(form)}
-            className="flex-[2] h-12 rounded-xl bg-[#E8742A] text-white font-semibold hover:bg-[#D4621A] transition-colors"
+            className="flex-2 h-12 rounded-xl bg-[#E8742A] text-white font-semibold hover:bg-[#D4621A] transition-colors"
           >
             저장하기
           </button>
@@ -634,7 +634,7 @@ function PetCardMobile({
   return (
     <div className="bg-white border border-[#FFE9D6] rounded-2xl p-4 flex gap-4 items-center">
       <div
-        className="w-24 h-24 rounded-xl flex items-center justify-center text-4xl flex-shrink-0"
+        className="w-24 h-24 rounded-xl flex items-center justify-center text-4xl shrink-0"
         style={{
           background: `linear-gradient(135deg, ${pet.bgFrom}, ${pet.bgTo})`,
         }}
@@ -757,7 +757,7 @@ export default function MyPetsPage() {
           <div className="flex items-center gap-4">
             <button
               onClick={() => router.back()}
-              className="w-10 h-10 rounded-xl border border-[#FFE9D6] flex items-center justify-center hover:bg-[#FFF8F3] transition-colors flex-shrink-0"
+              className="w-10 h-10 rounded-xl border border-[#FFE9D6] flex items-center justify-center hover:bg-[#FFF8F3] transition-colors shrink-0"
             >
               <ChevronLeft size={20} className="text-[#281A0E]" />
             </button>
@@ -821,7 +821,7 @@ export default function MyPetsPage() {
       {/* 모바일 추가 버튼 */}
       <button
         onClick={handleAddPet}
-        className="md:hidden fixed bottom-[88px] right-5 w-14 h-14 bg-[#E8742A] rounded-full flex items-center justify-center shadow-[0_4px_16px_rgba(232,116,42,0.4)] hover:bg-[#D4621A] transition-colors z-30"
+        className="md:hidden fixed bottom-22 right-5 w-14 h-14 bg-[#E8742A] rounded-full flex items-center justify-center shadow-[0_4px_16px_rgba(232,116,42,0.4)] hover:bg-[#D4621A] transition-colors z-30"
       >
         <Plus size={24} className="text-white" />
       </button>

@@ -150,15 +150,15 @@ const SITTER_MENU: MenuItem[] = [
   {
     id: "reviews",
     icon: FileText,
-    label: "리뷰 관리",
-    link: "/reviews",
+    label: "후기 관리",
+    link: "/myprofile/reviews",
     color: "#F59E0B",
   },
   {
     id: "earnings",
     icon: Wallet,
     label: "수익 관리",
-    link: "/earnings",
+    link: "/myprofile/earnings",
     color: "#3B82F6",
   },
   {

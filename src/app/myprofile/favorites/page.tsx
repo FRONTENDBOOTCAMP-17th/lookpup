@@ -216,7 +216,7 @@ export default function FavoritesPage() {
           <div className="max-w-[1280px] mx-auto px-10 flex items-center gap-4">
             <button
               onClick={() => router.back()}
-              className="w-10 h-10 rounded-xl border border-[#FFE9D6] flex items-center justify-center hover:bg-[#FFF8F3] transition-colors flex-shrink-0"
+              className="w-10 h-10 rounded-xl border border-[#FFE9D6] flex items-center justify-center hover:bg-[#FFF8F3] transition-colors shrink-0"
             >
               <ChevronLeft size={20} className="text-[#281A0E]" />
             </button>
