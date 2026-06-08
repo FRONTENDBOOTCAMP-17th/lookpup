@@ -88,7 +88,7 @@ function PostCard({ post }: { post: typeof POSTS[0] }) {
           <p className="text-gray-500 text-base leading-6 line-clamp-1">{post.desc}</p>
 
           {/* 메타 정보 */}
-          <div className="flex items-center gap-4 pt-1">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1">
             <div className="flex items-center gap-1">
               <MapPin className="w-4 h-4 text-gray-400 shrink-0" />
               <span className="text-gray-500 text-sm">{post.location}</span>
@@ -135,10 +135,10 @@ export default function BoardPage() {
       <Header />
 
       <main className="flex-1 bg-orange-50 min-h-screen">
-        <div className="max-w-[1152px] mx-auto px-8 py-12">
+        <div className="max-w-[1152px] mx-auto px-4 md:px-8 py-8 md:py-12">
 
           {/* 헤더 */}
-          <div className="flex items-start justify-between mb-8">
+          <div className="flex flex-col sm:flex-row items-start justify-between gap-4 mb-8">
             <div>
               <h1 className="text-3xl font-bold text-stone-900">구인게시판</h1>
               <p className="text-gray-500 text-base mt-2">펫시터를 찾거나 구인 정보를 확인하세요</p>
@@ -152,7 +152,7 @@ export default function BoardPage() {
           </div>
 
           {/* 검색 + 필터 */}
-          <div className="p-6 bg-white rounded-2xl shadow-sm mb-6 flex flex-col gap-4">
+          <div className="p-4 md:p-6 bg-white rounded-2xl shadow-sm mb-6 flex flex-col gap-4">
             {/* 검색창 + 필터 버튼 */}
             <div className="flex gap-3">
               <div className="flex-1 flex items-center gap-2 px-4 py-3 bg-orange-50 rounded-xl">

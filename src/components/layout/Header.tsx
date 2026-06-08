@@ -3,7 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { MessageCircle, Calendar, MessageSquare, CheckCircle, FileText } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { Calendar, MessageSquare, CheckCircle, FileText } from "lucide-react";
 
 //알람 임시 더미데이터
 const NOTIFICATIONS = [
@@ -49,6 +50,7 @@ export default function Header() {
   const [notifOpen, setNotifOpen] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
   const unreadCount = NOTIFICATIONS.filter((n) => n.unread).length;
+  const pathname = usePathname();
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -77,24 +79,26 @@ export default function Header() {
 
         {/* 네비게이션 */}
         <nav className="hidden md:flex items-center gap-8">
-          <Link
-            href="/petsitters"
-            className="text-gray-500 text-base font-medium hover:text-orange-500 transition-colors"
-          >
-            펫시터 찾기
-          </Link>
-          <Link
-            href="/board"
-            className="text-gray-500 text-base font-medium hover:text-orange-500 transition-colors"
-          >
-            구인게시판
-          </Link>
-          <Link
-            href="/about"
-            className="text-gray-500 text-base font-medium hover:text-orange-500 transition-colors"
-          >
-            서비스 소개
-          </Link>
+          {[
+            { href: "/petsitters", label: "펫시터 찾기" },
+            { href: "/board", label: "구인게시판" },
+            { href: "/about", label: "서비스 소개" },
+          ].map(({ href, label }) => {
+            const isActive = pathname === href || (href !== "/" && pathname.startsWith(href));
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={`text-base font-medium transition-colors pb-0.5 ${
+                  isActive
+                    ? "text-orange-500 border-b border-orange-500"
+                    : "text-gray-500 hover:text-orange-500"
+                }`}
+              >
+                {label}
+              </Link>
+            );
+          })}
         </nav>
 
         {/* 사용자 액션 */}
@@ -176,11 +180,11 @@ export default function Header() {
           </Link>
 
           <Link
-            href="/chat"
-            className="flex items-center gap-1.5 px-4 h-9 bg-orange-500 hover:bg-orange-600 transition-colors rounded-[10px] text-white text-xs font-semibold"
+            href="/register/petsitter"
+            className="flex items-center px-4 h-9 bg-orange-500 hover:bg-orange-600 transition-colors rounded-[10px] text-white text-xs font-semibold whitespace-nowrap"
           >
-            <MessageCircle className="w-3.5 h-3.5" />
-            채팅
+            <span className="hidden lg:inline">채팅</span>
+            <span className="lg:hidden">채팅</span>
           </Link>
         </div>
       </div>
