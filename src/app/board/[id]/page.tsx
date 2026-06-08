@@ -104,8 +104,8 @@ export default function BoardDetailPage() {
       <Header />
 
       <main className="flex-1 bg-orange-50 min-h-screen">
-        <div className="max-w-[1280px] mx-auto px-10 py-8">
-          <div className="flex gap-8 items-start">
+        <div className="max-w-[1280px] mx-auto px-4 md:px-10 py-6 md:py-8">
+          <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
 
             {/* 왼쪽 메인 콘텐츠 */}
             <div className="flex-1 min-w-0 flex flex-col gap-6">
@@ -125,11 +125,11 @@ export default function BoardDetailPage() {
 
                 <div className="p-6 flex flex-col gap-4">
                   {/* 상태 + 메타 */}
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="px-3 py-1 bg-emerald-50 text-emerald-500 text-xs font-medium rounded-full">
                       {POST.status}
                     </span>
-                    <div className="flex items-center gap-4 text-gray-500 text-sm">
+                    <div className="flex items-center gap-3 md:gap-4 text-gray-500 text-sm">
                       <span>{POST.createdAt}</span>
                       <span>조회 {POST.views}</span>
                       <span>지원 {POST.applicants}명</span>
@@ -137,10 +137,10 @@ export default function BoardDetailPage() {
                   </div>
 
                   {/* 제목 */}
-                  <h1 className="text-3xl font-bold text-stone-900">{POST.title}</h1>
+                  <h1 className="text-2xl md:text-3xl font-bold text-stone-900">{POST.title}</h1>
 
                   {/* 상세 정보 그리드 */}
-                  <div className="grid grid-cols-2 gap-4 pt-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                     <div className="flex items-start gap-3">
                       <MapPin className="w-5 h-5 text-orange-500 mt-0.5 shrink-0" />
                       <div>
@@ -260,8 +260,8 @@ export default function BoardDetailPage() {
               </div>
             </div>
 
-            {/*  오른쪽 사이드바*/}
-            <div className="w-96 shrink-0 flex flex-col gap-6 sticky top-20">
+            {/* 오른쪽 사이드바 */}
+            <div className="w-full lg:w-96 shrink-0 flex flex-col gap-6 lg:sticky lg:top-20">
 
               {/* 작성자 정보 */}
               <div className="bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100 p-5 flex flex-col gap-4">
