@@ -1,17 +1,25 @@
-"use client";
-
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { ShieldCheck } from "lucide-react";
+import { redirect } from "next/navigation";
+import { createClient } from "@/utils/supabase/server";
+import { isUserVerified } from "@/utils/supabase/service";
+import SignupForm from "./SignupForm";
 
-export default function SignupPage() {
-  const router = useRouter();
+export default async function SignupPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/auth/login");
+  }
+
+  if (await isUserVerified(user.id)) redirect("/");
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-orange-50 via-stone-50/50 to-white flex items-center justify-center p-5">
+    <div className="min-h-screen bg-linear-to-b from-orange-50 via-stone-50/50 to-white flex items-center justify-center p-5">
       <div className="w-115 flex flex-col items-start">
-        {/* 로고 */}
         <div className="w-full flex flex-col items-center gap-2 mb-8">
           <Link href="/">
             <Image
@@ -25,7 +33,6 @@ export default function SignupPage() {
           <p className="text-gray-500 text-base">반려동물 돌봄 플랫폼</p>
         </div>
 
-        {/* 카드 */}
         <div className="w-full p-8 bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100 flex flex-col">
           <h1 className="text-2xl font-bold text-stone-900 text-center mb-2">
             회원가입
@@ -34,21 +41,14 @@ export default function SignupPage() {
             본인인증을 완료하면 바로 이용할 수 있어요
           </p>
 
-          <button
-            onClick={() => router.push("/verification")}
-            className="w-full h-14 bg-orange-500 hover:bg-orange-600 text-white rounded-xl flex items-center justify-center gap-3 text-base font-medium transition-colors"
-          >
-            <ShieldCheck size={18} />
-            본인인증하기
-          </button>
+          <SignupForm />
 
           <p className="text-center text-sm mt-6">
-            <span className="text-gray-500">이미 계정이 있으신가요? </span>
             <Link
-              href="/auth/login"
+              href="/"
               className="text-orange-500 font-medium hover:underline"
             >
-              로그인
+              다음에 하기
             </Link>
           </p>
 

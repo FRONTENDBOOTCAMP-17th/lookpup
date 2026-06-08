@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/utils/supabase/client";
@@ -11,7 +13,6 @@ export default function LoginPage() {
       provider: "kakao",
       options: {
         redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
-        scopes: "profile_nickname profile_image account_email",
       },
     });
   };
@@ -22,7 +23,6 @@ export default function LoginPage() {
       provider: "google",
       options: {
         redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
-        scopes: "email profile",
       },
     });
   };
