@@ -300,7 +300,7 @@ function BookingCard({ booking }: { booking: Booking }) {
         {booking.status === "completed" && (
           <>
             <button
-              onClick={() => router.push(`/booking/${booking.id}`)}
+              onClick={() => router.push(`/myprofile/booking-history/${booking.id}`)}
               className="flex-1 h-10 rounded-xl border border-[#FFE9D6] text-[#281A0E] text-sm font-medium hover:border-[#E8742A]/50 transition-colors"
             >
               예약 상세보기
@@ -324,7 +324,7 @@ function BookingCard({ booking }: { booking: Booking }) {
         )}
         {booking.status === "cancelled" && (
           <button
-            onClick={() => router.push(`/booking/${booking.id}`)}
+            onClick={() => router.push(`/myprofile/booking-history/${booking.id}`)}
             className="flex-1 h-10 rounded-xl border border-[#FFE9D6] text-[#6B7280] text-sm font-medium hover:border-[#E8742A]/50 transition-colors"
           >
             상세보기
