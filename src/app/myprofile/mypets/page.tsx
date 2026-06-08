@@ -21,27 +21,33 @@ import Header from "@/components/layout/Header";
 interface Pet {
   id: string;
   name: string;
-  species: "강아지" | "고양이" | "기타";
+  animal_type: "dog" | "cat" | "other";
   breed: string;
   age: number;
   weight: number;
   gender: "수컷" | "암컷";
-  bio: string;
+  caution: string;
   emoji: string;
   bgFrom: string;
   bgTo: string;
 }
 
+const ANIMAL_TYPE_LABEL: Record<"dog" | "cat" | "other", string> = {
+  dog: "강아지",
+  cat: "고양이",
+  other: "기타",
+};
+
 const INITIAL_PETS: Pet[] = [
   {
     id: "p1",
     name: "몽이",
-    species: "강아지",
+    animal_type: "dog",
     breed: "골든 리트리버",
     age: 2,
     weight: 15.2,
     gender: "수컷",
-    bio: "사람을 좋아하고 활발해요!",
+    caution: "사람을 좋아하고 활발해요!",
     emoji: "🐕",
     bgFrom: "#FDE8C4",
     bgTo: "#FAD7A0",
@@ -49,12 +55,12 @@ const INITIAL_PETS: Pet[] = [
   {
     id: "p2",
     name: "나비",
-    species: "고양이",
+    animal_type: "cat",
     breed: "코리안 숏헤어",
     age: 5,
     weight: 3.8,
     gender: "암컷",
-    bio: "조용하고 독립적이에요.",
+    caution: "조용하고 독립적이에요.",
     emoji: "🐱",
     bgFrom: "#D6EAF8",
     bgTo: "#AED6F1",
@@ -62,12 +68,12 @@ const INITIAL_PETS: Pet[] = [
   {
     id: "p3",
     name: "코코",
-    species: "강아지",
+    animal_type: "dog",
     breed: "말티즈",
     age: 4,
     weight: 3.2,
     gender: "수컷",
-    bio: "분리불안이 있어요. 주의해주세요.",
+    caution: "분리불안이 있어요. 주의해주세요.",
     emoji: "🐶",
     bgFrom: "#D5F5E3",
     bgTo: "#A9DFBF",
@@ -321,7 +327,7 @@ function SelectionModal({
                   {pet.emoji}
                   <div className="absolute top-2 left-2 bg-[#FFF8F3]/90 px-2.5 py-0.5 rounded-full border border-[#FFE9D6]">
                     <span className="text-[11px] font-semibold text-[#E8742A]">
-                      {pet.species}
+                      {ANIMAL_TYPE_LABEL[pet.animal_type]}
                     </span>
                   </div>
                   {isSelected && (
@@ -510,12 +516,12 @@ function EditModal({
               </div>
             </FormField>
 
-            {/* 소개글 */}
-            <FormField label="소개글">
+            {/* 주의사항 */}
+            <FormField label="주의사항">
               <textarea
-                value={form.bio}
-                onChange={(e) => update("bio", e.target.value)}
-                placeholder="성격이나 특징을 자유롭게 작성해주세요"
+                value={form.caution}
+                onChange={(e) => update("caution", e.target.value)}
+                placeholder="돌봄 시 주의사항을 자유롭게 작성해주세요"
                 className="w-full px-4 py-3 border border-[#FFE9D6] rounded-xl text-[#281A0E] placeholder-[#6B7280] focus:outline-none focus:border-[#E8742A] transition-colors resize-none"
                 style={{ minHeight: 100 }}
               />
@@ -584,7 +590,7 @@ function PetCard({
         {pet.emoji}
         <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full border border-[#FFE9D6]">
           <span className="text-xs font-semibold text-[#E8742A]">
-            {pet.species}
+            {ANIMAL_TYPE_LABEL[pet.animal_type]}
           </span>
         </div>
       </div>
@@ -639,7 +645,7 @@ function PetCardMobile({
         <div className="flex items-center gap-2 mb-0.5">
           <span className="font-bold text-[#281A0E]">{pet.name}</span>
           <span className="text-xs px-2 py-0.5 bg-[#FFF8F3] border border-[#FFE9D6] rounded-full text-[#E8742A]">
-            {pet.species}
+            {ANIMAL_TYPE_LABEL[pet.animal_type]}
           </span>
         </div>
         <p className="text-sm text-[#6B7280]">{pet.breed}</p>
