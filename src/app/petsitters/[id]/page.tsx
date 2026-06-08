@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import KakaoMap from "@/components/KakaoMap";
 import {
   MapPin,
   Star,
@@ -22,6 +23,8 @@ const PETSITTER = {
   name: "김민지",
   initial: "김",
   location: "서울 마포구",
+  lat: 37.5665,
+  lng: 126.9013,
   rating: 4.9,
   reviewCount: 47,
   badges: [
@@ -344,17 +347,12 @@ export default function PetsitterPage() {
               {activeTab === "위치" && (
                 <div className="p-6 bg-white rounded-2xl shadow-sm border border-orange-100">
                   <h3 className="font-bold text-stone-900 mb-4">서비스 위치</h3>
-                  <div className="h-100 rounded-xl bg-linear-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-                    <div className="text-center">
-                      <MapPin
-                        size={48}
-                        className="text-gray-400 mx-auto mb-3"
-                      />
-                      <p className="text-gray-500">Kakao Map</p>
-                      <p className="text-sm text-gray-400 mt-1">
-                        {PETSITTER.location} 일대
-                      </p>
-                    </div>
+                  <div className="h-100 rounded-xl overflow-hidden">
+                    <KakaoMap
+                      markers={[{ lat: PETSITTER.lat, lng: PETSITTER.lng }]}
+                      center={{ lat: PETSITTER.lat, lng: PETSITTER.lng }}
+                      level={5}
+                    />
                   </div>
                   <p className="mt-4 text-sm text-gray-400 flex items-center gap-1">
                     <MapPin size={14} />
