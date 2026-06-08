@@ -659,10 +659,9 @@ export default function BookingDetailPage() {
           {booking.status === "completed" && (
             <ReviewSection
               reviewWritten={reviewWritten}
-              onWrite={() => {
-                router.push("/reviews/write");
-                setReviewWritten(true);
-              }}
+              onWrite={() =>
+                router.push(`/myprofile/reviews/write?bookingId=${booking.id}`)
+              }
             />
           )}
 

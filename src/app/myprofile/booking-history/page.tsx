@@ -307,7 +307,7 @@ function BookingCard({ booking }: { booking: Booking }) {
             </button>
             {!booking.reviewWritten ? (
               <button
-                onClick={() => router.push("/reviews/write")}
+                onClick={() => router.push(`/myprofile/reviews/write?bookingId=${booking.id}`)}
                 className="flex-1 h-10 rounded-xl bg-[#E8742A] text-white text-sm font-semibold hover:bg-[#D4621A] transition-colors"
               >
                 후기 작성하기
