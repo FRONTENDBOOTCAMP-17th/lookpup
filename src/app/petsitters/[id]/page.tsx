@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import {
@@ -439,9 +440,9 @@ export default function PetsitterPage() {
                   </span>
                 </div>
 
-                <button className="w-full mb-3 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-semibold transition-colors">
+                <Link href={`/petsitters/${PETSITTER.name}/book`} className="block w-full mb-3 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-semibold text-center transition-colors">
                   예약 요청하기
-                </button>
+                </Link>
                 <button className="w-full py-3 border border-orange-200 text-stone-900 rounded-xl font-semibold flex items-center justify-center gap-2 hover:bg-orange-50 transition-colors">
                   <MessageCircle size={20} />
                   채팅 문의
