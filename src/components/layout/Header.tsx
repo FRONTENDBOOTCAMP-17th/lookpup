@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { MessageCircle, Calendar, MessageSquare, CheckCircle, FileText } from "lucide-react";
+import { Calendar, MessageSquare, CheckCircle, FileText } from "lucide-react";
 
 //알람 임시 더미데이터
 const NOTIFICATIONS = [
@@ -157,11 +157,11 @@ export default function Header() {
           </Link>
 
           <Link
-            href="/chat"
-            className="flex items-center gap-1.5 px-4 h-9 bg-orange-500 hover:bg-orange-600 transition-colors rounded-[10px] text-white text-xs font-semibold"
+            href="/register/petsitter"
+            className="flex items-center px-4 h-9 bg-orange-500 hover:bg-orange-600 transition-colors rounded-[10px] text-white text-xs font-semibold whitespace-nowrap"
           >
-            <MessageCircle className="w-3.5 h-3.5" />
-            채팅
+            <span className="hidden lg:inline">펫시터 등록하기</span>
+            <span className="lg:hidden">등록</span>
           </Link>
         </div>
       </div>
