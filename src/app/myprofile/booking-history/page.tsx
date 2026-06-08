@@ -300,14 +300,14 @@ function BookingCard({ booking }: { booking: Booking }) {
         {booking.status === "completed" && (
           <>
             <button
-              onClick={() => router.push(`/booking/${booking.id}`)}
+              onClick={() => router.push(`/myprofile/booking-history/${booking.id}`)}
               className="flex-1 h-10 rounded-xl border border-[#FFE9D6] text-[#281A0E] text-sm font-medium hover:border-[#E8742A]/50 transition-colors"
             >
               예약 상세보기
             </button>
             {!booking.reviewWritten ? (
               <button
-                onClick={() => router.push("/reviews/write")}
+                onClick={() => router.push(`/myprofile/reviews/write?bookingId=${booking.id}`)}
                 className="flex-1 h-10 rounded-xl bg-[#E8742A] text-white text-sm font-semibold hover:bg-[#D4621A] transition-colors"
               >
                 후기 작성하기
@@ -324,7 +324,7 @@ function BookingCard({ booking }: { booking: Booking }) {
         )}
         {booking.status === "cancelled" && (
           <button
-            onClick={() => router.push(`/booking/${booking.id}`)}
+            onClick={() => router.push(`/myprofile/booking-history/${booking.id}`)}
             className="flex-1 h-10 rounded-xl border border-[#FFE9D6] text-[#6B7280] text-sm font-medium hover:border-[#E8742A]/50 transition-colors"
           >
             상세보기

@@ -67,7 +67,14 @@ export default function Header() {
       <div className="max-w-[1280px] mx-auto px-10 h-16 flex items-center justify-between">
         {/* 로고 */}
         <Link href="/" className="shrink-0">
-          <Image src="/logo.png" alt="봐주개" width={120} height={36} priority className="object-contain h-auto" />
+          <Image
+            src="/logo.png"
+            alt="봐주개"
+            width={120}
+            height={36}
+            priority
+            className="object-contain h-auto"
+          />
         </Link>
 
         {/* 네비게이션 */}
@@ -165,7 +172,10 @@ export default function Header() {
             )}
           </div>
 
-          <Link href="/myprofile" className="w-10 h-10 bg-orange-50 rounded-full border border-orange-100 flex items-center justify-center hover:border-orange-300 transition-colors">
+          <Link
+            href="/myprofile"
+            className="w-10 h-10 bg-orange-50 rounded-full border border-orange-100 flex items-center justify-center hover:border-orange-300 transition-colors"
+          >
             <span className="text-orange-500 text-base font-semibold">김</span>
           </Link>
 

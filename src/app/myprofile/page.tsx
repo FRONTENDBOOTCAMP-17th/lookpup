@@ -276,7 +276,7 @@ export default function MyProfilePage() {
       </div>
 
       {/* 모바일 헤더 */}
-      <div className="md:hidden bg-gradient-to-br from-orange-500 to-orange-300 rounded-b-3xl px-5 pt-8 pb-8 shrink-0">
+      <div className="md:hidden bg-linear-to-br from-orange-500 to-orange-300 rounded-b-3xl px-5 pt-8 pb-8 shrink-0">
         <div className="flex items-center gap-4 mb-6">
           <div className="w-16 h-16 bg-white/30 rounded-full border-2 border-white flex items-center justify-center">
             <span className="text-white text-2xl font-semibold">
@@ -314,7 +314,7 @@ export default function MyProfilePage() {
         <div className="max-w-[1200px] mx-auto px-6 py-12">
           <div className="flex gap-6">
             {/* 사이드바 */}
-            <div className="w-[280px] flex-shrink-0">
+            <div className="w-70 shrink-0">
               <div className="sticky top-24 bg-white rounded-2xl border border-orange-100 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] p-5">
                 {/* 프로필 */}
                 <div className="text-center pb-5 mb-4 border-b border-orange-100">
@@ -453,7 +453,7 @@ export default function MyProfilePage() {
                               className="flex items-center gap-3 p-4 bg-orange-50 hover:bg-orange-100 rounded-xl transition-colors text-left"
                             >
                               <div
-                                className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                                className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
                                 style={{ background: `${item.color}20` }}
                               >
                                 <Icon size={18} style={{ color: item.color }} />
@@ -474,7 +474,7 @@ export default function MyProfilePage() {
                   {/* 펫시터 등록 CTA */}
                   {userType === "owner" && (
                     <Link href="/register/petsitter">
-                      <div className="bg-gradient-to-r from-orange-500 to-stone-600 rounded-2xl p-7 flex items-center justify-between hover:opacity-90 transition-opacity">
+                      <div className="bg-linear-to-r from-orange-500 to-stone-600 rounded-2xl p-7 flex items-center justify-between hover:opacity-90 transition-opacity">
                         <div>
                           <h3 className="font-bold text-white text-lg mb-1">
                             펫시터로 활동하기
@@ -503,7 +503,7 @@ export default function MyProfilePage() {
               <Link key={item.id} href={item.link}>
                 <div className="w-full bg-white rounded-2xl px-4 py-3.5 flex items-center gap-4 shadow-sm border border-orange-100">
                   <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                    className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                     style={{ background: `${item.color}18` }}
                   >
                     <Icon size={20} style={{ color: item.color }} />
@@ -521,7 +521,7 @@ export default function MyProfilePage() {
         {/* 펫시터 등록 CTA */}
         {userType === "owner" && (
           <Link href="/register/petsitter">
-            <div className="bg-gradient-to-r from-orange-500 to-stone-600 rounded-2xl p-5 mb-5">
+            <div className="bg-linear-to-r from-orange-500 to-stone-600 rounded-2xl p-5 mb-5">
               <div className="flex items-center justify-between">
                 <div>
                   <h4 className="text-white font-semibold text-sm mb-0.5">
