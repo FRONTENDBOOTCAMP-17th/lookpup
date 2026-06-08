@@ -43,7 +43,7 @@ export default function ReportPage() {
     <div className="min-h-screen bg-[#fff8f3]">
       <Header />
 
-      <main className="max-w-190 mx-auto px-6 pt-12 pb-20">
+      <main className="max-w-190 mx-auto px-4 md:px-6 pt-12 pb-20">
         {/* 페이지 타이틀 */}
         <div className="flex items-center gap-3">
           <button
@@ -198,7 +198,7 @@ export default function ReportPage() {
             <button
               type="button"
               onClick={() => router.back()}
-              className="w-58.75 h-12 shrink-0 border border-[#ffe9d6] rounded-xl text-[15px] font-medium text-gray-500 hover:bg-gray-50 transition-colors"
+              className="flex-1 h-12 border border-[#ffe9d6] rounded-xl text-[15px] font-medium text-gray-500 hover:bg-gray-50 transition-colors"
             >
               취소
             </button>

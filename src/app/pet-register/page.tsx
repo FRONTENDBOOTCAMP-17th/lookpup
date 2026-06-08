@@ -63,7 +63,7 @@ export default function PetRegisterPage() {
     <div className="w-full min-h-screen bg-orange-50 flex flex-col">
       {/* Header */}
       <header className="w-full bg-white shadow-[0px_1px_8px_0px_rgba(232,116,42,0.08)] border-b border-orange-100 flex justify-center">
-        <div className="w-full max-w-[1280px] h-16 px-10 flex justify-between items-center">
+        <div className="w-full max-w-[1280px] h-16 px-5 md:px-10 flex justify-between items-center">
           <div className="flex items-center gap-1">
             <span className="text-orange-500 text-xl font-bold font-['Pretendard'] leading-9">봐주개</span>
             <span className="text-orange-500 text-xl font-bold font-['Pretendard'] leading-9">🐾</span>
@@ -81,7 +81,7 @@ export default function PetRegisterPage() {
             </button>
           </nav>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
             <button className="relative p-2 rounded-full">
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M10 2a6 6 0 0 0-6 6v3l-1.5 2.5h15L16 11V8a6 6 0 0 0-6-6z" stroke="#6B7280" strokeWidth="1.67" strokeLinejoin="round" />

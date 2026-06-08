@@ -134,7 +134,7 @@ export default function PetsitterRegisterPage() {
     <div className="min-h-screen bg-orange-50 flex flex-col font-['Pretendard']">
       {/* 헤더 */}
       <header className="w-full bg-white shadow-[0px_1px_8px_0px_rgba(232,116,42,0.08)] border-b border-orange-100">
-        <div className="max-w-7xl mx-auto px-10 h-16 flex justify-between items-center">
+        <div className="max-w-7xl mx-auto px-4 md:px-10 h-16 flex justify-between items-center">
           <span className="text-orange-500 text-xl font-bold leading-9">
             봐주개 🐾
           </span>
@@ -150,7 +150,7 @@ export default function PetsitterRegisterPage() {
             ))}
           </nav>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
             <button className="p-2 rounded-full hover:bg-orange-50 transition-colors flex items-center">
               <Bell className="w-5 h-5 text-gray-500" strokeWidth={1.67} />
               <span className="-ml-1.5 -mt-3.5 w-5 h-4 bg-red-500 rounded-full flex items-center justify-center">
@@ -182,9 +182,9 @@ export default function PetsitterRegisterPage() {
       </div>
 
       {/* 메인 컨텐츠 */}
-      <main className="flex-1 flex justify-center py-12 px-4">
+      <main className="flex-1 flex justify-center py-6 md:py-8 lg:py-12 px-4">
         <div className="w-full max-w-200">
-          <div className="bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] outline-1 outline-orange-100 p-5">
+          <div className="bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] outline-1 outline-orange-100 p-4 sm:p-5">
             <div className="flex justify-between items-center">
               <h1 className="text-stone-900 text-2xl font-bold leading-8">
                 펫시터 등록
@@ -209,7 +209,7 @@ export default function PetsitterRegisterPage() {
                   </button>
                 </div>
 
-                <div className="pt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="pt-6 grid grid-cols-1 xs:grid-cols-2 gap-4">
                   <div>
                     <label className={`${labelCls} mb-2`}>이름 *</label>
                     <input
@@ -281,7 +281,7 @@ export default function PetsitterRegisterPage() {
                   desc="제공 가능한 서비스를 모두 선택하세요"
                 />
 
-                <div className="pt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 pb-6">
+                <div className="pt-6 grid grid-cols-1 xs:grid-cols-2 gap-4 pb-6">
                   {SERVICES.map((service) => {
                     const isSelected = selectedServices.includes(service.id);
                     return (
@@ -342,7 +342,7 @@ export default function PetsitterRegisterPage() {
 
                 <div className="pt-6">
                   <label className={`${labelCls} mb-3`}>돌봄 가능 동물</label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 xs:grid-cols-2 gap-3">
                     {ANIMALS.map((animal) => (
                       <CheckboxCard
                         key={animal.id}
@@ -362,14 +362,14 @@ export default function PetsitterRegisterPage() {
 
                 <div className="pt-6 pb-6">
                   <label className={`${labelCls} mb-3`}>활동 사진</label>
-                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+                  <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                     {[...Array(5)].map((_, i) => (
                       <div
                         key={i}
-                        className="aspect-square rounded-xl bg-linear-to-br from-gray-100 to-gray-200"
+                        className="w-full aspect-square rounded-xl bg-linear-to-br from-gray-100 to-gray-200"
                       />
                     ))}
-                    <button className="aspect-square rounded-xl outline-2 outline-orange-100 flex items-center justify-center hover:bg-orange-50 transition-colors">
+                    <button className="w-full aspect-square rounded-xl outline-2 outline-orange-100 flex items-center justify-center hover:bg-orange-50 transition-colors">
                       <Plus className="w-6 h-6 text-gray-500" strokeWidth={2} />
                     </button>
                   </div>
