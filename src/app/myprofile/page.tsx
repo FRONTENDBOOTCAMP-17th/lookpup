@@ -85,7 +85,7 @@ const OWNER_MENU: MenuItem[] = [
     id: "reviews",
     icon: FileText,
     label: "후기 관리",
-    link: "/reviews",
+    link: "/myprofile/reviews",
     color: "#3B82F6",
   },
   {
