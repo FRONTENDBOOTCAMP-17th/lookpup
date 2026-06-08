@@ -92,7 +92,7 @@ function NextButton({ label = "다음", onClick, disabled }: { label?: string; o
   );
 }
 
-// ── Step 1: 날짜 선택 ──
+// Step 1: 날짜 선택
 function StepDate({ onNext }: { onNext: () => void }) {
   const { dateRange, setDateRange } = useBookingStore();
   const nights = calcNights(dateRange);
@@ -129,7 +129,7 @@ function StepDate({ onNext }: { onNext: () => void }) {
   );
 }
 
-// ── Step 2: 반려동물 선택 ──
+// Step 2: 반려동물 선택
 function StepPet({ onNext }: { onNext: () => void }) {
   const { dateRange, petId, setPet } = useBookingStore();
 
@@ -180,7 +180,7 @@ function StepPet({ onNext }: { onNext: () => void }) {
   );
 }
 
-// ── Step 3: 특이사항 ──
+// Step 3: 특이사항
 function StepNote({ onNext }: { onNext: () => void }) {
   const { dateRange, petId, note, setNote } = useBookingStore();
   const MAX = 500;
@@ -231,7 +231,7 @@ function StepNote({ onNext }: { onNext: () => void }) {
   );
 }
 
-// ── Step 4: 결제 ──
+// Step 4: 결제
 function StepPayment({ onNext }: { onNext: () => void }) {
   const { dateRange, petId, paymentMethod, setPaymentMethod } = useBookingStore();
   const nights = calcNights(dateRange);
@@ -316,7 +316,7 @@ function StepPayment({ onNext }: { onNext: () => void }) {
   );
 }
 
-// ── Step 5: 예약 완료 ──
+// Step 5: 예약 완료
 function StepComplete() {
   const router = useRouter();
   const { dateRange, petId, reset } = useBookingStore();
@@ -331,7 +331,7 @@ function StepComplete() {
 
   function goChat() {
     reset();
-    router.push("/chat");
+    router.push(`/chat?roomId=${PETSITTER.id}`);
   }
 
   return (
@@ -395,7 +395,7 @@ function StepComplete() {
   );
 }
 
-// ── 메인 페이지 ──
+// 메인 페이지
 export default function BookPage() {
   const [step, setStep] = useState(1);
 
