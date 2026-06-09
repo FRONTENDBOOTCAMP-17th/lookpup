@@ -438,13 +438,19 @@ export default function PetsitterPage() {
                   </span>
                 </div>
 
-                <Link href={`/petsitters/${PETSITTER.name}/book`} className="block w-full mb-3 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-semibold text-center transition-colors">
+                <Link
+                  href={`/petsitters/${PETSITTER.name}/book`}
+                  className="block w-full mb-3 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-semibold text-center transition-colors"
+                >
                   예약 요청하기
                 </Link>
-                <button className="w-full py-3 border border-orange-200 text-stone-900 rounded-xl font-semibold flex items-center justify-center gap-2 hover:bg-orange-50 transition-colors">
+                <Link
+                  href="/chat"
+                  className="w-full py-3 border border-orange-200 text-stone-900 rounded-xl font-semibold flex items-center justify-center gap-2 hover:bg-orange-50 transition-colors"
+                >
                   <MessageCircle size={20} />
                   채팅 문의
-                </button>
+                </Link>
 
                 <div className="flex items-center gap-2 mt-4 p-3 bg-orange-50 rounded-lg">
                   <Shield size={16} className="text-orange-500" />
