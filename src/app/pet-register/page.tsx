@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import Header from "@/components/layout/Header";
 
 const COMMON_NOTES = ["알러지 있음", "약 복용 중", "사람 경계", "다른 동물 경계", "분리불안"];
 
@@ -61,47 +62,7 @@ export default function PetRegisterPage() {
 
   return (
     <div className="w-full min-h-screen bg-orange-50 flex flex-col">
-      {/* Header */}
-      <header className="w-full bg-white shadow-[0px_1px_8px_0px_rgba(232,116,42,0.08)] border-b border-orange-100 flex justify-center">
-        <div className="w-full max-w-[1280px] h-16 px-5 md:px-10 flex justify-between items-center">
-          <div className="flex items-center gap-1">
-            <span className="text-orange-500 text-xl font-bold font-['Pretendard'] leading-9">봐주개</span>
-            <span className="text-orange-500 text-xl font-bold font-['Pretendard'] leading-9">🐾</span>
-          </div>
-
-          <nav className="flex items-center gap-8">
-            <button className="h-7 border-b border-orange-500 text-orange-500 text-base font-medium font-['Pretendard'] leading-6">
-              펫시터 찾기
-            </button>
-            <button className="text-gray-500 text-base font-medium font-['Pretendard'] leading-6">
-              구인게시판
-            </button>
-            <button className="text-gray-500 text-base font-medium font-['Pretendard'] leading-6">
-              서비스 소개
-            </button>
-          </nav>
-
-          <div className="flex items-center gap-2 md:gap-4">
-            <button className="relative p-2 rounded-full">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M10 2a6 6 0 0 0-6 6v3l-1.5 2.5h15L16 11V8a6 6 0 0 0-6-6z" stroke="#6B7280" strokeWidth="1.67" strokeLinejoin="round" />
-                <path d="M8.5 16.5a1.5 1.5 0 0 0 3 0" stroke="#6B7280" strokeWidth="1.67" />
-              </svg>
-              <span className="absolute top-[-4px] right-[-4px] min-w-[20px] h-5 px-1 bg-red-500 rounded-full flex justify-center items-center text-white text-xs font-medium font-['Pretendard'] leading-4">
-                3
-              </span>
-            </button>
-
-            <div className="w-10 h-10 bg-orange-50 rounded-full outline-1 outline-orange-100 flex justify-center items-center">
-              <span className="text-orange-500 text-base font-semibold font-['Pretendard'] leading-6">김</span>
-            </div>
-
-            <button className="h-9 px-4 bg-orange-500 rounded-[10px] flex justify-center items-center">
-              <span className="text-white text-xs font-semibold font-['Pretendard'] leading-5">채팅</span>
-            </button>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       {/* Main */}
       <main className="flex-1 flex justify-center py-8 px-4">

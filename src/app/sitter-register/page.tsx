@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Bell, Camera, Plus, Check } from "lucide-react";
+import { Camera, Plus, Check } from "lucide-react";
+import Header from "@/components/layout/Header";
 
 const SERVICES = [
   { id: "visit", emoji: "🏠", title: "방문돌봄", desc: "보호자님 집에서 돌봄" },
@@ -132,46 +133,7 @@ export default function PetsitterRegisterPage() {
 
   return (
     <div className="min-h-screen bg-orange-50 flex flex-col font-['Pretendard']">
-      {/* 헤더 */}
-      <header className="w-full bg-white shadow-[0px_1px_8px_0px_rgba(232,116,42,0.08)] border-b border-orange-100">
-        <div className="max-w-7xl mx-auto px-4 md:px-10 h-16 flex justify-between items-center">
-          <span className="text-orange-500 text-xl font-bold leading-9">
-            봐주개 🐾
-          </span>
-
-          <nav className="flex items-center gap-8">
-            {["펫시터 찾기", "구인게시판", "서비스 소개"].map((label) => (
-              <span
-                key={label}
-                className="text-gray-500 text-base font-medium leading-6 cursor-pointer hover:text-orange-500 transition-colors"
-              >
-                {label}
-              </span>
-            ))}
-          </nav>
-
-          <div className="flex items-center gap-2 md:gap-4">
-            <button className="p-2 rounded-full hover:bg-orange-50 transition-colors flex items-center">
-              <Bell className="w-5 h-5 text-gray-500" strokeWidth={1.67} />
-              <span className="-ml-1.5 -mt-3.5 w-5 h-4 bg-red-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-xs font-medium leading-4">
-                  3
-                </span>
-              </span>
-            </button>
-            <div className="w-10 h-10 bg-orange-50 rounded-full outline-1 outline-orange-100 flex items-center justify-center">
-              <span className="text-orange-500 text-base font-semibold leading-6">
-                김
-              </span>
-            </div>
-            <button className="h-9 px-4 bg-orange-500 rounded-[10px] flex items-center gap-2 hover:bg-orange-600 transition-colors">
-              <span className="text-white text-xs font-semibold leading-5">
-                채팅
-              </span>
-            </button>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       {/* 진행 바 */}
       <div className="w-full h-1 bg-orange-100">
