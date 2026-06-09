@@ -131,6 +131,7 @@ function StepDate({ onNext }: { onNext: () => void }) {
 
 // Step 2: 반려동물 선택
 function StepPet({ onNext }: { onNext: () => void }) {
+  const router = useRouter();
   const { dateRange, petId, setPet } = useBookingStore();
 
   return (
@@ -164,7 +165,10 @@ function StepPet({ onNext }: { onNext: () => void }) {
             );
           })}
 
-          <button className="w-full h-14 rounded-2xl border border-orange-100 text-orange-500 text-base font-medium hover:bg-orange-50 transition-colors">
+          <button
+            onClick={() => router.push("/pet-register")}
+            className="w-full h-14 rounded-2xl border border-orange-100 text-orange-500 text-base font-medium hover:bg-orange-50 transition-colors"
+          >
             + 반려동물 추가
           </button>
         </div>

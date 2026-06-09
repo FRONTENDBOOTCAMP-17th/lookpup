@@ -724,7 +724,7 @@ export default function MyPetsPage() {
     setModal(null);
   };
 
-  const handleAddPet = () => router.push("/pet-registration");
+  const handleAddPet = () => router.push("/pet-register");
 
   return (
     <div className="min-h-screen bg-[#FFF8F3]">

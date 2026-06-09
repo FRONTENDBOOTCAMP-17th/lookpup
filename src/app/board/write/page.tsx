@@ -7,9 +7,20 @@ import "react-day-picker/style.css";
 import { ko } from "date-fns/locale";
 import { format } from "date-fns";
 import {
-  ChevronLeft, ChevronRight, Plus, Check,
-  Home, Heart, PawPrint, Moon, Car, MoreHorizontal,
-  Save, Send, MapPin, LocateFixed,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Check,
+  Home,
+  Heart,
+  PawPrint,
+  Moon,
+  Car,
+  MoreHorizontal,
+  Save,
+  Send,
+  MapPin,
+  LocateFixed,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -172,7 +183,9 @@ export default function BoardWritePage() {
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       alert("로그인이 필요합니다.");
       router.push("/auth/login");
@@ -203,7 +216,6 @@ export default function BoardWritePage() {
 
       <main className="flex-1 bg-[#fff8f3] min-h-screen pb-28">
         <div className="max-w-205 mx-auto px-6 pt-10">
-
           {/* 페이지 헤더 */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -213,7 +225,9 @@ export default function BoardWritePage() {
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
-              <h1 className="text-2xl font-bold text-[#281a0e]">돌봄 요청 게시글 작성</h1>
+              <h1 className="text-2xl font-bold text-[#281a0e]">
+                돌봄 요청 게시글 작성
+              </h1>
             </div>
             <div className="flex items-center gap-3">
               <button className="h-10 px-5 rounded-xl border border-[#ffe9d6] text-gray-500 text-[15px] font-medium flex items-center gap-1.5 hover:bg-[#fff8f3] transition-colors">
@@ -224,7 +238,9 @@ export default function BoardWritePage() {
                 onClick={step === 4 ? handleSubmit : undefined}
                 disabled={step !== 4 || !canNext() || isSubmitting}
                 className={`h-10 px-5 rounded-xl text-[15px] font-semibold flex items-center gap-1.5 bg-[#e8742a] text-white transition-opacity ${
-                  step === 4 && canNext() && !isSubmitting ? "opacity-100" : "opacity-40"
+                  step === 4 && canNext() && !isSubmitting
+                    ? "opacity-100"
+                    : "opacity-40"
                 }`}
               >
                 <Send className="w-3.75 h-3.75" />
@@ -242,21 +258,29 @@ export default function BoardWritePage() {
               return (
                 <Fragment key={label}>
                   <div className="flex flex-col items-center gap-1 shrink-0">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors ${
-                      isActive || isDone
-                        ? "bg-[#e8742a] text-white"
-                        : "border-2 border-[#ffe9d6] text-gray-500"
-                    }`}>
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors ${
+                        isActive || isDone
+                          ? "bg-[#e8742a] text-white"
+                          : "border-2 border-[#ffe9d6] text-gray-500"
+                      }`}
+                    >
                       {isDone ? <Check className="size-3.5" /> : num}
                     </div>
-                    <span className={`text-xs whitespace-nowrap ${
-                      isActive ? "font-bold text-[#281a0e]" : "font-normal text-gray-500"
-                    }`}>
+                    <span
+                      className={`text-xs whitespace-nowrap ${
+                        isActive
+                          ? "font-bold text-[#281a0e]"
+                          : "font-normal text-gray-500"
+                      }`}
+                    >
                       {label}
                     </span>
                   </div>
                   {i < STEPS.length - 1 && (
-                    <div className={`flex-1 h-px mt-4 mx-2 ${isDone ? "bg-[#e8742a]" : "bg-[#ffe9d6]"}`} />
+                    <div
+                      className={`flex-1 h-px mt-4 mx-2 ${isDone ? "bg-[#e8742a]" : "bg-[#ffe9d6]"}`}
+                    />
                   )}
                 </Fragment>
               );
@@ -265,12 +289,13 @@ export default function BoardWritePage() {
 
           {/* 단계별 콘텐츠 */}
           <div className="flex flex-col gap-4 pt-8">
-
             {/* ====== Step 1: 서비스 선택 ====== */}
             {step === 1 && (
               <div className="bg-white rounded-2xl border border-[#ffe9d6] p-7">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-[#281a0e]">어떤 돌봄이 필요하신가요?</h2>
+                  <h2 className="text-lg font-semibold text-[#281a0e]">
+                    어떤 돌봄이 필요하신가요?
+                  </h2>
                   <span className="text-xs text-gray-500">중복 선택 가능</span>
                 </div>
 
@@ -281,15 +306,21 @@ export default function BoardWritePage() {
                       <button
                         key={value}
                         type="button"
-                        onClick={() => setForm((prev) => ({ ...prev, service_type: value }))}
+                        onClick={() =>
+                          setForm((prev) => ({ ...prev, service_type: value }))
+                        }
                         className={`flex flex-col items-center justify-center gap-2 h-25 rounded-xl border transition-all ${
                           selected
                             ? "border-[#e8742a] bg-[#fff8f3]"
                             : "border-[#ffe9d6] bg-white hover:border-[#e8742a]/50"
                         }`}
                       >
-                        <Icon className={`w-5.5 h-5.5 ${selected ? "text-[#e8742a]" : "text-[#281a0e]"}`} />
-                        <span className={`text-sm font-medium ${selected ? "text-[#e8742a]" : "text-[#281a0e]"}`}>
+                        <Icon
+                          className={`w-5.5 h-5.5 ${selected ? "text-[#e8742a]" : "text-[#281a0e]"}`}
+                        />
+                        <span
+                          className={`text-sm font-medium ${selected ? "text-[#e8742a]" : "text-[#281a0e]"}`}
+                        >
                           {label}
                         </span>
                       </button>
@@ -298,26 +329,40 @@ export default function BoardWritePage() {
                 </div>
 
                 <div className="border-t border-[#ffe9d6] mt-6 pt-6">
-                  <h3 className="text-lg font-semibold text-[#281a0e]">예산을 입력해주세요</h3>
+                  <h3 className="text-lg font-semibold text-[#281a0e]">
+                    예산을 입력해주세요
+                  </h3>
                   <div className="flex items-center gap-3 mt-4">
                     <div className="w-80 h-12 flex items-center px-4 border border-[#ffe9d6] rounded-xl overflow-hidden">
                       <input
                         type="number"
                         value={form.budget}
-                        onChange={(e) => setForm((prev) => ({ ...prev, budget: e.target.value }))}
+                        onChange={(e) =>
+                          setForm((prev) => ({
+                            ...prev,
+                            budget: e.target.value,
+                          }))
+                        }
                         placeholder="0"
                         min={0}
                         className="w-full text-lg text-gray-500 placeholder:text-gray-500 outline-none bg-transparent"
                       />
                     </div>
-                    <span className="text-[15px] font-medium text-[#281a0e]">원</span>
+                    <span className="text-[15px] font-medium text-[#281a0e]">
+                      원
+                    </span>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap mt-3">
                     {BUDGET_PRESETS.map((amount) => (
                       <button
                         key={amount}
                         type="button"
-                        onClick={() => setForm((prev) => ({ ...prev, budget: String(amount) }))}
+                        onClick={() =>
+                          setForm((prev) => ({
+                            ...prev,
+                            budget: String(amount),
+                          }))
+                        }
                         className={`h-8.5 px-4 rounded-full border text-sm transition-colors ${
                           form.budget === String(amount)
                             ? "bg-[#e8742a] text-white border-[#e8742a]"
@@ -329,7 +374,9 @@ export default function BoardWritePage() {
                     ))}
                     <button
                       type="button"
-                      onClick={() => setForm((prev) => ({ ...prev, budget: "" }))}
+                      onClick={() =>
+                        setForm((prev) => ({ ...prev, budget: "" }))
+                      }
                       className="h-8.5 px-4 rounded-full border bg-[#fff8f3] text-[#281a0e] border-[#ffe9d6] text-sm hover:border-[#e8742a]/50 transition-colors"
                     >
                       협의 가능
@@ -344,14 +391,21 @@ export default function BoardWritePage() {
               <>
                 {/* 날짜·시간 카드 */}
                 <div className="bg-white rounded-2xl border border-[#ffe9d6] p-7">
-                  <h2 className="text-lg font-semibold text-[#281a0e]">날짜 · 시간</h2>
+                  <h2 className="text-lg font-semibold text-[#281a0e]">
+                    날짜 · 시간
+                  </h2>
 
                   {/* TODO: 추후 공통 컴포넌트로 교체 예정 */}
                   {/* 달력 2개 — Anima: gap-4 pt-5, 자연 너비 사용 */}
-                  <div className="flex flex-nowrap items-start gap-4 pt-5" style={calendarVars}>
+                  <div
+                    className="flex flex-nowrap items-start gap-4 pt-5"
+                    style={calendarVars}
+                  >
                     {/* 시작일 */}
                     <div className="flex flex-col items-start flex-1">
-                      <span className="text-sm font-semibold text-gray-500">시작일</span>
+                      <span className="text-sm font-semibold text-gray-500">
+                        시작일
+                      </span>
                       <div className="mt-2 w-full bg-white rounded-2xl border border-[#ffe9d6] p-4">
                         <DayPicker
                           mode="single"
@@ -361,32 +415,46 @@ export default function BoardWritePage() {
                               ...prev,
                               startDate: d,
                               endDate:
-                                prev.endDate && d && prev.endDate < d ? undefined : prev.endDate,
+                                prev.endDate && d && prev.endDate < d
+                                  ? undefined
+                                  : prev.endDate,
                             }))
                           }
                           locale={ko}
                           disabled={{ before: new Date() }}
                           modifiersStyles={{ today: todayStyle }}
-                          components={{ MonthCaption: CalendarCaption, Nav: () => <></> }}
+                          components={{
+                            MonthCaption: CalendarCaption,
+                            Nav: () => <></>,
+                          }}
                         />
                       </div>
                     </div>
 
                     {/* ~ 구분자 — Anima: pt-16 */}
-                    <span className="pt-16 shrink-0 text-gray-500 text-lg font-medium">~</span>
+                    <span className="pt-16 shrink-0 text-gray-500 text-lg font-medium">
+                      ~
+                    </span>
 
                     {/* 종료일 */}
                     <div className="flex flex-col items-start flex-1">
-                      <span className="text-sm font-semibold text-gray-500">종료일</span>
+                      <span className="text-sm font-semibold text-gray-500">
+                        종료일
+                      </span>
                       <div className="mt-2 w-full bg-white rounded-2xl border border-[#ffe9d6] p-4">
                         <DayPicker
                           mode="single"
                           selected={form.endDate}
-                          onSelect={(d) => setForm((prev) => ({ ...prev, endDate: d }))}
+                          onSelect={(d) =>
+                            setForm((prev) => ({ ...prev, endDate: d }))
+                          }
                           locale={ko}
                           disabled={{ before: form.startDate ?? new Date() }}
                           modifiersStyles={{ today: todayStyle }}
-                          components={{ MonthCaption: CalendarCaption, Nav: () => <></> }}
+                          components={{
+                            MonthCaption: CalendarCaption,
+                            Nav: () => <></>,
+                          }}
                         />
                       </div>
                     </div>
@@ -396,27 +464,45 @@ export default function BoardWritePage() {
                   <div className="flex items-center gap-4 pt-6 h-24">
                     {/* 시작 시간 */}
                     <div className="flex flex-col items-start flex-1">
-                      <span className="text-sm text-gray-500 pb-1.5">시작 시간</span>
+                      <span className="text-sm text-gray-500 pb-1.5">
+                        시작 시간
+                      </span>
                       <input
                         type="time"
                         value={form.start_time}
-                        onChange={(e) => setForm((prev) => ({ ...prev, start_time: e.target.value }))}
+                        onChange={(e) =>
+                          setForm((prev) => ({
+                            ...prev,
+                            start_time: e.target.value,
+                          }))
+                        }
                         className={`h-12 w-full px-4 bg-white border border-[#ffe9d6] rounded-xl outline-none focus:border-[#e8742a] transition ${
-                          form.start_time ? "text-[#281a0e]" : "text-transparent"
+                          form.start_time
+                            ? "text-[#281a0e]"
+                            : "text-transparent"
                         }`}
                       />
                     </div>
 
                     {/* ~ 구분자 — Anima: items-start pt-4 → 인풋 높이 중간쯤 */}
-                    <span className="shrink-0 text-gray-500 text-[15px] self-end pb-3">~</span>
+                    <span className="shrink-0 text-gray-500 text-[15px] self-end pb-3">
+                      ~
+                    </span>
 
                     {/* 종료 시간 */}
                     <div className="flex flex-col items-start flex-1">
-                      <span className="text-sm text-gray-500 pb-1.5">종료 시간</span>
+                      <span className="text-sm text-gray-500 pb-1.5">
+                        종료 시간
+                      </span>
                       <input
                         type="time"
                         value={form.end_time}
-                        onChange={(e) => setForm((prev) => ({ ...prev, end_time: e.target.value }))}
+                        onChange={(e) =>
+                          setForm((prev) => ({
+                            ...prev,
+                            end_time: e.target.value,
+                          }))
+                        }
                         className={`h-12 w-full px-4 bg-white border border-[#ffe9d6] rounded-xl outline-none focus:border-[#e8742a] transition ${
                           form.end_time ? "text-[#281a0e]" : "text-transparent"
                         }`}
@@ -427,14 +513,18 @@ export default function BoardWritePage() {
 
                 {/* 돌봄 장소 카드 */}
                 <div className="bg-white rounded-2xl border border-[#ffe9d6] p-7">
-                  <h2 className="text-lg font-semibold text-[#281a0e]">돌봄 장소</h2>
+                  <h2 className="text-lg font-semibold text-[#281a0e]">
+                    돌봄 장소
+                  </h2>
 
                   <div className="flex gap-2 mt-4">
                     {LOCATION_TABS.map((tab) => (
                       <button
                         key={tab}
                         type="button"
-                        onClick={() => setForm((prev) => ({ ...prev, location_type: tab }))}
+                        onClick={() =>
+                          setForm((prev) => ({ ...prev, location_type: tab }))
+                        }
                         className={`flex-1 h-10 rounded-xl text-sm font-medium transition-colors ${
                           form.location_type === tab
                             ? "bg-[#e8742a] text-white"
@@ -451,7 +541,12 @@ export default function BoardWritePage() {
                     <input
                       type="text"
                       value={form.location}
-                      onChange={(e) => setForm((prev) => ({ ...prev, location: e.target.value }))}
+                      onChange={(e) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          location: e.target.value,
+                        }))
+                      }
                       placeholder="주소 검색"
                       className="w-full h-12 pl-9 pr-4 bg-white border border-[#ffe9d6] rounded-xl text-[#281a0e] placeholder:text-gray-400 outline-none focus:border-[#e8742a] transition"
                     />
@@ -491,8 +586,12 @@ export default function BoardWritePage() {
             {/* ====== Step 3: 반려동물 ====== */}
             {step === 3 && (
               <div className="bg-white rounded-2xl border border-[#ffe9d6] p-7">
-                <h2 className="text-xl font-bold text-[#281a0e] mb-1">함께할 반려동물을 선택해주세요</h2>
-                <p className="text-gray-400 text-sm mb-5">등록된 반려동물 중 선택하거나 새로 등록하세요</p>
+                <h2 className="text-xl font-bold text-[#281a0e] mb-1">
+                  함께할 반려동물을 선택해주세요
+                </h2>
+                <p className="text-gray-400 text-sm mb-5">
+                  등록된 반려동물 중 선택하거나 새로 등록하세요
+                </p>
 
                 <div className="grid grid-cols-3 gap-3">
                   {DUMMY_PETS.map((pet) => {
@@ -503,7 +602,9 @@ export default function BoardWritePage() {
                         type="button"
                         onClick={() => togglePet(pet.id)}
                         className={`relative rounded-2xl border-2 overflow-hidden transition-all ${
-                          isSelected ? "border-[#e8742a]" : "border-[#ffe9d6] hover:border-[#e8742a]/50"
+                          isSelected
+                            ? "border-[#e8742a]"
+                            : "border-[#ffe9d6] hover:border-[#e8742a]/50"
                         }`}
                       >
                         {isSelected && (
@@ -518,8 +619,12 @@ export default function BoardWritePage() {
                           <span className="text-5xl">{pet.emoji}</span>
                         </div>
                         <div className="py-3 text-center">
-                          <div className="text-[#281a0e] text-base font-bold">{pet.name}</div>
-                          <div className="text-gray-400 text-xs mt-0.5">{pet.age}살 · {pet.weight}kg</div>
+                          <div className="text-[#281a0e] text-base font-bold">
+                            {pet.name}
+                          </div>
+                          <div className="text-gray-400 text-xs mt-0.5">
+                            {pet.age}살 · {pet.weight}kg
+                          </div>
                         </div>
                       </button>
                     );
@@ -527,12 +632,15 @@ export default function BoardWritePage() {
 
                   <button
                     type="button"
+                    onClick={() => router.push("/pet-register")}
                     className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[#ffe9d6] hover:border-[#e8742a]/50 transition-colors text-gray-400 hover:text-[#e8742a] min-h-35"
                   >
                     <div className="w-10 h-10 bg-[#fff8f3] rounded-full flex items-center justify-center">
                       <Plus className="w-5 h-5" />
                     </div>
-                    <span className="text-sm font-medium">새 반려동물 등록</span>
+                    <span className="text-sm font-medium">
+                      새 반려동물 등록
+                    </span>
                   </button>
                 </div>
               </div>
@@ -544,15 +652,22 @@ export default function BoardWritePage() {
                 <div className="bg-white rounded-2xl border border-[#ffe9d6] p-7">
                   <div className="flex flex-col gap-2 mb-6">
                     <div className="flex items-center justify-between">
-                      <label className="text-sm font-bold text-[#281a0e]">게시글 제목</label>
-                      <span className="text-xs text-gray-400">{form.title.length} / 50</span>
+                      <label className="text-sm font-bold text-[#281a0e]">
+                        게시글 제목
+                      </label>
+                      <span className="text-xs text-gray-400">
+                        {form.title.length} / 50
+                      </span>
                     </div>
                     <input
                       type="text"
                       value={form.title}
                       onChange={(e) => {
                         if (e.target.value.length <= 50)
-                          setForm((prev) => ({ ...prev, title: e.target.value }));
+                          setForm((prev) => ({
+                            ...prev,
+                            title: e.target.value,
+                          }));
                       }}
                       placeholder="예: 이번 주말 강아지 산책 펫시터 구해요"
                       className="w-full h-12 px-4 bg-white border border-[#ffe9d6] rounded-xl text-[#281a0e] placeholder:text-gray-400 outline-none focus:border-[#e8742a] transition"
@@ -561,17 +676,30 @@ export default function BoardWritePage() {
 
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center justify-between">
-                      <label className="text-sm font-bold text-[#281a0e]">상세 내용</label>
-                      <span className="text-xs text-gray-400">{form.content.length} / 500</span>
+                      <label className="text-sm font-bold text-[#281a0e]">
+                        상세 내용
+                      </label>
+                      <span className="text-xs text-gray-400">
+                        {form.content.length} / 500
+                      </span>
                     </div>
-                    <p className="text-xs text-gray-400 -mt-1">펫시터에게 전달할 내용을 자유롭게 작성하세요</p>
+                    <p className="text-xs text-gray-400 -mt-1">
+                      펫시터에게 전달할 내용을 자유롭게 작성하세요
+                    </p>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs text-gray-400">템플릿으로 시작하기</span>
+                      <span className="text-xs text-gray-400">
+                        템플릿으로 시작하기
+                      </span>
                       {TEMPLATES.map((t) => (
                         <button
                           key={t.label}
                           type="button"
-                          onClick={() => setForm((prev) => ({ ...prev, content: t.text.slice(0, 500) }))}
+                          onClick={() =>
+                            setForm((prev) => ({
+                              ...prev,
+                              content: t.text.slice(0, 500),
+                            }))
+                          }
                           className="px-3 py-1 rounded-full text-xs font-medium border border-[#ffe9d6] text-gray-500 hover:border-[#e8742a]/50 hover:text-[#e8742a] transition-colors"
                         >
                           {t.label}
@@ -582,7 +710,10 @@ export default function BoardWritePage() {
                       value={form.content}
                       onChange={(e) => {
                         if (e.target.value.length <= 500)
-                          setForm((prev) => ({ ...prev, content: e.target.value }));
+                          setForm((prev) => ({
+                            ...prev,
+                            content: e.target.value,
+                          }));
                       }}
                       placeholder="펫시터에게 전달하고 싶은 내용을 입력해주세요"
                       rows={7}
@@ -594,7 +725,9 @@ export default function BoardWritePage() {
                 <div className="bg-white rounded-2xl border border-[#ffe9d6] p-7">
                   <h3 className="text-base font-bold text-[#281a0e] mb-4 flex items-center gap-2">
                     펫시터 조건
-                    <span className="px-2 py-0.5 bg-[#fff8f3] rounded-full text-xs font-medium text-[#e8742a]">선택</span>
+                    <span className="px-2 py-0.5 bg-[#fff8f3] rounded-full text-xs font-medium text-[#e8742a]">
+                      선택
+                    </span>
                   </h3>
                   <div className="flex flex-col gap-3">
                     {SITTER_CONDITIONS.map((condition) => {
@@ -606,12 +739,20 @@ export default function BoardWritePage() {
                           onClick={() => toggleCondition(condition)}
                           className="flex items-center gap-3 text-left"
                         >
-                          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
-                            isChecked ? "bg-[#e8742a] border-[#e8742a]" : "border-gray-300"
-                          }`}>
-                            {isChecked && <Check className="w-3 h-3 text-white" />}
+                          <div
+                            className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+                              isChecked
+                                ? "bg-[#e8742a] border-[#e8742a]"
+                                : "border-gray-300"
+                            }`}
+                          >
+                            {isChecked && (
+                              <Check className="w-3 h-3 text-white" />
+                            )}
                           </div>
-                          <span className="text-[#281a0e] text-sm">{condition}</span>
+                          <span className="text-[#281a0e] text-sm">
+                            {condition}
+                          </span>
                         </button>
                       );
                     })}
@@ -632,13 +773,14 @@ export default function BoardWritePage() {
                     <div className="w-8 h-8 rounded-full border-2 border-[#ffe9d6] flex items-center justify-center text-sm font-semibold text-gray-500">
                       {num}
                     </div>
-                    <span className="text-[15px] font-medium text-gray-500">{label}</span>
+                    <span className="text-[15px] font-medium text-gray-500">
+                      {label}
+                    </span>
                   </div>
                   <span className="text-xs text-gray-500">작성 전</span>
                 </div>
               );
             })}
-
           </div>
         </div>
       </main>
@@ -655,7 +797,9 @@ export default function BoardWritePage() {
             이전
           </button>
 
-          <span className="text-sm text-gray-500">{step} / {STEPS.length}</span>
+          <span className="text-sm text-gray-500">
+            {step} / {STEPS.length}
+          </span>
 
           {step < 4 ? (
             <button
@@ -676,7 +820,9 @@ export default function BoardWritePage() {
               onClick={handleSubmit}
               disabled={!canNext() || isSubmitting}
               className={`h-11 px-6 rounded-xl flex items-center gap-1.5 text-[15px] font-semibold bg-[#e8742a] text-white transition-opacity ${
-                canNext() && !isSubmitting ? "opacity-100 hover:opacity-90" : "opacity-40"
+                canNext() && !isSubmitting
+                  ? "opacity-100 hover:opacity-90"
+                  : "opacity-40"
               }`}
             >
               <Send className="w-4 h-4" />

@@ -180,7 +180,7 @@ export default function Header() {
           </Link>
 
           <Link
-            href="/register/petsitter"
+            href="/chat"
             className="flex items-center px-4 h-9 bg-orange-500 hover:bg-orange-600 transition-colors rounded-[10px] text-white text-xs font-semibold whitespace-nowrap"
           >
             <span className="hidden lg:inline">채팅</span>
