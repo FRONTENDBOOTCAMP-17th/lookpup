@@ -23,6 +23,7 @@
 15. 알림 Notifications
 16. 신고 Reports
 17. 지도 검색 Map Search
+18. 추가금 요청 Extra Charges
 
 ---
 
