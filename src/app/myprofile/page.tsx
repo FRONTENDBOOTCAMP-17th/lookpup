@@ -91,7 +91,7 @@ const OWNER_MENU: MenuItem[] = [
   {
     id: "notif",
     icon: Bell,
-    label: "알림 설정",
+    label: "설정",
     link: "/notifications/settings",
     color: "#8B5CF6",
   },
@@ -164,7 +164,7 @@ const SITTER_MENU: MenuItem[] = [
   {
     id: "notif",
     icon: Bell,
-    label: "알림 설정",
+    label: "설정",
     link: "/notifications/settings",
     color: "#8B5CF6",
   },
@@ -473,7 +473,7 @@ export default function MyProfilePage() {
 
                   {/* 펫시터 등록 CTA */}
                   {userType === "owner" && (
-                    <Link href="/register/petsitter">
+                    <Link href="/sitter-register">
                       <div className="bg-linear-to-r from-orange-500 to-stone-600 rounded-2xl p-7 flex items-center justify-between hover:opacity-90 transition-opacity">
                         <div>
                           <h3 className="font-bold text-white text-lg mb-1">
