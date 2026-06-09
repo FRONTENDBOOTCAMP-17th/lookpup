@@ -28,6 +28,7 @@ const SERVICES: { Icon: LucideIcon; label: string; desc: string }[] = [
 
 const PETSITTERS = [
   {
+    id: 1,
     name: "김민지",
     initial: "김",
     district: "마포구",
@@ -38,6 +39,7 @@ const PETSITTERS = [
     certified: true,
   },
   {
+    id: 2,
     name: "이서연",
     initial: "이",
     district: "강남구",
@@ -48,6 +50,7 @@ const PETSITTERS = [
     certified: false,
   },
   {
+    id: 3,
     name: "박준호",
     initial: "박",
     district: "용산구",
@@ -58,6 +61,7 @@ const PETSITTERS = [
     certified: false,
   },
   {
+    id: 4,
     name: "최예진",
     initial: "최",
     district: "성동구",
@@ -100,6 +104,7 @@ const TRUST_ITEMS: { Icon: LucideIcon; title: string; desc: string }[] = [
 // 컴포넌트
 
 function PetsitterCard({
+  id,
   name,
   initial,
   district,
@@ -110,7 +115,10 @@ function PetsitterCard({
   certified,
 }: (typeof PETSITTERS)[0]) {
   return (
-    <div className="p-5 bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100 flex flex-col gap-4 hover:shadow-[0px_4px_16px_0px_rgba(232,116,42,0.18)] transition-shadow">
+    <Link
+      href={`/petsitters/${id}`}
+      className="p-5 bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100 flex flex-col gap-4 hover:shadow-[0px_4px_16px_0px_rgba(232,116,42,0.18)] transition-shadow"
+    >
       <div className="flex items-start gap-3">
         <div className="w-14 h-14 bg-orange-50 rounded-full border border-orange-100 flex items-center justify-center shrink-0">
           <span className="text-orange-500 text-xl font-semibold">
@@ -158,7 +166,7 @@ function PetsitterCard({
           {price}원~
         </span>
       </div>
-    </div>
+    </Link>
   );
 }
 

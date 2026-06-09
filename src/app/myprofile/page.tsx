@@ -92,7 +92,7 @@ const OWNER_MENU: MenuItem[] = [
     id: "notif",
     icon: Bell,
     label: "설정",
-    link: "/notifications/settings",
+    link: "/myprofile/settings",
     color: "#8B5CF6",
   },
   {
@@ -113,14 +113,14 @@ const OWNER_MENU: MenuItem[] = [
     id: "report",
     icon: AlertTriangle,
     label: "신고하기",
-    link: "/report",
+    link: "/myprofile/report",
     color: "#DC2626",
   },
   {
     id: "withdraw",
     icon: UserX,
     label: "회원 탈퇴",
-    link: "/account/delete",
+    link: "/myprofile/settings/withdraw",
     color: "#EF4444",
   },
 ];
@@ -165,7 +165,7 @@ const SITTER_MENU: MenuItem[] = [
     id: "notif",
     icon: Bell,
     label: "설정",
-    link: "/notifications/settings",
+    link: "/myprofile/settings",
     color: "#8B5CF6",
   },
   {
@@ -186,14 +186,14 @@ const SITTER_MENU: MenuItem[] = [
     id: "report",
     icon: AlertTriangle,
     label: "신고하기",
-    link: "/report",
+    link: "/myprofile/report",
     color: "#DC2626",
   },
   {
     id: "withdraw",
     icon: UserX,
     label: "회원 탈퇴",
-    link: "/account/delete",
+    link: "/myprofile/settings/withdraw",
     color: "#EF4444",
   },
 ];
