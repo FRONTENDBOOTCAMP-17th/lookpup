@@ -7,7 +7,6 @@ import {
   ChevronRight,
   Dog,
   Calendar,
-  Heart,
   FileText,
   Settings,
   HelpCircle,
@@ -73,13 +72,6 @@ const OWNER_MENU: MenuItem[] = [
     label: "예약 내역",
     link: "/myprofile/booking-history",
     color: "#10B981",
-  },
-  {
-    id: "favorites",
-    icon: Heart,
-    label: "찜한 펫시터",
-    link: "/myprofile/favorites",
-    color: "#EF4444",
   },
   {
     id: "reviews",
