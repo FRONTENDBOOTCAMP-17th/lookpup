@@ -12,6 +12,7 @@ import {
   BadgeCheck,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
+import { CustomModal } from "@/components/common/CustomModal";
 
 // 상수
 
@@ -305,12 +306,14 @@ function DesktopReviewView({
   photos,
   onAddPhoto,
   onRemovePhoto,
+  onSubmit,
 }: {
   reviewData: ReviewState;
   setReviewData: React.Dispatch<React.SetStateAction<ReviewState>>;
   photos: string[];
   onAddPhoto: (url: string) => void;
   onRemovePhoto: (idx: number) => void;
+  onSubmit: () => void;
 }) {
   const toggleTag = (tag: string) => {
     setReviewData((prev) => ({
@@ -505,8 +508,10 @@ function DesktopReviewView({
 
       {/* 액션 버튼 */}
       <div className="flex flex-col gap-3 pb-4">
+        {/* 후기 등록 기능 모달 */}
         <button
           type="button"
+          onClick={onSubmit}
           className="w-full h-14 rounded-xl bg-[#E8742A] text-white font-semibold text-base hover:bg-[#D4621A] transition-colors shadow-sm"
         >
           후기 등록하기
@@ -662,6 +667,7 @@ function MobileScreen2({
   onAddPhoto,
   onRemovePhoto,
   onBack,
+  onSubmit,
 }: {
   reviewData: ReviewState;
   setReviewData: React.Dispatch<React.SetStateAction<ReviewState>>;
@@ -669,6 +675,7 @@ function MobileScreen2({
   onAddPhoto: (url: string) => void;
   onRemovePhoto: (idx: number) => void;
   onBack: () => void;
+  onSubmit: () => void;
 }) {
   return (
     <div className="flex flex-col gap-4 pb-36">
@@ -721,8 +728,10 @@ function MobileScreen2({
 
       {/* 하단 고정 버튼 */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#FFE9D6] px-5 py-4 z-40">
+        {/* 후기 등록 기능 모달 */}
         <button
           type="button"
+          onClick={onSubmit}
           className="w-full h-13 rounded-xl bg-[#E8742A] text-white font-semibold text-base mb-3 hover:bg-[#D4621A] transition-colors"
         >
           후기 등록하기
@@ -745,6 +754,7 @@ export default function ReviewWritePage() {
   const router = useRouter();
   const [mobileScreen, setMobileScreen] = useState<1 | 2>(1);
   const [photos, setPhotos] = useState<string[]>([]);
+  const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [reviewData, setReviewData] = useState<ReviewState>({
     overallRating: 0,
     detailRatings: {},
@@ -812,6 +822,7 @@ export default function ReviewWritePage() {
           photos={photos}
           onAddPhoto={addPhoto}
           onRemovePhoto={removePhoto}
+          onSubmit={() => setShowSubmitModal(true)}
         />
       </div>
 
@@ -831,9 +842,26 @@ export default function ReviewWritePage() {
             onAddPhoto={addPhoto}
             onRemovePhoto={removePhoto}
             onBack={() => setMobileScreen(1)}
+            onSubmit={() => setShowSubmitModal(true)}
           />
         )}
       </div>
+
+      {/* 후기 등록 기능 모달 */}
+      <CustomModal
+        open={showSubmitModal}
+        preset="saveConfirm"
+        title="후기를 등록하시겠습니까?"
+        description="후기는 작성 후 수정이 불가합니다. 신중하게 확인해주세요."
+        cancelText="취소"
+        confirmText="등록하기"
+        onClose={() => setShowSubmitModal(false)}
+        onConfirm={() => {
+          // TODO: 후기 등록 API 연동
+          setShowSubmitModal(false);
+          router.back();
+        }}
+      />
     </div>
   );
 }
