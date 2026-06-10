@@ -353,19 +353,13 @@ export default function BoardDetailPage() {
                     </div>
                   </div>
                 </div>
-                <Link
-                  href={`/petsitters/${POST.author.id}`}
-                  className="w-full h-11 border border-orange-500 rounded-[10px] text-orange-500 text-base font-semibold hover:bg-orange-50 transition-colors flex items-center justify-center"
-                >
-                  프로필 보기
-                </Link>
               </div>
 
-              {/* 비슷한 구인글 */}
+              {/* 작성자의 다른 글 */}
               <div className="bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100 p-5 flex flex-col gap-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-stone-900 text-lg font-bold">
-                    비슷한 구인글
+                    {POST.author.name}님의 다른 게시물
                   </h3>
                   <Link
                     href="/board"
@@ -410,28 +404,6 @@ export default function BoardDetailPage() {
                     </Link>
                   ))}
                 </div>
-              </div>
-
-              {/* 안전 거래 팁 */}
-              <div className="bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100 p-5 flex flex-col gap-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
-                    <AlertCircle className="w-3.5 h-3.5 text-white" />
-                  </div>
-                  <h3 className="text-stone-900 text-lg font-bold">
-                    안전 거래 팁
-                  </h3>
-                </div>
-                <ul className="flex flex-col gap-2">
-                  {SAFETY_TIPS.map((tip) => (
-                    <li key={tip} className="flex items-start gap-2">
-                      <span className="text-gray-500 text-xs mt-0.5">•</span>
-                      <span className="text-gray-500 text-xs leading-4">
-                        {tip}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
               </div>
             </div>
           </div>
