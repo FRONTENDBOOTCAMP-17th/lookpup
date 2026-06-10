@@ -21,6 +21,7 @@ import {
   UserX,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
+import { createClient } from "@/utils/supabase/client";
 
 // 더미데이터
 
@@ -252,6 +253,12 @@ function SidebarItem({
 
 export default function MyProfilePage() {
   const router = useRouter();
+
+  const handleLogout = async () => {
+    await createClient().auth.signOut();
+    router.push("/");
+  };
+
   const [userType, setUserType] = useState<"owner" | "sitter">("owner");
   const [selectedMenu, setSelectedMenu] = useState("profile");
 
@@ -391,7 +398,7 @@ export default function MyProfilePage() {
 
                 <div className="mt-4 pt-4 border-t border-orange-100">
                   <button
-                    onClick={() => router.push("/auth/login")}
+                    onClick={handleLogout}
                     className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-500 hover:bg-orange-50 transition-colors"
                   >
                     <LogOut size={18} className="text-gray-500" />
@@ -534,7 +541,7 @@ export default function MyProfilePage() {
         {/* 로그아웃 */}
         <div className="pb-24">
           <button
-            onClick={() => router.push("/auth/login")}
+            onClick={handleLogout}
             className="w-full bg-white border border-orange-100 rounded-2xl px-4 py-3.5 flex items-center gap-4 shadow-sm"
           >
             <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center">
