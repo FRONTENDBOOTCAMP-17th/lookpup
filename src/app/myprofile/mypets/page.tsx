@@ -15,6 +15,7 @@ import {
   Check,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
+import { CustomModal } from "@/components/common/CustomModal";
 
 // 더미데이터
 
@@ -827,20 +828,27 @@ export default function MyPetsPage() {
       </button>
 
       {/* 모달 */}
-      {modal === "delete" && targetPet && (
-        <DeleteModal
-          pet={targetPet}
-          onClose={() => setModal(null)}
-          onConfirm={handleDelete}
-        />
-      )}
-      {modal === "success" && targetPet && (
-        <SuccessModal
-          pet={targetPet}
-          onView={() => setModal(null)}
-          onClose={() => setModal(null)}
-        />
-      )}
+      {/* 반려동물 삭제 기능 모달 */}
+      <CustomModal
+        open={modal === "delete" && targetPet !== null}
+        preset="deletePost"
+        title={`${targetPet?.name ?? "반려동물"}의 정보를 삭제하시겠어요?`}
+        description="삭제된 정보는 복구할 수 없습니다."
+        onClose={() => setModal(null)}
+        onConfirm={handleDelete}
+      />
+
+      {/* 반려동물 등록 완료 기능 모달 */}
+      <CustomModal
+        open={modal === "success" && targetPet !== null}
+        preset="success"
+        title="등록이 완료되었어요"
+        description={`${targetPet?.name ?? "반려동물"}이(가) 등록되었습니다.\n이제 돌봄 요청 시 선택할 수 있습니다.`}
+        cancelText="확인"
+        confirmText="내 반려동물 보기"
+        onClose={() => setModal(null)}
+        onConfirm={() => setModal(null)}
+      />
       {modal === "edit" && targetPet && (
         <EditModal
           pet={targetPet}

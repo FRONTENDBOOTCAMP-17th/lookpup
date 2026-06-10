@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, AlertTriangle, Check, ImagePlus, X } from "lucide-react";
 import Header from "@/components/layout/Header";
+import { CustomModal } from "@/components/common/CustomModal";
 
 const REPORT_REASONS = [
   "부적절한 언행",
@@ -22,6 +23,7 @@ export default function ReportPage() {
   const [images, setImages] = useState<File[]>([]);
 
   const isValid = selectedReason !== "" && content.length >= 10;
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
@@ -36,7 +38,7 @@ export default function ReportPage() {
   const handleSubmit = () => {
     if (!isValid) return;
     // TODO: Supabase 신고 접수 연동
-    router.back();
+    setShowSuccessModal(true);
   };
 
   return (
@@ -217,6 +219,18 @@ export default function ReportPage() {
           </div>
         </div>
       </main>
+      {/* 신고 접수 완료 기능 모달 */}
+      <CustomModal
+        open={showSuccessModal}
+        preset="success"
+        title="신고가 접수되었습니다."
+        description="신고 내용을 검토 후 처리하겠습니다."
+        onConfirm={() => {
+          setShowSuccessModal(false);
+          router.back();
+        }}
+        showCloseButton={false}
+      />
     </div>
   );
 }
