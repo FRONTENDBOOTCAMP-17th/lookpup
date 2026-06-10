@@ -21,7 +21,7 @@ import {
   UserX,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
-import Avatar from "@/components/ui/Avatar";
+import Avatar, { AvatarMobile } from "@/components/ui/Avatar";
 import { createClient } from "@/utils/supabase/client";
 
 // 더미데이터
@@ -259,11 +259,7 @@ export default function MyProfilePage() {
       {/* 모바일 헤더 */}
       <div className="md:hidden bg-linear-to-br from-orange-500 to-orange-300 rounded-b-3xl px-5 pt-8 pb-8 shrink-0">
         <div className="flex items-center gap-4 mb-6">
-          <div className="w-16 h-16 bg-white/30 rounded-full border-2 border-white flex items-center justify-center">
-            <span className="text-white text-2xl font-semibold">
-              {DUMMY_USER.initial}
-            </span>
-          </div>
+          <AvatarMobile initial={DUMMY_USER.initial} />
           <div className="flex-1">
             <h3 className="text-white font-semibold text-lg mb-1">
               {DUMMY_USER.name}

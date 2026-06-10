@@ -17,6 +17,21 @@ const VARIANT: Record<NonNullable<AvatarProps["variant"]>, string> = {
   dark: "bg-orange-100",
 };
 
+interface AvatarMobileProps {
+  initial: string;
+  className?: string;
+}
+
+export function AvatarMobile({ initial, className = "" }: AvatarMobileProps) {
+  return (
+    <div
+      className={`w-16 h-16 bg-white/30 rounded-full border-2 border-white flex items-center justify-center shrink-0 ${className}`}
+    >
+      <span className="text-white text-2xl font-semibold">{initial}</span>
+    </div>
+  );
+}
+
 export default function Avatar({
   initial,
   size = "md",
