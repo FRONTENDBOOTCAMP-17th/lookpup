@@ -21,6 +21,7 @@ import {
   UserX,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
+import Avatar from "@/components/ui/Avatar";
 import { createClient } from "@/utils/supabase/client";
 
 // 더미데이터
@@ -196,28 +197,6 @@ const SITTER_MENU: MenuItem[] = [
 
 // 컴포넌트
 
-function Avatar({
-  initial,
-  size = "md",
-}: {
-  initial: string;
-  size?: "sm" | "md" | "lg";
-}) {
-  const sizeClass =
-    size === "lg"
-      ? "w-16 h-16 text-2xl"
-      : size === "sm"
-        ? "w-8 h-8 text-sm"
-        : "w-12 h-12 text-xl";
-  return (
-    <div
-      className={`${sizeClass} bg-orange-50 rounded-full border border-orange-100 flex items-center justify-center shrink-0`}
-    >
-      <span className="text-orange-500 font-semibold">{initial}</span>
-    </div>
-  );
-}
-
 function SidebarItem({
   item,
   selected,
@@ -320,11 +299,11 @@ export default function MyProfilePage() {
               <div className="sticky top-24 bg-white rounded-2xl border border-orange-100 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] p-5">
                 {/* 프로필 */}
                 <div className="text-center pb-5 mb-4 border-b border-orange-100">
-                  <div className="w-16 h-16 bg-orange-50 rounded-full border border-orange-100 flex items-center justify-center mx-auto mb-3">
-                    <span className="text-orange-500 text-2xl font-semibold">
-                      {DUMMY_USER.initial}
-                    </span>
-                  </div>
+                  <Avatar
+                    initial={DUMMY_USER.initial}
+                    size="xl"
+                    className="mx-auto mb-3"
+                  />
                   <h2 className="font-bold text-stone-900 mb-1">
                     {DUMMY_USER.name}
                   </h2>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Star, Trash2, ChevronLeft } from "lucide-react";
 import Header from "@/components/layout/Header";
+import Avatar from "@/components/ui/Avatar";
 
 interface Review {
   id: number;
@@ -95,11 +96,7 @@ function ReviewCard({ review, isOwn }: { review: Review; isOwn: boolean }) {
       {/* 상단: 작성자 정보 및 별점 */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-[#FFF0E8] rounded-full border border-[#FFE9D6] flex items-center justify-center shrink-0">
-            <span className="text-[#E8742A] font-semibold">
-              {isOwn ? review.target[0] : review.author[0]}
-            </span>
-          </div>
+          <Avatar initial={isOwn ? review.target[0] : review.author[0]} />
           <div>
             <p className="font-semibold text-[#281A0E]">
               {isOwn ? review.target : review.author}
