@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import { CustomModal } from "@/components/common/CustomModal";
 
 // 더미 데이터 : 뭘눌러도 이것만 나와요 우하하~~~
 
@@ -120,6 +121,7 @@ const SAFETY_TIPS = [
 export default function BoardDetailPage() {
   const router = useRouter();
   const [comment, setComment] = useState("");
+  const [showApplyModal, setShowApplyModal] = useState(false);
 
   return (
     <>
@@ -207,8 +209,9 @@ export default function BoardDetailPage() {
                     </div>
                     {/* 지원하기 버튼 */}
                     <div className="flex gap-3 sm:col-span-2">
+                      {/* 지원하기 기능 모달 */}
                       <button
-                        onClick={() => router.push("/chat")}
+                        onClick={() => setShowApplyModal(true)}
                         className="flex-1 h-11 flex items-center justify-center gap-2 bg-orange-500 rounded-[10px] text-white text-base font-medium hover:bg-orange-600 transition-colors"
                       >
                         <Send className="w-4 h-4" />
@@ -411,6 +414,21 @@ export default function BoardDetailPage() {
       </main>
 
       <Footer />
+
+      {/* 지원하기 기능 모달 */}
+      <CustomModal
+        open={showApplyModal}
+        preset="warning"
+        title="지원하시겠습니까?"
+        description="지원 후 채팅으로 보호자와 상담을 진행하세요."
+        cancelText="취소"
+        confirmText="지원하기"
+        onClose={() => setShowApplyModal(false)}
+        onConfirm={() => {
+          setShowApplyModal(false);
+          router.push("/chat");
+        }}
+      />
     </>
   );
 }
