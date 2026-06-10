@@ -7,7 +7,6 @@ import {
   ChevronRight,
   Dog,
   Calendar,
-  Heart,
   FileText,
   Settings,
   HelpCircle,
@@ -52,6 +51,8 @@ const DUMMY_SITTER_STATS = {
   monthlyEarnings: "850,000원",
 };
 
+// 게시물 관리 부분은 추후 색, 아이콘 수정할 것
+
 const OWNER_MENU: MenuItem[] = [
   {
     id: "profile",
@@ -59,6 +60,13 @@ const OWNER_MENU: MenuItem[] = [
     label: "내 프로필",
     link: "/myprofile",
     color: "#E8742A",
+  },
+  {
+    id: "support",
+    icon: HelpCircle,
+    label: "게시물 관리",
+    link: "/support",
+    color: "#6B7280",
   },
   {
     id: "pets",
@@ -75,13 +83,6 @@ const OWNER_MENU: MenuItem[] = [
     color: "#10B981",
   },
   {
-    id: "favorites",
-    icon: Heart,
-    label: "찜한 펫시터",
-    link: "/myprofile/favorites",
-    color: "#EF4444",
-  },
-  {
     id: "reviews",
     icon: FileText,
     label: "후기 관리",
@@ -94,13 +95,6 @@ const OWNER_MENU: MenuItem[] = [
     label: "설정",
     link: "/myprofile/settings",
     color: "#8B5CF6",
-  },
-  {
-    id: "support",
-    icon: HelpCircle,
-    label: "고객센터",
-    link: "/support",
-    color: "#6B7280",
   },
   {
     id: "terms",
@@ -132,6 +126,13 @@ const SITTER_MENU: MenuItem[] = [
     label: "내 프로필",
     link: "/myprofile",
     color: "#E8742A",
+  },
+  {
+    id: "support",
+    icon: HelpCircle,
+    label: "게시물 관리",
+    link: "/support",
+    color: "#6B7280",
   },
   {
     id: "bookings",
@@ -167,13 +168,6 @@ const SITTER_MENU: MenuItem[] = [
     label: "설정",
     link: "/myprofile/settings",
     color: "#8B5CF6",
-  },
-  {
-    id: "support",
-    icon: HelpCircle,
-    label: "고객센터",
-    link: "/support",
-    color: "#6B7280",
   },
   {
     id: "terms",

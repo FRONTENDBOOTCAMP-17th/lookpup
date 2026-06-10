@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Star, Edit2, Trash2, ChevronLeft } from "lucide-react";
+import { Star, Trash2, ChevronLeft } from "lucide-react";
 import Header from "@/components/layout/Header";
 
 interface Review {
@@ -129,12 +129,9 @@ function ReviewCard({ review, isOwn }: { review: Review; isOwn: boolean }) {
         </div>
       )}
 
-      {/* 내가 작성한 리뷰: 수정/삭제 버튼 */}
+      {/* 내가 작성한 리뷰: 삭제 버튼 */}
       {isOwn && (
         <div className="flex gap-2 pt-4 border-t border-[#FFE9D6]">
-          <button className="flex-1 h-9 rounded-xl border border-[#FFE9D6] text-sm font-medium text-[#E8742A] hover:border-[#E8742A] transition-colors flex items-center justify-center gap-1.5">
-            <Edit2 size={13} /> 수정
-          </button>
           <button className="flex-1 h-9 rounded-xl border border-[#FFE9D6] text-sm font-medium text-[#E8742A] hover:border-[#E8742A] transition-colors flex items-center justify-center gap-1.5">
             <Trash2 size={13} /> 삭제
           </button>
