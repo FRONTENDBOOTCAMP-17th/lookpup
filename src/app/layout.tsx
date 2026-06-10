@@ -1,9 +1,22 @@
 import type { Metadata } from "next";
+import localFont from "next/font/local";
 import "./globals.css";
+
+const pretendard = localFont({
+  src: [
+    { path: "./fonts/Pretendard-Regular.woff2", weight: "400" },
+    { path: "./fonts/Pretendard-Medium.woff2", weight: "500" },
+    { path: "./fonts/Pretendard-SemiBold.woff2", weight: "600" },
+    { path: "./fonts/Pretendard-Bold.woff2", weight: "700" },
+  ],
+  variable: "--font-pretendard",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "봐주개 - 믿을 수 있는 반려동물 돌봄 플랫폼",
-  description: "지역 기반 검색으로 가까운 펫시터를 찾고, 안전한 예약과 결제까지 한 번에",
+  description:
+    "지역 기반 검색으로 가까운 펫시터를 찾고, 안전한 예약과 결제까지 한 번에",
 };
 
 export default function RootLayout({
@@ -12,13 +25,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko" className="h-full">
-      <head>
-        <link
-          rel="stylesheet"
-          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"
-        />
-      </head>
+    <html lang="ko" className={`h-full ${pretendard.variable}`}>
       <body className="min-h-full flex flex-col antialiased">{children}</body>
     </html>
   );
