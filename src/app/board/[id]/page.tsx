@@ -9,7 +9,6 @@ import {
   Calendar,
   Clock,
   DollarSign,
-  Share2,
   Send,
   Star,
   AlertCircle,
@@ -206,23 +205,18 @@ export default function BoardDetailPage() {
                         </p>
                       </div>
                     </div>
+                    {/* 지원하기 버튼 */}
+                    <div className="flex gap-3 sm:col-span-2">
+                      <button
+                        onClick={() => router.push("/chat")}
+                        className="flex-1 h-11 flex items-center justify-center gap-2 bg-orange-500 rounded-[10px] text-white text-base font-medium hover:bg-orange-600 transition-colors"
+                      >
+                        <Send className="w-4 h-4" />
+                        지원하기
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-
-              {/* 공유 + 지원하기 버튼 */}
-              <div className="flex gap-3">
-                <button className="flex-1 h-11 flex items-center justify-center gap-2 bg-white border border-orange-500 rounded-[10px] text-orange-500 text-base font-medium hover:bg-orange-50 transition-colors">
-                  <Share2 className="w-4 h-4" />
-                  공유
-                </button>
-                <button
-                  onClick={() => router.push("/chat")}
-                  className="flex-1 h-11 flex items-center justify-center gap-2 bg-orange-500 rounded-[10px] text-white text-base font-medium hover:bg-orange-600 transition-colors"
-                >
-                  <Send className="w-4 h-4" />
-                  지원하기
-                </button>
               </div>
 
               {/* 상세 내용 */}
