@@ -1,6 +1,6 @@
 # 봐주개 API 명세서
 
-> Next.js 15 App Router 기준. Supabase 직접 호출은 클라이언트/서버 모두 가능하므로 여기서는 **Next.js API Routes** (`/api/...`) 와 **Server Actions** 로 구분하여 명세한다.
+> Next.js 16 App Router 기준. Supabase 직접 호출은 클라이언트/서버 모두 가능하므로 여기서는 **Next.js API Routes** (`/api/...`) 와 **Server Actions** 로 구분하여 명세한다.
 
 ---
 
