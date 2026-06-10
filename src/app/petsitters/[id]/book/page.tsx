@@ -9,6 +9,8 @@ import { ko } from "date-fns/locale";
 import { useBookingStore } from "@/store/bookingStore";
 import Header from "@/components/layout/Header";
 import RangePicker from "@/components/ui/RangePicker";
+import { CustomModal } from "@/components/common/CustomModal";
+import { PaymentModalContent } from "@/components/common/PaymentModalContent";
 
 // 더미 데이터
 const PETSITTER = { id: 1, name: "김민지", initial: "김", service: "방문돌봄", pricePerDay: 30000 };
@@ -242,9 +244,15 @@ function StepPayment({ onNext }: { onNext: () => void }) {
   const servicePrice = PETSITTER.pricePerDay * nights;
   const total = servicePrice + PLATFORM_FEE;
   const pet = PETS.find((p) => p.id === petId);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   async function handlePay() {
     if (!paymentMethod) return;
+    setShowPaymentModal(true);
+  }
+
+  function handlePayConfirm() {
+    setShowPaymentModal(false);
     // PortOne SDK 연동 예정: IMP.request_pay({ ... })
     onNext();
   }
@@ -316,6 +324,16 @@ function StepPayment({ onNext }: { onNext: () => void }) {
         </div>
       </div>
       <NextButton label={`결제하기 ${total.toLocaleString()}원`} onClick={handlePay} disabled={!paymentMethod} />
+
+      {/* 결제하기 기능 모달 */}
+      <CustomModal
+        open={showPaymentModal}
+        preset="payment"
+        onClose={() => setShowPaymentModal(false)}
+        onConfirm={handlePayConfirm}
+      >
+        <PaymentModalContent amount={servicePrice} feeRate={PLATFORM_FEE / servicePrice} />
+      </CustomModal>
     </StepCard>
   );
 }
