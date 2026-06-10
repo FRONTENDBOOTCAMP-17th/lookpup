@@ -153,7 +153,7 @@ function PetsitterCard({ sitter, isSelected, distance }: PetsitterCardProps) {
       >
         {/* 프로필 행 */}
         <div className="flex items-start gap-4">
-          <Avatar initial={sitter.initial} size="lg" />
+          <Avatar initial={sitter.initial} size="lg" variant="orange" />
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between">
               <span className="text-stone-900 text-base font-semibold">
