@@ -111,6 +111,7 @@ const OWNER_MENU: MenuItem[] = [
     link: "/myprofile/report",
     color: "#DC2626",
   },
+  // 회원 탈퇴의 경우, 페이지가 아닌 커스텀 모달 확인을 통한 탈퇴로 수정 예정
   {
     id: "withdraw",
     icon: UserX,
