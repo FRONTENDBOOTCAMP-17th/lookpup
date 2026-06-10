@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Camera, Plus, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import Header from "@/components/layout/Header";
+import { Progress } from "@/components/ui/progress";
 
 const SERVICES = [
   { id: "visit", emoji: "🏠", title: "방문돌봄", desc: "보호자님 집에서 돌봄" },
@@ -91,13 +92,10 @@ export default function PetsitterRegisterPage() {
     <>
       <Header />
 
-      {/* 진행 바 */}
-      <div className="w-full h-1 bg-orange-100">
-        <div
-          className="h-1 bg-orange-500 transition-all duration-500"
-          style={{ width: `${(step / 3) * 100}%` }}
-        />
-      </div>
+      <Progress
+        value={(step / 3) * 100}
+        className="h-1 rounded-none bg-orange-100 [&>div]:bg-orange-500 [&>div]:transition-all [&>div]:duration-500"
+      />
 
       <main className="flex-1 bg-[#fff8f3] min-h-screen pb-28">
         <div className="max-w-205 mx-auto px-6 pt-10">
