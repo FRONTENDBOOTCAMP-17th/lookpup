@@ -14,6 +14,7 @@ import {
 import { useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
 import { Switch } from "@/components/ui/switch";
+import { CustomModal } from "@/components/common/CustomModal";
 
 type Tab = "profile" | "security" | "notifications";
 
@@ -55,6 +56,7 @@ export default function SettingsPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("notifications");
   const [notifications, setNotifications] = useState(NOTIFICATION_ITEMS);
+  const [showSaveModal, setShowSaveModal] = useState(false);
 
   const toggleNotification = (index: number) => {
     setNotifications((prev) =>
@@ -187,7 +189,11 @@ export default function SettingsPage() {
                     <button className="flex-1 h-12 px-6 bg-white rounded-[10px] border border-[#E8742A] text-[#E8742A] text-base font-semibold">
                       취소
                     </button>
-                    <button className="flex-1 h-12 px-6 bg-[#E8742A] rounded-[10px] text-white text-base font-semibold">
+                    {/* 저장하기 기능 모달 */}
+                    <button
+                      onClick={() => setShowSaveModal(true)}
+                      className="flex-1 h-12 px-6 bg-[#E8742A] rounded-[10px] text-white text-base font-semibold"
+                    >
                       저장하기
                     </button>
                   </div>
@@ -273,6 +279,17 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+
+      {/* 저장하기 기능 모달 */}
+      <CustomModal
+        open={showSaveModal}
+        preset="saveConfirm"
+        onClose={() => setShowSaveModal(false)}
+        onConfirm={() => {
+          // TODO: 프로필 저장 API 연동
+          setShowSaveModal(false);
+        }}
+      />
     </div>
   );
 }
