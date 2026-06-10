@@ -333,7 +333,13 @@ export default function PetsitterPage() {
                   <h3 className="font-bold text-stone-900 mb-4">서비스 위치</h3>
                   <div className="h-100 rounded-xl overflow-hidden">
                     <KakaoMap
-                      markers={[{ lat: PETSITTER.lat, lng: PETSITTER.lng }]}
+                      markers={[
+                        {
+                          lat: PETSITTER.lat,
+                          lng: PETSITTER.lng,
+                          id: 0,
+                        },
+                      ]}
                       center={{ lat: PETSITTER.lat, lng: PETSITTER.lng }}
                       level={5}
                     />
