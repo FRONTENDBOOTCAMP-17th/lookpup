@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Calendar, MessageSquare, CheckCircle, FileText } from "lucide-react";
+import Avatar from "@/components/ui/Avatar";
 
 //알람 임시 더미데이터
 const NOTIFICATIONS = [
@@ -172,11 +173,8 @@ export default function Header() {
             )}
           </div>
 
-          <Link
-            href="/myprofile"
-            className="w-10 h-10 bg-orange-50 rounded-full border border-orange-100 flex items-center justify-center hover:border-orange-300 transition-colors"
-          >
-            <span className="text-orange-500 text-base font-semibold">김</span>
+          <Link href="/myprofile">
+            <Avatar initial="김" size="md" variant="orange" className="hover:border-orange-300 transition-colors" />
           </Link>
 
           <Link

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import {
-  Camera,
   Mail,
   Phone,
   MapPin,
@@ -13,6 +12,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
+import { AvatarWithCamera } from "@/components/ui/Avatar";
 import { Switch } from "@/components/ui/switch";
 import { CustomModal } from "@/components/common/CustomModal";
 
@@ -106,16 +106,10 @@ export default function SettingsPage() {
           {/* 사이드바 */}
           <aside className="bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-[#FFE9D6] p-5 w-full lg:w-72 lg:shrink-0">
             <div className="flex flex-col items-center">
-              <div className="relative mb-4">
-                <div className="size-24 bg-[#FFF0E8] rounded-full border-2 border-[#FFE9D6] flex justify-center items-center">
-                  <span className="text-[#E8742A] text-xl font-semibold">
-                    김
-                  </span>
-                </div>
-                <div className="absolute bottom-0 right-0 size-8 bg-[#E8742A] rounded-full flex justify-center items-center">
-                  <Camera className="size-4 text-white" />
-                </div>
-              </div>
+              <AvatarWithCamera
+                initial="김"
+                className="mb-4"
+              />
               <p className="text-[#281A0E] text-xl font-bold">김민수</p>
               <p className="mt-1 mb-3 text-[#6B7280] text-sm">
                 kimminsu@example.com

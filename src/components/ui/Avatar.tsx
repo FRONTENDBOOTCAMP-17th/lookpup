@@ -1,7 +1,10 @@
+import { Camera } from "lucide-react";
+import type { ReactNode } from "react";
+
 interface AvatarProps {
   initial: string;
-  size?: "sm" | "md" | "lg" | "xl";
-  variant?: "default" | "dark" | "orange";
+  size?: "sm" | "md" | "lg" | "xl" | "2xl";
+  variant?: "default" | "dark" | "orange" | "blue";
   className?: string;
 }
 
@@ -10,12 +13,14 @@ const SIZE: Record<NonNullable<AvatarProps["size"]>, string> = {
   md: "w-10 h-10 text-base",
   lg: "w-14 h-14 text-xl",
   xl: "w-16 h-16 text-2xl",
+  "2xl": "w-24 h-24 text-xl",
 };
 
 const VARIANT: Record<NonNullable<AvatarProps["variant"]>, { container: string; text: string }> = {
-  default: { container: "bg-[#FFF0E8] border border-[#FFE9D6]", text: "text-[#E8742A]" },
+  default: { container: "bg-[#FFF0E8] border-2 border-[#FFE9D6]", text: "text-[#E8742A]" },
   dark: { container: "bg-orange-100", text: "text-[#E8742A]" },
   orange: { container: "bg-orange-50 border border-orange-100", text: "text-orange-500" },
+  blue: { container: "bg-[#aed6f1]", text: "text-white" },
 };
 
 interface AvatarMobileProps {
@@ -29,6 +34,54 @@ export function AvatarMobile({ initial, className = "" }: AvatarMobileProps) {
       className={`w-16 h-16 bg-white/30 rounded-full border-2 border-white flex items-center justify-center shrink-0 ${className}`}
     >
       <span className="text-white text-2xl font-semibold">{initial}</span>
+    </div>
+  );
+}
+
+interface AvatarWithCameraProps {
+  initial: string;
+  variant?: AvatarProps["variant"];
+  onCameraClick?: () => void;
+  className?: string;
+}
+
+export function AvatarWithCamera({
+  initial,
+  variant = "default",
+  onCameraClick,
+  className = "",
+}: AvatarWithCameraProps) {
+  return (
+    <div className={`relative ${className}`}>
+      <Avatar initial={initial} size="2xl" variant={variant} />
+      <button
+        type="button"
+        onClick={onCameraClick}
+        className="absolute bottom-0 right-0 size-8 bg-[#E8742A] rounded-full flex justify-center items-center"
+      >
+        <Camera className="size-4 text-white" />
+      </button>
+    </div>
+  );
+}
+
+interface AvatarReportProps {
+  initial: string;
+  badge: ReactNode;
+  className?: string;
+}
+
+export function AvatarReport({
+  initial,
+  badge,
+  className = "",
+}: AvatarReportProps) {
+  return (
+    <div className={`relative shrink-0 ${className}`}>
+      <Avatar initial={initial} size="lg" variant="blue" />
+      <div className="absolute bottom-0 right-0 w-5 h-5 rounded-full bg-[#e8742a] flex items-center justify-center">
+        {badge}
+      </div>
     </div>
   );
 }
