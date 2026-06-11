@@ -45,9 +45,10 @@ export async function GET(request: NextRequest) {
   let query = db
     .from("requests")
     .select(
-      `id, owner_id, pet_id, title, content, request_type,
+      `id, owner_id, title, content, request_type,
        start_datetime, end_datetime, budget, location, status, created_at,
-       users!inner(full_name)`,
+       users!inner(full_name),
+       request_pets(pet_id)`,
     )
     .order("created_at", { ascending: false })
     .limit(limit + 1);
@@ -71,8 +72,15 @@ export async function GET(request: NextRequest) {
   const nextCursor = hasMore ? items[items.length - 1].id : null;
 
   const requests = items.map((item) => {
-    const { users, ...rest } = item as typeof item & { users: { full_name: string } };
-    return { ...rest, owner_full_name: users.full_name };
+    const { users, request_pets, ...rest } = item as typeof item & {
+      users: { full_name: string };
+      request_pets: { pet_id: string }[];
+    };
+    return {
+      ...rest,
+      owner_full_name: users.full_name,
+      pet_ids: (request_pets ?? []).map((rp) => rp.pet_id),
+    };
   });
 
   return NextResponse.json({ data: { requests, next_cursor: nextCursor } });

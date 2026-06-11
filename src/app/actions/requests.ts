@@ -4,7 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { createServiceClient } from "@/utils/supabase/service";
 
 interface RequestInput {
-  pet_id: string;
+  pet_ids: string[];
   title: string;
   content?: string | null;
   request_type: "walk" | "care" | "hotel" | "pickup";
@@ -30,6 +30,10 @@ export async function createRequest(input: RequestInput) {
     return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
   }
 
+  if (!input.pet_ids || input.pet_ids.length === 0) {
+    return { error: { code: "VALIDATION_ERROR", message: "반려동물을 선택해주세요." } };
+  }
+
   const now = new Date();
   if (new Date(input.start_datetime) <= now) {
     return { error: { code: "VALIDATION_ERROR", message: "시작일은 오늘 이후여야 합니다." } };
@@ -43,9 +47,11 @@ export async function createRequest(input: RequestInput) {
 
   const db = createServiceClient();
 
+  const { pet_ids, ...requestFields } = input;
+
   const { data, error } = await db
     .from("requests")
-    .insert({ ...input, owner_id: user.id, status: "open" })
+    .insert({ ...requestFields, owner_id: user.id, status: "open" })
     .select()
     .single();
 
@@ -53,12 +59,21 @@ export async function createRequest(input: RequestInput) {
     return { error: { code: "INTERNAL_ERROR", message: error.message } };
   }
 
+  const { error: petsError } = await db
+    .from("request_pets")
+    .insert(pet_ids.map((pet_id) => ({ request_id: data.id, pet_id })));
+
+  if (petsError) {
+    await db.from("requests").delete().eq("id", data.id);
+    return { error: { code: "INTERNAL_ERROR", message: petsError.message } };
+  }
+
   return { data };
 }
 
 export async function updateRequest(
   id: string,
-  input: Partial<Omit<RequestInput, "pet_id">> & { status?: string },
+  input: Partial<Omit<RequestInput, "pet_ids">> & { status?: string; pet_ids?: string[] },
 ) {
   const user = await getAuthUser();
   if (!user) {
@@ -85,15 +100,27 @@ export async function updateRequest(
     return { error: { code: "FORBIDDEN", message: "매칭 이후에는 수정할 수 없습니다." } };
   }
 
+  const { pet_ids, ...requestFields } = input;
+
   const { data, error } = await db
     .from("requests")
-    .update(input)
+    .update(requestFields)
     .eq("id", id)
     .select()
     .single();
 
   if (error) {
     return { error: { code: "INTERNAL_ERROR", message: error.message } };
+  }
+
+  if (pet_ids) {
+    await db.from("request_pets").delete().eq("request_id", id);
+    const { error: petsError } = await db
+      .from("request_pets")
+      .insert(pet_ids.map((pet_id) => ({ request_id: id, pet_id })));
+    if (petsError) {
+      return { error: { code: "INTERNAL_ERROR", message: petsError.message } };
+    }
   }
 
   return { data };

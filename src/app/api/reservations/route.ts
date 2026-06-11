@@ -56,10 +56,10 @@ export async function GET(request: NextRequest) {
   let query = db
     .from("reservations")
     .select(
-      `id, owner_id, sitter_id, service_id, request_id,
+      `id, owner_id, sitter_id, service_id, request_id, application_id,
        start_datetime, end_datetime, total_price, status, memo,
        accepted_at, paid_at, completed_at, canceled_at,
-       pets(id, name, animal_type, breed, image_url)`,
+       reservation_items(pets(id, name, animal_type, breed, image_url))`,
     )
     .order("created_at", { ascending: false })
     .limit(limit + 1);
@@ -90,12 +90,12 @@ export async function GET(request: NextRequest) {
   const nextCursor = hasMore ? items[items.length - 1].id : null;
 
   const reservations = items.map((item) => {
-    const { pets, ...rest } = item as typeof item & {
-      pets: object | null;
+    const { reservation_items, ...rest } = item as typeof item & {
+      reservation_items: { pets: object }[] | null;
     };
     return {
       ...rest,
-      pets: pets ? [pets] : [],
+      pets: (reservation_items ?? []).map((ri) => ri.pets),
     };
   });
 

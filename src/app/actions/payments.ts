@@ -34,7 +34,9 @@ export async function createPayment(
     .single();
 
   if (!reservation) {
-    return { error: { code: "NOT_FOUND", message: "예약을 찾을 수 없습니다." } };
+    return {
+      error: { code: "NOT_FOUND", message: "예약을 찾을 수 없습니다." },
+    };
   }
 
   if (reservation.owner_id !== user.id) {
@@ -42,7 +44,12 @@ export async function createPayment(
   }
 
   if (reservation.status !== "accepted") {
-    return { error: { code: "FORBIDDEN", message: "수락된 예약만 결제할 수 있습니다." } };
+    return {
+      error: {
+        code: "FORBIDDEN",
+        message: "수락된 예약만 결제할 수 있습니다.",
+      },
+    };
   }
 
   // 이미 결제된 내역 확인
@@ -79,7 +86,9 @@ export async function createPayment(
     return { error: { code: "INTERNAL_ERROR", message: error.message } };
   }
 
-  const sitter = reservation.sitters as { users: { full_name: string } };
+  const sitter = reservation.sitters as unknown as {
+    users: { full_name: string };
+  };
   const orderName = `${sitter.users.full_name} 펫시팅 서비스`;
 
   return { data: { payment_id: paymentId, amount, order_name: orderName } };
@@ -103,10 +112,12 @@ export async function cancelPayment(paymentId: string, reason: string) {
     .single();
 
   if (!payment) {
-    return { error: { code: "NOT_FOUND", message: "결제 정보를 찾을 수 없습니다." } };
+    return {
+      error: { code: "NOT_FOUND", message: "결제 정보를 찾을 수 없습니다." },
+    };
   }
 
-  const reservation = payment.reservations as {
+  const reservation = payment.reservations as unknown as {
     id: string;
     owner_id: string;
     start_datetime: string;
@@ -118,12 +129,22 @@ export async function cancelPayment(paymentId: string, reason: string) {
   }
 
   if (payment.status !== "paid") {
-    return { error: { code: "FORBIDDEN", message: "결제 완료 상태만 취소할 수 있습니다." } };
+    return {
+      error: {
+        code: "FORBIDDEN",
+        message: "결제 완료 상태만 취소할 수 있습니다.",
+      },
+    };
   }
 
   // 서비스 시작 전인지 확인
   if (new Date(reservation.start_datetime) <= new Date()) {
-    return { error: { code: "FORBIDDEN", message: "서비스 시작 후에는 취소할 수 없습니다." } };
+    return {
+      error: {
+        code: "FORBIDDEN",
+        message: "서비스 시작 후에는 취소할 수 없습니다.",
+      },
+    };
   }
 
   // PortOne V2 전액 취소 요청
@@ -145,7 +166,9 @@ export async function cancelPayment(paymentId: string, reason: string) {
     return {
       error: {
         code: "INTERNAL_ERROR",
-        message: (errorBody as { message?: string }).message ?? "결제 취소 요청에 실패했습니다.",
+        message:
+          (errorBody as { message?: string }).message ??
+          "결제 취소 요청에 실패했습니다.",
       },
     };
   }
