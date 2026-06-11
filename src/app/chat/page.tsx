@@ -21,6 +21,7 @@ import {
   ChatWindowHeader,
   MessageBubble,
   ChatInput,
+  ApplicantProfilePopup,
   type ChatRoom,
   type Applicant,
   type Message,
@@ -74,6 +75,12 @@ const Chat_Applicants: Applicant[] = [
     rating: 4.8,
     preview: "잘 부탁드립니다! 강아지 산책...",
     unread: 2,
+    location: "서울 마포구",
+    reviewCount: 47,
+    services: ["방문돌봄", "위탁돌봄", "산책"],
+    experience: "5년",
+    completedJobs: "230건",
+    responseRate: "98%",
   },
   {
     id: 1,
@@ -82,6 +89,12 @@ const Chat_Applicants: Applicant[] = [
     rating: 4.5,
     preview: "언제든지 연락 주세요~",
     unread: 0,
+    location: "서울 강남구",
+    reviewCount: 23,
+    services: ["방문돌봄", "산책"],
+    experience: "3년",
+    completedJobs: "95건",
+    responseRate: "95%",
   },
   {
     id: 2,
@@ -90,6 +103,12 @@ const Chat_Applicants: Applicant[] = [
     rating: 4.9,
     preview: "경력 5년입니다 :)",
     unread: 0,
+    location: "서울 송파구",
+    reviewCount: 61,
+    services: ["방문돌봄", "위탁돌봄"],
+    experience: "7년",
+    completedJobs: "310건",
+    responseRate: "99%",
   },
   {
     id: 3,
@@ -98,6 +117,12 @@ const Chat_Applicants: Applicant[] = [
     rating: 4.7,
     preview: "자격증 보유하고 있어요",
     unread: 1,
+    location: "서울 관악구",
+    reviewCount: 38,
+    services: ["산책", "위탁돌봄"],
+    experience: "4년",
+    completedJobs: "150건",
+    responseRate: "96%",
   },
 ];
 
@@ -207,6 +232,12 @@ export default function ChatPage() {
 
   const [mobileChatView, setMobileChatView] = useState<"list" | "room">("list");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [profilePopupApplicant, setProfilePopupApplicant] = useState<Applicant | null>(null);
+
+  function openApplicantProfile(id: number) {
+    const found = applicants.find((a) => a.id === id) ?? null;
+    setProfilePopupApplicant(found);
+  }
 
   const selectedRoom =
     selectedRoomId !== null
@@ -405,6 +436,7 @@ export default function ChatPage() {
                         setSelectedApplicantId(id);
                         setMobileChatView("room");
                       }}
+                      onAvatarClick={openApplicantProfile}
                     />
                   ))}
                 </>
@@ -664,6 +696,7 @@ export default function ChatPage() {
                   onReject={rejectApplicant}
                   onConfirm={confirmApplicant}
                   onSelect={setSelectedApplicantId}
+                  onAvatarClick={openApplicantProfile}
                 />
               ))}
             </div>
@@ -757,6 +790,13 @@ export default function ChatPage() {
           )}
         </div>
       </div>
+
+      {profilePopupApplicant && (
+        <ApplicantProfilePopup
+          applicant={profilePopupApplicant}
+          onClose={() => setProfilePopupApplicant(null)}
+        />
+      )}
     </>
   );
 }
