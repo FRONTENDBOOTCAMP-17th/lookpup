@@ -15,16 +15,20 @@ import {
 import Link from "next/link";
 import Header from "@/components/layout/Header";
 import Avatar from "@/components/ui/Avatar";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   ChatRoomItem,
   ApplicantCard,
   ChatWindowHeader,
   MessageBubble,
   ChatInput,
+  ChatPlusPanel,
+  ApplicantProfilePopup,
   type ChatRoom,
   type Applicant,
   type Message,
 } from "./chat_components";
+import { CustomModalPayment } from "@/components/common/CustomModalPayment";
 
 // 더미데이터
 const Chat_One_On_One: ChatRoom[] = [
@@ -74,6 +78,12 @@ const Chat_Applicants: Applicant[] = [
     rating: 4.8,
     preview: "잘 부탁드립니다! 강아지 산책...",
     unread: 2,
+    location: "서울 마포구",
+    reviewCount: 47,
+    services: ["방문돌봄", "위탁돌봄", "산책"],
+    experience: "5년",
+    completedJobs: "230건",
+    responseRate: "98%",
   },
   {
     id: 1,
@@ -82,6 +92,12 @@ const Chat_Applicants: Applicant[] = [
     rating: 4.5,
     preview: "언제든지 연락 주세요~",
     unread: 0,
+    location: "서울 강남구",
+    reviewCount: 23,
+    services: ["방문돌봄", "산책"],
+    experience: "3년",
+    completedJobs: "95건",
+    responseRate: "95%",
   },
   {
     id: 2,
@@ -90,6 +106,12 @@ const Chat_Applicants: Applicant[] = [
     rating: 4.9,
     preview: "경력 5년입니다 :)",
     unread: 0,
+    location: "서울 송파구",
+    reviewCount: 61,
+    services: ["방문돌봄", "위탁돌봄"],
+    experience: "7년",
+    completedJobs: "310건",
+    responseRate: "99%",
   },
   {
     id: 3,
@@ -98,6 +120,12 @@ const Chat_Applicants: Applicant[] = [
     rating: 4.7,
     preview: "자격증 보유하고 있어요",
     unread: 1,
+    location: "서울 관악구",
+    reviewCount: 38,
+    services: ["산책", "위탁돌봄"],
+    experience: "4년",
+    completedJobs: "150건",
+    responseRate: "96%",
   },
 ];
 
@@ -207,6 +235,15 @@ export default function ChatPage() {
 
   const [mobileChatView, setMobileChatView] = useState<"list" | "room">("list");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [profilePopupApplicant, setProfilePopupApplicant] =
+    useState<Applicant | null>(null);
+  const [plusMenuOpen, setPlusMenuOpen] = useState(false);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+
+  function openApplicantProfile(id: number) {
+    const found = applicants.find((a) => a.id === id) ?? null;
+    setProfilePopupApplicant(found);
+  }
 
   const selectedRoom =
     selectedRoomId !== null
@@ -405,6 +442,7 @@ export default function ChatPage() {
                         setSelectedApplicantId(id);
                         setMobileChatView("room");
                       }}
+                      onAvatarClick={openApplicantProfile}
                     />
                   ))}
                 </>
@@ -481,9 +519,15 @@ export default function ChatPage() {
                       </button>
                       <button
                         onClick={() => {
-                          if (activeTab === "one_on_one" && selectedRoomId !== null)
+                          if (
+                            activeTab === "one_on_one" &&
+                            selectedRoomId !== null
+                          )
                             deleteRoom(selectedRoomId);
-                          else if (activeTab === "applicants" && selectedApplicantId !== null)
+                          else if (
+                            activeTab === "applicants" &&
+                            selectedApplicantId !== null
+                          )
                             deleteApplicant(selectedApplicantId);
                           setMobileChatView("list");
                           setMobileMenuOpen(false);
@@ -508,42 +552,49 @@ export default function ChatPage() {
             </div>
 
             {/* 메시지 영역 */}
-            <div className="flex-1 px-4 py-4 overflow-y-auto flex flex-col gap-4">
-              {(activeTab === "one_on_one"
-                ? Messages_one_on_one
-                : selectedApplicantId !== null
-                  ? (Messages_Applicants[selectedApplicantId] ?? [])
-                  : []
-              ).map((msg) => (
-                <MessageBubble
-                  key={msg.id}
-                  msg={msg}
-                  senderInitial={mobileRoomInitial}
-                />
-              ))}
+            <ScrollArea className="flex-1">
+              <div
+                className="px-4 py-4 flex flex-col gap-4"
+                onClick={() => {
+                  if (plusMenuOpen) setPlusMenuOpen(false);
+                }}
+              >
+                {(activeTab === "one_on_one"
+                  ? Messages_one_on_one
+                  : selectedApplicantId !== null
+                    ? (Messages_Applicants[selectedApplicantId] ?? [])
+                    : []
+                ).map((msg) => (
+                  <MessageBubble
+                    key={msg.id}
+                    msg={msg}
+                    senderInitial={mobileRoomInitial}
+                  />
+                ))}
 
-              {activeTab === "applicants" &&
-                selectedApplicantId !== null &&
-                sysMessages[selectedApplicantId] && (
-                  <div className="flex justify-center">
-                    <span className="px-4 py-1 bg-white rounded-full text-gray-400 text-xs">
-                      {sysMessages[selectedApplicantId]}
-                    </span>
-                  </div>
-                )}
-            </div>
+                {activeTab === "applicants" &&
+                  selectedApplicantId !== null &&
+                  sysMessages[selectedApplicantId] && (
+                    <div className="flex justify-center">
+                      <span className="px-4 py-1 bg-white rounded-full text-gray-400 text-xs">
+                        {sysMessages[selectedApplicantId]}
+                      </span>
+                    </div>
+                  )}
+              </div>
+            </ScrollArea>
 
             {/* 지원자 거절/확정 버튼 */}
             {showApplicantActions && (
               <div className="px-4 py-2.5 bg-white border-t border-orange-100 flex gap-2 shrink-0">
                 <button
-                  onClick={() => rejectApplicant(selectedApplicantId)}
+                  onClick={() => rejectApplicant(selectedApplicantId!)}
                   className="flex-1 py-2 text-sm text-gray-500 border border-stone-200 rounded-xl hover:bg-stone-50 transition-colors"
                 >
                   거절
                 </button>
                 <button
-                  onClick={() => confirmApplicant(selectedApplicantId)}
+                  onClick={() => confirmApplicant(selectedApplicantId!)}
                   className="flex-1 py-2 text-sm text-white bg-orange-500 rounded-xl hover:bg-orange-600 transition-colors font-medium"
                 >
                   선택 확정
@@ -551,10 +602,33 @@ export default function ChatPage() {
               </div>
             )}
 
+            {/* + 버튼 패널 */}
+            {plusMenuOpen && (
+              <ChatPlusPanel
+                onPaymentRequest={
+                  activeTab === "one_on_one"
+                    ? () => { setPlusMenuOpen(false); setPaymentModalOpen(true); }
+                    : undefined
+                }
+                onSendCareRecord={
+                  activeTab === "one_on_one"
+                    ? () => setPlusMenuOpen(false)
+                    : undefined
+                }
+                onSendPhoto={() => setPlusMenuOpen(false)}
+              />
+            )}
+
             {/* 입력창 */}
             <div className="px-4 py-3 bg-white border-t border-orange-100 flex items-center gap-2.5 shrink-0">
-              <button className="w-11 h-11 rounded-xl flex items-center justify-center hover:bg-orange-50 transition-colors shrink-0">
-                <Plus size={22} className="text-gray-500" />
+              <button
+                onClick={() => setPlusMenuOpen((v) => !v)}
+                className="w-11 h-11 rounded-xl flex items-center justify-center hover:bg-orange-50 transition-colors shrink-0"
+              >
+                <Plus
+                  size={22}
+                  className={`text-gray-500 transition-transform duration-200 ${plusMenuOpen ? "rotate-45" : ""}`}
+                />
               </button>
               <input
                 type="text"
@@ -664,6 +738,7 @@ export default function ChatPage() {
                   onReject={rejectApplicant}
                   onConfirm={confirmApplicant}
                   onSelect={setSelectedApplicantId}
+                  onAvatarClick={openApplicantProfile}
                 />
               ))}
             </div>
@@ -716,47 +791,87 @@ export default function ChatPage() {
                 onLeaveChat={() => {
                   if (activeTab === "one_on_one" && selectedRoomId !== null)
                     deleteRoom(selectedRoomId);
-                  else if (activeTab === "applicants" && selectedApplicantId !== null)
+                  else if (
+                    activeTab === "applicants" &&
+                    selectedApplicantId !== null
+                  )
                     deleteApplicant(selectedApplicantId);
                 }}
                 onReport={() => router.push("/myprofile/report")}
               />
 
-              <div className="flex-1 px-8 py-6 overflow-y-auto flex flex-col gap-6">
-                {(activeTab === "one_on_one"
-                  ? Messages_one_on_one
-                  : (Messages_Applicants[selectedApplicantId!] ?? [])
-                ).map((msg) => (
-                  <MessageBubble
-                    key={msg.id}
-                    msg={msg}
-                    senderInitial={
-                      activeTab === "one_on_one"
-                        ? (selectedRoom?.initial ?? "")
-                        : (selectedApplicant?.initial ?? "")
-                    }
-                  />
-                ))}
+              <ScrollArea className="flex-1">
+                <div
+                  className="px-8 py-6 flex flex-col gap-6"
+                  onClick={() => {
+                    if (plusMenuOpen) setPlusMenuOpen(false);
+                  }}
+                >
+                  {(activeTab === "one_on_one"
+                    ? Messages_one_on_one
+                    : (Messages_Applicants[selectedApplicantId!] ?? [])
+                  ).map((msg) => (
+                    <MessageBubble
+                      key={msg.id}
+                      msg={msg}
+                      senderInitial={
+                        activeTab === "one_on_one"
+                          ? (selectedRoom?.initial ?? "")
+                          : (selectedApplicant?.initial ?? "")
+                      }
+                    />
+                  ))}
 
-                {activeTab === "applicants" &&
-                  sysMessages[selectedApplicantId!] && (
-                    <div className="flex justify-center">
-                      <span className="px-4 py-1 bg-white rounded-full text-gray-400 text-xs">
-                        {sysMessages[selectedApplicantId!]}
-                      </span>
-                    </div>
-                  )}
-              </div>
+                  {activeTab === "applicants" &&
+                    sysMessages[selectedApplicantId!] && (
+                      <div className="flex justify-center">
+                        <span className="px-4 py-1 bg-white rounded-full text-gray-400 text-xs">
+                          {sysMessages[selectedApplicantId!]}
+                        </span>
+                      </div>
+                    )}
+                </div>
+              </ScrollArea>
 
+              {plusMenuOpen && (
+                <ChatPlusPanel
+                  onPaymentRequest={
+                    activeTab === "one_on_one"
+                      ? () => { setPlusMenuOpen(false); setPaymentModalOpen(true); }
+                      : undefined
+                  }
+                  onSendCareRecord={
+                    activeTab === "one_on_one"
+                      ? () => setPlusMenuOpen(false)
+                      : undefined
+                  }
+                  onSendPhoto={() => setPlusMenuOpen(false)}
+                />
+              )}
               <ChatInput
                 input={input}
                 onChange={setInput}
                 showPlusButton={true}
+                plusOpen={plusMenuOpen}
+                onPlusToggle={() => setPlusMenuOpen((v) => !v)}
               />
             </>
           )}
         </div>
       </div>
+
+      {profilePopupApplicant && (
+        <ApplicantProfilePopup
+          applicant={profilePopupApplicant}
+          onClose={() => setProfilePopupApplicant(null)}
+        />
+      )}
+
+      <CustomModalPayment
+        open={paymentModalOpen}
+        onClose={() => setPaymentModalOpen(false)}
+      />
+
     </>
   );
 }
