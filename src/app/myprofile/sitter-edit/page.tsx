@@ -583,7 +583,7 @@ export default function SitterEditPage() {
 
       {/* 하단 고정 액션 바 */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-orange-100 z-20">
-        <div className="max-w-[1152px] mx-auto px-8 py-4 flex items-center gap-3">
+        <div className="max-w-[1152px] mx-auto px-8 py-4 flex items-center justify-center gap-3">
           <button
             type="button"
             onClick={() => router.back()}
