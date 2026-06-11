@@ -1,8 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { Search } from "lucide-react";
+import {
+  Search,
+  ChevronLeft,
+  MoreVertical,
+  Send,
+  Plus,
+  Home,
+  MessageSquare,
+  User,
+} from "lucide-react";
+import Link from "next/link";
 import Header from "@/components/layout/Header";
+import Avatar from "@/components/ui/Avatar";
 import {
   ChatRoomItem,
   ApplicantCard,
@@ -14,8 +25,7 @@ import {
   type Message,
 } from "./chat_components";
 
-// 컴포넌트 관련 : 본 페이지가 너무 길어서 분리할 수 있는 건 일단 분리해뒀어요
-// 더미더미더미
+// 더미데이터
 const Chat_One_On_One: ChatRoom[] = [
   {
     id: 1,
@@ -60,7 +70,6 @@ const Chat_Applicants: Applicant[] = [
     id: 0,
     name: "김시터",
     initial: "김",
-    price: 35000,
     rating: 4.8,
     preview: "잘 부탁드립니다! 강아지 산책...",
     unread: 2,
@@ -69,7 +78,6 @@ const Chat_Applicants: Applicant[] = [
     id: 1,
     name: "이시터",
     initial: "이",
-    price: 30000,
     rating: 4.5,
     preview: "언제든지 연락 주세요~",
     unread: 0,
@@ -78,7 +86,6 @@ const Chat_Applicants: Applicant[] = [
     id: 2,
     name: "박시터",
     initial: "박",
-    price: 40000,
     rating: 4.9,
     preview: "경력 5년입니다 :)",
     unread: 0,
@@ -87,7 +94,6 @@ const Chat_Applicants: Applicant[] = [
     id: 3,
     name: "최시터",
     initial: "최",
-    price: 32000,
     rating: 4.7,
     preview: "자격증 보유하고 있어요",
     unread: 1,
@@ -113,7 +119,7 @@ const Messages_one_on_one: Message[] = [
     text: "좋습니다! 오전 10시쯤 가능하신가요?",
     time: "오후 2:20",
   },
-  { id: 4, from: "divider", text: "2024년 6월 14일" }, // 날짜 구분선
+  { id: 4, from: "divider", text: "2024년 6월 14일" },
   { id: 5, from: "me", text: "네, 그 시간에 가능합니다!", time: "오후 2:30" },
   {
     id: 6,
@@ -171,7 +177,13 @@ const Messages_Applicants: Record<number, Message[]> = {
   ],
 };
 
-// 컴포넌트
+const BOTTOM_NAV = [
+  { href: "/", icon: Home, label: "홈" },
+  { href: "/petsitters", icon: Search, label: "탐색" },
+  { href: "/chat", icon: MessageSquare, label: "채팅" },
+  { href: "/myprofile", icon: User, label: "프로필" },
+] as const;
+
 export default function ChatPage() {
   const [editMode, setEditMode] = useState(false);
   const [rooms, setRooms] = useState(Chat_One_On_One);
@@ -188,6 +200,10 @@ export default function ChatPage() {
   const [rejectedIds, setRejectedIds] = useState<Set<number>>(new Set());
   const [confirmedId, setConfirmedId] = useState<number | null>(null);
   const [sysMessages, setSysMessages] = useState<Record<number, string>>({});
+
+  const [mobileChatView, setMobileChatView] = useState<"list" | "room">(
+    "list",
+  );
 
   const selectedRoom = rooms.find((r) => r.id === selectedRoomId) ?? rooms[0];
   const selectedApplicant = applicants.find(
@@ -263,17 +279,245 @@ export default function ChatPage() {
     return "구인글 채팅 · 지원자";
   }
 
+  const mobileRoomName =
+    activeTab === "one_on_one"
+      ? (selectedRoom?.name ?? "")
+      : (selectedApplicant?.name ?? "");
+  const mobileRoomInitial =
+    activeTab === "one_on_one"
+      ? (selectedRoom?.initial ?? "")
+      : (selectedApplicant?.initial ?? "");
+  const headerBadge = getHeaderBadge();
+
+  const showApplicantActions =
+    activeTab === "applicants" &&
+    !rejectedIds.has(selectedApplicantId) &&
+    confirmedId !== selectedApplicantId &&
+    confirmedId === null;
+
   return (
     <>
       <Header />
-      <div className="flex h-[calc(100vh-64px)] bg-orange-50 overflow-hidden">
+
+      {/* ── 모바일 레이아웃 (md 미만) ── */}
+      <div
+        className="md:hidden flex flex-col overflow-hidden"
+        style={{ height: "calc(100dvh - 64px)" }}
+      >
+        {mobileChatView === "list" ? (
+          /* 채팅 목록 뷰 */
+          <div className="flex flex-col h-full">
+            {/* 헤더 */}
+            <div className="px-5 pt-5 bg-white border-b border-orange-100 shrink-0">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold text-stone-900">채팅</h2>
+                <button
+                  onClick={() => setEditMode((v) => !v)}
+                  className={`text-sm font-medium transition-colors ${editMode ? "text-stone-900" : "text-orange-500"}`}
+                >
+                  {editMode ? "완료" : "편집"}
+                </button>
+              </div>
+              {/* 탭 */}
+              <div className="flex">
+                {(["one_on_one", "applicants"] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => {
+                      setActiveTab(tab);
+                      setEditMode(false);
+                    }}
+                    className={`flex-1 py-2 text-sm font-medium border-b-2 transition-colors ${
+                      activeTab === tab
+                        ? "border-orange-500 text-orange-500"
+                        : "border-transparent text-gray-400"
+                    }`}
+                  >
+                    {tab === "one_on_one" ? "1:1 채팅" : "지원 목록"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 검색창 */}
+            <div className="px-5 py-3 bg-white border-b border-orange-100 shrink-0">
+              <div className="flex items-center gap-2 px-4 py-2.5 bg-orange-50 rounded-xl">
+                <Search size={16} className="text-gray-400 shrink-0" />
+                <input
+                  type="text"
+                  placeholder="채팅방 검색"
+                  className="flex-1 bg-transparent text-sm text-stone-900 placeholder-stone-900/50 outline-none"
+                />
+              </div>
+            </div>
+
+            {/* 목록 */}
+            <div className="flex-1 overflow-y-auto pb-[60px]">
+              {activeTab === "one_on_one" &&
+                rooms.map((room) => (
+                  <ChatRoomItem
+                    key={room.id}
+                    room={room}
+                    isSelected={false}
+                    editMode={editMode}
+                    onDelete={deleteRoom}
+                    onClick={(id) => {
+                      setSelectedRoomId(id);
+                      setMobileChatView("room");
+                    }}
+                  />
+                ))}
+
+              {activeTab === "applicants" && (
+                <>
+                  {applicants.length > 0 && (
+                    <div className="px-5 py-3 bg-orange-50 border-b border-orange-100">
+                      <p className="text-sm font-medium text-stone-900">
+                        산책 도우미 구해요
+                      </p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        지원자 {applicants.length}명 · 모집중
+                      </p>
+                    </div>
+                  )}
+                  {applicants.map((applicant) => (
+                    <ApplicantCard
+                      key={applicant.id}
+                      applicant={applicant}
+                      badge={getApplicantBadge(applicant.id)}
+                      isRejected={rejectedIds.has(applicant.id)}
+                      isConfirmed={confirmedId === applicant.id}
+                      isSelected={false}
+                      confirmedId={confirmedId}
+                      editMode={editMode}
+                      onDelete={deleteApplicant}
+                      onReject={rejectApplicant}
+                      onConfirm={confirmApplicant}
+                      onSelect={(id) => {
+                        setSelectedApplicantId(id);
+                        setMobileChatView("room");
+                      }}
+                    />
+                  ))}
+                </>
+              )}
+            </div>
+
+            {/* 하단 네비게이션 */}
+            <div className="fixed bottom-0 left-0 right-0 h-[60px] bg-white border-t border-orange-100 flex z-40">
+              {BOTTOM_NAV.map(({ href, icon: Icon, label }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors ${
+                    href === "/chat" ? "text-orange-500" : "text-gray-400"
+                  }`}
+                >
+                  <Icon size={22} />
+                  <span className="text-[10px] font-medium">{label}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        ) : (
+          /* 채팅방 뷰 */
+          <div className="flex flex-col h-full">
+            {/* 헤더 */}
+            <div className="h-14 px-4 bg-white border-b border-orange-100 flex items-center gap-3 shrink-0">
+              <button
+                onClick={() => setMobileChatView("list")}
+                className="p-1 -ml-1"
+              >
+                <ChevronLeft size={24} className="text-stone-900" />
+              </button>
+              <Avatar initial={mobileRoomInitial} size="sm" />
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm text-stone-900 truncate">
+                  {mobileRoomName}
+                </p>
+                <p className="text-xs text-gray-400 truncate">
+                  {getHeaderSub()}
+                </p>
+              </div>
+              <span
+                className={`text-xs px-2.5 py-1 rounded-full font-medium shrink-0 ${headerBadge.className}`}
+              >
+                {headerBadge.label}
+              </span>
+              <button className="p-1">
+                <MoreVertical size={20} className="text-gray-500" />
+              </button>
+            </div>
+
+            {/* 메시지 영역 */}
+            <div className="flex-1 px-4 py-4 overflow-y-auto flex flex-col gap-4">
+              {(activeTab === "one_on_one"
+                ? Messages_one_on_one
+                : (Messages_Applicants[selectedApplicantId] ?? [])
+              ).map((msg) => (
+                <MessageBubble
+                  key={msg.id}
+                  msg={msg}
+                  senderInitial={mobileRoomInitial}
+                />
+              ))}
+
+              {activeTab === "applicants" &&
+                sysMessages[selectedApplicantId] && (
+                  <div className="flex justify-center">
+                    <span className="px-4 py-1 bg-white rounded-full text-gray-400 text-xs">
+                      {sysMessages[selectedApplicantId]}
+                    </span>
+                  </div>
+                )}
+            </div>
+
+            {/* 지원자 거절/확정 버튼 */}
+            {showApplicantActions && (
+              <div className="px-4 py-2.5 bg-white border-t border-orange-100 flex gap-2 shrink-0">
+                <button
+                  onClick={() => rejectApplicant(selectedApplicantId)}
+                  className="flex-1 py-2 text-sm text-gray-500 border border-stone-200 rounded-xl hover:bg-stone-50 transition-colors"
+                >
+                  거절
+                </button>
+                <button
+                  onClick={() => confirmApplicant(selectedApplicantId)}
+                  className="flex-1 py-2 text-sm text-white bg-orange-500 rounded-xl hover:bg-orange-600 transition-colors font-medium"
+                >
+                  선택 확정
+                </button>
+              </div>
+            )}
+
+            {/* 입력창 */}
+            <div className="px-4 py-3 bg-white border-t border-orange-100 flex items-center gap-2.5 shrink-0">
+              <button className="w-11 h-11 rounded-xl flex items-center justify-center hover:bg-orange-50 transition-colors shrink-0">
+                <Plus size={22} className="text-gray-500" />
+              </button>
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="메시지를 입력하세요"
+                className="flex-1 h-11 px-4 bg-orange-50 rounded-2xl text-sm text-stone-900 placeholder-stone-900/50 outline-none"
+              />
+              <button className="w-11 h-11 bg-orange-500 rounded-xl flex items-center justify-center shrink-0">
+                <Send size={16} className="text-white" />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── 데스크톱 레이아웃 (md 이상) ── */}
+      <div className="hidden md:flex h-[calc(100vh-64px)] bg-orange-50 overflow-hidden">
         {/* 사이드바 */}
         <div className="w-96 bg-white border-r border-orange-100 flex flex-col shrink-0">
           {/* 헤더 */}
           <div className="px-6 pt-6 border-b border-orange-100">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-stone-900 text-2xl font-bold">채팅</h2>
-              {/* 편집 버튼 */}
               <button
                 onClick={() => setEditMode((v) => !v)}
                 className={`text-sm font-medium transition-colors ${editMode ? "text-stone-900" : "text-orange-500"}`}
@@ -315,14 +559,14 @@ export default function ChatPage() {
             </div>
           </div>
 
-          {/* 1:1 채팅*/}
+          {/* 1:1 채팅 목록 */}
           {activeTab === "one_on_one" && (
             <div className="flex-1 overflow-y-auto">
               {rooms.map((room) => (
                 <ChatRoomItem
                   key={room.id}
                   room={room}
-                  isSelected={selectedRoomId === room.id} // 선택된 방은 강조 표시
+                  isSelected={selectedRoomId === room.id}
                   editMode={editMode}
                   onDelete={deleteRoom}
                   onClick={setSelectedRoomId}
@@ -376,7 +620,6 @@ export default function ChatPage() {
             </div>
           ) : (
             <>
-              {/* 헤더 */}
               <ChatWindowHeader
                 initial={
                   activeTab === "one_on_one"
@@ -392,7 +635,6 @@ export default function ChatPage() {
                 badge={getHeaderBadge()}
               />
 
-              {/* 메시지창 */}
               <div className="flex-1 px-8 py-6 overflow-y-auto flex flex-col gap-6">
                 {(activeTab === "one_on_one"
                   ? Messages_one_on_one
@@ -409,7 +651,6 @@ export default function ChatPage() {
                   />
                 ))}
 
-                {/* 거절/선택 확정 시 안내 메시지 */}
                 {activeTab === "applicants" &&
                   sysMessages[selectedApplicantId] && (
                     <div className="flex justify-center">
@@ -420,11 +661,10 @@ export default function ChatPage() {
                   )}
               </div>
 
-              {/* 입력창 부분 */}
               <ChatInput
                 input={input}
                 onChange={setInput}
-                showPlusButton={activeTab === "one_on_one"}
+                showPlusButton={true}
               />
             </>
           )}

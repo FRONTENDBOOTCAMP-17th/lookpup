@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Star, Trash2, Send, Plus, MoreVertical } from "lucide-react";
 import Avatar from "@/components/ui/Avatar";
 
@@ -17,7 +18,6 @@ export type Applicant = {
   id: number;
   name: string;
   initial: string;
-  price: number;
   rating: number;
   preview: string;
   unread: number;
@@ -29,6 +29,8 @@ export type Message = {
   from: string;
   text: string;
   time?: string;
+  type?: "text" | "fee_request";
+  feeAmount?: number;
 };
 
 // 우측 상단 상태 배지
@@ -153,13 +155,7 @@ export function ApplicantCard({
             {badge.label}
           </span>
         </div>
-        <div className="flex items-center justify-between mb-1.5">
-          <span className="text-xs text-gray-500">
-            제안가{" "}
-            <strong className="text-stone-900 font-medium">
-              {applicant.price.toLocaleString()}원
-            </strong>
-          </span>
+        <div className="flex items-center justify-end mb-1.5">
           <span className="flex items-center gap-1 text-xs text-gray-400">
             <Star size={10} className="text-yellow-400 fill-yellow-400" />
             {applicant.rating}
