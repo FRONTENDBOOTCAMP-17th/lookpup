@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   Search,
   ChevronLeft,
+  ChevronDown,
   MoreVertical,
   Send,
   Plus,
@@ -71,9 +72,15 @@ const Chat_One_On_One: ChatRoom[] = [
   },
 ];
 
+const DUMMY_POSTS = [
+  { id: "post-1", title: "포메라니안 쿠키 산책 도우미 구합니다", status: "모집중" },
+  { id: "post-2", title: "말티즈 몽이 주말 방문 돌봄 부탁드려요", status: "모집중" },
+];
+
 const Chat_Applicants: Applicant[] = [
   {
     id: 0,
+    postId: "post-1",
     name: "김시터",
     initial: "김",
     rating: 4.8,
@@ -88,6 +95,7 @@ const Chat_Applicants: Applicant[] = [
   },
   {
     id: 1,
+    postId: "post-1",
     name: "이시터",
     initial: "이",
     rating: 4.5,
@@ -102,6 +110,7 @@ const Chat_Applicants: Applicant[] = [
   },
   {
     id: 2,
+    postId: "post-2",
     name: "박시터",
     initial: "박",
     rating: 4.9,
@@ -116,6 +125,7 @@ const Chat_Applicants: Applicant[] = [
   },
   {
     id: 3,
+    postId: "post-2",
     name: "최시터",
     initial: "최",
     rating: 4.7,
@@ -238,6 +248,14 @@ export default function ChatPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profilePopupApplicant, setProfilePopupApplicant] =
     useState<Applicant | null>(null);
+  const [collapsedPosts, setCollapsedPosts] = useState<Set<string>>(new Set());
+  const togglePostCollapse = (postId: string) =>
+    setCollapsedPosts((prev) => {
+      const next = new Set(prev);
+      next.has(postId) ? next.delete(postId) : next.add(postId);
+      return next;
+    });
+
   const [plusMenuOpen, setPlusMenuOpen] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [careRecordOpen, setCareRecordOpen] = useState(false);
@@ -417,36 +435,52 @@ export default function ChatPage() {
 
               {activeTab === "applicants" && (
                 <>
-                  {applicants.length > 0 && (
-                    <div className="px-5 py-3 bg-orange-50 border-b border-orange-100">
-                      <p className="text-sm font-medium text-stone-900">
-                        산책 도우미 구해요
-                      </p>
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        지원자 {applicants.length}명 · 모집중
-                      </p>
-                    </div>
-                  )}
-                  {applicants.map((applicant) => (
-                    <ApplicantCard
-                      key={applicant.id}
-                      applicant={applicant}
-                      badge={getApplicantBadge(applicant.id)}
-                      isRejected={rejectedIds.has(applicant.id)}
-                      isConfirmed={confirmedId === applicant.id}
-                      isSelected={false}
-                      confirmedId={confirmedId}
-                      editMode={editMode}
-                      onDelete={deleteApplicant}
-                      onReject={rejectApplicant}
-                      onConfirm={confirmApplicant}
-                      onSelect={(id) => {
-                        setSelectedApplicantId(id);
-                        setMobileChatView("room");
-                      }}
-                      onAvatarClick={openApplicantProfile}
-                    />
-                  ))}
+                  {DUMMY_POSTS.map((post) => {
+                    const group = applicants.filter((a) => a.postId === post.id);
+                    const isCollapsed = collapsedPosts.has(post.id);
+                    return (
+                      <div key={post.id}>
+                        <button
+                          onClick={() => togglePostCollapse(post.id)}
+                          className="w-full px-5 py-3 bg-orange-50 border-b border-orange-100 flex items-center justify-between hover:bg-orange-100 transition-colors"
+                        >
+                          <div className="text-left">
+                            <p className="text-sm font-medium text-stone-900 truncate max-w-[220px]">
+                              {post.title}
+                            </p>
+                            <p className="text-xs text-gray-400 mt-0.5">
+                              지원자 {group.length}명 · {post.status}
+                            </p>
+                          </div>
+                          <ChevronDown
+                            size={16}
+                            className={`text-gray-400 shrink-0 transition-transform duration-200 ${isCollapsed ? "-rotate-90" : ""}`}
+                          />
+                        </button>
+                        {!isCollapsed &&
+                          group.map((applicant) => (
+                            <ApplicantCard
+                              key={applicant.id}
+                              applicant={applicant}
+                              badge={getApplicantBadge(applicant.id)}
+                              isRejected={rejectedIds.has(applicant.id)}
+                              isConfirmed={confirmedId === applicant.id}
+                              isSelected={false}
+                              confirmedId={confirmedId}
+                              editMode={editMode}
+                              onDelete={deleteApplicant}
+                              onReject={rejectApplicant}
+                              onConfirm={confirmApplicant}
+                              onSelect={(id) => {
+                                setSelectedApplicantId(id);
+                                setMobileChatView("room");
+                              }}
+                              onAvatarClick={openApplicantProfile}
+                            />
+                          ))}
+                      </div>
+                    );
+                  })}
                 </>
               )}
             </div>
@@ -715,34 +749,49 @@ export default function ChatPage() {
           {/* 지원 목록 */}
           {activeTab === "applicants" && (
             <div className="flex-1 overflow-y-auto flex flex-col">
-              {applicants.length > 0 && (
-                <div className="px-5 py-3 bg-orange-50 border-b border-orange-100 shrink-0">
-                  <p className="text-sm font-medium text-stone-900">
-                    산책 도우미 구해요
-                  </p>
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    지원자 {applicants.length}명 · 모집중
-                  </p>
-                </div>
-              )}
-
-              {applicants.map((applicant) => (
-                <ApplicantCard
-                  key={applicant.id}
-                  applicant={applicant}
-                  badge={getApplicantBadge(applicant.id)}
-                  isRejected={rejectedIds.has(applicant.id)}
-                  isConfirmed={confirmedId === applicant.id}
-                  isSelected={selectedApplicantId === applicant.id}
-                  confirmedId={confirmedId}
-                  editMode={editMode}
-                  onDelete={deleteApplicant}
-                  onReject={rejectApplicant}
-                  onConfirm={confirmApplicant}
-                  onSelect={setSelectedApplicantId}
-                  onAvatarClick={openApplicantProfile}
-                />
-              ))}
+              {DUMMY_POSTS.map((post) => {
+                const group = applicants.filter((a) => a.postId === post.id);
+                const isCollapsed = collapsedPosts.has(post.id);
+                return (
+                  <div key={post.id}>
+                    <button
+                      onClick={() => togglePostCollapse(post.id)}
+                      className="w-full px-5 py-3 bg-orange-50 border-b border-orange-100 flex items-center justify-between hover:bg-orange-100 transition-colors shrink-0"
+                    >
+                      <div className="text-left">
+                        <p className="text-sm font-medium text-stone-900 truncate max-w-[200px]">
+                          {post.title}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          지원자 {group.length}명 · {post.status}
+                        </p>
+                      </div>
+                      <ChevronDown
+                        size={16}
+                        className={`text-gray-400 shrink-0 transition-transform duration-200 ${isCollapsed ? "-rotate-90" : ""}`}
+                      />
+                    </button>
+                    {!isCollapsed &&
+                      group.map((applicant) => (
+                        <ApplicantCard
+                          key={applicant.id}
+                          applicant={applicant}
+                          badge={getApplicantBadge(applicant.id)}
+                          isRejected={rejectedIds.has(applicant.id)}
+                          isConfirmed={confirmedId === applicant.id}
+                          isSelected={selectedApplicantId === applicant.id}
+                          confirmedId={confirmedId}
+                          editMode={editMode}
+                          onDelete={deleteApplicant}
+                          onReject={rejectApplicant}
+                          onConfirm={confirmApplicant}
+                          onSelect={setSelectedApplicantId}
+                          onAvatarClick={openApplicantProfile}
+                        />
+                      ))}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
