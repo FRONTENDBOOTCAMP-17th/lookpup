@@ -21,7 +21,12 @@ export async function createApplication(
   }
 
   if (input.proposed_price != null && input.proposed_price < 0) {
-    return { error: { code: "VALIDATION_ERROR", message: "제안 금액은 0 이상이어야 합니다." } };
+    return {
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "제안 금액은 0 이상이어야 합니다.",
+      },
+    };
   }
 
   const db = createServiceClient();
@@ -33,7 +38,9 @@ export async function createApplication(
     .maybeSingle();
 
   if (!sitter) {
-    return { error: { code: "FORBIDDEN", message: "펫시터만 지원할 수 있습니다." } };
+    return {
+      error: { code: "FORBIDDEN", message: "펫시터만 지원할 수 있습니다." },
+    };
   }
 
   const { data: requestRow } = await db
@@ -43,11 +50,18 @@ export async function createApplication(
     .single();
 
   if (!requestRow) {
-    return { error: { code: "NOT_FOUND", message: "구인글을 찾을 수 없습니다." } };
+    return {
+      error: { code: "NOT_FOUND", message: "구인글을 찾을 수 없습니다." },
+    };
   }
 
   if (requestRow.status !== "open") {
-    return { error: { code: "FORBIDDEN", message: "모집 중인 구인글에만 지원할 수 있습니다." } };
+    return {
+      error: {
+        code: "FORBIDDEN",
+        message: "모집 중인 구인글에만 지원할 수 있습니다.",
+      },
+    };
   }
 
   const { data: existing } = await db
@@ -58,7 +72,9 @@ export async function createApplication(
     .maybeSingle();
 
   if (existing) {
-    return { error: { code: "CONFLICT", message: "이미 지원한 구인글입니다." } };
+    return {
+      error: { code: "CONFLICT", message: "이미 지원한 구인글입니다." },
+    };
   }
 
   const { data, error } = await db
@@ -101,10 +117,12 @@ export async function updateApplication(
     .single();
 
   if (!application) {
-    return { error: { code: "NOT_FOUND", message: "지원 정보를 찾을 수 없습니다." } };
+    return {
+      error: { code: "NOT_FOUND", message: "지원 정보를 찾을 수 없습니다." },
+    };
   }
 
-  const requestRow = application.requests as {
+  const requestRow = application.requests as unknown as {
     id: string;
     owner_id: string;
     pet_id: string;
@@ -126,13 +144,19 @@ export async function updateApplication(
   if (input.status === "selected" || input.status === "rejected") {
     if (!isOwner) {
       return {
-        error: { code: "FORBIDDEN", message: "구인글 작성자만 선택/거절할 수 있습니다." },
+        error: {
+          code: "FORBIDDEN",
+          message: "구인글 작성자만 선택/거절할 수 있습니다.",
+        },
       };
     }
   } else if (input.status === "canceled") {
     if (!isSitter) {
       return {
-        error: { code: "FORBIDDEN", message: "지원한 펫시터만 취소할 수 있습니다." },
+        error: {
+          code: "FORBIDDEN",
+          message: "지원한 펫시터만 취소할 수 있습니다.",
+        },
       };
     }
   }
@@ -163,7 +187,9 @@ export async function updateApplication(
       .single();
 
     if (reservationError) {
-      return { error: { code: "INTERNAL_ERROR", message: reservationError.message } };
+      return {
+        error: { code: "INTERNAL_ERROR", message: reservationError.message },
+      };
     }
 
     const { data: existingRoom } = await db
@@ -183,7 +209,10 @@ export async function updateApplication(
       });
     }
 
-    await db.from("requests").update({ status: "matched" }).eq("id", requestRow.id);
+    await db
+      .from("requests")
+      .update({ status: "matched" })
+      .eq("id", requestRow.id);
   }
 
   const { data, error } = await db

@@ -31,7 +31,10 @@ export async function GET(
     .select("id", { count: "exact", head: true })
     .eq("sitter_id", id);
 
-  const { full_name, profile_image } = sitter.users as { full_name: string; profile_image: string | null };
+  const { full_name, profile_image } = sitter.users as unknown as {
+    full_name: string;
+    profile_image: string | null;
+  };
 
   return NextResponse.json({
     data: {
