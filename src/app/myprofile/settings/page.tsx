@@ -1,141 +1,129 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Bell, Camera, Mail, Phone, MapPin, Calendar, Lock, FileCheck } from 'lucide-react';
-import { clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { useState } from "react";
+import {
+  Mail,
+  Phone,
+  MapPin,
+  Calendar,
+  Lock,
+  FileCheck,
+  ChevronLeft,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import Header from "@/components/layout/Header";
+import { AvatarWithCamera } from "@/components/ui/Avatar";
+import { Switch } from "@/components/ui/switch";
+import { CustomModal } from "@/components/common/CustomModal";
 
-type Tab = 'profile' | 'security' | 'notifications';
-
-const cn = (...inputs: Parameters<typeof clsx>) => twMerge(clsx(inputs));
-
-const CARD = 'bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100 p-5';
-const PRETENDARD = "font-['Pretendard']";
+type Tab = "profile" | "security" | "notifications";
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'profile', label: '프로필 정보' },
-  { id: 'security', label: '보안' },
-  { id: 'notifications', label: '알림 설정' },
+  { id: "profile", label: "프로필 정보" },
+  { id: "security", label: "보안" },
+  { id: "notifications", label: "알림 설정" },
 ];
 
 const NOTIFICATION_ITEMS = [
-  { label: '예약 알림', description: '예약 확정, 변경, 취소 알림을 받습니다', enabled: true },
-  { label: '채팅 메시지', description: '새로운 메시지가 도착하면 알림을 받습니다', enabled: true },
-  { label: '리뷰 알림', description: '새로운 리뷰가 등록되면 알림을 받습니다', enabled: true },
-  { label: '마케팅 알림', description: '이벤트 및 프로모션 소식을 받습니다', enabled: false },
-  { label: '푸시 알림', description: '앱 푸시 알림을 받습니다', enabled: false },
+  {
+    label: "예약 알림",
+    description: "예약 확정, 변경, 취소 알림을 받습니다",
+    enabled: true,
+  },
+  {
+    label: "채팅 메시지",
+    description: "새로운 메시지가 도착하면 알림을 받습니다",
+    enabled: true,
+  },
+  {
+    label: "리뷰 알림",
+    description: "새로운 리뷰가 등록되면 알림을 받습니다",
+    enabled: true,
+  },
+  {
+    label: "마케팅 알림",
+    description: "이벤트 및 프로모션 소식을 받습니다",
+    enabled: false,
+  },
+  {
+    label: "푸시 알림",
+    description: "앱 푸시 알림을 받습니다",
+    enabled: false,
+  },
 ];
 
-function FieldLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <p className={cn('text-stone-900 text-sm font-medium leading-5', PRETENDARD)}>
-      {children}
-    </p>
-  );
-}
-
-function FormRow({ label, value, icon: Icon }: { label: string; value: string; icon?: React.ElementType }) {
-  return (
-    <div className="flex flex-col gap-2">
-      <FieldLabel>{label}</FieldLabel>
-      <div className="relative">
-        {Icon && <Icon className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-gray-500" />}
-        <div className={cn('w-full h-12 rounded-xl border border-orange-100 flex items-center text-stone-900 text-base font-normal leading-6', PRETENDARD, Icon ? 'pl-12 pr-4' : 'px-4')}>
-          {value}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function PasswordField({ label }: { label: string }) {
-  return (
-    <div className="flex flex-col gap-2">
-      <FieldLabel>{label}</FieldLabel>
-      <div className="relative">
-        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-gray-500" />
-        <div className="w-full h-12 pl-12 pr-4 rounded-xl border border-orange-100" />
-      </div>
-    </div>
-  );
-}
-
-function Toggle({ enabled }: { enabled: boolean }) {
-  return (
-    <div className={cn('relative w-11 h-6 rounded-full shrink-0', enabled ? 'bg-orange-500' : 'bg-gray-200')}>
-      <div className={cn('absolute size-5 top-0.5 bg-white rounded-full border', enabled ? 'left-5.5 border-white' : 'left-0.5 border-gray-300')} />
-    </div>
-  );
-}
-
-function NotificationRow({ label, description, enabled }: { label: string; description: string; enabled: boolean }) {
-  return (
-    <div className="w-full p-4 bg-orange-50 rounded-xl flex justify-between items-center gap-4">
-      <div className="flex flex-col gap-1">
-        <p className={cn('text-stone-900 text-lg font-normal lg:font-semibold leading-6', PRETENDARD)}>{label}</p>
-        <p className={cn('text-gray-500 text-sm font-normal leading-5', PRETENDARD)}>{description}</p>
-      </div>
-      <Toggle enabled={enabled} />
-    </div>
-  );
-}
-
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<Tab>('notifications');
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState<Tab>("notifications");
+  const [notifications, setNotifications] = useState(NOTIFICATION_ITEMS);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+
+  const toggleNotification = (index: number) => {
+    setNotifications((prev) =>
+      prev.map((item, i) =>
+        i === index ? { ...item, enabled: !item.enabled } : item,
+      ),
+    );
+  };
 
   return (
-    <div className="min-h-screen bg-orange-50">
-      {/* 헤더 */}
-      <header className="bg-white border-b border-orange-100 shadow-[0px_1px_8px_0px_rgba(232,116,42,0.08)]">
-        <div className="max-w-7xl mx-auto px-5 md:px-10 h-16 flex justify-between items-center">
-          <span className={cn('text-orange-500 text-xl font-bold leading-9', PRETENDARD)}>봐주개 🐾</span>
-          <nav className="flex items-center gap-8">
-            {['펫시터 찾기', '구인게시판', '서비스 소개'].map((item) => (
-              <span key={item} className={cn('text-gray-500 text-base font-medium leading-6 cursor-pointer', PRETENDARD)}>{item}</span>
-            ))}
-          </nav>
-          <div className="flex items-center gap-2 md:gap-4">
-            <div className="relative p-2">
-              <Bell className="size-5 text-gray-500" />
-              <span className={cn('absolute top-0 right-0 size-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-medium leading-4', PRETENDARD)}>3</span>
-            </div>
-            <div className="size-10 bg-orange-50 rounded-full border-2 border-orange-100 flex justify-center items-center">
-              <span className={cn('text-orange-500 text-base font-semibold leading-6', PRETENDARD)}>김</span>
-            </div>
-            <button className={cn('h-9 px-4 bg-orange-500 rounded-[10px] text-white text-xs font-semibold leading-5', PRETENDARD)}>채팅</button>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-[#FFF8F3]">
+      {/* 데스크탑 헤더 */}
+      <div className="hidden md:block">
+        <Header />
+      </div>
 
-      {/* 본문 */}
-      <main className="max-w-5xl mx-auto px-5 md:px-8 py-8 md:py-12">
-        <div className="mb-8">
-          <h1 className={cn('text-stone-900 text-3xl font-bold leading-9', PRETENDARD)}>프로필 설정</h1>
-          <p className={cn('mt-2 text-gray-500 text-base font-normal leading-6', PRETENDARD)}>계정 정보 및 설정을 관리하세요</p>
+      {/* 모바일 헤더 */}
+      <div className="md:hidden sticky top-0 z-50 bg-white border-b border-[#FFE9D6]">
+        <div className="h-14 px-5 flex items-center gap-3">
+          <button onClick={() => router.back()} className="p-1 -ml-1">
+            <ChevronLeft size={24} className="text-[#281A0E]" />
+          </button>
+          <span className="flex-1 font-semibold text-[#281A0E]">
+            프로필 설정
+          </span>
+        </div>
+      </div>
+
+      <div className="w-full max-w-[1200px] mx-auto px-4 md:px-6 pt-6 md:pt-12 pb-10 md:pb-20">
+        {/* 데스크탑 타이틀 */}
+        <div className="hidden md:flex items-center gap-4 mb-8">
+          <button
+            onClick={() => router.back()}
+            className="w-10 h-10 rounded-xl border border-[#FFE9D6] flex items-center justify-center hover:bg-[#FFF8F3] transition-colors shrink-0"
+          >
+            <ChevronLeft size={20} className="text-[#281A0E]" />
+          </button>
+          <div>
+            <h2 className="text-2xl font-bold text-[#281A0E]">프로필 설정</h2>
+            <p className="text-sm text-[#6B7280] mt-1">
+              계정 정보 및 설정을 관리하세요
+            </p>
+          </div>
         </div>
 
         <div className="flex flex-col gap-6 lg:flex-row lg:gap-8 lg:items-start">
           {/* 사이드바 */}
-          <aside className={cn(CARD, 'w-full lg:w-72 lg:shrink-0')}>
+          <aside className="bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-[#FFE9D6] p-5 w-full lg:w-72 lg:shrink-0">
             <div className="flex flex-col items-center">
-              <div className="relative mb-4">
-                <div className="size-24 bg-orange-50 rounded-full border-2 border-orange-100 flex justify-center items-center">
-                  <span className={cn('text-orange-500 text-xl font-semibold leading-7', PRETENDARD)}>김</span>
-                </div>
-                <div className="absolute bottom-0 right-0 size-8 bg-orange-500 rounded-full flex justify-center items-center">
-                  <Camera className="size-4 text-white" />
-                </div>
-              </div>
-              <p className={cn('text-stone-900 text-xl font-bold leading-7', PRETENDARD)}>김민수</p>
-              <p className={cn('mt-1 mb-3 text-gray-500 text-sm font-normal leading-5', PRETENDARD)}>kimminsu@example.com</p>
-              <span className={cn('px-3 py-1 bg-orange-500 rounded-md text-white text-xs font-medium leading-4', PRETENDARD)}>본인인증 완료</span>
+              <AvatarWithCamera
+                initial="김"
+                className="mb-4"
+              />
+              <p className="text-[#281A0E] text-xl font-bold">김민수</p>
+              <p className="mt-1 mb-3 text-[#6B7280] text-sm">
+                kimminsu@example.com
+              </p>
+              <span className="px-3 py-1 bg-[#E8742A] rounded-md text-white text-xs font-medium">
+                본인인증 완료
+              </span>
             </div>
             <div className="mt-6 flex flex-col gap-2">
               {TABS.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={cn('w-full h-12 rounded-xl text-left px-4 text-base font-medium leading-6', PRETENDARD, activeTab === tab.id ? 'bg-orange-500 text-white' : 'bg-orange-50 text-gray-500')}
+                  className={`w-full h-12 rounded-xl text-left px-4 text-base font-medium transition-all ${activeTab === tab.id ? "bg-[#E8742A] text-white" : "bg-[#FFF8F3] text-[#6B7280] hover:bg-[#FFF0E8]"}`}
                 >
                   {tab.label}
                 </button>
@@ -145,69 +133,157 @@ export default function SettingsPage() {
 
           {/* 우측 콘텐츠 */}
           <div className="flex-1 flex flex-col gap-6">
-            {activeTab === 'profile' && (
-              <div className={CARD}>
-                <h2 className={cn('text-stone-900 text-xl font-bold leading-7 mb-6', PRETENDARD)}>기본 정보</h2>
+            {activeTab === "profile" && (
+              <div className="bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-[#FFE9D6] p-5">
+                <h2 className="text-[#281A0E] text-xl font-bold mb-6">
+                  기본 정보
+                </h2>
                 <div className="flex flex-col gap-6">
-                  <FormRow label="이름" value="김민수" />
-                  <FormRow label="이메일" value="kimminsu@example.com" icon={Mail} />
-                  <FormRow label="휴대폰 번호" value="010-1234-5678" icon={Phone} />
-                  <FormRow label="주소" value="서울시 마포구" icon={MapPin} />
                   <div className="flex flex-col gap-2">
-                    <FieldLabel>생년월일</FieldLabel>
+                    <p className="text-[#281A0E] text-sm font-medium">이름</p>
+                    <div className="w-full h-12 rounded-xl border border-[#FFE9D6] flex items-center px-4 text-[#281A0E] text-base">
+                      김민수
+                    </div>
+                  </div>
+                  {[
+                    {
+                      label: "이메일",
+                      value: "kimminsu@example.com",
+                      Icon: Mail,
+                    },
+                    {
+                      label: "휴대폰 번호",
+                      value: "010-1234-5678",
+                      Icon: Phone,
+                    },
+                    { label: "주소", value: "서울시 마포구", Icon: MapPin },
+                  ].map(({ label, value, Icon }) => (
+                    <div key={label} className="flex flex-col gap-2">
+                      <p className="text-[#281A0E] text-sm font-medium">
+                        {label}
+                      </p>
+                      <div className="relative">
+                        <Icon className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-[#6B7280]" />
+                        <div className="w-full h-12 rounded-xl border border-[#FFE9D6] flex items-center pl-12 pr-4 text-[#281A0E] text-base">
+                          {value}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="flex flex-col gap-2">
+                    <p className="text-[#281A0E] text-sm font-medium">
+                      생년월일
+                    </p>
                     <div className="relative">
-                      <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-gray-500" />
-                      <div className="w-full h-12 rounded-xl border border-orange-100" />
+                      <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-[#6B7280]" />
+                      <div className="w-full h-12 rounded-xl border border-[#FFE9D6]" />
                     </div>
                   </div>
                   <div className="flex gap-3 pt-4">
-                    <button className={cn('flex-1 h-12 px-6 bg-white rounded-[10px] border border-orange-500 text-orange-500 text-base font-semibold leading-6', PRETENDARD)}>취소</button>
-                    <button className={cn('flex-1 h-12 px-6 bg-orange-500 rounded-[10px] text-white text-base font-semibold leading-6', PRETENDARD)}>저장하기</button>
+                    <button className="flex-1 h-12 px-6 bg-white rounded-[10px] border border-[#E8742A] text-[#E8742A] text-base font-semibold">
+                      취소
+                    </button>
+                    {/* 저장하기 기능 모달 */}
+                    <button
+                      onClick={() => setShowSaveModal(true)}
+                      className="flex-1 h-12 px-6 bg-[#E8742A] rounded-[10px] text-white text-base font-semibold"
+                    >
+                      저장하기
+                    </button>
                   </div>
                 </div>
               </div>
             )}
 
-            {activeTab === 'security' && (
+            {activeTab === "security" && (
               <>
-                <div className={CARD}>
-                  <h2 className={cn('text-stone-900 text-xl font-bold leading-7 mb-6', PRETENDARD)}>비밀번호 변경</h2>
+                <div className="bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-[#FFE9D6] p-5">
+                  <h2 className="text-[#281A0E] text-xl font-bold mb-6">
+                    비밀번호 변경
+                  </h2>
                   <div className="flex flex-col gap-4">
-                    <PasswordField label="현재 비밀번호" />
-                    <PasswordField label="새 비밀번호" />
-                    <PasswordField label="새 비밀번호 확인" />
-                    <button className={cn('w-full h-12 px-6 bg-orange-500 rounded-[10px] text-white text-base font-semibold leading-6 mt-2', PRETENDARD)}>비밀번호 변경</button>
+                    {["현재 비밀번호", "새 비밀번호", "새 비밀번호 확인"].map(
+                      (label) => (
+                        <div key={label} className="flex flex-col gap-2">
+                          <p className="text-[#281A0E] text-sm font-medium">
+                            {label}
+                          </p>
+                          <div className="relative">
+                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-[#6B7280]" />
+                            <div className="w-full h-12 pl-12 pr-4 rounded-xl border border-[#FFE9D6]" />
+                          </div>
+                        </div>
+                      ),
+                    )}
+                    <button className="w-full h-12 px-6 bg-[#E8742A] rounded-[10px] text-white text-base font-semibold mt-2">
+                      비밀번호 변경
+                    </button>
                   </div>
                 </div>
-                <div className={CARD}>
-                  <h2 className={cn('text-stone-900 text-xl font-bold leading-7 mb-6', PRETENDARD)}>본인 인증</h2>
-                  <div className="w-full p-4 bg-orange-50 rounded-xl flex justify-between items-center">
+                <div className="bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-[#FFE9D6] p-5">
+                  <h2 className="text-[#281A0E] text-xl font-bold mb-6">
+                    본인 인증
+                  </h2>
+                  <div className="w-full p-4 bg-[#FFF8F3] rounded-xl flex justify-between items-center">
                     <div className="flex items-center gap-3">
                       <FileCheck className="size-6 text-emerald-500" />
                       <div>
-                        <p className={cn('text-stone-900 text-lg font-semibold leading-6', PRETENDARD)}>인증 완료</p>
-                        <p className={cn('text-gray-500 text-sm font-normal leading-5', PRETENDARD)}>2024년 6월 1일</p>
+                        <p className="text-[#281A0E] text-lg font-semibold">
+                          인증 완료
+                        </p>
+                        <p className="text-[#6B7280] text-sm">2024년 6월 1일</p>
                       </div>
                     </div>
-                    <span className={cn('px-3 py-1 bg-orange-500 rounded-md text-white text-xs font-medium leading-4', PRETENDARD)}>인증됨</span>
+                    <span className="px-3 py-1 bg-[#E8742A] rounded-md text-white text-xs font-medium">
+                      인증됨
+                    </span>
                   </div>
                 </div>
               </>
             )}
 
-            {activeTab === 'notifications' && (
-              <div className={CARD}>
-                <h2 className={cn('text-stone-900 text-xl font-bold leading-7 mb-6', PRETENDARD)}>알림 설정</h2>
+            {activeTab === "notifications" && (
+              <div className="bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-[#FFE9D6] p-5">
+                <h2 className="text-[#281A0E] text-xl font-bold mb-6">
+                  알림 설정
+                </h2>
                 <div className="flex flex-col gap-4">
-                  {NOTIFICATION_ITEMS.map((item) => (
-                    <NotificationRow key={item.label} {...item} />
+                  {notifications.map((item, index) => (
+                    <div
+                      key={item.label}
+                      className="w-full p-4 bg-[#FFF8F3] rounded-xl flex justify-between items-center gap-4"
+                    >
+                      <div className="flex flex-col gap-1">
+                        <p className="text-[#281A0E] text-base font-semibold">
+                          {item.label}
+                        </p>
+                        <p className="text-[#6B7280] text-sm">
+                          {item.description}
+                        </p>
+                      </div>
+                      <Switch
+                        checked={item.enabled}
+                        onCheckedChange={() => toggleNotification(index)}
+                      />
+                    </div>
                   ))}
                 </div>
               </div>
             )}
           </div>
         </div>
-      </main>
+      </div>
+
+      {/* 저장하기 기능 모달 */}
+      <CustomModal
+        open={showSaveModal}
+        preset="saveConfirm"
+        onClose={() => setShowSaveModal(false)}
+        onConfirm={() => {
+          // TODO: 프로필 저장 API 연동
+          setShowSaveModal(false);
+        }}
+      />
     </div>
   );
 }

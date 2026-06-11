@@ -4,16 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import Avatar from "@/components/ui/Avatar";
 import KakaoMap from "@/components/KakaoMap";
-import {
-  MapPin,
-  Star,
-  Heart,
-  Share2,
-  Shield,
-  Calendar,
-  MessageCircle,
-} from "lucide-react";
+import { MapPin, Star, Shield, Calendar, MessageCircle } from "lucide-react";
 
 // 더미데이터
 
@@ -82,9 +75,11 @@ export default function PetsitterPage() {
               {/* 프로필 헤더 */}
               <div className="p-6 bg-white rounded-2xl shadow-sm border border-orange-100 mb-6">
                 <div className="flex items-start gap-6">
-                  <div className="w-16 h-16 rounded-full bg-orange-100 flex items-center justify-center text-2xl font-bold text-orange-500 shrink-0">
-                    {PETSITTER.initial}
-                  </div>
+                  <Avatar
+                    initial={PETSITTER.initial}
+                    size="xl"
+                    variant="dark"
+                  />
                   <div className="flex-1">
                     <div className="flex items-start justify-between mb-3">
                       <div>
@@ -122,14 +117,6 @@ export default function PetsitterPage() {
                             (리뷰 {PETSITTER.reviewCount}개)
                           </span>
                         </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <button className="w-10 h-10 rounded-full border border-orange-100 flex items-center justify-center hover:bg-orange-50 transition-colors">
-                          <Heart size={20} className="text-gray-400" />
-                        </button>
-                        <button className="w-10 h-10 rounded-full border border-orange-100 flex items-center justify-center hover:bg-orange-50 transition-colors">
-                          <Share2 size={20} className="text-gray-400" />
-                        </button>
                       </div>
                     </div>
 
@@ -311,9 +298,7 @@ export default function PetsitterPage() {
                     >
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center font-bold text-orange-500">
-                            {review.initial}
-                          </div>
+                          <Avatar initial={review.initial} variant="dark" />
                           <div>
                             <div className="font-medium text-stone-900">
                               {review.author}
@@ -349,7 +334,13 @@ export default function PetsitterPage() {
                   <h3 className="font-bold text-stone-900 mb-4">서비스 위치</h3>
                   <div className="h-100 rounded-xl overflow-hidden">
                     <KakaoMap
-                      markers={[{ lat: PETSITTER.lat, lng: PETSITTER.lng }]}
+                      markers={[
+                        {
+                          lat: PETSITTER.lat,
+                          lng: PETSITTER.lng,
+                          id: 0,
+                        },
+                      ]}
                       center={{ lat: PETSITTER.lat, lng: PETSITTER.lng }}
                       level={5}
                     />

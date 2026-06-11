@@ -4,20 +4,117 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { MapPin, Search, SlidersHorizontal, Star } from "lucide-react";
 import Header from "@/components/layout/Header";
+import Avatar from "@/components/ui/Avatar";
 import KakaoMap from "@/components/KakaoMap";
 
 const FILTERS = ["전체", "방문돌봄", "위탁돌봄", "산책", "인증만"] as const;
 type Filter = (typeof FILTERS)[number];
 
 const PETSITTERS = [
-  { id: 1, name: "김민지", initial: "김", district: "마포구", rating: 4.9, reviewCount: 47, price: 30000, services: ["방문돌봄", "산책"], certified: true,  lat: 37.5665, lng: 126.9013 },
-  { id: 2, name: "이서연", initial: "이", district: "강남구", rating: 4.8, reviewCount: 32, price: 35000, services: ["방문돌봄", "산책"], certified: false, lat: 37.5172, lng: 127.0473 },
-  { id: 3, name: "박준호", initial: "박", district: "용산구", rating: 4.7, reviewCount: 28, price: 28000, services: ["방문돌봄", "산책"], certified: false, lat: 37.5326, lng: 126.9907 },
-  { id: 4, name: "최예진", initial: "최", district: "성동구", rating: 4.6, reviewCount: 15, price: 32000, services: ["방문돌봄", "산책"], certified: true,  lat: 37.5633, lng: 127.0369 },
-  { id: 5, name: "정수아", initial: "정", district: "송파구", rating: 4.5, reviewCount: 52, price: 38000, services: ["방문돌봄", "산책"], certified: false, lat: 37.5145, lng: 127.1059 },
-  { id: 6, name: "강태윤", initial: "강", district: "광진구", rating: 4.9, reviewCount: 38, price: 25000, services: ["방문돌봄", "산책"], certified: false, lat: 37.5385, lng: 127.0823 },
-  { id: 7, name: "윤지우", initial: "윤", district: "서초구", rating: 4.8, reviewCount: 41, price: 33000, services: ["방문돌봄", "산책"], certified: true,  lat: 37.4837, lng: 127.0325 },
-  { id: 8, name: "한소미", initial: "한", district: "영등포구", rating: 4.7, reviewCount: 23, price: 29000, services: ["방문돌봄", "산책"], certified: false, lat: 37.5264, lng: 126.8962 },
+  {
+    id: 1,
+    name: "김민지",
+    initial: "김",
+    district: "마포구",
+    rating: 4.9,
+    reviewCount: 47,
+    price: 30000,
+    services: ["방문돌봄", "산책"],
+    certified: true,
+    lat: 37.5665,
+    lng: 126.9013,
+  },
+  {
+    id: 2,
+    name: "이서연",
+    initial: "이",
+    district: "강남구",
+    rating: 4.8,
+    reviewCount: 32,
+    price: 35000,
+    services: ["방문돌봄", "산책"],
+    certified: false,
+    lat: 37.5172,
+    lng: 127.0473,
+  },
+  {
+    id: 3,
+    name: "박준호",
+    initial: "박",
+    district: "용산구",
+    rating: 4.7,
+    reviewCount: 28,
+    price: 28000,
+    services: ["방문돌봄", "산책"],
+    certified: false,
+    lat: 37.5326,
+    lng: 126.9907,
+  },
+  {
+    id: 4,
+    name: "최예진",
+    initial: "최",
+    district: "성동구",
+    rating: 4.6,
+    reviewCount: 15,
+    price: 32000,
+    services: ["방문돌봄", "산책"],
+    certified: true,
+    lat: 37.5633,
+    lng: 127.0369,
+  },
+  {
+    id: 5,
+    name: "정수아",
+    initial: "정",
+    district: "송파구",
+    rating: 4.5,
+    reviewCount: 52,
+    price: 38000,
+    services: ["방문돌봄", "산책"],
+    certified: false,
+    lat: 37.5145,
+    lng: 127.1059,
+  },
+  {
+    id: 6,
+    name: "강태윤",
+    initial: "강",
+    district: "광진구",
+    rating: 4.9,
+    reviewCount: 38,
+    price: 25000,
+    services: ["방문돌봄", "산책"],
+    certified: false,
+    lat: 37.5385,
+    lng: 127.0823,
+  },
+  {
+    id: 7,
+    name: "윤지우",
+    initial: "윤",
+    district: "서초구",
+    rating: 4.8,
+    reviewCount: 41,
+    price: 33000,
+    services: ["방문돌봄", "산책"],
+    certified: true,
+    lat: 37.4837,
+    lng: 127.0325,
+  },
+  {
+    id: 8,
+    name: "한소미",
+    initial: "한",
+    district: "영등포구",
+    rating: 4.7,
+    reviewCount: 23,
+    price: 29000,
+    services: ["방문돌봄", "산책"],
+    certified: false,
+    lat: 37.5264,
+    lng: 126.8962,
+  },
 ];
 
 const SEOUL_CENTER = { lat: 37.5665, lng: 126.978 };
@@ -56,12 +153,12 @@ function PetsitterCard({ sitter, isSelected, distance }: PetsitterCardProps) {
       >
         {/* 프로필 행 */}
         <div className="flex items-start gap-4">
-          <div className="w-14 h-14 bg-orange-50 rounded-full border-2 border-orange-100 flex items-center justify-center shrink-0">
-            <span className="text-orange-500 text-xl font-semibold">{sitter.initial}</span>
-          </div>
+          <Avatar initial={sitter.initial} size="lg" variant="orange" />
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between">
-              <span className="text-stone-900 text-base font-semibold">{sitter.name}</span>
+              <span className="text-stone-900 text-base font-semibold">
+                {sitter.name}
+              </span>
               {sitter.certified && (
                 <span className="px-2 py-0.5 bg-orange-500 rounded text-white text-[9px] font-medium leading-3">
                   인증
@@ -72,7 +169,9 @@ function PetsitterCard({ sitter, isSelected, distance }: PetsitterCardProps) {
               <MapPin size={14} className="text-gray-400" />
               <span className="text-gray-500 text-sm">{sitter.district}</span>
               {distance !== undefined && (
-                <span className="text-gray-400 text-xs">· {formatDistance(distance)}</span>
+                <span className="text-gray-400 text-xs">
+                  · {formatDistance(distance)}
+                </span>
               )}
             </div>
           </div>
@@ -81,7 +180,10 @@ function PetsitterCard({ sitter, isSelected, distance }: PetsitterCardProps) {
         {/* 서비스 태그 */}
         <div className="flex gap-2 mt-4">
           {sitter.services.map((s) => (
-            <span key={s} className="px-3 py-1 bg-orange-50 text-orange-500 text-xs font-medium rounded-full">
+            <span
+              key={s}
+              className="px-3 py-1 bg-orange-50 text-orange-500 text-xs font-medium rounded-full"
+            >
               {s}
             </span>
           ))}
@@ -91,8 +193,12 @@ function PetsitterCard({ sitter, isSelected, distance }: PetsitterCardProps) {
         <div className="flex items-center justify-between mt-3 pt-3 border-t border-orange-100">
           <div className="flex items-center gap-1">
             <Star size={14} className="fill-amber-400 text-amber-400" />
-            <span className="text-stone-900 text-base font-bold">{sitter.rating.toFixed(1)}</span>
-            <span className="text-gray-500 text-sm">({sitter.reviewCount})</span>
+            <span className="text-stone-900 text-base font-bold">
+              {sitter.rating.toFixed(1)}
+            </span>
+            <span className="text-gray-500 text-sm">
+              ({sitter.reviewCount})
+            </span>
           </div>
           <span className="text-orange-500 text-base font-semibold">
             {sitter.price.toLocaleString()}원~
@@ -105,20 +211,26 @@ function PetsitterCard({ sitter, isSelected, distance }: PetsitterCardProps) {
 
 export default function PetsittersPage() {
   const [activeFilter, setActiveFilter] = useState<Filter>("전체");
-  const [userPosition, setUserPosition] = useState<{ lat: number; lng: number } | null>(null);
+  const [userPosition, setUserPosition] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
   const [selectedSitterId, setSelectedSitterId] = useState<number | null>(null);
   const cardRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
-      ({ coords }) => setUserPosition({ lat: coords.latitude, lng: coords.longitude }),
-      () => {} // 권한 거부 시 기본 순서 유지
+      ({ coords }) =>
+        setUserPosition({ lat: coords.latitude, lng: coords.longitude }),
+      () => {}, // 권한 거부 시 기본 순서 유지
     );
   }, []);
 
   useEffect(() => {
     if (selectedSitterId === null) return;
-    cardRefs.current.get(selectedSitterId)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    cardRefs.current
+      .get(selectedSitterId)
+      ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [selectedSitterId]);
 
   const filtered = PETSITTERS.filter((s) => {
@@ -141,7 +253,12 @@ export default function PetsittersPage() {
           {/* 지도 영역 */}
           <div className="flex-1 relative overflow-hidden">
             <KakaoMap
-              markers={filtered.map(({ lat, lng, id, certified }) => ({ lat, lng, id, certified }))}
+              markers={filtered.map(({ lat, lng, id, certified }) => ({
+                lat,
+                lng,
+                id,
+                certified,
+              }))}
               center={SEOUL_CENTER}
               level={8}
               onMarkerClick={setSelectedSitterId}
@@ -187,7 +304,9 @@ export default function PetsittersPage() {
             {/* 결과 리스트 */}
             <div className="flex-1 overflow-y-auto p-6">
               <p className="text-stone-900 text-lg font-semibold mb-4">
-                {userPosition ? "현위치 기준 가까운 순" : `총 ${filtered.length}명의 펫시터`}
+                {userPosition
+                  ? "현위치 기준 가까운 순"
+                  : `총 ${filtered.length}명의 펫시터`}
               </p>
               <div className="flex flex-col gap-4">
                 {filtered.map((sitter) => (
@@ -203,7 +322,12 @@ export default function PetsittersPage() {
                       isSelected={selectedSitterId === sitter.id}
                       distance={
                         userPosition
-                          ? haversineKm(userPosition.lat, userPosition.lng, sitter.lat, sitter.lng)
+                          ? haversineKm(
+                              userPosition.lat,
+                              userPosition.lng,
+                              sitter.lat,
+                              sitter.lng,
+                            )
                           : undefined
                       }
                     />

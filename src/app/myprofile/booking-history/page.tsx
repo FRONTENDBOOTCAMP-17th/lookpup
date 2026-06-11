@@ -13,6 +13,8 @@ import {
   ChevronRight,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
+import Avatar from "@/components/ui/Avatar";
+import { CustomModal } from "@/components/common/CustomModal";
 
 type BookingStatus =
   | "pending"
@@ -175,7 +177,13 @@ const SERVICE_BADGE_COLOR: Record<string, string> = {
 
 // 예약 카드 컴포넌트
 
-function BookingCard({ booking }: { booking: Booking }) {
+function BookingCard({
+  booking,
+  onCancelRequest,
+}: {
+  booking: Booking;
+  onCancelRequest: (id: string) => void;
+}) {
   const router = useRouter();
   const status = STATUS_CONFIG[booking.status];
 
@@ -222,11 +230,7 @@ function BookingCard({ booking }: { booking: Booking }) {
       {/* 중앙 내용 */}
       <div className="px-6 py-5">
         <div className="flex items-start gap-4">
-          <div className="w-10 h-10 bg-[#FFF0E8] rounded-full border border-[#FFE9D6] flex items-center justify-center shrink-0">
-            <span className="text-[#E8742A] text-base font-semibold">
-              {booking.sitterName[0]}
-            </span>
-          </div>
+          <Avatar initial={booking.sitterName[0]} />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <span className="font-semibold text-[#281A0E]">
@@ -270,7 +274,11 @@ function BookingCard({ booking }: { booking: Booking }) {
       {/* 액션 버튼 */}
       <div className="px-6 pb-5 flex gap-2 border-t border-[#FFE9D6] pt-4">
         {booking.status === "pending" && (
-          <button className="flex-1 h-10 rounded-xl border border-[#FFE9D6] text-[#6B7280] text-sm font-medium hover:border-red-300 hover:text-red-500 transition-colors">
+          // 예약 취소 기능 모달
+          <button
+            onClick={() => onCancelRequest(booking.id)}
+            className="flex-1 h-10 rounded-xl border border-[#FFE9D6] text-[#6B7280] text-sm font-medium hover:border-red-300 hover:text-red-500 transition-colors"
+          >
             예약 취소
           </button>
         )}
@@ -283,7 +291,11 @@ function BookingCard({ booking }: { booking: Booking }) {
               <MessageCircle size={15} />
               채팅하기
             </button>
-            <button className="flex-1 h-10 rounded-xl border border-[#FFE9D6] text-[#6B7280] text-sm font-medium hover:border-red-300 hover:text-red-500 transition-colors">
+            {/* 예약 취소 기능 모달 */}
+            <button
+              onClick={() => onCancelRequest(booking.id)}
+              className="flex-1 h-10 rounded-xl border border-[#FFE9D6] text-[#6B7280] text-sm font-medium hover:border-red-300 hover:text-red-500 transition-colors"
+            >
               예약 취소
             </button>
           </>
@@ -300,14 +312,20 @@ function BookingCard({ booking }: { booking: Booking }) {
         {booking.status === "completed" && (
           <>
             <button
-              onClick={() => router.push(`/myprofile/booking-history/${booking.id}`)}
+              onClick={() =>
+                router.push(`/myprofile/booking-history/${booking.id}`)
+              }
               className="flex-1 h-10 rounded-xl border border-[#FFE9D6] text-[#281A0E] text-sm font-medium hover:border-[#E8742A]/50 transition-colors"
             >
               예약 상세보기
             </button>
             {!booking.reviewWritten ? (
               <button
-                onClick={() => router.push(`/myprofile/reviews/write?bookingId=${booking.id}`)}
+                onClick={() =>
+                  router.push(
+                    `/myprofile/reviews/write?bookingId=${booking.id}`,
+                  )
+                }
                 className="flex-1 h-10 rounded-xl bg-[#E8742A] text-white text-sm font-semibold hover:bg-[#D4621A] transition-colors"
               >
                 후기 작성하기
@@ -324,7 +342,9 @@ function BookingCard({ booking }: { booking: Booking }) {
         )}
         {booking.status === "cancelled" && (
           <button
-            onClick={() => router.push(`/myprofile/booking-history/${booking.id}`)}
+            onClick={() =>
+              router.push(`/myprofile/booking-history/${booking.id}`)
+            }
             className="flex-1 h-10 rounded-xl border border-[#FFE9D6] text-[#6B7280] text-sm font-medium hover:border-[#E8742A]/50 transition-colors"
           >
             상세보기
@@ -349,6 +369,12 @@ export default function BookingHistoryPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabId>("all");
   const [page, setPage] = useState(1);
+  const [cancelingId, setCancelingId] = useState<string | null>(null);
+
+  const handleCancelConfirm = () => {
+    // TODO: 예약 취소 API 연동
+    setCancelingId(null);
+  };
 
   const filtered = BOOKINGS.filter((b) => {
     if (activeTab === "all") return true;
@@ -450,7 +476,11 @@ export default function BookingHistoryPage() {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
             {paged.map((booking) => (
-              <BookingCard key={booking.id} booking={booking} />
+              <BookingCard
+                key={booking.id}
+                booking={booking}
+                onCancelRequest={setCancelingId}
+              />
             ))}
           </div>
         )}
@@ -488,6 +518,14 @@ export default function BookingHistoryPage() {
           </div>
         )}
       </div>
+
+      {/* 예약 취소 기능 모달 */}
+      <CustomModal
+        open={cancelingId !== null}
+        preset="cancelReservation"
+        onClose={() => setCancelingId(null)}
+        onConfirm={handleCancelConfirm}
+      />
     </div>
   );
 }

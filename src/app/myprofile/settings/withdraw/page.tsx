@@ -10,8 +10,9 @@ import {
   PawPrint,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
+import { CustomModal } from "@/components/common/CustomModal";
 
-// 탈퇴 사유 목록
+// 탈퇴 사유 목록 (탈퇴 계정 삭제 기능 모달 - deleteAccount / deleteAccountDisabled preset 사용)
 const REASONS = [
   { id: "low_usage", label: "이용 빈도가 낮아요" },
   { id: "no_service", label: "원하는 서비스를 찾지 못했어요" },
@@ -19,54 +20,6 @@ const REASONS = [
   { id: "privacy", label: "개인정보가 걱정돼요" },
   { id: "other", label: "기타" },
 ];
-
-// 확인 모달
-function ConfirmModal({
-  onConfirm,
-  onCancel,
-}: {
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-5">
-      <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        onClick={onCancel}
-      />
-      <div
-        className="relative bg-white w-full max-w-130 rounded-[20px] p-8 shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex flex-col items-center text-center mb-7">
-          <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mb-5">
-            <AlertTriangle size={28} className="text-[#EF4444]" />
-          </div>
-          <h3 className="text-xl font-bold text-[#281A0E] mb-2">
-            정말 탈퇴하시겠습니까?
-          </h3>
-          <p className="text-sm text-[#6B7280] leading-relaxed">
-            회원 탈퇴 후 계정 복구는 불가능합니다.
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <button
-            onClick={onCancel}
-            className="flex-1 h-12 rounded-xl border border-[#FFE9D6] text-[#6B7280] font-semibold hover:bg-[#FFF8F3] transition-colors"
-          >
-            취소
-          </button>
-          <button
-            onClick={onConfirm}
-            className="flex-1 h-12 rounded-xl bg-[#EF4444] text-white font-semibold hover:bg-red-600 transition-colors"
-          >
-            회원 탈퇴
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // 탈퇴 완료 화면
 function SuccessScreen({ onGoHome }: { onGoHome: () => void }) {
@@ -311,12 +264,21 @@ export default function WithdrawPage() {
         )}
       </main>
 
-      {showModal && (
-        <ConfirmModal
-          onConfirm={handleDelete}
-          onCancel={() => setShowModal(false)}
-        />
-      )}
+      {/* 계정 삭제 기능 모달 */}
+      <CustomModal
+        open={showModal && !hasActiveBookings}
+        preset="deleteAccount"
+        onClose={() => setShowModal(false)}
+        onConfirm={handleDelete}
+      />
+
+      {/* 계정 삭제 불가 기능 모달 */}
+      <CustomModal
+        open={showModal && hasActiveBookings}
+        preset="deleteAccountDisabled"
+        onConfirm={() => setShowModal(false)}
+        showCloseButton={false}
+      />
     </div>
   );
 }

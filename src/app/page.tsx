@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import Avatar from "@/components/ui/Avatar";
 
 // 더미데이터 꼬라박기
 
@@ -120,11 +121,7 @@ function PetsitterCard({
       className="p-5 bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100 flex flex-col gap-4 hover:shadow-[0px_4px_16px_0px_rgba(232,116,42,0.18)] transition-shadow"
     >
       <div className="flex items-start gap-3">
-        <div className="w-14 h-14 bg-orange-50 rounded-full border border-orange-100 flex items-center justify-center shrink-0">
-          <span className="text-orange-500 text-xl font-semibold">
-            {initial}
-          </span>
-        </div>
+        <Avatar initial={initial} size="lg" variant="orange" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
             <span className="text-stone-900 text-base font-semibold">
@@ -253,11 +250,7 @@ export default function HomePage() {
               <div className="-rotate-3 absolute top-12 left-8 w-80 shadow-[0px_4px_20px_0px_rgba(232,116,42,0.15)] rounded-2xl z-10">
                 <div className="p-5 bg-white rounded-2xl border border-orange-100">
                   <div className="flex items-start gap-4">
-                    <div className="w-14 h-14 bg-orange-50 rounded-full border border-orange-100 flex items-center justify-center shrink-0">
-                      <span className="text-orange-500 text-xl font-semibold">
-                        김
-                      </span>
-                    </div>
+                    <Avatar initial="김" size="lg" variant="orange" />
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-stone-900 text-lg font-semibold">

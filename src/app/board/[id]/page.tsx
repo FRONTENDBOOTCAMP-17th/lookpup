@@ -9,13 +9,13 @@ import {
   Calendar,
   Clock,
   DollarSign,
-  Share2,
   Send,
   Star,
   AlertCircle,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import { CustomModal } from "@/components/common/CustomModal";
 
 // 더미 데이터 : 뭘눌러도 이것만 나와요 우하하~~~
 
@@ -121,6 +121,7 @@ const SAFETY_TIPS = [
 export default function BoardDetailPage() {
   const router = useRouter();
   const [comment, setComment] = useState("");
+  const [showApplyModal, setShowApplyModal] = useState(false);
 
   return (
     <>
@@ -206,23 +207,19 @@ export default function BoardDetailPage() {
                         </p>
                       </div>
                     </div>
+                    {/* 지원하기 버튼 */}
+                    <div className="flex gap-3 sm:col-span-2">
+                      {/* 지원하기 기능 모달 */}
+                      <button
+                        onClick={() => setShowApplyModal(true)}
+                        className="flex-1 h-11 flex items-center justify-center gap-2 bg-orange-500 rounded-[10px] text-white text-base font-medium hover:bg-orange-600 transition-colors"
+                      >
+                        <Send className="w-4 h-4" />
+                        지원하기
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-
-              {/* 공유 + 지원하기 버튼 */}
-              <div className="flex gap-3">
-                <button className="flex-1 h-11 flex items-center justify-center gap-2 bg-white border border-orange-500 rounded-[10px] text-orange-500 text-base font-medium hover:bg-orange-50 transition-colors">
-                  <Share2 className="w-4 h-4" />
-                  공유
-                </button>
-                <button
-                  onClick={() => router.push("/chat")}
-                  className="flex-1 h-11 flex items-center justify-center gap-2 bg-orange-500 rounded-[10px] text-white text-base font-medium hover:bg-orange-600 transition-colors"
-                >
-                  <Send className="w-4 h-4" />
-                  지원하기
-                </button>
               </div>
 
               {/* 상세 내용 */}
@@ -359,19 +356,13 @@ export default function BoardDetailPage() {
                     </div>
                   </div>
                 </div>
-                <Link
-                  href={`/petsitters/${POST.author.id}`}
-                  className="w-full h-11 border border-orange-500 rounded-[10px] text-orange-500 text-base font-semibold hover:bg-orange-50 transition-colors flex items-center justify-center"
-                >
-                  프로필 보기
-                </Link>
               </div>
 
-              {/* 비슷한 구인글 */}
+              {/* 작성자의 다른 글 */}
               <div className="bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100 p-5 flex flex-col gap-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-stone-900 text-lg font-bold">
-                    비슷한 구인글
+                    {POST.author.name}님의 다른 게시물
                   </h3>
                   <Link
                     href="/board"
@@ -417,34 +408,27 @@ export default function BoardDetailPage() {
                   ))}
                 </div>
               </div>
-
-              {/* 안전 거래 팁 */}
-              <div className="bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100 p-5 flex flex-col gap-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
-                    <AlertCircle className="w-3.5 h-3.5 text-white" />
-                  </div>
-                  <h3 className="text-stone-900 text-lg font-bold">
-                    안전 거래 팁
-                  </h3>
-                </div>
-                <ul className="flex flex-col gap-2">
-                  {SAFETY_TIPS.map((tip) => (
-                    <li key={tip} className="flex items-start gap-2">
-                      <span className="text-gray-500 text-xs mt-0.5">•</span>
-                      <span className="text-gray-500 text-xs leading-4">
-                        {tip}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
             </div>
           </div>
         </div>
       </main>
 
       <Footer />
+
+      {/* 지원하기 기능 모달 */}
+      <CustomModal
+        open={showApplyModal}
+        preset="warning"
+        title="지원하시겠습니까?"
+        description="지원 후 채팅으로 보호자와 상담을 진행하세요."
+        cancelText="취소"
+        confirmText="지원하기"
+        onClose={() => setShowApplyModal(false)}
+        onConfirm={() => {
+          setShowApplyModal(false);
+          router.push("/chat");
+        }}
+      />
     </>
   );
 }
