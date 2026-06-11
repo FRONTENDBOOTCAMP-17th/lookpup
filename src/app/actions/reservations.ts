@@ -66,7 +66,6 @@ export async function createReservation(input: ReservationInput) {
       owner_id: user.id,
       sitter_id: input.sitter_id,
       service_id: input.service_id,
-      pet_id: input.pet_ids[0],
       start_datetime: input.start_datetime,
       end_datetime: input.end_datetime,
       total_price: service.price,
@@ -78,6 +77,15 @@ export async function createReservation(input: ReservationInput) {
 
   if (error) {
     return { error: { code: "INTERNAL_ERROR", message: error.message } };
+  }
+
+  const { error: itemsError } = await db
+    .from("reservation_items")
+    .insert(input.pet_ids.map((pet_id) => ({ reservation_id: reservation.id, pet_id })));
+
+  if (itemsError) {
+    await db.from("reservations").delete().eq("id", reservation.id);
+    return { error: { code: "INTERNAL_ERROR", message: itemsError.message } };
   }
 
   return { data: reservation };

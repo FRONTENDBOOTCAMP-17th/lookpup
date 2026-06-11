@@ -30,13 +30,14 @@ export async function GET() {
     .from("chat_rooms")
     .select(
       `id, room_type, owner_id, sitter_id, reservation_id,
+       last_message, last_message_at,
        owner:users!owner_id(full_name, profile_image),
        sitter:sitters!sitter_id(
          user_id,
          sitter_user:users(full_name, profile_image)
        )`,
     )
-    .order("created_at", { ascending: false });
+    .order("last_message_at", { ascending: false, nullsFirst: false });
 
   if (sitterId) {
     roomsQuery = roomsQuery.or(`owner_id.eq.${user.id},sitter_id.eq.${sitterId}`);
@@ -91,6 +92,8 @@ export async function GET() {
         : (owner?.profile_image ?? null),
       unread_count: unreadCounts[room.id] ?? 0,
       reservation_id: room.reservation_id,
+      last_message: room.last_message ?? null,
+      last_message_at: room.last_message_at ?? null,
     };
   });
 

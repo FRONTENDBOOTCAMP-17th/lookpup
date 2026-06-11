@@ -164,7 +164,12 @@ import { createService, updateService, deleteService } from "@/app/actions/servi
 
 await createService({ service_type: "care", title: "당일 돌봄", price: 50000 });
 await updateService("service-uuid", { price: 55000 });
-await deleteService("service-uuid");
+
+// is_active: false → deactivated_at이 자동으로 현재 시각으로 기록됨
+// is_active: true  → deactivated_at이 null로 초기화됨
+await updateService("service-uuid", { is_active: false });
+
+await deleteService("service-uuid"); // paid/in_progress 예약 없을 때만 가능
 ```
 
 ---
@@ -190,8 +195,9 @@ const res = await fetch(`/api/requests?owner_id=${userId}`);
 ```ts
 import { createRequest, updateRequest, deleteRequest } from "@/app/actions/requests";
 
+// pet_ids에 반려동물 UUID를 배열로 전달 (복수 선택 가능)
 const result = await createRequest({
-  pet_id: "pet-uuid",
+  pet_ids: ["pet-uuid-1", "pet-uuid-2"],
   title: "주말 산책 부탁드려요",
   request_type: "walk",
   start_datetime: "2026-06-15T10:00:00+09:00",
@@ -202,8 +208,21 @@ const result = await createRequest({
   longitude: 126.9780,
 });
 
+// pet_ids를 전달하면 기존 반려동물 목록을 교체
 await updateRequest("request-uuid", { budget: 25000 });
+await updateRequest("request-uuid", { pet_ids: ["pet-uuid-3"] }); // 반려동물 변경
 await deleteRequest("request-uuid"); // status === 'open'일 때만 가능
+```
+
+**조회 응답 형태**
+```ts
+// data.requests[].pet_ids — 등록된 반려동물 UUID 배열
+{
+  id: "...",
+  title: "...",
+  pet_ids: ["pet-uuid-1", "pet-uuid-2"],
+  ...
+}
 ```
 
 ---
@@ -230,8 +249,9 @@ const result = await createApplication("request-uuid", {
 ```ts
 import { updateApplication } from "@/app/actions/applications";
 
-// 채택 → 예약 자동 생성 + 채팅방 생성 + 구인글 'matched' 처리
+// 채택 → 예약 자동 생성 + reservation_items 자동 생성 + 채팅방 생성 + 구인글 'matched' 처리
 const result = await updateApplication("application-uuid", { status: "selected" });
+// result.data 예약 정보: reservation.application_id에 지원서 ID가 연결됨
 ```
 
 ### 지원 거절 / 취소
@@ -256,14 +276,28 @@ const { data } = await res.json();
 ```ts
 import { createReservation } from "@/app/actions/reservations";
 
+// pet_ids에 지정한 반려동물들이 reservation_items 테이블에 자동 저장됨
 const result = await createReservation({
   sitter_id: "sitter-uuid",
   service_id: "service-uuid",
-  pet_ids: ["pet-uuid"],
+  pet_ids: ["pet-uuid-1", "pet-uuid-2"],
   start_datetime: "2026-06-20T10:00:00+09:00",
   end_datetime: "2026-06-20T18:00:00+09:00",
   memo: "알레르기 없어요",
 });
+```
+
+**조회 응답 형태**
+```ts
+// data.reservations[].pets — reservation_items를 통해 조인된 반려동물 배열
+// data.reservations[].application_id — 구인글 경로로 생성된 경우 지원서 ID
+{
+  id: "...",
+  status: "pending",
+  application_id: "application-uuid | null",
+  pets: [{ id: "...", name: "초코", animal_type: "dog", ... }],
+  ...
+}
 ```
 
 ### 상태 변경
@@ -402,7 +436,10 @@ await deleteReview("review-uuid");
 ```ts
 const res = await fetch("/api/chat/rooms");
 const { data } = await res.json();
+// last_message_at 기준 내림차순 정렬 (메시지 없는 방은 뒤로)
 // data[].other_user_full_name, data[].unread_count, data[].reservation_id
+// data[].last_message      — 마지막 메시지 미리보기 (null이면 아직 메시지 없음)
+// data[].last_message_at   — 마지막 메시지 전송 일시
 ```
 
 ### 채팅방 생성 또는 입장
@@ -433,6 +470,15 @@ const { data } = await res.json();
 
 // 위로 스크롤 시 이전 메시지 로드
 const res2 = await fetch(`/api/chat/rooms/${roomId}/messages?cursor=${oldestMessageId}`);
+```
+
+### 메시지 전송
+```ts
+import { sendMessage } from "@/app/actions/chat";
+
+// 메시지 insert + chat_rooms.last_message / last_message_at 자동 업데이트
+const result = await sendMessage(roomId, "안녕하세요!");
+// result.data — 삽입된 메시지 행 전체
 ```
 
 ### 실시간 메시지 구독 (Supabase Realtime)
@@ -555,14 +601,18 @@ const { data, error } = await supabase.rpc("search_sitters_within", {
 ## 전체 흐름 예시 — 구인글 → 채택 → 결제
 
 ```
-1. 보호자: createRequest()
+1. 보호자: createRequest({ pet_ids: ["pet-uuid"], ... })
+              └─ 자동: request_pets INSERT (반려동물 복수 매핑)
 2. 펫시터: createApplication(requestId, { proposed_price })
 3. 보호자: updateApplication(appId, { status: "selected" })
-   └─ 자동: reservations INSERT + chat_rooms INSERT + requests.status='matched'
+              └─ 자동: reservations INSERT (application_id 연결)
+                      + reservation_items INSERT (request_pets에서 pet 복사)
+                      + chat_rooms INSERT
+                      + requests.status='matched'
 4. 펫시터: updateReservation(reservationId, { status: "accepted" })
 5. 보호자: createPayment(reservationId, "CARD") → PortOne 결제창
 6. PortOne: POST /api/portone/webhook (Transaction.Paid)
-   └─ 자동: payments.status='paid', reservations.status='paid'
+              └─ 자동: payments.status='paid', reservations.status='paid'
 7. 펫시터: updateReservation(reservationId, { status: "in_progress" })
 8. 펫시터: updateReservation(reservationId, { status: "completed" })
 9. 보호자: createReview({ reservation_id, rating: 5, content })

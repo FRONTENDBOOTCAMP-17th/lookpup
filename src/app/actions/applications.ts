@@ -111,7 +111,7 @@ export async function updateApplication(
     .from("applications")
     .select(
       `id, sitter_id, request_id, proposed_price, status,
-       requests!inner(id, owner_id, pet_id, start_datetime, end_datetime, budget, status)`,
+       requests!inner(id, owner_id, start_datetime, end_datetime, budget, status)`,
     )
     .eq("id", id)
     .single();
@@ -125,7 +125,6 @@ export async function updateApplication(
   const requestRow = application.requests as unknown as {
     id: string;
     owner_id: string;
-    pet_id: string;
     start_datetime: string;
     end_datetime: string;
     budget: number;
@@ -177,7 +176,7 @@ export async function updateApplication(
         sitter_id: application.sitter_id,
         service_id: null,
         request_id: requestRow.id,
-        pet_id: requestRow.pet_id,
+        application_id: id,
         start_datetime: requestRow.start_datetime,
         end_datetime: requestRow.end_datetime,
         total_price: totalPrice,
@@ -190,6 +189,17 @@ export async function updateApplication(
       return {
         error: { code: "INTERNAL_ERROR", message: reservationError.message },
       };
+    }
+
+    const { data: requestPets } = await db
+      .from("request_pets")
+      .select("pet_id")
+      .eq("request_id", requestRow.id);
+
+    if (requestPets && requestPets.length > 0) {
+      await db.from("reservation_items").insert(
+        requestPets.map(({ pet_id }) => ({ reservation_id: reservation.id, pet_id })),
+      );
     }
 
     const { data: existingRoom } = await db

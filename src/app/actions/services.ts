@@ -113,9 +113,16 @@ export async function updateService(id: string, input: Partial<ServiceInput>) {
     };
   }
 
+  const updatePayload: typeof input & { deactivated_at?: string | null } = { ...input };
+  if (input.is_active === false) {
+    updatePayload.deactivated_at = new Date().toISOString();
+  } else if (input.is_active === true) {
+    updatePayload.deactivated_at = null;
+  }
+
   const { data, error } = await db
     .from("services")
-    .update(input)
+    .update(updatePayload)
     .eq("id", id)
     .select()
     .single();
