@@ -205,6 +205,9 @@ type ChatWindowHeaderProps = {
   name: string;
   sub: string;
   badge: Badge;
+  onGoToProfile?: () => void;
+  onLeaveChat?: () => void;
+  onReport?: () => void;
 };
 
 export function ChatWindowHeader({
@@ -212,7 +215,12 @@ export function ChatWindowHeader({
   name,
   sub,
   badge,
+  onGoToProfile,
+  onLeaveChat,
+  onReport,
 }: ChatWindowHeaderProps) {
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
     <div className="h-16 px-8 bg-white border-b border-orange-100 flex items-center justify-between shrink-0">
       <div className="flex items-center gap-4">
@@ -230,9 +238,51 @@ export function ChatWindowHeader({
         >
           {badge.label}
         </span>
-        <button className="p-2 hover:bg-orange-50 rounded-lg transition-colors">
-          <MoreVertical size={20} className="text-gray-500" />
-        </button>
+        <div className="relative">
+          <button
+            onClick={() => setMenuOpen((v) => !v)}
+            className="p-2 hover:bg-orange-50 rounded-lg transition-colors"
+          >
+            <MoreVertical size={20} className="text-gray-500" />
+          </button>
+          {menuOpen && (
+            <>
+              <div
+                className="fixed inset-0 z-10"
+                onClick={() => setMenuOpen(false)}
+              />
+              <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-lg border border-orange-100 z-20 overflow-hidden">
+                <button
+                  onClick={() => {
+                    onGoToProfile?.();
+                    setMenuOpen(false);
+                  }}
+                  className="w-full px-4 py-3 text-left text-sm text-stone-700 hover:bg-orange-50 transition-colors"
+                >
+                  프로필 보기
+                </button>
+                <button
+                  onClick={() => {
+                    onLeaveChat?.();
+                    setMenuOpen(false);
+                  }}
+                  className="w-full px-4 py-3 text-left text-sm text-stone-700 hover:bg-orange-50 transition-colors border-t border-orange-50"
+                >
+                  채팅 나가기
+                </button>
+                <button
+                  onClick={() => {
+                    onReport?.();
+                    setMenuOpen(false);
+                  }}
+                  className="w-full px-4 py-3 text-left text-sm text-red-500 hover:bg-red-50 transition-colors border-t border-orange-50"
+                >
+                  신고하기
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

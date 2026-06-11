@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Search,
   ChevronLeft,
@@ -185,6 +186,7 @@ const BOTTOM_NAV = [
 ] as const;
 
 export default function ChatPage() {
+  const router = useRouter();
   const [editMode, setEditMode] = useState(false);
   const [rooms, setRooms] = useState(Chat_One_On_One);
   const [applicants, setApplicants] = useState(Chat_Applicants);
@@ -204,6 +206,7 @@ export default function ChatPage() {
   const [sysMessages, setSysMessages] = useState<Record<number, string>>({});
 
   const [mobileChatView, setMobileChatView] = useState<"list" | "room">("list");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const selectedRoom =
     selectedRoomId !== null
@@ -449,9 +452,59 @@ export default function ChatPage() {
               >
                 {headerBadge.label}
               </span>
-              <button className="p-1">
-                <MoreVertical size={20} className="text-gray-500" />
-              </button>
+              <div className="relative">
+                <button
+                  onClick={() => setMobileMenuOpen((v) => !v)}
+                  className="p-1"
+                >
+                  <MoreVertical size={20} className="text-gray-500" />
+                </button>
+                {mobileMenuOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-10"
+                      onClick={() => setMobileMenuOpen(false)}
+                    />
+                    <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-lg border border-orange-100 z-20 overflow-hidden">
+                      <button
+                        onClick={() => {
+                          const id =
+                            activeTab === "one_on_one"
+                              ? selectedRoomId
+                              : selectedApplicantId;
+                          router.push(`/petsitters/${id}`);
+                          setMobileMenuOpen(false);
+                        }}
+                        className="w-full px-4 py-3 text-left text-sm text-stone-700 hover:bg-orange-50 transition-colors"
+                      >
+                        프로필로 이동하기
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (activeTab === "one_on_one" && selectedRoomId !== null)
+                            deleteRoom(selectedRoomId);
+                          else if (activeTab === "applicants" && selectedApplicantId !== null)
+                            deleteApplicant(selectedApplicantId);
+                          setMobileChatView("list");
+                          setMobileMenuOpen(false);
+                        }}
+                        className="w-full px-4 py-3 text-left text-sm text-stone-700 hover:bg-orange-50 transition-colors border-t border-orange-50"
+                      >
+                        채팅 나가기
+                      </button>
+                      <button
+                        onClick={() => {
+                          router.push("/myprofile/report");
+                          setMobileMenuOpen(false);
+                        }}
+                        className="w-full px-4 py-3 text-left text-sm text-red-500 hover:bg-red-50 transition-colors border-t border-orange-50"
+                      >
+                        신고하기
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
 
             {/* 메시지 영역 */}
@@ -653,6 +706,20 @@ export default function ChatPage() {
                 }
                 sub={getHeaderSub()}
                 badge={getHeaderBadge()}
+                onGoToProfile={() => {
+                  const id =
+                    activeTab === "one_on_one"
+                      ? selectedRoomId
+                      : selectedApplicantId;
+                  router.push(`/petsitters/${id}`);
+                }}
+                onLeaveChat={() => {
+                  if (activeTab === "one_on_one" && selectedRoomId !== null)
+                    deleteRoom(selectedRoomId);
+                  else if (activeTab === "applicants" && selectedApplicantId !== null)
+                    deleteApplicant(selectedApplicantId);
+                }}
+                onReport={() => router.push("/myprofile/report")}
               />
 
               <div className="flex-1 px-8 py-6 overflow-y-auto flex flex-col gap-6">
