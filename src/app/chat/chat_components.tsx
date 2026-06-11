@@ -28,6 +28,7 @@ export type ChatRoom = {
 // 지원 목록의 각 목록
 export type Applicant = {
   id: number;
+  postId: string;
   name: string;
   initial: string;
   rating: number;
