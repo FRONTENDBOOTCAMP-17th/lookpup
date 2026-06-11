@@ -192,20 +192,23 @@ export default function ChatPage() {
   const [activeTab, setActiveTab] = useState<"one_on_one" | "applicants">(
     "one_on_one",
   );
-  const [selectedRoomId, setSelectedRoomId] = useState(1);
+  const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
   const [input, setInput] = useState("");
 
-  const [selectedApplicantId, setSelectedApplicantId] = useState(0);
+  const [selectedApplicantId, setSelectedApplicantId] = useState<number | null>(
+    null,
+  );
 
   const [rejectedIds, setRejectedIds] = useState<Set<number>>(new Set());
   const [confirmedId, setConfirmedId] = useState<number | null>(null);
   const [sysMessages, setSysMessages] = useState<Record<number, string>>({});
 
-  const [mobileChatView, setMobileChatView] = useState<"list" | "room">(
-    "list",
-  );
+  const [mobileChatView, setMobileChatView] = useState<"list" | "room">("list");
 
-  const selectedRoom = rooms.find((r) => r.id === selectedRoomId) ?? rooms[0];
+  const selectedRoom =
+    selectedRoomId !== null
+      ? rooms.find((r) => r.id === selectedRoomId)
+      : undefined;
   const selectedApplicant = applicants.find(
     (a) => a.id === selectedApplicantId,
   );
@@ -213,13 +216,13 @@ export default function ChatPage() {
   function deleteRoom(id: number) {
     const next = rooms.filter((r) => r.id !== id);
     setRooms(next);
-    if (selectedRoomId === id) setSelectedRoomId(next[0]?.id ?? -1);
+    if (selectedRoomId === id) setSelectedRoomId(next[0]?.id ?? null);
   }
 
   function deleteApplicant(id: number) {
     const next = applicants.filter((a) => a.id !== id);
     setApplicants(next);
-    if (selectedApplicantId === id) setSelectedApplicantId(next[0]?.id ?? -1);
+    if (selectedApplicantId === id) setSelectedApplicantId(next[0]?.id ?? null);
   }
 
   function rejectApplicant(id: number) {
@@ -265,7 +268,7 @@ export default function ChatPage() {
   function getHeaderBadge() {
     if (activeTab === "one_on_one")
       return { label: "진행중", className: "bg-orange-50 text-orange-500" };
-    if (rejectedIds.has(selectedApplicantId))
+    if (selectedApplicantId !== null && rejectedIds.has(selectedApplicantId))
       return { label: "거절됨", className: "bg-stone-100 text-stone-500" };
     if (confirmedId === selectedApplicantId)
       return { label: "선택됨", className: "bg-green-50 text-green-700" };
@@ -275,7 +278,8 @@ export default function ChatPage() {
   function getHeaderSub() {
     if (activeTab === "one_on_one") return selectedRoom?.sub ?? "";
     if (confirmedId === selectedApplicantId) return "구인글 채팅 · 선택됨";
-    if (rejectedIds.has(selectedApplicantId)) return "구인글 채팅 · 거절됨";
+    if (selectedApplicantId !== null && rejectedIds.has(selectedApplicantId))
+      return "구인글 채팅 · 거절됨";
     return "구인글 채팅 · 지원자";
   }
 
@@ -291,6 +295,7 @@ export default function ChatPage() {
 
   const showApplicantActions =
     activeTab === "applicants" &&
+    selectedApplicantId !== null &&
     !rejectedIds.has(selectedApplicantId) &&
     confirmedId !== selectedApplicantId &&
     confirmedId === null;
@@ -352,7 +357,7 @@ export default function ChatPage() {
             </div>
 
             {/* 목록 */}
-            <div className="flex-1 overflow-y-auto pb-[60px]">
+            <div className="flex-1 overflow-y-auto pb-15">
               {activeTab === "one_on_one" &&
                 rooms.map((room) => (
                   <ChatRoomItem
@@ -404,7 +409,7 @@ export default function ChatPage() {
             </div>
 
             {/* 하단 네비게이션 */}
-            <div className="fixed bottom-0 left-0 right-0 h-[60px] bg-white border-t border-orange-100 flex z-40">
+            <div className="fixed bottom-0 left-0 right-0 h-15 bg-white border-t border-orange-100 flex z-40">
               {BOTTOM_NAV.map(({ href, icon: Icon, label }) => (
                 <Link
                   key={href}
@@ -453,7 +458,9 @@ export default function ChatPage() {
             <div className="flex-1 px-4 py-4 overflow-y-auto flex flex-col gap-4">
               {(activeTab === "one_on_one"
                 ? Messages_one_on_one
-                : (Messages_Applicants[selectedApplicantId] ?? [])
+                : selectedApplicantId !== null
+                  ? (Messages_Applicants[selectedApplicantId] ?? [])
+                  : []
               ).map((msg) => (
                 <MessageBubble
                   key={msg.id}
@@ -463,6 +470,7 @@ export default function ChatPage() {
               ))}
 
               {activeTab === "applicants" &&
+                selectedApplicantId !== null &&
                 sysMessages[selectedApplicantId] && (
                   <div className="flex justify-center">
                     <span className="px-4 py-1 bg-white rounded-full text-gray-400 text-xs">
@@ -618,6 +626,18 @@ export default function ChatPage() {
                 새로운 채팅이 존재하지 않습니다
               </p>
             </div>
+          ) : (activeTab === "one_on_one" && selectedRoomId === null) ||
+            (activeTab === "applicants" && selectedApplicantId === null) ? (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center">
+                <p className="text-base mb-2 text-stone-500">
+                  채팅방을 선택해주세요
+                </p>
+                <p className="text-sm text-stone-400">
+                  왼쪽 목록에서 대화를 시작할 상대를 선택하세요
+                </p>
+              </div>
+            </div>
           ) : (
             <>
               <ChatWindowHeader
@@ -638,7 +658,7 @@ export default function ChatPage() {
               <div className="flex-1 px-8 py-6 overflow-y-auto flex flex-col gap-6">
                 {(activeTab === "one_on_one"
                   ? Messages_one_on_one
-                  : (Messages_Applicants[selectedApplicantId] ?? [])
+                  : (Messages_Applicants[selectedApplicantId!] ?? [])
                 ).map((msg) => (
                   <MessageBubble
                     key={msg.id}
@@ -652,10 +672,10 @@ export default function ChatPage() {
                 ))}
 
                 {activeTab === "applicants" &&
-                  sysMessages[selectedApplicantId] && (
+                  sysMessages[selectedApplicantId!] && (
                     <div className="flex justify-center">
                       <span className="px-4 py-1 bg-white rounded-full text-gray-400 text-xs">
-                        {sysMessages[selectedApplicantId]}
+                        {sysMessages[selectedApplicantId!]}
                       </span>
                     </div>
                   )}
