@@ -23,6 +23,7 @@ import {
   MapPin,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
+import Avatar, { AvatarMobile } from "@/components/ui/Avatar";
 import { signOut } from "@/app/actions/auth";
 
 // 더미데이터
@@ -253,7 +254,12 @@ function SitterProfileSection() {
       <div className="p-5 space-y-4">
         {/* 프로필 헤더 */}
         <div className="flex gap-4">
-          <Avatar initial={p.initial} size="lg" variant="orange" className="shrink-0" />
+          <Avatar
+            initial={p.initial}
+            size="lg"
+            variant="orange"
+            className="shrink-0"
+          />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <span className="text-lg font-bold text-stone-900">{p.name}</span>
@@ -269,8 +275,12 @@ function SitterProfileSection() {
             </div>
             <div className="flex items-center gap-1">
               <Star size={12} className="fill-amber-400 text-amber-400" />
-              <span className="text-sm font-bold text-stone-900">{p.rating}</span>
-              <span className="text-xs text-gray-400">({p.reviewCount}개 리뷰)</span>
+              <span className="text-sm font-bold text-stone-900">
+                {p.rating}
+              </span>
+              <span className="text-xs text-gray-400">
+                ({p.reviewCount}개 리뷰)
+              </span>
             </div>
           </div>
         </div>
@@ -278,7 +288,10 @@ function SitterProfileSection() {
         {/* 서비스 태그 */}
         <div className="flex gap-2 flex-wrap">
           {p.services.map((s) => (
-            <span key={s} className="px-3 py-1 bg-orange-50 rounded-full text-orange-500 text-xs font-medium">
+            <span
+              key={s}
+              className="px-3 py-1 bg-orange-50 rounded-full text-orange-500 text-xs font-medium"
+            >
               {s}
             </span>
           ))}
@@ -290,7 +303,10 @@ function SitterProfileSection() {
             { label: "경력", value: p.career },
             { label: "완료 건수", value: p.completedCount },
           ].map((item) => (
-            <div key={item.label} className="bg-orange-50 rounded-xl px-3 py-2.5 text-center">
+            <div
+              key={item.label}
+              className="bg-orange-50 rounded-xl px-3 py-2.5 text-center"
+            >
               <p className="text-sm font-bold text-orange-500">{item.value}</p>
               <p className="text-xs text-gray-400 mt-0.5">{item.label}</p>
             </div>
@@ -447,7 +463,9 @@ export default function MyProfilePage() {
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-500">이번 달 수익</span>
+                      <span className="text-xs text-gray-500">
+                        이번 달 수익
+                      </span>
                       <span className="text-sm font-bold text-orange-500">
                         {DUMMY_SITTER_SIDEBAR_STATS.monthlyEarnings}
                       </span>
@@ -506,7 +524,9 @@ export default function MyProfilePage() {
                   {userType === "sitter" && (
                     <div>
                       <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-lg text-stone-900">펫시터 프로필</h3>
+                        <h3 className="text-lg text-stone-900">
+                          펫시터 프로필
+                        </h3>
                         <span className="text-xs text-gray-400">
                           공개 중인 프로필
                         </span>
