@@ -19,9 +19,8 @@ import {
   BookOpen,
   User,
   UserX,
-  MapPin,
   Pencil,
-  Trash2,
+  MapPin,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Avatar, { AvatarMobile } from "@/components/ui/Avatar";
@@ -70,7 +69,6 @@ const DUMMY_SITTER_PROFILE = {
   services: ["방문돌봄", "위탁돌봄", "산책"],
   career: "5년",
   completedCount: "230건",
-  responseRate: "98%",
 };
 
 const OWNER_MENU: MenuItem[] = [
@@ -244,7 +242,8 @@ function SidebarItem({
   );
 }
 
-function SitterProfileCard() {
+function SitterProfileSection() {
+  const p = DUMMY_SITTER_PROFILE;
   return (
     <div className="bg-white border border-orange-100 rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.08)] overflow-hidden">
       {/* 상단 그라디언트 바 */}
@@ -253,88 +252,66 @@ function SitterProfileCard() {
       <div className="p-5 space-y-4">
         {/* 프로필 헤더 */}
         <div className="flex gap-4">
-          <div className="relative shrink-0">
-            <div className="size-14 bg-orange-50 rounded-full border-2 border-orange-100 flex items-center justify-center overflow-hidden">
-              <span className="text-orange-500 text-xl">
-                {DUMMY_SITTER_PROFILE.initial}
-              </span>
-            </div>
-            <div className="absolute bottom-0 right-0 size-5 bg-orange-500 rounded-full flex items-center justify-center shadow-sm">
-              <Pencil size={10} className="text-white" />
-            </div>
-          </div>
-
+          <Avatar initial={p.initial} size="lg" variant="orange" className="shrink-0" />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-lg font-bold text-stone-900">
-                {DUMMY_SITTER_PROFILE.name}
-              </span>
-              {DUMMY_SITTER_PROFILE.verified && (
+              <span className="text-lg font-bold text-stone-900">{p.name}</span>
+              {p.verified && (
                 <span className="px-2 py-0.5 bg-orange-500 rounded text-white text-[10px] font-medium">
                   인증
                 </span>
               )}
             </div>
             <div className="flex items-center gap-1 mb-1">
-              <MapPin size={12} className="text-gray-500" />
-              <span className="text-xs text-gray-500">
-                {DUMMY_SITTER_PROFILE.location}
-              </span>
+              <MapPin size={12} className="text-gray-400" />
+              <span className="text-xs text-gray-500">{p.location}</span>
             </div>
             <div className="flex items-center gap-1">
               <Star size={12} className="fill-amber-400 text-amber-400" />
-              <span className="text-sm font-bold text-stone-900">
-                {DUMMY_SITTER_PROFILE.rating}
-              </span>
-              <span className="text-xs text-gray-400">
-                ({DUMMY_SITTER_PROFILE.reviewCount}개 리뷰)
-              </span>
+              <span className="text-sm font-bold text-stone-900">{p.rating}</span>
+              <span className="text-xs text-gray-400">({p.reviewCount}개 리뷰)</span>
             </div>
           </div>
         </div>
 
         {/* 서비스 태그 */}
         <div className="flex gap-2 flex-wrap">
-          {DUMMY_SITTER_PROFILE.services.map((s) => (
-            <span
-              key={s}
-              className="px-3 py-1 bg-orange-50 rounded-full text-orange-500 text-xs font-medium"
-            >
+          {p.services.map((s) => (
+            <span key={s} className="px-3 py-1 bg-orange-50 rounded-full text-orange-500 text-xs font-medium">
               {s}
             </span>
           ))}
         </div>
 
-        {/* 경력/완료건수/응답률 */}
-        <div className="grid grid-cols-3 gap-2">
+        {/* 경력 / 완료 건수 */}
+        <div className="grid grid-cols-2 gap-2">
           {[
-            { label: "경력", value: DUMMY_SITTER_PROFILE.career },
-            { label: "완료 건수", value: DUMMY_SITTER_PROFILE.completedCount },
-            { label: "응답률", value: DUMMY_SITTER_PROFILE.responseRate },
+            { label: "경력", value: p.career },
+            { label: "완료 건수", value: p.completedCount },
           ].map((item) => (
-            <div
-              key={item.label}
-              className="bg-orange-50 rounded-xl px-3 py-2.5 text-center"
-            >
+            <div key={item.label} className="bg-orange-50 rounded-xl px-3 py-2.5 text-center">
               <p className="text-sm font-bold text-orange-500">{item.value}</p>
               <p className="text-xs text-gray-400 mt-0.5">{item.label}</p>
             </div>
           ))}
         </div>
 
-        {/* 액션 버튼 */}
-        <div className="flex gap-2 pt-1">
-          <button className="flex-1 py-2.5 bg-orange-50 border border-orange-100 rounded-xl flex items-center justify-center gap-1.5 text-orange-500 text-xs hover:bg-orange-100 transition-colors">
-            <User size={14} />
+        {/* 구분선 + 액션 버튼 */}
+        <div className="border-t border-orange-100 pt-4 flex gap-2">
+          <Link
+            href="/myprofile/sitter-profile"
+            className="flex-1 py-2.5 bg-orange-50 border border-orange-100 rounded-xl flex items-center justify-center gap-1.5 text-orange-500 text-xs font-medium hover:bg-orange-100 transition-colors"
+          >
+            <User size={13} />
             프로필 보기
-          </button>
-          <button className="flex-1 py-2.5 bg-orange-500 rounded-xl flex items-center justify-center gap-1.5 text-white text-xs hover:bg-orange-600 transition-colors">
-            <Pencil size={14} />
+          </Link>
+          <Link
+            href="/myprofile/sitter-edit"
+            className="flex-1 py-2.5 bg-orange-500 rounded-xl flex items-center justify-center gap-1.5 text-white text-xs font-medium hover:bg-orange-600 transition-colors"
+          >
+            <Pencil size={13} />
             수정하기
-          </button>
-          <button className="size-10 bg-red-100 rounded-xl flex items-center justify-center hover:bg-red-200 transition-colors shrink-0">
-            <Trash2 size={14} className="text-red-500" />
-          </button>
+          </Link>
         </div>
       </div>
     </div>
@@ -533,7 +510,7 @@ export default function MyProfilePage() {
                           공개 중인 프로필
                         </span>
                       </div>
-                      <SitterProfileCard />
+                      <SitterProfileSection />
                     </div>
                   )}
 
