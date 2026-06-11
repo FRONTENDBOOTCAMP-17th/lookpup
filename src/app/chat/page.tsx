@@ -29,6 +29,7 @@ import {
   type Message,
 } from "./chat_components";
 import { CustomModalPayment } from "@/components/common/CustomModalPayment";
+import CareRecordModal from "@/components/common/chat/CareRecordModal";
 
 // 더미데이터
 const Chat_One_On_One: ChatRoom[] = [
@@ -239,6 +240,7 @@ export default function ChatPage() {
     useState<Applicant | null>(null);
   const [plusMenuOpen, setPlusMenuOpen] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [careRecordOpen, setCareRecordOpen] = useState(false);
 
   function openApplicantProfile(id: number) {
     const found = applicants.find((a) => a.id === id) ?? null;
@@ -842,7 +844,7 @@ export default function ChatPage() {
                   }
                   onSendCareRecord={
                     activeTab === "one_on_one"
-                      ? () => setPlusMenuOpen(false)
+                      ? () => { setPlusMenuOpen(false); setCareRecordOpen(true); }
                       : undefined
                   }
                   onSendPhoto={() => setPlusMenuOpen(false)}
@@ -870,6 +872,12 @@ export default function ChatPage() {
       <CustomModalPayment
         open={paymentModalOpen}
         onClose={() => setPaymentModalOpen(false)}
+      />
+
+      <CareRecordModal
+        open={careRecordOpen}
+        onClose={() => setCareRecordOpen(false)}
+        serviceType="care"
       />
 
     </>
