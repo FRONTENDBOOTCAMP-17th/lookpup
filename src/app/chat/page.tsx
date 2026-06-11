@@ -3,23 +3,72 @@
 import { useState } from "react";
 import { Search, Plus, Send, MoreVertical, Trash2 } from "lucide-react";
 import Header from "@/components/layout/Header";
+import Avatar from "@/components/ui/Avatar";
 
 //더미더미 데이터
 //일단 디비에 온라인 없어서 피그마에 있는 온라인은 빼둠
 const CHAT_ROOMS = [
-  { id: 1, name: "김민지", initial: "김", lastMessage: "네, 그 시간에 가능합니다!", time: "오후 2:30", unread: 2 },
-  { id: 2, name: "이서연", initial: "이", lastMessage: "사진 감사합니다", time: "오전 11:15", unread: 0 },
-  { id: 3, name: "박준호", initial: "박", lastMessage: "알겠습니다", time: "어제", unread: 0 },
-  { id: 4, name: "최예진", initial: "최", lastMessage: "예약 완료했습니다", time: "6월 10일", unread: 1 },
+  {
+    id: 1,
+    name: "김민지",
+    initial: "김",
+    lastMessage: "네, 그 시간에 가능합니다!",
+    time: "오후 2:30",
+    unread: 2,
+  },
+  {
+    id: 2,
+    name: "이서연",
+    initial: "이",
+    lastMessage: "사진 감사합니다",
+    time: "오전 11:15",
+    unread: 0,
+  },
+  {
+    id: 3,
+    name: "박준호",
+    initial: "박",
+    lastMessage: "알겠습니다",
+    time: "어제",
+    unread: 0,
+  },
+  {
+    id: 4,
+    name: "최예진",
+    initial: "최",
+    lastMessage: "예약 완료했습니다",
+    time: "6월 10일",
+    unread: 1,
+  },
 ];
 
 const MESSAGES = [
-  { id: 1, from: "other", text: "안녕하세요! 6월 15일에 방문돌봄 예약 가능할까요?", time: "오후 2:15" },
-  { id: 2, from: "me", text: "네, 안녕하세요! 그날 오전 시간대는 어떠세요?", time: "오후 2:18" },
-  { id: 3, from: "other", text: "좋습니다! 오전 10시쯤 가능하신가요?", time: "오후 2:20" },
+  {
+    id: 1,
+    from: "other",
+    text: "안녕하세요! 6월 15일에 방문돌봄 예약 가능할까요?",
+    time: "오후 2:15",
+  },
+  {
+    id: 2,
+    from: "me",
+    text: "네, 안녕하세요! 그날 오전 시간대는 어떠세요?",
+    time: "오후 2:18",
+  },
+  {
+    id: 3,
+    from: "other",
+    text: "좋습니다! 오전 10시쯤 가능하신가요?",
+    time: "오후 2:20",
+  },
   { id: 4, from: "divider", text: "2024년 6월 14일" },
   { id: 5, from: "me", text: "네, 그 시간에 가능합니다!", time: "오후 2:30" },
-  { id: 6, from: "other", text: "감사합니다. 그럼 예약 진행하겠습니다", time: "오후 2:32" },
+  {
+    id: 6,
+    from: "other",
+    text: "감사합니다. 그럼 예약 진행하겠습니다",
+    time: "오후 2:32",
+  },
 ];
 
 export default function ChatPage() {
@@ -68,7 +117,9 @@ export default function ChatPage() {
             {rooms.map((room) => (
               <div
                 key={room.id}
-                onClick={() => { if (!editMode) setSelectedId(room.id); }}
+                onClick={() => {
+                  if (!editMode) setSelectedId(room.id);
+                }}
                 className={`flex items-start gap-4 p-5 border-b border-orange-100 transition-colors ${
                   !editMode ? "cursor-pointer hover:bg-orange-50" : ""
                 } ${selectedId === room.id && !editMode ? "bg-orange-50" : ""}`}
@@ -85,22 +136,24 @@ export default function ChatPage() {
 
                 {/* 아바타 */}
                 <div className="relative shrink-0">
-                  <div className="w-14 h-14 bg-orange-50 rounded-full border-2 border-orange-100 flex items-center justify-center">
-                    <span className="text-orange-500 text-xl font-semibold">{room.initial}</span>
-                  </div>
+                  <Avatar initial={room.initial} size="lg" />
                 </div>
 
                 {/* 내용 */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <span className="text-stone-900 text-base font-semibold">{room.name}</span>
+                    <span className="text-stone-900 text-base font-semibold">
+                      {room.name}
+                    </span>
                     {room.unread > 0 && !editMode && (
                       <span className="w-6 h-5 px-1.5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-medium">
                         {room.unread}
                       </span>
                     )}
                   </div>
-                  <p className="text-gray-500 text-sm leading-5 py-1 truncate">{room.lastMessage}</p>
+                  <p className="text-gray-500 text-sm leading-5 py-1 truncate">
+                    {room.lastMessage}
+                  </p>
                   <span className="text-gray-500 text-xs">{room.time}</span>
                 </div>
               </div>
@@ -114,13 +167,15 @@ export default function ChatPage() {
             {/* 채팅 헤더 */}
             <div className="h-16 px-8 bg-white border-b border-orange-100 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-orange-50 rounded-full border-2 border-orange-100 flex items-center justify-center">
-                  <span className="text-orange-500 text-base font-semibold">{selectedRoom.initial}</span>
-                </div>
-                <p className="text-stone-900 text-lg font-semibold leading-7">{selectedRoom.name}</p>
+                <Avatar initial={selectedRoom.initial} />
+                <p className="text-stone-900 text-lg font-semibold leading-7">
+                  {selectedRoom.name}
+                </p>
               </div>
               <div className="flex items-center gap-3">
-                <span className="px-3 py-1 bg-orange-50 text-orange-500 text-xs font-medium rounded-full">현재 예약</span>
+                <span className="px-3 py-1 bg-orange-50 text-orange-500 text-xs font-medium rounded-full">
+                  현재 예약
+                </span>
                 <button className="p-2 hover:bg-orange-50 rounded-lg transition-colors">
                   <MoreVertical size={20} className="text-gray-500" />
                 </button>
@@ -133,21 +188,25 @@ export default function ChatPage() {
                 if (msg.from === "divider") {
                   return (
                     <div key={msg.id} className="flex justify-center">
-                      <span className="px-4 py-1 bg-white rounded-full text-gray-500 text-sm">{msg.text}</span>
+                      <span className="px-4 py-1 bg-white rounded-full text-gray-500 text-sm">
+                        {msg.text}
+                      </span>
                     </div>
                   );
                 }
                 if (msg.from === "other") {
                   return (
                     <div key={msg.id} className="flex items-start gap-3">
-                      <div className="w-8 h-8 bg-orange-50 rounded-full border-2 border-orange-100 flex items-center justify-center shrink-0">
-                        <span className="text-orange-500 text-sm font-semibold">{selectedRoom.initial}</span>
-                      </div>
+                      <Avatar initial={selectedRoom.initial} size="sm" />
                       <div>
                         <div className="max-w-xs px-5 py-4 bg-white rounded-tl-sm rounded-tr-2xl rounded-bl-2xl rounded-br-2xl shadow-sm">
-                          <p className="text-stone-900 text-sm leading-6">{msg.text}</p>
+                          <p className="text-stone-900 text-sm leading-6">
+                            {msg.text}
+                          </p>
                         </div>
-                        <p className="text-gray-500 text-xs mt-1 pl-3">{msg.time}</p>
+                        <p className="text-gray-500 text-xs mt-1 pl-3">
+                          {msg.time}
+                        </p>
                       </div>
                     </div>
                   );

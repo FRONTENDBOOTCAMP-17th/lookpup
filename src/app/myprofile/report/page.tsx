@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, AlertTriangle, Check, ImagePlus, X } from "lucide-react";
 import Header from "@/components/layout/Header";
 import { CustomModal } from "@/components/common/CustomModal";
+import { AvatarReport } from "@/components/ui/Avatar";
 
 const REPORT_REASONS = [
   "부적절한 언행",
@@ -71,15 +72,10 @@ export default function ReportPage() {
           <div className="bg-white border border-[#ffe9d6] rounded-2xl p-6">
             <p className="text-sm font-semibold text-gray-500">신고 대상</p>
             <div className="flex items-center gap-4 mt-4">
-              {/* 아바타 */}
-              <div className="relative shrink-0">
-                <div className="w-14 h-14 rounded-full bg-[#aed6f1] flex items-center justify-center">
-                  <span className="text-white text-lg font-bold">박</span>
-                </div>
-                <div className="absolute bottom-0 right-0 w-5 h-5 rounded-full bg-[#e8742a] flex items-center justify-center">
-                  <Check className="w-3 h-3 text-white stroke-[2.5]" />
-                </div>
-              </div>
+              <AvatarReport
+                initial="박"
+                badge={<Check className="w-3 h-3 text-white stroke-[2.5]" />}
+              />
               {/* 이름 · 역할 · 서비스 정보 */}
               <div className="flex flex-col gap-1">
                 <div className="flex items-center gap-2">
