@@ -2,17 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import {
-  MapPin,
-  Calendar,
-  DollarSign,
-  Search,
-  SlidersHorizontal,
-  ChevronRight,
-} from "lucide-react";
+import { MapPin, Calendar, DollarSign, ChevronRight } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import SearchFilterBar from "@/components/common/SearchFilterBar";
 
 // 더미데이터 꼬라박기
 
@@ -168,44 +161,15 @@ export default function BoardPage() {
           </div>
 
           {/* 검색 + 필터 */}
-          <div className="p-4 md:p-6 bg-white rounded-2xl shadow-sm mb-6 flex flex-col gap-4">
-            {/* 검색창 + 필터 버튼 */}
-            <div className="flex gap-2 md:gap-3">
-              <div className="flex-1 flex items-center gap-2 px-3 md:px-4 py-3 bg-orange-50 rounded-xl min-w-0">
-                <Search className="w-4 h-4 md:w-5 md:h-5 text-gray-400 shrink-0" />
-                <input
-                  type="text"
-                  placeholder="제목, 내용으로 검색"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="flex-1 min-w-0 bg-transparent text-sm md:text-base text-stone-900 placeholder:text-stone-900/50 outline-none"
-                />
-              </div>
-              <button className="shrink-0 flex items-center gap-1.5 px-3 md:px-5 py-3 bg-orange-50 rounded-xl text-stone-900 font-medium hover:bg-orange-100 transition-colors">
-                <SlidersHorizontal className="w-4 h-4 md:w-5 md:h-5" />
-                <span className="text-sm">필터</span>
-              </button>
-            </div>
-
-            {/* 카테고리 탭 */}
-            <ScrollArea className="w-full">
-              <div className="flex gap-2 pb-1">
-                {CATEGORIES.map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => setActiveCategory(cat)}
-                    className={`shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                      activeCategory === cat
-                        ? "bg-orange-500 text-white"
-                        : "bg-orange-50 text-gray-500 hover:bg-orange-100"
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                ))}
-              </div>
-              <ScrollBar orientation="horizontal" />
-            </ScrollArea>
+          <div className="p-4 md:p-6 bg-white rounded-2xl shadow-sm mb-6">
+            <SearchFilterBar
+              placeholder="제목, 내용으로 검색"
+              filters={CATEGORIES}
+              activeFilter={activeCategory}
+              onFilterChange={setActiveCategory}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+            />
           </div>
 
           {/* 목록 헤더 */}
