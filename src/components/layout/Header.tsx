@@ -4,7 +4,15 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Menu, X } from "lucide-react";
+import {
+  Bell,
+  ChevronRight,
+  LogOut,
+  Menu,
+  MessageSquare,
+  User,
+  X,
+} from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/petsitters", label: "펫시터 찾기" },
@@ -12,10 +20,23 @@ const NAV_ITEMS = [
   { href: "/about", label: "서비스 소개" },
 ];
 
+const USER = {
+  name: "김민수",
+  email: "kimminsu@example.com",
+  initial: "김",
+  verified: true,
+};
+
 export default function Header() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
+
+  //로그인 테스트용 임시 코드 (true/false로 로그인 상태 토글)
+  //로그인 연동할때 auth/session 값으로 교체
+  const isLoggedIn = false;
+
+  const unreadCount = 2;
 
   const isActivePath = (href: string) => {
     return pathname === href || pathname.startsWith(`${href}/`);
@@ -38,7 +59,6 @@ export default function Header() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
 
   return (
     <header className="sticky top-0 z-50 w-full bg-white border-b border-orange-100 shadow-[0px_1px_8px_0px_rgba(232,116,42,0.08)]">
@@ -79,22 +99,59 @@ export default function Header() {
               })}
             </nav>
 
-            {/* 비로그인 액션 */}
-            <div className="flex items-center gap-2.5 shrink-0">
-              <Link
-                href="/login"
-                className="h-9 px-4 inline-flex items-center justify-center rounded-[10px] border border-orange-500 bg-white text-orange-500 text-xs font-normal leading-5 hover:bg-orange-50 transition-colors"
-              >
-                로그인
-              </Link>
+            {/* 우측 액션 */}
+            {isLoggedIn ? (
+              <div className="w-40 flex items-center justify-start gap-2 shrink-0">
+                {/* 알림 */}
+                <Link
+                  href="/notifications"
+                  aria-label="알림 보기"
+                  className="relative p-2 rounded-full hover:bg-orange-50 transition-colors"
+                >
+                  <Bell size={20} className="text-gray-500" strokeWidth={1.8} />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 size-4 bg-red-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold leading-4">
+                      {unreadCount}
+                    </span>
+                  )}
+                </Link>
 
-              <Link
-                href="/signup"
-                className="h-9 px-5 inline-flex items-center justify-center rounded-[10px] bg-orange-500 text-white text-xs font-normal leading-5 hover:bg-orange-600 transition-colors"
-              >
-                회원가입
-              </Link>
-            </div>
+                {/* 프로필 */}
+                <Link
+                  href="/myprofile"
+                  aria-label="마이페이지로 이동"
+                  className="pl-1"
+                >
+                  <div className="size-9 rounded-full bg-gradient-to-br from-orange-500 to-orange-300 flex items-center justify-center text-white text-sm font-bold leading-5 hover:ring-2 hover:ring-orange-200 transition">
+                    {USER.initial}
+                  </div>
+                </Link>
+
+                {/* 채팅 */}
+                <Link
+                  href="/chat"
+                  className="ml-1 h-9 px-4 inline-flex items-center justify-center rounded-[10px] bg-orange-500 text-white text-xs font-normal leading-5 hover:bg-orange-600 transition-colors"
+                >
+                  채팅
+                </Link>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2.5 shrink-0">
+                <Link
+                  href="/login"
+                  className="h-9 px-4 inline-flex items-center justify-center rounded-[10px] border border-orange-500 bg-white text-orange-500 text-xs font-normal leading-5 hover:bg-orange-50 transition-colors"
+                >
+                  로그인
+                </Link>
+
+                <Link
+                  href="/signup"
+                  className="h-9 px-5 inline-flex items-center justify-center rounded-[10px] bg-orange-500 text-white text-xs font-normal leading-5 hover:bg-orange-600 transition-colors"
+                >
+                  회원가입
+                </Link>
+              </div>
+            )}
           </div>
         </div>
 
@@ -113,28 +170,87 @@ export default function Header() {
               />
             </Link>
 
-            {/* 햄버거 버튼 */}
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen((prev) => !prev)}
-              aria-label={mobileMenuOpen ? "메뉴 닫기" : "메뉴 열기"}
-              aria-expanded={mobileMenuOpen}
-              className={`size-10 rounded-xl flex items-center justify-center transition-colors ${
-                mobileMenuOpen ? "bg-orange-50" : "hover:bg-orange-50"
-              }`}
-            >
-              {mobileMenuOpen ? (
-                <X size={22} className="text-stone-900" strokeWidth={2} />
-              ) : (
-                <Menu size={22} className="text-stone-900" strokeWidth={2} />
+            <div className="flex items-center gap-1.5">
+              {isLoggedIn && (
+                <>
+                  {/* 모바일 알림 */}
+                  <Link
+                    href="/notifications"
+                    aria-label="알림 보기"
+                    className="relative p-2 rounded-full hover:bg-orange-50 transition-colors"
+                  >
+                    <Bell size={20} className="text-gray-500" strokeWidth={1.8} />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 size-4 bg-red-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold leading-4">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </Link>
+
+                  {/* 480px 이상에서만 상단 프로필 표시하기.... */}
+                  <Link
+                    href="/myprofile"
+                    aria-label="마이페이지로 이동"
+                    className="hidden min-[480px]:flex size-8 rounded-full bg-gradient-to-br from-orange-500 to-orange-300 items-center justify-center text-white text-sm font-bold leading-5"
+                  >
+                    {USER.initial}
+                  </Link>
+                </>
               )}
-            </button>
+
+              {/* 햄버거 버튼 */}
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen((prev) => !prev)}
+                aria-label={mobileMenuOpen ? "메뉴 닫기" : "메뉴 열기"}
+                aria-expanded={mobileMenuOpen}
+                className={`size-10 rounded-xl flex items-center justify-center transition-colors ${
+                  mobileMenuOpen ? "bg-orange-50" : "hover:bg-orange-50"
+                }`}
+              >
+                {mobileMenuOpen ? (
+                  <X size={22} className="text-stone-900" strokeWidth={2} />
+                ) : (
+                  <Menu size={22} className="text-stone-900" strokeWidth={2} />
+                )}
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Mobile Dropdown Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden w-full bg-white border-t border-orange-100 border-b shadow-[0px_4px_16px_0px_rgba(40,26,14,0.08)]">
+          <div className="md:hidden w-full bg-white border-t border-orange-100 border-b shadow-[0px_4px_20px_0px_rgba(40,26,14,0.10)]">
+            {isLoggedIn && (
+              <div className="w-full px-5 py-4 bg-orange-50 border-b border-orange-100 flex items-center gap-3">
+                <Link
+                  href="/myprofile"
+                  onClick={closeMobileMenu}
+                  className="size-11 rounded-full bg-gradient-to-br from-orange-500 to-orange-300 flex items-center justify-center text-white text-base font-bold leading-6 shrink-0"
+                >
+                  {USER.initial}
+                </Link>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-stone-900 text-base font-bold leading-6">
+                      {USER.name}
+                    </p>
+
+                    {USER.verified && (
+                      <span className="px-1.5 h-5 rounded-sm bg-orange-500 flex items-center text-white text-[10px] font-normal leading-4">
+                        인증
+                      </span>
+                    )}
+                  </div>
+
+                  <p className="mt-0.5 text-gray-400 text-xs font-normal leading-4 truncate">
+                    {USER.email}
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* 메뉴 목록 */}
             <nav className="w-full px-4 pt-2 pb-1 flex flex-col">
               {NAV_ITEMS.map(({ href, label }) => {
@@ -145,44 +261,113 @@ export default function Header() {
                     key={href}
                     href={href}
                     onClick={closeMobileMenu}
-                    className={`h-12 px-4 py-3.5 rounded-xl inline-flex items-center gap-3 text-base font-medium leading-6 transition-colors ${
+                    className={`px-4 py-3.5 rounded-xl inline-flex items-center justify-between text-base font-medium leading-6 transition-colors ${
                       isActive
                         ? "bg-orange-50 text-orange-500"
                         : "text-stone-900 hover:bg-orange-50"
                     }`}
                   >
-                    {isActive && (
-                      <span className="size-1.5 rounded-full bg-orange-500 shrink-0" />
+                    <span className="inline-flex items-center gap-2">
+                      {isActive && (
+                        <span className="size-1.5 rounded-full bg-orange-500 shrink-0" />
+                      )}
+                      {label}
+                    </span>
+
+                    {isLoggedIn && (
+                      <ChevronRight
+                        size={16}
+                        className={isActive ? "text-orange-500" : "text-gray-300"}
+                        strokeWidth={2}
+                      />
                     )}
-                    <span>{label}</span>
                   </Link>
                 );
               })}
             </nav>
 
-            {/* 구분선 */}
             <div className="px-5">
               <div className="h-px w-full bg-orange-100" />
             </div>
 
-            {/* 로그인 / 회원가입 */}
-            <div className="w-full px-5 pt-4 pb-5 flex flex-col gap-3">
-              <Link
-                href="/login"
-                onClick={closeMobileMenu}
-                className="w-full h-12 rounded-[10px] border border-orange-500 bg-white flex items-center justify-center text-orange-500 text-base font-normal leading-6 hover:bg-orange-50 transition-colors"
-              >
-                로그인
-              </Link>
+            {isLoggedIn ? (
+              <>
+                {/* 로그인 상태 추가 메뉴 */}
+                <div className="w-full px-4 py-2 flex flex-col">
+                  <Link
+                    href="/myprofile"
+                    onClick={closeMobileMenu}
+                    className="px-4 py-3 rounded-xl inline-flex items-center justify-between hover:bg-orange-50 transition-colors"
+                  >
+                    <span className="inline-flex items-center gap-3">
+                      <span className="size-8 bg-orange-50 rounded-xl flex items-center justify-center">
+                        <User size={16} className="text-orange-500" strokeWidth={1.8} />
+                      </span>
+                      <span className="text-stone-900 text-base font-medium leading-6">
+                        마이페이지
+                      </span>
+                    </span>
 
-              <Link
-                href="/signup"
-                onClick={closeMobileMenu}
-                className="w-full h-12 rounded-[10px] bg-orange-500 flex items-center justify-center text-white text-base font-normal leading-6 hover:bg-orange-600 transition-colors"
-              >
-                회원가입
-              </Link>
-            </div>
+                    <ChevronRight size={16} className="text-gray-300" strokeWidth={2} />
+                  </Link>
+
+                  <Link
+                    href="/chat"
+                    onClick={closeMobileMenu}
+                    className="px-4 py-3 rounded-xl inline-flex items-center justify-between hover:bg-orange-50 transition-colors"
+                  >
+                    <span className="inline-flex items-center gap-3">
+                      <span className="size-8 bg-blue-50 rounded-xl flex items-center justify-center">
+                        <MessageSquare
+                          size={16}
+                          className="text-blue-500"
+                          strokeWidth={1.8}
+                        />
+                      </span>
+                      <span className="text-stone-900 text-base font-medium leading-6">
+                        채팅
+                      </span>
+                    </span>
+
+                    <ChevronRight size={16} className="text-gray-300" strokeWidth={2} />
+                  </Link>
+                </div>
+
+                <div className="px-5">
+                  <div className="h-px w-full bg-orange-100" />
+                </div>
+
+                {/* 로그아웃 */}
+                <div className="w-full px-5 py-4">
+                  <button
+                    type="button"
+                    className="w-full h-12 rounded-xl border border-orange-100 bg-white flex items-center justify-center gap-2 text-gray-500 text-sm font-normal leading-6 hover:bg-orange-50 transition-colors"
+                  >
+                    <LogOut size={16} className="text-gray-500" strokeWidth={1.8} />
+                    로그아웃
+                  </button>
+                </div>
+              </>
+            ) : (
+              /* 비로그인 상태 로그인 / 회원가입 */
+              <div className="w-full px-5 pt-4 pb-5 flex flex-col gap-3">
+                <Link
+                  href="/login"
+                  onClick={closeMobileMenu}
+                  className="w-full h-12 rounded-[10px] border border-orange-500 bg-white flex items-center justify-center text-orange-500 text-base font-normal leading-6 hover:bg-orange-50 transition-colors"
+                >
+                  로그인
+                </Link>
+
+                <Link
+                  href="/signup"
+                  onClick={closeMobileMenu}
+                  className="w-full h-12 rounded-[10px] bg-orange-500 flex items-center justify-center text-white text-base font-normal leading-6 hover:bg-orange-600 transition-colors"
+                >
+                  회원가입
+                </Link>
+              </div>
+            )}
           </div>
         )}
       </div>
