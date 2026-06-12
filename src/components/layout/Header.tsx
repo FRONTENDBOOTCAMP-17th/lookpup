@@ -13,6 +13,8 @@ import {
   User,
   X,
 } from "lucide-react";
+import { createClient } from "@/utils/supabase/client";
+import { signOut } from "@/app/actions/auth";
 
 const NAV_ITEMS = [
   { href: "/petsitters", label: "펫시터 찾기" },
@@ -20,23 +22,63 @@ const NAV_ITEMS = [
   { href: "/about", label: "서비스 소개" },
 ];
 
-const USER = {
-  name: "김민수",
-  email: "kimminsu@example.com",
-  initial: "김",
-  verified: true,
-};
+interface UserProfile {
+  name: string;
+  email: string;
+  initial: string;
+  verified: boolean;
+}
 
 export default function Header() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
-
-  //로그인 테스트용 임시 코드 (true/false로 로그인 상태 토글)
-  //로그인 연동할때 auth/session 값으로 교체
-  const isLoggedIn = false;
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
   const unreadCount = 2;
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    const fetchUserProfile = async (userId: string) => {
+      const { data } = await supabase
+        .from("users")
+        .select("full_name, email, is_verified")
+        .eq("id", userId)
+        .single();
+
+      if (data) {
+        setUserProfile({
+          name: data.full_name ?? "",
+          email: data.email ?? "",
+          initial: data.full_name ? data.full_name.charAt(0) : "?",
+          verified: data.is_verified ?? false,
+        });
+      } else {
+        setUserProfile(null);
+      }
+    };
+
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setIsLoggedIn(true);
+        fetchUserProfile(user.id);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setIsLoggedIn(true);
+        fetchUserProfile(session.user.id);
+      } else {
+        setIsLoggedIn(false);
+        setUserProfile(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const isActivePath = (href: string) => {
     return pathname === href || pathname.startsWith(`${href}/`);
@@ -123,7 +165,7 @@ export default function Header() {
                   className="pl-1"
                 >
                   <div className="size-9 rounded-full bg-gradient-to-br from-orange-500 to-orange-300 flex items-center justify-center text-white text-sm font-bold leading-5 hover:ring-2 hover:ring-orange-200 transition">
-                    {USER.initial}
+                    {userProfile?.initial ?? "?"}
                   </div>
                 </Link>
 
@@ -138,14 +180,14 @@ export default function Header() {
             ) : (
               <div className="flex items-center gap-2.5 shrink-0">
                 <Link
-                  href="/login"
+                  href="/auth/login"
                   className="h-9 px-4 inline-flex items-center justify-center rounded-[10px] border border-orange-500 bg-white text-orange-500 text-xs font-normal leading-5 hover:bg-orange-50 transition-colors"
                 >
                   로그인
                 </Link>
 
                 <Link
-                  href="/signup"
+                  href="/auth/signup"
                   className="h-9 px-5 inline-flex items-center justify-center rounded-[10px] bg-orange-500 text-white text-xs font-normal leading-5 hover:bg-orange-600 transition-colors"
                 >
                   회원가입
@@ -193,7 +235,7 @@ export default function Header() {
                     aria-label="마이페이지로 이동"
                     className="hidden min-[480px]:flex size-8 rounded-full bg-gradient-to-br from-orange-500 to-orange-300 items-center justify-center text-white text-sm font-bold leading-5"
                   >
-                    {USER.initial}
+                    {userProfile?.initial ?? "?"}
                   </Link>
                 </>
               )}
@@ -228,16 +270,16 @@ export default function Header() {
                   onClick={closeMobileMenu}
                   className="size-11 rounded-full bg-gradient-to-br from-orange-500 to-orange-300 flex items-center justify-center text-white text-base font-bold leading-6 shrink-0"
                 >
-                  {USER.initial}
+                  {userProfile?.initial ?? "?"}
                 </Link>
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="text-stone-900 text-base font-bold leading-6">
-                      {USER.name}
+                      {userProfile?.name || "사용자"}
                     </p>
 
-                    {USER.verified && (
+                    {userProfile?.verified && (
                       <span className="px-1.5 h-5 rounded-sm bg-orange-500 flex items-center text-white text-[10px] font-normal leading-4">
                         인증
                       </span>
@@ -245,7 +287,7 @@ export default function Header() {
                   </div>
 
                   <p className="mt-0.5 text-gray-400 text-xs font-normal leading-4 truncate">
-                    {USER.email}
+                    {userProfile?.email || ""}
                   </p>
                 </div>
               </div>
@@ -341,6 +383,7 @@ export default function Header() {
                 <div className="w-full px-5 py-4">
                   <button
                     type="button"
+                    onClick={() => signOut()}
                     className="w-full h-12 rounded-xl border border-orange-100 bg-white flex items-center justify-center gap-2 text-gray-500 text-sm font-normal leading-6 hover:bg-orange-50 transition-colors"
                   >
                     <LogOut size={16} className="text-gray-500" strokeWidth={1.8} />
@@ -352,7 +395,7 @@ export default function Header() {
               /* 비로그인 상태 로그인 / 회원가입 */
               <div className="w-full px-5 pt-4 pb-5 flex flex-col gap-3">
                 <Link
-                  href="/login"
+                  href="/auth/login"
                   onClick={closeMobileMenu}
                   className="w-full h-12 rounded-[10px] border border-orange-500 bg-white flex items-center justify-center text-orange-500 text-base font-normal leading-6 hover:bg-orange-50 transition-colors"
                 >
@@ -360,7 +403,7 @@ export default function Header() {
                 </Link>
 
                 <Link
-                  href="/signup"
+                  href="/auth/signup"
                   onClick={closeMobileMenu}
                   className="w-full h-12 rounded-[10px] bg-orange-500 flex items-center justify-center text-white text-base font-normal leading-6 hover:bg-orange-600 transition-colors"
                 >
