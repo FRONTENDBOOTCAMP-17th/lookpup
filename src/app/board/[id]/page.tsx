@@ -11,10 +11,11 @@ import {
   DollarSign,
   Send,
   Star,
-  AlertCircle,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import Avatar from "@/components/ui/Avatar";
+import SectionCard from "@/components/common/SectionCard";
 import { CustomModal } from "@/components/common/CustomModal";
 
 // 더미 데이터 : 뭘눌러도 이것만 나와요 우하하~~~
@@ -128,7 +129,7 @@ export default function BoardDetailPage() {
       <Header />
 
       <main className="flex-1 bg-orange-50 min-h-screen">
-        <div className="max-w-[1280px] mx-auto px-4 md:px-10 py-6 md:py-8">
+        <div className="max-w-7xl mx-auto px-4 md:px-10 py-6 md:py-8">
           <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
             {/* 왼쪽 메인 콘텐츠 */}
             <div className="flex-1 min-w-0 flex flex-col gap-6">
@@ -142,9 +143,9 @@ export default function BoardDetailPage() {
               </Link>
 
               {/* 게시글 헤더 카드 */}
-              <div className="bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100 overflow-hidden">
+              <SectionCard className="overflow-hidden p-0 gap-0">
                 {/* 썸네일 */}
-                <div className="h-64 bg-gradient-to-br from-orange-50 to-orange-100 flex items-center justify-center">
+                <div className="h-64 bg-linear-to-br from-orange-50 to-orange-100 flex items-center justify-center">
                   <span className="text-7xl opacity-30">🐾</span>
                 </div>
 
@@ -220,18 +221,18 @@ export default function BoardDetailPage() {
                     </div>
                   </div>
                 </div>
-              </div>
+              </SectionCard>
 
               {/* 상세 내용 */}
-              <div className="bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100 p-5 flex flex-col gap-4">
+              <SectionCard>
                 <h2 className="text-stone-900 text-xl font-bold">상세 내용</h2>
                 <p className="text-stone-900 text-base leading-7 whitespace-pre-line">
                   {POST.description}
                 </p>
-              </div>
+              </SectionCard>
 
               {/* 요구사항 */}
-              <div className="bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100 p-5 flex flex-col gap-4">
+              <SectionCard>
                 <h2 className="text-stone-900 text-xl font-bold">요구사항</h2>
                 <ul className="flex flex-col gap-3">
                   {POST.requirements.map((req) => (
@@ -241,21 +242,17 @@ export default function BoardDetailPage() {
                     </li>
                   ))}
                 </ul>
-              </div>
+              </SectionCard>
 
               {/* 댓글 */}
-              <div className="bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100 p-5 flex flex-col gap-4">
+              <SectionCard>
                 <h2 className="text-stone-900 text-xl font-bold">
                   댓글 {COMMENTS.length}
                 </h2>
 
                 {/* 댓글 입력 */}
                 <div className="flex items-start gap-3 pb-6 border-b border-orange-100">
-                  <div className="w-10 h-10 bg-orange-50 rounded-full border-2 border-orange-100 flex items-center justify-center shrink-0">
-                    <span className="text-orange-500 text-base font-semibold">
-                      나
-                    </span>
-                  </div>
+                  <Avatar initial="나" size="md" variant="orange" />
                   <div className="flex-1 flex flex-col gap-2">
                     <textarea
                       value={comment}
@@ -283,11 +280,7 @@ export default function BoardDetailPage() {
                 <div className="flex flex-col gap-6 pt-2">
                   {COMMENTS.map((c) => (
                     <div key={c.id} className="flex items-start gap-3">
-                      <div className="w-10 h-10 bg-orange-50 rounded-full border-2 border-orange-100 flex items-center justify-center shrink-0">
-                        <span className="text-orange-500 text-base font-semibold">
-                          {c.initial}
-                        </span>
-                      </div>
+                      <Avatar initial={c.initial} size="md" variant="orange" />
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-stone-900 text-sm font-semibold">
@@ -307,22 +300,22 @@ export default function BoardDetailPage() {
                     </div>
                   ))}
                 </div>
-              </div>
+              </SectionCard>
             </div>
 
             {/* 오른쪽 사이드바 */}
             <div className="w-full lg:w-96 shrink-0 flex flex-col gap-6 lg:sticky lg:top-20">
               {/* 작성자 정보 */}
-              <div className="bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100 p-5 flex flex-col gap-4">
+              <SectionCard>
                 <h3 className="text-stone-900 text-lg font-bold">
                   작성자 정보
                 </h3>
                 <div className="flex items-start gap-3">
-                  <div className="w-14 h-14 bg-orange-50 rounded-full border-2 border-orange-100 flex items-center justify-center shrink-0">
-                    <span className="text-orange-500 text-xl font-semibold">
-                      {POST.author.initial}
-                    </span>
-                  </div>
+                  <Avatar
+                    initial={POST.author.initial}
+                    size="lg"
+                    variant="orange"
+                  />
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-stone-900 text-base font-semibold">
@@ -356,10 +349,10 @@ export default function BoardDetailPage() {
                     </div>
                   </div>
                 </div>
-              </div>
+              </SectionCard>
 
               {/* 작성자의 다른 글 */}
-              <div className="bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100 p-5 flex flex-col gap-4">
+              <SectionCard>
                 <div className="flex items-center justify-between">
                   <h3 className="text-stone-900 text-lg font-bold">
                     {POST.author.name}님의 다른 게시물
@@ -407,7 +400,7 @@ export default function BoardDetailPage() {
                     </Link>
                   ))}
                 </div>
-              </div>
+              </SectionCard>
             </div>
           </div>
         </div>
