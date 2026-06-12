@@ -215,9 +215,9 @@ export default function BoardWritePage() {
       <Header />
 
       <main className="flex-1 bg-[#fff8f3] min-h-screen pb-28">
-        <div className="max-w-205 mx-auto px-6 pt-10">
+        <div className="max-w-205 mx-auto px-4 sm:px-6 pt-10">
           {/* 페이지 헤더 */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => router.back()}
@@ -229,7 +229,7 @@ export default function BoardWritePage() {
                 돌봄 요청 게시글 작성
               </h1>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 self-end sm:self-auto">
               <button className="h-10 px-5 rounded-xl border border-[#ffe9d6] text-gray-500 text-[15px] font-medium flex items-center gap-1.5 hover:bg-[#fff8f3] transition-colors">
                 <Save className="w-3.75 h-3.75" />
                 임시저장
@@ -390,23 +390,23 @@ export default function BoardWritePage() {
             {step === 2 && (
               <>
                 {/* 날짜·시간 카드 */}
-                <div className="bg-white rounded-2xl border border-[#ffe9d6] p-7">
+                <div className="bg-white rounded-2xl border border-[#ffe9d6] p-4 sm:p-7">
                   <h2 className="text-lg font-semibold text-[#281a0e]">
                     날짜 · 시간
                   </h2>
 
                   {/* TODO: 추후 공통 컴포넌트로 교체 예정 */}
-                  {/* 달력 2개 — Anima: gap-4 pt-5, 자연 너비 사용 */}
+                  {/* 달력 2개 — 모바일: 세로 배치, sm 이상: 가로 배치 */}
                   <div
-                    className="flex flex-nowrap items-start gap-4 pt-5"
+                    className="flex flex-col sm:flex-row sm:flex-nowrap items-start gap-4 pt-5"
                     style={calendarVars}
                   >
                     {/* 시작일 */}
-                    <div className="flex flex-col items-start flex-1">
+                    <div className="flex flex-col items-start w-full sm:flex-1">
                       <span className="text-sm font-semibold text-gray-500">
                         시작일
                       </span>
-                      <div className="mt-2 w-full bg-white rounded-2xl border border-[#ffe9d6] p-4">
+                      <div className="mt-2 w-full bg-white rounded-2xl border border-[#ffe9d6] p-2 sm:p-4 overflow-hidden">
                         <DayPicker
                           mode="single"
                           selected={form.startDate}
@@ -431,17 +431,17 @@ export default function BoardWritePage() {
                       </div>
                     </div>
 
-                    {/* ~ 구분자 — Anima: pt-16 */}
-                    <span className="pt-16 shrink-0 text-gray-500 text-lg font-medium">
+                    {/* ~ 구분자 — sm 이상에서만 표시 */}
+                    <span className="hidden sm:block pt-16 shrink-0 text-gray-500 text-lg font-medium">
                       ~
                     </span>
 
                     {/* 종료일 */}
-                    <div className="flex flex-col items-start flex-1">
+                    <div className="flex flex-col items-start w-full sm:flex-1">
                       <span className="text-sm font-semibold text-gray-500">
                         종료일
                       </span>
-                      <div className="mt-2 w-full bg-white rounded-2xl border border-[#ffe9d6] p-4">
+                      <div className="mt-2 w-full bg-white rounded-2xl border border-[#ffe9d6] p-2 sm:p-4 overflow-hidden">
                         <DayPicker
                           mode="single"
                           selected={form.endDate}
