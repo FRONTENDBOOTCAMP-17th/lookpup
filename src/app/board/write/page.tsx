@@ -2,10 +2,7 @@
 
 import { Fragment, useState } from "react";
 import { useRouter } from "next/navigation";
-import { DayPicker, useDayPicker } from "react-day-picker";
-import "react-day-picker/style.css";
-import { ko } from "date-fns/locale";
-import { format } from "date-fns";
+import { DateRange } from "react-day-picker";
 import {
   ChevronLeft,
   ChevronRight,
@@ -24,6 +21,7 @@ import {
 } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import RangePicker from "@/components/ui/RangePicker";
 import { supabase } from "@/lib/supabase";
 
 const STEPS = ["서비스 선택", "날짜·장소", "반려동물", "상세 내용"];
@@ -83,60 +81,6 @@ type FormState = {
   conditions: string[];
 };
 
-// 달력 헤더 커스텀 컴포넌트 — 디자인 시안 기준
-// ChevronLeft/Right 아이콘, text-stone-900 / text-gray-500 Tailwind 컬러 사용
-function CalendarCaption({ calendarMonth }: { calendarMonth: { date: Date } }) {
-  const { goToMonth, nextMonth, previousMonth } = useDayPicker();
-  return (
-    <div className="w-full flex justify-between items-center">
-      <button
-        type="button"
-        onClick={() => previousMonth && goToMonth(previousMonth)}
-        disabled={!previousMonth}
-        className="p-1 rounded-lg inline-flex flex-col justify-start items-start disabled:opacity-30"
-      >
-        <div className="size-4 relative overflow-hidden flex items-center justify-center">
-          <ChevronLeft className="w-2.5 h-2.5 text-gray-500" />
-        </div>
-      </button>
-      <div className="h-5 relative flex items-center justify-center">
-        <span className="text-stone-900 text-sm font-normal leading-5 whitespace-nowrap">
-          {format(calendarMonth.date, "yyyy년 M월", { locale: ko })}
-        </span>
-      </div>
-      <button
-        type="button"
-        onClick={() => nextMonth && goToMonth(nextMonth)}
-        disabled={!nextMonth}
-        className="p-1 rounded-lg inline-flex flex-col justify-start items-start disabled:opacity-30"
-      >
-        <div className="size-4 relative overflow-hidden flex items-center justify-center">
-          <ChevronRight className="w-2.5 h-2.5 text-gray-500" />
-        </div>
-      </button>
-    </div>
-  );
-}
-
-// 오늘 날짜 주황 링 스타일 (Anima 시안 기준)
-const todayStyle: React.CSSProperties = {
-  fontWeight: "bold",
-  color: "#e8742a",
-  boxShadow: "0 0 0 1px #e8742a",
-  borderRadius: "50%",
-  backgroundColor: "transparent",
-};
-
-// react-day-picker v10 CSS 변수 — 셀 너비 43px (Anima 기준)
-const calendarVars = {
-  "--rdp-accent-color": "#e8742a",
-  "--rdp-accent-background-color": "#fff8f3",
-  "--rdp-day-width": "2.6875rem",
-  "--rdp-day-height": "2rem",
-  "--rdp-day_button-width": "2.6875rem",
-  "--rdp-day_button-height": "2rem",
-  fontSize: "0.875rem",
-} as React.CSSProperties;
 
 export default function BoardWritePage() {
   const router = useRouter();
@@ -268,7 +212,7 @@ export default function BoardWritePage() {
                       {isDone ? <Check className="size-3.5" /> : num}
                     </div>
                     <span
-                      className={`text-xs whitespace-nowrap ${
+                      className={`text-[10px] sm:text-xs text-center leading-tight ${
                         isActive
                           ? "font-bold text-[#281a0e]"
                           : "font-normal text-gray-500"
@@ -299,7 +243,7 @@ export default function BoardWritePage() {
                   <span className="text-xs text-gray-500">중복 선택 가능</span>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3 mt-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
                   {SERVICE_TYPES.map(({ label, icon: Icon, value }) => {
                     const selected = form.service_type === value;
                     return (
@@ -333,7 +277,7 @@ export default function BoardWritePage() {
                     예산을 입력해주세요
                   </h3>
                   <div className="flex items-center gap-3 mt-4">
-                    <div className="w-80 h-12 flex items-center px-4 border border-[#ffe9d6] rounded-xl overflow-hidden">
+                    <div className="w-full sm:w-80 h-12 flex items-center px-4 border border-[#ffe9d6] rounded-xl overflow-hidden">
                       <input
                         type="number"
                         value={form.budget}
@@ -395,69 +339,18 @@ export default function BoardWritePage() {
                     날짜 · 시간
                   </h2>
 
-                  {/* TODO: 추후 공통 컴포넌트로 교체 예정 */}
-                  {/* 달력 2개 — 모바일: 세로 배치, sm 이상: 가로 배치 */}
-                  <div
-                    className="flex flex-col sm:flex-row sm:flex-nowrap items-start gap-4 pt-5"
-                    style={calendarVars}
-                  >
-                    {/* 시작일 */}
-                    <div className="flex flex-col items-start w-full sm:flex-1">
-                      <span className="text-sm font-semibold text-gray-500">
-                        시작일
-                      </span>
-                      <div className="mt-2 w-full bg-white rounded-2xl border border-[#ffe9d6] p-2 sm:p-4 overflow-hidden">
-                        <DayPicker
-                          mode="single"
-                          selected={form.startDate}
-                          onSelect={(d) =>
-                            setForm((prev) => ({
-                              ...prev,
-                              startDate: d,
-                              endDate:
-                                prev.endDate && d && prev.endDate < d
-                                  ? undefined
-                                  : prev.endDate,
-                            }))
-                          }
-                          locale={ko}
-                          disabled={{ before: new Date() }}
-                          modifiersStyles={{ today: todayStyle }}
-                          components={{
-                            MonthCaption: CalendarCaption,
-                            Nav: () => <></>,
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* ~ 구분자 — sm 이상에서만 표시 */}
-                    <span className="hidden sm:block pt-16 shrink-0 text-gray-500 text-lg font-medium">
-                      ~
-                    </span>
-
-                    {/* 종료일 */}
-                    <div className="flex flex-col items-start w-full sm:flex-1">
-                      <span className="text-sm font-semibold text-gray-500">
-                        종료일
-                      </span>
-                      <div className="mt-2 w-full bg-white rounded-2xl border border-[#ffe9d6] p-2 sm:p-4 overflow-hidden">
-                        <DayPicker
-                          mode="single"
-                          selected={form.endDate}
-                          onSelect={(d) =>
-                            setForm((prev) => ({ ...prev, endDate: d }))
-                          }
-                          locale={ko}
-                          disabled={{ before: form.startDate ?? new Date() }}
-                          modifiersStyles={{ today: todayStyle }}
-                          components={{
-                            MonthCaption: CalendarCaption,
-                            Nav: () => <></>,
-                          }}
-                        />
-                      </div>
-                    </div>
+                  {/* 커스텀 RangePicker */}
+                  <div className="mt-5 p-3 sm:p-5 bg-[#fff8f3] rounded-2xl border border-[#ffe9d6]">
+                    <RangePicker
+                      value={{ from: form.startDate, to: form.endDate } as DateRange}
+                      onChange={(range) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          startDate: range?.from,
+                          endDate: range?.to,
+                        }))
+                      }
+                    />
                   </div>
 
                   {/* 시간 입력 — Anima: h-[98px] items-center gap-4 pt-6 */}
@@ -553,6 +446,7 @@ export default function BoardWritePage() {
                   </div>
 
                   {/* 지도 플레이스홀더 */}
+                  {/* 카카오 map api 연동 필요 */}
                   <div
                     className="relative w-full h-56 rounded-xl overflow-hidden border border-[#ffe9d6] flex items-center justify-center mt-3"
                     style={{
@@ -593,7 +487,7 @@ export default function BoardWritePage() {
                   등록된 반려동물 중 선택하거나 새로 등록하세요
                 </p>
 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {DUMMY_PETS.map((pet) => {
                     const isSelected = form.selected_pets.includes(pet.id);
                     return (
