@@ -2,10 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { MapPin, Search, SlidersHorizontal, Star } from "lucide-react";
+import { MapPin, Star } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Avatar from "@/components/ui/Avatar";
 import KakaoMap from "@/components/KakaoMap";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import SearchFilterBar from "@/components/common/SearchFilterBar";
 
 const FILTERS = ["전체", "방문돌봄", "위탁돌봄", "산책", "인증만"] as const;
 type Filter = (typeof FILTERS)[number];
@@ -211,6 +213,7 @@ function PetsitterCard({ sitter, isSelected, distance }: PetsitterCardProps) {
 
 export default function PetsittersPage() {
   const [activeFilter, setActiveFilter] = useState<Filter>("전체");
+  const [searchQuery, setSearchQuery] = useState("");
   const [userPosition, setUserPosition] = useState<{
     lat: number;
     lng: number;
@@ -234,9 +237,15 @@ export default function PetsittersPage() {
   }, [selectedSitterId]);
 
   const filtered = PETSITTERS.filter((s) => {
-    if (activeFilter === "전체") return true;
-    if (activeFilter === "인증만") return s.certified;
-    return s.services.includes(activeFilter);
+    const matchFilter =
+      activeFilter === "전체" ? true :
+      activeFilter === "인증만" ? s.certified :
+      s.services.includes(activeFilter);
+    const matchSearch =
+      searchQuery === "" ||
+      s.name.includes(searchQuery) ||
+      s.district.includes(searchQuery);
+    return matchFilter && matchSearch;
   }).sort((a, b) => {
     if (!userPosition) return 0;
     return (
@@ -248,10 +257,10 @@ export default function PetsittersPage() {
   return (
     <>
       <Header />
-      <main className="flex-1 bg-orange-50 min-h-screen">
-        <div className="flex h-[calc(100vh-64px)]">
+      <main className="flex-1 bg-orange-50 min-h-screen overflow-x-hidden">
+        <div className="flex flex-col md:flex-row md:h-[calc(100vh-64px)]">
           {/* 지도 영역 */}
-          <div className="flex-1 relative overflow-hidden">
+          <div className="h-[40vh] md:h-full md:flex-1 relative overflow-hidden">
             <KakaoMap
               markers={filtered.map(({ lat, lng, id, certified }) => ({
                 lat,
@@ -266,75 +275,55 @@ export default function PetsittersPage() {
           </div>
 
           {/* 리스트 패널 */}
-          <div className="w-[614px] bg-white flex flex-col overflow-hidden">
+          <div className="w-full md:w-153.5 bg-white flex flex-col md:overflow-hidden">
             {/* 검색·필터 헤더 */}
-            <div className="p-6 border-b border-orange-100 shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="flex-1 flex items-center gap-2 px-4 py-3 bg-orange-50 rounded-xl">
-                  <Search size={20} className="text-gray-400 shrink-0" />
-                  <input
-                    type="text"
-                    placeholder="지역, 펫시터 검색"
-                    className="flex-1 bg-transparent text-stone-900 placeholder-stone-900/50 text-base outline-none"
-                  />
-                </div>
-                <button className="w-12 h-12 bg-orange-50 rounded-xl flex items-center justify-center hover:bg-orange-100 transition-colors">
-                  <SlidersHorizontal size={20} className="text-stone-900" />
-                </button>
-              </div>
-
-              {/* 카테고리 필터 */}
-              <div className="flex gap-2 mt-4">
-                {FILTERS.map((f) => (
-                  <button
-                    key={f}
-                    onClick={() => setActiveFilter(f)}
-                    className={`h-9 px-4 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
-                      activeFilter === f
-                        ? "bg-orange-500 text-white"
-                        : "bg-orange-50 text-gray-500 hover:bg-orange-100"
-                    }`}
-                  >
-                    {f}
-                  </button>
-                ))}
-              </div>
+            <div className="p-4 md:p-6 border-b border-orange-100 shrink-0">
+              <SearchFilterBar
+                placeholder="지역, 펫시터 검색"
+                filters={FILTERS}
+                activeFilter={activeFilter}
+                onFilterChange={(f) => setActiveFilter(f as Filter)}
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+              />
             </div>
 
             {/* 결과 리스트 */}
-            <div className="flex-1 overflow-y-auto p-6">
-              <p className="text-stone-900 text-lg font-semibold mb-4">
-                {userPosition
-                  ? "현위치 기준 가까운 순"
-                  : `총 ${filtered.length}명의 펫시터`}
-              </p>
-              <div className="flex flex-col gap-4">
-                {filtered.map((sitter) => (
-                  <div
-                    key={sitter.id}
-                    ref={(el) => {
-                      if (el) cardRefs.current.set(sitter.id, el);
-                      else cardRefs.current.delete(sitter.id);
-                    }}
-                  >
-                    <PetsitterCard
-                      sitter={sitter}
-                      isSelected={selectedSitterId === sitter.id}
-                      distance={
-                        userPosition
-                          ? haversineKm(
-                              userPosition.lat,
-                              userPosition.lng,
-                              sitter.lat,
-                              sitter.lng,
-                            )
-                          : undefined
-                      }
-                    />
-                  </div>
-                ))}
+            <ScrollArea className="flex-1">
+              <div className="p-4 md:p-6">
+                <p className="text-stone-900 text-lg font-semibold mb-4">
+                  {userPosition
+                    ? "현위치 기준 가까운 순"
+                    : `총 ${filtered.length}명의 펫시터`}
+                </p>
+                <div className="flex flex-col gap-4">
+                  {filtered.map((sitter) => (
+                    <div
+                      key={sitter.id}
+                      ref={(el) => {
+                        if (el) cardRefs.current.set(sitter.id, el);
+                        else cardRefs.current.delete(sitter.id);
+                      }}
+                    >
+                      <PetsitterCard
+                        sitter={sitter}
+                        isSelected={selectedSitterId === sitter.id}
+                        distance={
+                          userPosition
+                            ? haversineKm(
+                                userPosition.lat,
+                                userPosition.lng,
+                                sitter.lat,
+                                sitter.lng,
+                              )
+                            : undefined
+                        }
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            </ScrollArea>
           </div>
         </div>
       </main>
