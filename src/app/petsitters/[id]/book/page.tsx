@@ -39,6 +39,8 @@ const SERVICES: { key: ServiceKey; label: string; emoji: string; desc: string }[
 ];
 
 // 날짜 포맷 헬퍼
+// 좀 디자인 구림 (나중에..수정)
+// 지난 날짜는 다른색으로 표기해야할지?
 function formatDateRange(range: DateRange | undefined): string {
   if (!range?.from) return "-";
   if (!range.to || range.from.getTime() === range.to.getTime()) {
