@@ -142,41 +142,39 @@ function PhotoUploadSlots({
   onRemove,
   maxPhotos = 5,
   columns = 4,
-  slotSize = 152,
+  slotWidth = 129,
+  slotHeight = 136,
 }: {
   photos: string[];
   onAdd: (url: string) => void;
   onRemove: (idx: number) => void;
   maxPhotos?: number;
   columns?: number;
-  slotSize?: number;
+  slotWidth?: number;
+  slotHeight?: number;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const url = URL.createObjectURL(file);
-    onAdd(url);
+    onAdd(URL.createObjectURL(file));
     e.target.value = "";
   };
 
   const canAdd = photos.length < maxPhotos;
-
-  const totalVisible = Math.min(6, maxPhotos + 1);
-  const emptySlots = Math.max(0, totalVisible - 1 - photos.length);
+  const emptySlots = Math.max(0, maxPhotos - photos.length);
 
   return (
     <div
       className="grid gap-3"
-      style={{ gridTemplateColumns: `repeat(${columns}, ${slotSize}px)` }}
+      style={{ gridTemplateColumns: `repeat(${columns}, ${slotWidth}px)` }}
     >
-      {/* 업로드 버튼 슬롯 */}
       <button
         type="button"
         disabled={!canAdd}
         onClick={() => canAdd && fileRef.current?.click()}
-        style={{ width: slotSize, height: slotSize }}
+        style={{ width: slotWidth, height: slotHeight }}
         className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed transition-all ${
           canAdd
             ? "border-[#FFE9D6] hover:border-[#E8742A]/60 hover:bg-[#FFF8F3] cursor-pointer"
@@ -194,12 +192,11 @@ function PhotoUploadSlots({
         onChange={handleFile}
       />
 
-      {/* 업로드된 사진 슬롯 */}
       {photos.map((url, idx) => (
         <div
           key={idx}
           className="relative rounded-xl overflow-hidden border border-[#FFE9D6]"
-          style={{ width: slotSize, height: slotSize }}
+          style={{ width: slotWidth, height: slotHeight }}
         >
           <img src={url} alt="" className="w-full h-full object-cover" />
           <button
@@ -212,11 +209,10 @@ function PhotoUploadSlots({
         </div>
       ))}
 
-      {/* 빈 슬롯 */}
       {Array.from({ length: emptySlots }).map((_, idx) => (
         <div
           key={`empty-${idx}`}
-          style={{ width: slotSize, height: slotSize }}
+          style={{ width: slotWidth, height: slotHeight }}
           className="rounded-xl border-2 border-dashed border-[#FFE9D6] bg-[#FFF8F3]"
         />
       ))}
@@ -224,7 +220,7 @@ function PhotoUploadSlots({
   );
 }
 
-// 사진 업로드 가로 스크롤 컴포넌트 (모바일)
+// 사진 업로드 래핑 그리드 컴포넌트 (모바일)
 
 function PhotoUploadHScroll({
   photos,
@@ -236,7 +232,6 @@ function PhotoUploadHScroll({
   onRemove: (idx: number) => void;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
-  const SLOT = 144;
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -246,9 +241,10 @@ function PhotoUploadHScroll({
   };
 
   const canAdd = photos.length < 5;
+  const emptySlots = Math.max(0, 5 - photos.length);
 
   return (
-    <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+    <div className="flex flex-wrap gap-3">
       <input
         ref={fileRef}
         type="file"
@@ -262,24 +258,26 @@ function PhotoUploadHScroll({
         type="button"
         disabled={!canAdd}
         onClick={() => canAdd && fileRef.current?.click()}
-        className="shrink-0 flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#FFE9D6] bg-white hover:border-[#E8742A]/60 hover:bg-[#FFF8F3] transition-all"
-        style={{ width: SLOT, height: SLOT }}
+        className="relative w-[calc((100%-24px)/3)] rounded-xl border-2 border-dashed border-[#FFE9D6] bg-white hover:border-[#E8742A]/60 hover:bg-[#FFF8F3] transition-all overflow-hidden"
       >
-        <Camera size={26} className="text-[#E8742A]" />
-        <span className="text-xs text-[#6B7280]">사진 추가</span>
+        <div className="pb-[100%]" />
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+          <Camera size={24} className="text-[#E8742A]" />
+          <span className="text-xs text-[#6B7280]">사진 추가</span>
+        </div>
       </button>
 
       {/* 업로드된 사진 */}
       {photos.map((url, idx) => (
         <div
           key={idx}
-          className="shrink-0 relative rounded-xl overflow-hidden border border-[#FFE9D6]"
-          style={{ width: SLOT, height: SLOT }}
+          className="relative w-[calc((100%-24px)/3)] rounded-xl overflow-hidden border border-[#FFE9D6]"
         >
-          <img src={url} alt="" className="w-full h-full object-cover" />
+          <div className="pb-[100%]" />
+          <img src={url} alt="" className="absolute inset-0 w-full h-full object-cover" />
           <button
             onClick={() => onRemove(idx)}
-            className="absolute top-1.5 right-1.5 w-5 h-5 bg-white rounded-full flex items-center justify-center shadow"
+            className="absolute top-1.5 right-1.5 w-5 h-5 bg-white rounded-full flex items-center justify-center shadow z-10"
           >
             <X size={10} className="text-[#281A0E]" />
           </button>
@@ -287,12 +285,13 @@ function PhotoUploadHScroll({
       ))}
 
       {/* 빈 슬롯 */}
-      {Array.from({ length: Math.max(0, 4 - photos.length) }).map((_, i) => (
+      {Array.from({ length: emptySlots }).map((_, i) => (
         <div
           key={`e${i}`}
-          className="shrink-0 rounded-xl border-2 border-dashed border-[#FFE9D6] bg-[#FFF8F3]"
-          style={{ width: SLOT, height: SLOT }}
-        />
+          className="relative w-[calc((100%-24px)/3)] rounded-xl border-2 border-dashed border-[#FFE9D6] bg-[#FFF8F3]"
+        >
+          <div className="pb-[100%]" />
+        </div>
       ))}
     </div>
   );
@@ -494,7 +493,8 @@ function DesktopReviewView({
           onRemove={onRemovePhoto}
           maxPhotos={5}
           columns={4}
-          slotSize={140}
+          slotWidth={129}
+          slotHeight={136}
         />
       </div>
 
@@ -555,7 +555,7 @@ function MobileScreen1({
   const canProceed = reviewData.overallRating > 0;
 
   return (
-    <div className="flex flex-col gap-4 pb-36">
+    <div className="flex flex-col gap-4 pb-39">
       {/* 예약 요약 (컴팩트) */}
       <div className="bg-[#FFF8F3] rounded-xl p-3 flex items-center gap-3 border border-[#FFE9D6]">
         <div
@@ -644,8 +644,9 @@ function MobileScreen1({
       </div>
 
       {/* 하단 고정 버튼 */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#FFE9D6] px-5 py-4 z-40">
+      <div className="fixed bottom-18 left-0 right-0 bg-white border-t border-[#FFE9D6] px-5 py-4 z-40">
         <button
+          suppressHydrationWarning
           type="button"
           disabled={!canProceed}
           onClick={onNext}
@@ -666,7 +667,7 @@ function MobileScreen2({
   photos,
   onAddPhoto,
   onRemovePhoto,
-  onBack,
+  onLater,
   onSubmit,
 }: {
   reviewData: ReviewState;
@@ -674,11 +675,11 @@ function MobileScreen2({
   photos: string[];
   onAddPhoto: (url: string) => void;
   onRemovePhoto: (idx: number) => void;
-  onBack: () => void;
+  onLater: () => void;
   onSubmit: () => void;
 }) {
   return (
-    <div className="flex flex-col gap-4 pb-36">
+    <div className="flex flex-col gap-4 pb-50">
       {/* 후기 내용 카드 */}
       <div className="bg-white border border-[#FFE9D6] rounded-2xl p-5">
         <div className="flex items-center justify-between mb-1">
@@ -727,8 +728,7 @@ function MobileScreen2({
       </div>
 
       {/* 하단 고정 버튼 */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#FFE9D6] px-5 py-4 z-40">
-        {/* 후기 등록 기능 모달 */}
+      <div className="fixed bottom-18 left-0 right-0 bg-white border-t border-[#FFE9D6] px-5 py-4 z-40">
         <button
           type="button"
           onClick={onSubmit}
@@ -738,7 +738,7 @@ function MobileScreen2({
         </button>
         <button
           type="button"
-          onClick={onBack}
+          onClick={onLater}
           className="w-full text-sm text-[#6B7280] font-medium text-center hover:text-[#E8742A] transition-colors py-1"
         >
           나중에 작성하기
@@ -827,7 +827,26 @@ export default function ReviewWritePage() {
       </div>
 
       {/* 모바일 콘텐츠 */}
-      <div className="md:hidden px-5 pt-4">
+      <div className="lg:hidden px-5 pt-4">
+        {/* 모바일 페이지 타이틀 */}
+        <div className="flex items-center gap-3 mb-4">
+          <button
+            type="button"
+            onClick={() => (mobileScreen === 2 ? setMobileScreen(1) : router.back())}
+            className="w-9 h-9 rounded-xl border border-[#FFE9D6] flex items-center justify-center hover:bg-[#FFF8F3] transition-colors shrink-0"
+          >
+            <ChevronLeft size={18} className="text-[#281A0E]" />
+          </button>
+          <div>
+            <h2 className="text-lg font-bold text-[#281A0E] leading-tight">
+              후기를 남겨주세요
+            </h2>
+            <p className="text-xs text-[#6B7280]">
+              솔직한 후기가 더 좋은 돌봄 문화를 만들어요
+            </p>
+          </div>
+        </div>
+
         {mobileScreen === 1 ? (
           <MobileScreen1
             reviewData={reviewData}
@@ -841,7 +860,7 @@ export default function ReviewWritePage() {
             photos={photos}
             onAddPhoto={addPhoto}
             onRemovePhoto={removePhoto}
-            onBack={() => setMobileScreen(1)}
+            onLater={() => router.back()}
             onSubmit={() => setShowSubmitModal(true)}
           />
         )}
