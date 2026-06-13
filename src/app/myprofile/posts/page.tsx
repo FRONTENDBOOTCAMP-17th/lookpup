@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import {
   ChevronLeft,
   Dog,
@@ -13,7 +13,12 @@ import {
   Trash2,
   CheckCircle,
   XCircle,
+  Search,
+  FileText,
+  Bell,
+  MessageCircle,
 } from "lucide-react";
+import Link from "next/link";
 import Header from "@/components/layout/Header";
 import { CustomModal } from "@/components/common/CustomModal";
 
@@ -159,10 +164,8 @@ function PostCard({
   onDelete: (id: string) => void;
 }) {
   const config = STATUS_CONFIG[post.status];
-  const isOpen = post.status === "open";
-
   return (
-    <div className="bg-white rounded-2xl border border-orange-100 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] p-5 flex flex-col gap-4">
+    <div className="bg-white rounded-2xl border border-orange-100 shadow-[0px_2px_6px_rgba(232,116,42,0.10)] p-5 flex flex-col gap-4">
       {/* 제목 + 상태 배지 */}
       <div className="flex items-start justify-between gap-3">
         <span className="text-sm text-stone-900 leading-5 flex-1">
@@ -234,7 +237,7 @@ function PostCard({
       </div>
 
       {/* 액션 버튼 */}
-      {isOpen ? (
+      {post.status === "open" ? (
         <div className="flex gap-2">
           <button className="flex-1 py-2 bg-orange-50 border border-orange-100 rounded-xl text-orange-500 text-xs hover:bg-orange-100 transition-colors">
             상세보기
@@ -245,6 +248,19 @@ function PostCard({
           </button>
           <button className="flex-1 py-2 bg-gray-100 rounded-xl text-gray-500 text-xs hover:bg-gray-200 transition-colors">
             모집마감
+          </button>
+          <button
+            onClick={() => onDelete(post.id)}
+            className="flex-1 py-2 bg-red-100 rounded-xl text-red-500 text-xs flex items-center justify-center gap-1 hover:bg-red-200 transition-colors"
+          >
+            <Trash2 size={10} />
+            삭제
+          </button>
+        </div>
+      ) : (post.status === "completed" || post.status === "cancelled") ? (
+        <div className="flex gap-2">
+          <button className="flex-1 py-2 bg-orange-50 border border-orange-100 rounded-xl text-orange-500 text-xs hover:bg-orange-100 transition-colors">
+            상세보기
           </button>
           <button
             onClick={() => onDelete(post.id)}
@@ -315,15 +331,45 @@ export default function PostsManagePage() {
     cancelled: countByStatus(posts, "cancelled"),
   };
 
+  const pathname = usePathname();
+  const bottomNavItems = [
+    { href: "/petsitters", label: "펫시터 찾기", Icon: Search },
+    { href: "/board", label: "구인 게시판", Icon: FileText },
+    { href: "/notifications", label: "알림", Icon: Bell },
+    { href: "/chat", label: "채팅", Icon: MessageCircle },
+    { href: "/myprofile", label: "내 프로필", Icon: User },
+  ] as const;
+
   return (
     <div className="min-h-screen flex flex-col bg-orange-50">
-      <div className="hidden md:block">
+      {/* PC 헤더 */}
+      <div className="hidden lg:block">
         <Header />
       </div>
 
-      <div className="flex-1 w-full max-w-[820px] mx-auto px-6 pt-6 pb-10">
-        {/* 헤더 */}
-        <div className="flex items-center gap-3 mb-2">
+      {/* 모바일/태블릿 페이지 헤더 */}
+      <div className="lg:hidden sticky top-0 z-50 bg-white border-b border-[#FFE9D6]">
+        <div className="flex items-center gap-3 px-5 pt-12 pb-[17px]">
+          <button
+            onClick={() => router.back()}
+            className="p-2 -ml-2 rounded-xl hover:bg-orange-50 transition-colors shrink-0"
+          >
+            <ChevronLeft size={22} className="text-[#281A0E]" />
+          </button>
+          <div>
+            <h1 className="text-[32px] font-bold text-[#281A0E] leading-[1.3] tracking-[-0.5px]">
+              게시글 관리
+            </h1>
+            <p className="text-xs text-gray-400 leading-4">
+              작성한 돌봄 요청글을 확인하고 관리할 수 있어요.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 w-full max-w-[820px] mx-auto px-5 lg:px-6 pt-6 pb-32 lg:pb-10">
+        {/* PC 인라인 헤더 */}
+        <div className="hidden lg:flex items-center gap-3 mb-2">
           <button
             onClick={() => router.back()}
             className="p-2 rounded-xl hover:bg-orange-100 transition-colors"
@@ -339,7 +385,7 @@ export default function PostsManagePage() {
         </div>
 
         {/* 탭 필터 */}
-        <div className="flex gap-1 mt-6 overflow-x-auto pb-1">
+        <div className="flex flex-wrap gap-2 mt-6 lg:flex-nowrap lg:overflow-x-auto lg:gap-1 pb-1">
           {TABS.map((tab) => {
             const isActive = activeTab === tab.id;
             return (
@@ -398,6 +444,29 @@ export default function PostsManagePage() {
           )}
         </div>
       </div>
+
+      {/* 모바일/태블릿 바텀 네비 */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-[#FFE9D6] shadow-[0px_-2px_6px_rgba(0,0,0,0.04)] h-[72px]">
+        <div className="flex h-full">
+          {bottomNavItems.map(({ href, label, Icon }) => {
+            const active = href === "/myprofile"
+              ? pathname.startsWith("/myprofile")
+              : pathname === href || pathname.startsWith(href + "/");
+            return (
+              <Link
+                key={href}
+                href={href}
+                className="flex-1 flex flex-col items-center justify-center gap-1"
+              >
+                <Icon size={22} className={active ? "text-[#E8742A]" : "text-gray-400"} />
+                <span className={`text-[11px] font-medium leading-[1.6] ${active ? "text-[#E8742A]" : "text-gray-400"}`}>
+                  {label}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
 
       {/* 삭제 확인 모달 */}
       {deleteTargetId && (
