@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Search, Shield, Calendar, MessageCircle, Star } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import { createClient } from "@/utils/supabase/server";
 
 // 소개란 정보값
 
@@ -102,7 +103,11 @@ const FAQS = [
 
 // 페이지
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const isLoggedIn = !!user;
+
   return (
     <>
       <Header />
@@ -239,12 +244,14 @@ export default function AboutPage() {
               믿을 수 있는 펫시터와 함께 소중한 반려동물을 케어하세요
             </p>
             <div className="flex flex-row gap-4">
-              <Link
-                href="/auth/signup"
-                className="w-40 h-12 bg-white text-orange-500 text-base font-semibold rounded-[10px] border border-orange-500 flex items-center justify-center hover:bg-orange-50 transition-colors"
-              >
-                회원가입
-              </Link>
+              {!isLoggedIn && (
+                <Link
+                  href="/auth/signup"
+                  className="w-40 h-12 bg-white text-orange-500 text-base font-semibold rounded-[10px] border border-orange-500 flex items-center justify-center hover:bg-orange-50 transition-colors"
+                >
+                  회원가입
+                </Link>
+              )}
               <Link
                 href="/petsitters"
                 className="w-40 h-12 bg-white/20 text-white text-base font-semibold rounded-[10px] border-2 border-white flex items-center justify-center hover:bg-white/30 transition-colors"
