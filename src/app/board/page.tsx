@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { MapPin, Calendar, DollarSign, Search, SlidersHorizontal, ChevronRight } from "lucide-react";
+import { MapPin, Calendar, DollarSign, ChevronRight } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import MobileHeader from "@/components/layout/MobileHeader";
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
+import SearchFilterBar from "@/components/common/SearchFilterBar";
 
 // 더미데이터 꼬라박기
 
@@ -70,9 +71,9 @@ const POSTS = [
   },
 ];
 
-// 게시글 카드 
+// 게시글 카드
 
-function PostCard({ post }: { post: typeof POSTS[0] }) {
+function PostCard({ post }: { post: (typeof POSTS)[0] }) {
   return (
     <Link href={`/board/${post.id}`}>
       <div className="p-5 bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100 flex justify-between items-start cursor-pointer hover:border-orange-500 hover:-translate-y-1 hover:shadow-[0px_8px_24px_0px_rgba(232,116,42,0.15)] transition-all duration-200">
@@ -83,11 +84,15 @@ function PostCard({ post }: { post: typeof POSTS[0] }) {
             <span className="shrink-0 px-3 py-1 bg-orange-50 rounded-full text-orange-500 text-xs font-medium">
               {post.category}
             </span>
-            <span className="text-stone-900 text-lg font-semibold truncate">{post.title}</span>
+            <span className="text-stone-900 text-lg font-semibold truncate">
+              {post.title}
+            </span>
           </div>
 
           {/* 내용 */}
-          <p className="text-gray-500 text-base leading-6 line-clamp-1">{post.desc}</p>
+          <p className="text-gray-500 text-base leading-6 line-clamp-1">
+            {post.desc}
+          </p>
 
           {/* 메타 정보 */}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1">
@@ -101,7 +106,9 @@ function PostCard({ post }: { post: typeof POSTS[0] }) {
             </div>
             <div className="flex items-center gap-1">
               <DollarSign className="w-4 h-4 text-orange-400 shrink-0" />
-              <span className="text-orange-500 text-sm font-semibold">{post.price}</span>
+              <span className="text-orange-500 text-sm font-semibold">
+                {post.price}
+              </span>
             </div>
           </div>
         </div>
@@ -117,14 +124,15 @@ function PostCard({ post }: { post: typeof POSTS[0] }) {
   );
 }
 
-//페이지 
+//페이지
 
 export default function BoardPage() {
   const [activeCategory, setActiveCategory] = useState("전체");
   const [searchQuery, setSearchQuery] = useState("");
 
   const filtered = POSTS.filter((p) => {
-    const matchCategory = activeCategory === "전체" || p.category === activeCategory;
+    const matchCategory =
+      activeCategory === "전체" || p.category === activeCategory;
     const matchSearch =
       searchQuery === "" ||
       p.title.includes(searchQuery) ||
@@ -139,14 +147,15 @@ export default function BoardPage() {
       </div>
       <MobileHeader />
 
-      <main className="flex-1 bg-orange-50 min-h-screen">
-        <div className="max-w-[1152px] mx-auto px-4 md:px-8 py-8 md:py-12">
-
+      <main className="flex-1 bg-orange-50">
+        <div className="max-w-6xl mx-auto px-4 md:px-8 py-8 md:py-12">
           {/* 헤더 */}
           <div className="flex flex-col sm:flex-row items-start justify-between gap-4 mb-8">
             <div>
               <h1 className="text-3xl font-bold text-stone-900">구인게시판</h1>
-              <p className="text-gray-500 text-base mt-2">펫시터를 찾거나 구인 정보를 확인하세요</p>
+              <p className="text-gray-500 text-base mt-2">
+                펫시터를 찾거나 구인 정보를 확인하세요
+              </p>
             </div>
             <Link
               href="/board/write"
@@ -157,46 +166,22 @@ export default function BoardPage() {
           </div>
 
           {/* 검색 + 필터 */}
-          <div className="p-4 md:p-6 bg-white rounded-2xl shadow-sm mb-6 flex flex-col gap-4">
-            {/* 검색창 + 필터 버튼 */}
-            <div className="flex gap-3">
-              <div className="flex-1 flex items-center gap-2 px-4 py-3 bg-orange-50 rounded-xl">
-                <Search className="w-5 h-5 text-gray-400 shrink-0" />
-                <input
-                  type="text"
-                  placeholder="제목, 내용으로 검색"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="flex-1 bg-transparent text-base text-stone-900 placeholder:text-stone-900/50 outline-none"
-                />
-              </div>
-              <button className="flex items-center gap-2 px-6 py-3 bg-orange-50 rounded-xl text-stone-900 font-medium hover:bg-orange-100 transition-colors">
-                <SlidersHorizontal className="w-5 h-5" />
-                필터
-              </button>
-            </div>
-
-            {/* 카테고리 탭 */}
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setActiveCategory(cat)}
-                  className={`shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                    activeCategory === cat
-                      ? "bg-orange-500 text-white"
-                      : "bg-orange-50 text-gray-500 hover:bg-orange-100"
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
+          <div className="p-4 md:p-6 bg-white rounded-2xl shadow-sm mb-6">
+            <SearchFilterBar
+              placeholder="제목, 내용으로 검색"
+              filters={CATEGORIES}
+              activeFilter={activeCategory}
+              onFilterChange={setActiveCategory}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+            />
           </div>
 
           {/* 목록 헤더 */}
           <div className="flex items-center justify-between mb-4">
-            <span className="text-gray-500 text-sm">총 {filtered.length}개의 구인글</span>
+            <span className="text-gray-500 text-sm">
+              총 {filtered.length}개의 구인글
+            </span>
             <select className="h-9 px-3 bg-white border border-orange-100 rounded-lg text-sm text-stone-900 outline-none cursor-pointer hover:border-orange-300 transition-colors">
               <option>최신순</option>
               <option>조회순</option>
@@ -237,5 +222,6 @@ export default function BoardPage() {
       </div>
       <MobileBottomNav />
     </>
+
   );
 }

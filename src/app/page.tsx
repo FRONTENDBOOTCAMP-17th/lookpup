@@ -204,7 +204,9 @@ export default function HomePage() {
 
               <h1 className="text-4xl lg:text-5xl font-bold leading-tight text-stone-900 mb-6">
                 우리 아이를{" "}
-                <span className="text-orange-500">믿고 맡길 수 있는</span>
+                <span className="text-orange-500 whitespace-nowrap">
+                  믿고 맡길 수 있는
+                </span>
                 <br />
                 반려동물 돌봄 플랫폼
               </h1>
