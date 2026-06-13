@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ChevronLeft,
   MapPin,
   Calendar,
   Clock,
@@ -17,6 +16,7 @@ import Footer from "@/components/layout/Footer";
 import Avatar from "@/components/ui/Avatar";
 import SectionCard from "@/components/common/SectionCard";
 import { CustomModal } from "@/components/common/CustomModal";
+import BackButton from "@/components/common/BackButton";
 
 // 더미 데이터 : 뭘눌러도 이것만 나와요 우하하~~~
 
@@ -134,13 +134,7 @@ export default function BoardDetailPage() {
             {/* 왼쪽 메인 콘텐츠 */}
             <div className="flex-1 min-w-0 flex flex-col gap-6">
               {/* 목록으로 */}
-              <Link
-                href="/board"
-                className="flex items-center gap-2 text-gray-500 hover:text-orange-500 transition-colors w-fit"
-              >
-                <ChevronLeft className="w-5 h-5" />
-                <span className="text-base">목록으로</span>
-              </Link>
+              <BackButton href="/board" />
 
               {/* 게시글 헤더 카드 */}
               <SectionCard className="overflow-hidden p-0 gap-0">

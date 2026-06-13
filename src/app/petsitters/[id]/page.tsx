@@ -6,7 +6,8 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import Avatar from "@/components/ui/Avatar";
 import KakaoMap from "@/components/KakaoMap";
-import { MapPin, Star, ChevronLeft } from "lucide-react";
+import { MapPin, Star } from "lucide-react";
+import BackButton from "@/components/common/BackButton";
 
 const SITTER = {
   name: "김민지",
@@ -84,13 +85,7 @@ export default function PetsitterProfilePage() {
 
       <main className="flex-1 bg-orange-50 min-h-screen">
         <div className="max-w-7xl mx-auto px-4 sm:px-10 py-12">
-          <Link
-            href="/petsitters"
-            className="flex items-center gap-2 text-gray-500 hover:text-orange-500 transition-colors w-fit mb-6"
-          >
-            <ChevronLeft className="w-5 h-5" />
-            <span className="text-base">목록으로</span>
-          </Link>
+          <BackButton href="/petsitters" className="mb-6" />
 
           <div className="flex flex-col md:flex-row gap-8 md:items-start">
             {/* 왼쪽: 프로필 카드 */}
@@ -148,12 +143,11 @@ export default function PetsitterProfilePage() {
               {/* 예약하기 버튼 */}
               <Link
                 href="/petsitters/1/book"
-                className="w-full h-[52px] bg-[#E8742A] hover:bg-orange-600 text-white text-base font-semibold rounded-[10px] flex items-center justify-center transition-colors"
+                className="w-full h-13 bg-[#E8742A] hover:bg-orange-600 text-white text-base font-semibold rounded-[10px] flex items-center justify-center transition-colors"
               >
                 예약하기
               </Link>
             </div>
-
             {/* 오른쪽: 탭 + 콘텐츠 */}
             <div className="flex-1 min-w-0">
               {/* 탭 네비게이션 */}
