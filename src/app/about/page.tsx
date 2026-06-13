@@ -154,14 +154,11 @@ export default async function AboutPage() {
             <h2 className="text-2xl md:text-3xl font-bold text-stone-900 text-center mb-8 md:mb-12">
               주요 기능
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-6">
-              {FEATURES.map(({ icon: Icon, color, iconColor, title, desc }, index) => (
+            <div className="flex flex-wrap justify-center gap-6">
+              {FEATURES.map(({ icon: Icon, color, iconColor, title, desc }) => (
                 <div
                   key={title}
-                  className={`p-5 bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100 flex flex-col gap-4 hover:border-orange-500 hover:-translate-y-1 hover:shadow-[0px_8px_24px_0px_rgba(232,116,42,0.15)] transition-all duration-200 lg:col-span-2${
-                    index === 3 ? " lg:row-start-2 lg:col-start-2" :
-                    index === 4 ? " lg:row-start-2 lg:col-start-4" : ""
-                  }`}
+                  className="w-full sm:w-[calc(50%-0.75rem)] lg:w-[calc(33.333%-1rem)] p-5 bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100 flex flex-col gap-4 hover:border-orange-500 hover:-translate-y-1 hover:shadow-[0px_8px_24px_0px_rgba(232,116,42,0.15)] transition-all duration-200"
                 >
                   <div
                     className={`w-14 h-14 ${color} rounded-2xl flex items-center justify-center`}
