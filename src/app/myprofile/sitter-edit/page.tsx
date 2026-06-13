@@ -16,8 +16,6 @@ import Avatar from "@/components/ui/Avatar";
 import MobileHeader from "@/components/layout/MobileHeader";
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
 
-//상수
-
 const SERVICE_OPTIONS = ["방문돌봄", "위탁돌봄", "산책", "목욕", "훈련"];
 
 const PET_OPTIONS = [
@@ -35,8 +33,6 @@ interface ServiceItem {
   price: string;
   desc: string;
 }
-
-// 초기 폼 상태 (mock — 추후 DB 값으로 교체)
 
 const INITIAL_FORM = {
   name: "김민지",
@@ -77,8 +73,6 @@ const INITIAL_FORM = {
   photos: [null, null, null, null, null, null] as (string | null)[],
 };
 
-//서브 컴포넌트
-
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <p className="px-1 text-xs text-gray-400 uppercase tracking-wide mb-2">
@@ -96,9 +90,7 @@ function Card({ children }: { children: React.ReactNode }) {
 }
 
 function CardTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <h3 className="text-lg text-stone-900 mb-4">{children}</h3>
-  );
+  return <h3 className="text-lg text-stone-900 mb-4">{children}</h3>;
 }
 
 function ToggleChip({
@@ -150,13 +142,11 @@ function TextInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className={`w-full h-12 ${icon ? "pl-9" : "pl-4"} pr-4 bg-white border border-orange-100 rounded-[10px] text-base text-stone-900 placeholder:text-gray-400 outline-none focus:border-orange-300 transition-colors`}
+        className={`w-full h-12.5 ${icon ? "pl-9" : "pl-4"} pr-4 bg-white border border-orange-100 rounded-[10px] text-[15px] text-stone-900 placeholder:text-gray-400 outline-none focus:border-orange-300 transition-colors`}
       />
     </div>
   );
 }
-
-//  서비스 가격 행
 
 function ServiceRow({
   item,
@@ -169,18 +159,21 @@ function ServiceRow({
 }) {
   return (
     <div className="bg-orange-50 rounded-xl p-4 space-y-2">
+      {/* 서비스명 - 항상 전체 폭 */}
+      <input
+        value={item.name}
+        onChange={(e) => onChange({ ...item, name: e.target.value })}
+        placeholder="서비스명"
+        className="w-full h-9.5 px-3 bg-white border border-orange-100 rounded-[10px] text-sm text-stone-900 outline-none focus:border-orange-300"
+      />
+
+      {/* 단위(데스크탑만) + 가격 + 삭제 */}
       <div className="flex items-center gap-2">
-        <input
-          value={item.name}
-          onChange={(e) => onChange({ ...item, name: e.target.value })}
-          placeholder="서비스명"
-          className="flex-1 h-9 px-3 bg-white border border-orange-100 rounded-[10px] text-sm text-stone-900 outline-none focus:border-orange-300"
-        />
         <input
           value={item.unit}
           onChange={(e) => onChange({ ...item, unit: e.target.value })}
           placeholder="단위"
-          className="w-20 h-9 px-2 bg-white border border-orange-100 rounded-[10px] text-sm text-center text-stone-900 outline-none focus:border-orange-300"
+          className="hidden lg:block w-20 h-9.5 px-2 bg-white border border-orange-100 rounded-[10px] text-sm text-center text-stone-900 outline-none focus:border-orange-300"
         />
         <div className="relative">
           <input
@@ -189,7 +182,7 @@ function ServiceRow({
               onChange({ ...item, price: e.target.value.replace(/\D/g, "") })
             }
             placeholder="가격"
-            className="w-28 h-9 pl-3 pr-7 bg-white border border-orange-100 rounded-[10px] text-sm text-right text-orange-500 font-bold outline-none focus:border-orange-300"
+            className="w-27.5 lg:w-28 h-9.5 pl-3 pr-7 bg-white border border-orange-100 rounded-[10px] text-sm text-right text-orange-500 font-bold outline-none focus:border-orange-300"
           />
           <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">
             원
@@ -203,17 +196,17 @@ function ServiceRow({
           <X size={14} />
         </button>
       </div>
+
+      {/* 서비스 설명 */}
       <input
         value={item.desc}
         onChange={(e) => onChange({ ...item, desc: e.target.value })}
         placeholder="서비스 설명"
-        className="w-full h-9 px-3 bg-white border border-orange-100 rounded-[10px] text-sm text-gray-500 outline-none focus:border-orange-300"
+        className="w-full h-9.5 px-3 bg-white border border-orange-100 rounded-[10px] text-sm text-gray-500 outline-none focus:border-orange-300"
       />
     </div>
   );
 }
-
-//  페이지 
 
 export default function SitterEditPage() {
   const router = useRouter();
@@ -222,7 +215,6 @@ export default function SitterEditPage() {
   const [form, setForm] = useState(INITIAL_FORM);
   const nextId = useRef(form.serviceList.length + 1);
 
-  // 서비스 유형 토글
   const toggleService = (s: string) =>
     setForm((f) => ({
       ...f,
@@ -231,7 +223,6 @@ export default function SitterEditPage() {
         : [...f.selectedServices, s],
     }));
 
-  // 돌봄 가능 토글
   const togglePet = (p: string) =>
     setForm((f) => ({
       ...f,
@@ -240,7 +231,6 @@ export default function SitterEditPage() {
         : [...f.selectedPets, p],
     }));
 
-  // 서비스 가격 행 수정
   const updateServiceItem = (updated: ServiceItem) =>
     setForm((f) => ({
       ...f,
@@ -249,14 +239,12 @@ export default function SitterEditPage() {
       ),
     }));
 
-  // 서비스 가격 행 삭제
   const removeServiceItem = (id: number) =>
     setForm((f) => ({
       ...f,
       serviceList: f.serviceList.filter((s) => s.id !== id),
     }));
 
-  // 서비스 가격 행 추가
   const addServiceItem = () => {
     nextId.current += 1;
     setForm((f) => ({
@@ -268,7 +256,6 @@ export default function SitterEditPage() {
     }));
   };
 
-  // 포트폴리오 사진 삭제
   const removePhoto = (idx: number) =>
     setForm((f) => {
       const photos = [...f.photos];
@@ -285,10 +272,10 @@ export default function SitterEditPage() {
       </div>
       <MobileHeader />
 
-      <main className="flex-1 pb-24">
-        <div className="max-w-[1152px] mx-auto px-8 pt-6">
+      <main className="flex-1 pb-40 lg:pb-24">
+        <div className="max-w-[1152px] mx-auto px-5 lg:px-8 pt-6">
           {/* 페이지 헤더 */}
-          <div className="flex items-center gap-3 mb-8">
+          <div className="flex items-center gap-3 mb-6 lg:mb-8">
             <button
               onClick={() => router.back()}
               className="p-2 rounded-xl hover:bg-orange-100 transition-colors"
@@ -305,17 +292,21 @@ export default function SitterEditPage() {
             </div>
           </div>
 
-          {/* 2단 레이아웃 */}
-          <div className="flex gap-8 items-start">
-            {/* ── 좌측 컬럼 ── */}
-            <div className="w-80 shrink-0 space-y-4">
+          {/* 모바일: 단일 컬럼 | 데스크탑: 2단 컬럼 */}
+          <div className="flex flex-col lg:flex-row gap-4 lg:gap-8 items-start">
+            {/* 왼쪽 컬럼 */}
+            <div className="w-full lg:w-80 lg:shrink-0 space-y-4">
               {/* 프로필 사진 + 기본 정보 */}
               <div>
                 <SectionLabel>프로필 사진</SectionLabel>
                 <Card>
-                  {/* 이미지 프리뷰 */}
-                  <div className="relative w-full aspect-square bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl overflow-hidden flex items-center justify-center mb-5">
-                    <Avatar initial={form.name[0] ?? "김"} size="2xl" variant="dark" />
+                  {/* 이미지 프리뷰 - 고정 높이 */}
+                  <div className="relative w-full h-75.75 bg-linear-to-br from-gray-100 to-gray-200 rounded-xl overflow-hidden flex items-center justify-center mb-5">
+                    <Avatar
+                      initial={form.name[0] ?? "김"}
+                      size="2xl"
+                      variant="dark"
+                    />
                     <button
                       type="button"
                       onClick={() => fileRef.current?.click()}
@@ -379,8 +370,8 @@ export default function SitterEditPage() {
               </div>
             </div>
 
-            {/*  우측 컬럼  */}
-            <div className="flex-1 min-w-0 space-y-4">
+            {/* 오른쪽 컬럼 */}
+            <div className="w-full lg:flex-1 lg:min-w-0 space-y-4">
               {/* 소개 */}
               <div>
                 <SectionLabel>소개</SectionLabel>
@@ -395,7 +386,7 @@ export default function SitterEditPage() {
                       maxLength={500}
                       rows={7}
                       placeholder="보호자에게 보여질 자기소개를 작성해 주세요."
-                      className="w-full px-4 py-3 bg-white border border-orange-100 rounded-[10px] text-base text-stone-900 placeholder:text-gray-400 outline-none focus:border-orange-300 resize-none leading-6"
+                      className="w-full px-4 py-3 bg-white border border-orange-100 rounded-[10px] text-[15px] text-stone-900 placeholder:text-gray-400 outline-none focus:border-orange-300 resize-none leading-6"
                     />
                     <span className="block text-xs text-gray-400 mt-1">
                       {bioLength}자
@@ -410,7 +401,6 @@ export default function SitterEditPage() {
                 <Card>
                   <CardTitle>경력 및 실적</CardTitle>
                   <div className="grid grid-cols-2 gap-4">
-                    {/* 경력 입력 */}
                     <div className="bg-orange-50 rounded-xl p-4">
                       <p className="text-xs text-gray-500 mb-2">경력 (년)</p>
                       <div className="flex items-center gap-2">
@@ -422,12 +412,11 @@ export default function SitterEditPage() {
                           onChange={(e) =>
                             setForm((f) => ({ ...f, career: e.target.value }))
                           }
-                          className="flex-1 h-12 px-3 bg-white border border-orange-100 rounded-[10px] text-2xl font-bold text-orange-500 text-center outline-none focus:border-orange-300"
+                          className="flex-1 h-12.5 px-3 bg-white border border-orange-100 rounded-[10px] text-2xl font-bold text-orange-500 text-center outline-none focus:border-orange-300"
                         />
                         <span className="text-sm text-gray-500">년</span>
                       </div>
                     </div>
-                    {/* 완료 건수 (자동 집계) */}
                     <div className="bg-orange-50 rounded-xl p-4 flex flex-col items-center justify-center">
                       <p className="text-3xl font-bold text-orange-500 mb-1">
                         {form.completedCount}+
@@ -476,7 +465,7 @@ export default function SitterEditPage() {
                     <button
                       type="button"
                       onClick={addServiceItem}
-                      className="w-full h-11 flex items-center justify-center gap-2 border border-orange-100 rounded-xl text-sm text-gray-500 hover:bg-orange-50 transition-colors"
+                      className="w-full h-11 flex items-center justify-center gap-2 border border-dashed border-orange-100 rounded-xl text-sm text-gray-500 hover:bg-orange-50 transition-colors"
                     >
                       <Plus size={16} />
                       서비스 추가
@@ -491,7 +480,7 @@ export default function SitterEditPage() {
                 <Card>
                   <CardTitle>활동 지역</CardTitle>
                   {/* 지도 placeholder */}
-                  <div className="h-64 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex flex-col items-center justify-center gap-2 mb-4">
+                  <div className="h-42.5 lg:h-64 bg-linear-to-br from-gray-100 to-gray-200 rounded-xl flex flex-col items-center justify-center gap-2 mb-4">
                     <MapPin size={28} className="text-gray-400" />
                     <span className="text-sm text-gray-500">지도 미리보기</span>
                   </div>
@@ -521,7 +510,7 @@ export default function SitterEditPage() {
                           onChange={(e) =>
                             setForm((f) => ({ ...f, radius: e.target.value }))
                           }
-                          className="w-full h-12 pl-4 pr-9 bg-white border border-orange-100 rounded-[10px] text-base text-stone-900 outline-none focus:border-orange-300"
+                          className="w-full h-12.5 pl-4 pr-9 bg-white border border-orange-100 rounded-[10px] text-[15px] text-stone-900 outline-none focus:border-orange-300"
                         />
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 pointer-events-none">
                           km
@@ -546,7 +535,7 @@ export default function SitterEditPage() {
                             <img
                               src={photo}
                               alt={`사진 ${idx + 1}`}
-                              className="aspect-square w-full rounded-xl object-cover"
+                              className="h-23.25 w-full rounded-xl object-cover"
                             />
                             <button
                               type="button"
@@ -555,23 +544,20 @@ export default function SitterEditPage() {
                             >
                               <X size={10} className="text-white" />
                             </button>
+                            <span className="absolute bottom-1.5 left-2 text-[10px] font-medium text-gray-400">
+                              사진 {idx + 1}
+                            </span>
                           </>
                         ) : (
                           <button
                             type="button"
-                            className="aspect-square w-full rounded-xl border border-orange-100 flex flex-col items-center justify-center gap-2 hover:bg-orange-50 transition-colors"
+                            className="h-23.25 w-full rounded-xl border border-dashed border-orange-100 flex flex-col items-center justify-center gap-2 hover:bg-orange-50 transition-colors"
                           >
                             <Plus size={20} className="text-gray-400" />
                             <span className="text-xs font-medium text-gray-500">
                               사진 추가
                             </span>
                           </button>
-                        )}
-                        {/* 번호 레이블 */}
-                        {photo && (
-                          <span className="absolute bottom-1.5 left-2 text-[10px] font-medium text-gray-400">
-                            사진 {idx + 1}
-                          </span>
                         )}
                       </div>
                     ))}
@@ -586,20 +572,20 @@ export default function SitterEditPage() {
         </div>
       </main>
 
-      {/* 하단 고정 액션 바 */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-orange-100 z-20">
-        <div className="max-w-[1152px] mx-auto px-8 py-4 flex items-center justify-center gap-3">
+      {/* 하단 고정 액션 바 - 모바일: MobileBottomNav(72px) 위에, 데스크탑: 최하단 */}
+      <div className="fixed bottom-18 lg:bottom-0 left-0 right-0 bg-white border-t border-orange-100 z-40">
+        <div className="max-w-[1152px] mx-auto px-5 lg:px-8 py-4 flex items-center gap-3">
           <button
             type="button"
             onClick={() => router.back()}
-            className="w-28 h-11 px-5 bg-white border border-orange-500 rounded-[10px] text-base text-orange-500 hover:bg-orange-50 transition-colors"
+            className="flex-1 lg:flex-none lg:w-28 h-11 px-5 bg-white border border-orange-500 rounded-[10px] text-[15px] font-semibold text-orange-500 hover:bg-orange-50 transition-colors"
           >
             취소
           </button>
           <button
             type="button"
             onClick={() => router.push("/myprofile/sitter-profile")}
-            className="w-32 h-11 px-5 bg-white border border-orange-500 rounded-[10px] text-base text-orange-500 flex items-center justify-center gap-2 hover:bg-orange-50 transition-colors"
+            className="flex-1 lg:flex-none lg:w-32 h-11 px-5 bg-white border border-orange-500 rounded-[10px] text-[15px] font-semibold text-orange-500 flex items-center justify-center gap-2 hover:bg-orange-50 transition-colors"
           >
             <Eye size={16} />
             미리보기
@@ -607,7 +593,7 @@ export default function SitterEditPage() {
           <button
             type="button"
             onClick={() => router.push("/myprofile")}
-            className="w-36 h-11 px-5 bg-orange-500 rounded-[10px] text-base text-white hover:bg-orange-600 transition-colors"
+            className="flex-1 lg:flex-none lg:w-36 h-11 px-5 bg-orange-500 rounded-[10px] text-[15px] font-semibold text-white hover:bg-orange-600 transition-colors"
           >
             수정 완료
           </button>
