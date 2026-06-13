@@ -164,12 +164,12 @@ function PostCard({
   return (
     <div className="bg-white rounded-2xl border border-orange-100 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] p-5 flex flex-col gap-4">
       {/* 제목 + 상태 배지 */}
-      <div className="flex items-start justify-between gap-3">
-        <span className="text-sm text-stone-900 leading-5 flex-1">
+      <div className="flex items-start gap-3 flex-wrap">
+        <span className="text-sm text-stone-900 leading-5 flex-1 min-w-0">
           {post.title}
         </span>
         <span
-          className={`shrink-0 px-2.5 py-1 rounded-full text-xs flex items-center gap-1 ${config.badgeBg} ${config.badgeText}`}
+          className={`shrink-0 whitespace-nowrap px-2.5 py-1 rounded-full text-xs flex items-center gap-1 ${config.badgeBg} ${config.badgeText}`}
         >
           {post.status === "open" && <CheckCircle size={10} />}
           {post.status === "reserved" && <CheckCircle size={10} />}
@@ -326,7 +326,7 @@ export default function PostsManagePage() {
         <div className="flex items-center gap-3 mb-2">
           <button
             onClick={() => router.back()}
-            className="p-2 rounded-xl hover:bg-orange-100 transition-colors"
+            className="p-1 -ml-1"
           >
             <ChevronLeft size={20} className="text-stone-900" />
           </button>

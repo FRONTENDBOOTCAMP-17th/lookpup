@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ArrowLeft,
+  ChevronLeft,
   AlertTriangle,
   AlertCircle,
   CheckCircle2,
@@ -76,9 +76,9 @@ export default function WithdrawPage() {
           <button
             type="button"
             onClick={() => router.back()}
-            className="w-10 h-10 flex items-center justify-center border border-[#FFE9D6] rounded-xl shrink-0"
+            className="p-1 -ml-1"
           >
-            <ArrowLeft className="w-5 h-5 text-[#281A0E]" />
+            <ChevronLeft size={20} className="text-[#281A0E]" />
           </button>
           <div>
             <h1 className="text-2xl font-bold text-[#281A0E]">회원 탈퇴</h1>
