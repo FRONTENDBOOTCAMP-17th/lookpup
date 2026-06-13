@@ -321,9 +321,21 @@ export default function PostsManagePage() {
         <Header />
       </div>
 
+      {/* 모바일 헤더 */}
+      <div className="md:hidden sticky top-0 z-50 bg-white border-b border-[#FFE9D6]">
+        <div className="h-14 px-5 flex items-center gap-3">
+          <button onClick={() => router.back()} className="p-1 -ml-1">
+            <ChevronLeft size={24} className="text-[#281A0E]" />
+          </button>
+          <span className="flex-1 font-semibold text-[#281A0E]">
+            게시글 관리
+          </span>
+        </div>
+      </div>
+
       <div className="flex-1 w-full max-w-[820px] mx-auto px-6 pt-6 pb-10">
         {/* 헤더 */}
-        <div className="flex items-center gap-3 mb-2">
+        <div className="hidden md:flex items-center gap-3 mb-2">
           <button
             onClick={() => router.back()}
             className="p-1 -ml-1"

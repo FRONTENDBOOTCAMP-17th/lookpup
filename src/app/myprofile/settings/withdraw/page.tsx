@@ -68,11 +68,25 @@ export default function WithdrawPage() {
 
   return (
     <div className="min-h-screen bg-[#FFF8F3]">
-      <Header />
+      <div className="hidden md:block">
+        <Header />
+      </div>
 
-      <main className="max-w-190 mx-auto px-4 md:px-6 pt-12 pb-20">
+      {/* 모바일 헤더 */}
+      <div className="md:hidden sticky top-0 z-50 bg-white border-b border-[#FFE9D6]">
+        <div className="h-14 px-5 flex items-center gap-3">
+          <button type="button" onClick={() => router.back()} className="p-1 -ml-1">
+            <ChevronLeft size={24} className="text-[#281A0E]" />
+          </button>
+          <span className="flex-1 font-semibold text-[#281A0E]">
+            회원 탈퇴
+          </span>
+        </div>
+      </div>
+
+      <main className="max-w-190 mx-auto px-4 md:px-6 pt-4 md:pt-12 pb-20">
         {/* 페이지 타이틀 */}
-        <div className="flex items-center gap-3 mb-8">
+        <div className="hidden md:flex items-center gap-3 mb-8">
           <button
             type="button"
             onClick={() => router.back()}

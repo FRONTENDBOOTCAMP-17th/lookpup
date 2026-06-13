@@ -269,6 +269,18 @@ export default function SitterEditPage() {
         <Header />
       </div>
 
+      {/* 모바일 헤더 */}
+      <div className="lg:hidden sticky top-0 z-50 bg-white border-b border-[#FFE9D6]">
+        <div className="h-14 px-5 flex items-center gap-3">
+          <button onClick={() => router.back()} className="p-1 -ml-1">
+            <ChevronLeft size={24} className="text-[#281A0E]" />
+          </button>
+          <span className="flex-1 font-semibold text-[#281A0E]">
+            펫시터 프로필 수정
+          </span>
+        </div>
+      </div>
+
       <main className="flex-1 pb-24">
         <div className="max-w-[1152px] mx-auto px-5 lg:px-8 pt-6">
           {/* 페이지 헤더 (데스크탑) */}
