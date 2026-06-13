@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import Header from "@/components/layout/Header";
 import { CustomModal } from "@/components/common/CustomModal";
+import MobileHeader from "@/components/layout/MobileHeader";
+import MobileBottomNav from "@/components/layout/MobileBottomNav";
 
 // 탈퇴 사유 목록 (탈퇴 계정 삭제 기능 모달 - deleteAccount / deleteAccountDisabled preset 사용)
 const REASONS = [
@@ -68,7 +70,13 @@ export default function WithdrawPage() {
 
   return (
     <div className="min-h-screen bg-[#FFF8F3]">
-      <Header />
+      {/* PC 헤더 */}
+      <div className="hidden lg:block">
+        <Header />
+      </div>
+
+      {/* 모바일/태블릿 헤더 */}
+      <MobileHeader />
 
       <main className="max-w-190 mx-auto px-4 md:px-6 pt-12 pb-20">
         {/* 페이지 타이틀 */}
@@ -279,6 +287,8 @@ export default function WithdrawPage() {
         onConfirm={() => setShowModal(false)}
         showCloseButton={false}
       />
+
+      <MobileBottomNav />
     </div>
   );
 }

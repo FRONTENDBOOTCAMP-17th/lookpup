@@ -13,6 +13,8 @@ import {
 import { useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
 import { AvatarWithCamera } from "@/components/ui/Avatar";
+import MobileHeader from "@/components/layout/MobileHeader";
+import MobileBottomNav from "@/components/layout/MobileBottomNav";
 import { Switch } from "@/components/ui/switch";
 import { CustomModal } from "@/components/common/CustomModal";
 
@@ -68,26 +70,14 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-[#FFF8F3]">
-      {/* 데스크탑 헤더 */}
-      <div className="hidden md:block">
+      <div className="hidden lg:block">
         <Header />
       </div>
-
-      {/* 모바일 헤더 */}
-      <div className="md:hidden sticky top-0 z-50 bg-white border-b border-[#FFE9D6]">
-        <div className="h-14 px-5 flex items-center gap-3">
-          <button onClick={() => router.back()} className="p-1 -ml-1">
-            <ChevronLeft size={24} className="text-[#281A0E]" />
-          </button>
-          <span className="flex-1 font-semibold text-[#281A0E]">
-            프로필 설정
-          </span>
-        </div>
-      </div>
+      <MobileHeader />
 
       <div className="w-full max-w-[1200px] mx-auto px-4 md:px-6 pt-6 md:pt-12 pb-10 md:pb-20">
-        {/* 데스크탑 타이틀 */}
-        <div className="hidden md:flex items-center gap-4 mb-8">
+        {/* 페이지 타이틀 */}
+        <div className="flex items-center gap-4 mb-8">
           <button
             onClick={() => router.back()}
             className="w-10 h-10 rounded-xl border border-[#FFE9D6] flex items-center justify-center hover:bg-[#FFF8F3] transition-colors shrink-0"
@@ -284,6 +274,8 @@ export default function SettingsPage() {
           setShowSaveModal(false);
         }}
       />
+
+      <MobileBottomNav />
     </div>
   );
 }

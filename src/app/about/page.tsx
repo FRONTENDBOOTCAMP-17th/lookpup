@@ -2,6 +2,8 @@ import Link from "next/link";
 import { Search, Shield, Calendar, MessageCircle, Star } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import MobileHeader from "@/components/layout/MobileHeader";
+import MobileBottomNav from "@/components/layout/MobileBottomNav";
 
 // 소개란 정보값
 
@@ -85,7 +87,10 @@ const FAQS = [
 export default function AboutPage() {
   return (
     <>
-      <Header />
+      <div className="hidden lg:block">
+        <Header />
+      </div>
+      <MobileHeader />
 
       <main className="flex-1">
 
@@ -203,7 +208,10 @@ export default function AboutPage() {
 
       </main>
 
-      <Footer />
+      <div className="hidden lg:block">
+        <Footer />
+      </div>
+      <MobileBottomNav />
     </>
   );
 }

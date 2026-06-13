@@ -6,6 +6,8 @@ import { ArrowLeft, AlertTriangle, Check, ImagePlus, X } from "lucide-react";
 import Header from "@/components/layout/Header";
 import { CustomModal } from "@/components/common/CustomModal";
 import { AvatarReport } from "@/components/ui/Avatar";
+import MobileHeader from "@/components/layout/MobileHeader";
+import MobileBottomNav from "@/components/layout/MobileBottomNav";
 
 const REPORT_REASONS = [
   "부적절한 언행",
@@ -44,7 +46,10 @@ export default function ReportPage() {
 
   return (
     <div className="min-h-screen bg-[#fff8f3]">
-      <Header />
+      <div className="hidden lg:block">
+        <Header />
+      </div>
+      <MobileHeader />
 
       <main className="max-w-190 mx-auto px-4 md:px-6 pt-12 pb-20">
         {/* 페이지 타이틀 */}
@@ -227,6 +232,8 @@ export default function ReportPage() {
         }}
         showCloseButton={false}
       />
+
+      <MobileBottomNav />
     </div>
   );
 }

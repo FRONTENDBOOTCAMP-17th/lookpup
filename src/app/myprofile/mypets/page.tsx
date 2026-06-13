@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import Header from "@/components/layout/Header";
 import { CustomModal } from "@/components/common/CustomModal";
+import MobileHeader from "@/components/layout/MobileHeader";
+import MobileBottomNav from "@/components/layout/MobileBottomNav";
 
 // 더미데이터
 
@@ -729,30 +731,13 @@ export default function MyPetsPage() {
 
   return (
     <div className="min-h-screen bg-[#FFF8F3]">
-      <div className="hidden md:block">
+      <div className="hidden lg:block">
         <Header />
       </div>
-
-      {/* 모바일 헤더 */}
-      <div className="md:hidden sticky top-0 z-50 bg-white border-b border-[#FFE9D6]">
-        <div className="h-14 px-5 flex items-center gap-3">
-          <button onClick={() => router.back()} className="p-1 -ml-1">
-            <ChevronLeft size={24} className="text-[#281A0E]" />
-          </button>
-          <span className="flex-1 font-semibold text-[#281A0E]">
-            내 반려동물
-          </span>
-          <button
-            onClick={handleAddPet}
-            className="h-9 px-4 rounded-xl bg-[#E8742A] text-white text-sm font-semibold flex items-center gap-1"
-          >
-            <Plus size={15} /> 추가
-          </button>
-        </div>
-      </div>
+      <MobileHeader />
 
       {/* 데스크탑 콘텐츠 */}
-      <div className="hidden md:block w-full max-w-[1200px] mx-auto px-6 pt-10 pb-20">
+      <div className="hidden lg:block w-full max-w-[1200px] mx-auto px-6 pt-10 pb-20">
         {/* 상단 영역 */}
         <div className="flex items-start justify-between mb-8">
           <div className="flex items-center gap-4">
@@ -802,7 +787,7 @@ export default function MyPetsPage() {
       </div>
 
       {/* 모바일 콘텐츠 */}
-      <div className="md:hidden px-4 pt-4 pb-28">
+      <div className="lg:hidden px-4 pt-4 pb-28">
         {pets.length === 0 ? (
           <EmptyState onAdd={handleAddPet} />
         ) : (
@@ -822,7 +807,7 @@ export default function MyPetsPage() {
       {/* 모바일 추가 버튼 */}
       <button
         onClick={handleAddPet}
-        className="md:hidden fixed bottom-22 right-5 w-14 h-14 bg-[#E8742A] rounded-full flex items-center justify-center shadow-[0_4px_16px_rgba(232,116,42,0.4)] hover:bg-[#D4621A] transition-colors z-30"
+        className="lg:hidden fixed bottom-22 right-5 w-14 h-14 bg-[#E8742A] rounded-full flex items-center justify-center shadow-[0_4px_16px_rgba(232,116,42,0.4)] hover:bg-[#D4621A] transition-colors z-30"
       >
         <Plus size={24} className="text-white" />
       </button>
@@ -862,6 +847,8 @@ export default function MyPetsPage() {
       {modal === "guide" && (
         <GuideModal onRegister={handleAddPet} onLater={() => setModal(null)} />
       )}
+
+      <MobileBottomNav />
     </div>
   );
 }

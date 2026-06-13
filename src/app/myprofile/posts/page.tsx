@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   ChevronLeft,
   Dog,
@@ -13,14 +13,12 @@ import {
   Trash2,
   CheckCircle,
   XCircle,
-  Search,
-  FileText,
-  Bell,
-  MessageCircle,
 } from "lucide-react";
 import Link from "next/link";
 import Header from "@/components/layout/Header";
 import { CustomModal } from "@/components/common/CustomModal";
+import MobileHeader from "@/components/layout/MobileHeader";
+import MobileBottomNav from "@/components/layout/MobileBottomNav";
 
 type PostStatus = "open" | "reserved" | "in-progress" | "completed" | "cancelled";
 type TabId = "all" | "open" | "reserved" | "in-progress" | "completed" | "cancelled";
@@ -331,15 +329,6 @@ export default function PostsManagePage() {
     cancelled: countByStatus(posts, "cancelled"),
   };
 
-  const pathname = usePathname();
-  const bottomNavItems = [
-    { href: "/petsitters", label: "펫시터 찾기", Icon: Search },
-    { href: "/board", label: "구인 게시판", Icon: FileText },
-    { href: "/notifications", label: "알림", Icon: Bell },
-    { href: "/chat", label: "채팅", Icon: MessageCircle },
-    { href: "/myprofile", label: "내 프로필", Icon: User },
-  ] as const;
-
   return (
     <div className="min-h-screen flex flex-col bg-orange-50">
       {/* PC 헤더 */}
@@ -347,29 +336,12 @@ export default function PostsManagePage() {
         <Header />
       </div>
 
-      {/* 모바일/태블릿 페이지 헤더 */}
-      <div className="lg:hidden sticky top-0 z-50 bg-white border-b border-[#FFE9D6]">
-        <div className="flex items-center gap-3 px-5 pt-12 pb-[17px]">
-          <button
-            onClick={() => router.back()}
-            className="p-2 -ml-2 rounded-xl hover:bg-orange-50 transition-colors shrink-0"
-          >
-            <ChevronLeft size={22} className="text-[#281A0E]" />
-          </button>
-          <div>
-            <h1 className="text-[32px] font-bold text-[#281A0E] leading-[1.3] tracking-[-0.5px]">
-              게시글 관리
-            </h1>
-            <p className="text-xs text-gray-400 leading-4">
-              작성한 돌봄 요청글을 확인하고 관리할 수 있어요.
-            </p>
-          </div>
-        </div>
-      </div>
+      {/* 모바일/태블릿 헤더 */}
+      <MobileHeader />
 
       <div className="flex-1 w-full max-w-[820px] mx-auto px-5 lg:px-6 pt-6 pb-32 lg:pb-10">
-        {/* PC 인라인 헤더 */}
-        <div className="hidden lg:flex items-center gap-3 mb-2">
+        {/* 페이지 타이틀 (모바일+PC 공통) */}
+        <div className="flex items-center gap-3 mb-2">
           <button
             onClick={() => router.back()}
             className="p-2 rounded-xl hover:bg-orange-100 transition-colors"
@@ -446,27 +418,7 @@ export default function PostsManagePage() {
       </div>
 
       {/* 모바일/태블릿 바텀 네비 */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-[#FFE9D6] shadow-[0px_-2px_6px_rgba(0,0,0,0.04)] h-[72px]">
-        <div className="flex h-full">
-          {bottomNavItems.map(({ href, label, Icon }) => {
-            const active = href === "/myprofile"
-              ? pathname.startsWith("/myprofile")
-              : pathname === href || pathname.startsWith(href + "/");
-            return (
-              <Link
-                key={href}
-                href={href}
-                className="flex-1 flex flex-col items-center justify-center gap-1"
-              >
-                <Icon size={22} className={active ? "text-[#E8742A]" : "text-gray-400"} />
-                <span className={`text-[11px] font-medium leading-[1.6] ${active ? "text-[#E8742A]" : "text-gray-400"}`}>
-                  {label}
-                </span>
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
+      <MobileBottomNav />
 
       {/* 삭제 확인 모달 */}
       {deleteTargetId && (

@@ -21,10 +21,13 @@ import {
   UserX,
   Pencil,
   MapPin,
+  Trash2,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Avatar, { AvatarMobile } from "@/components/ui/Avatar";
 import { signOut } from "@/app/actions/auth";
+import MobileHeader from "@/components/layout/MobileHeader";
+import MobileBottomNav from "@/components/layout/MobileBottomNav";
 
 // 더미데이터
 
@@ -362,12 +365,13 @@ export default function MyProfilePage() {
   return (
     <div className="min-h-screen flex flex-col bg-orange-50">
       {/* 데스크탑 헤더 */}
-      <div className="hidden md:block">
+      <div className="hidden lg:block">
         <Header />
       </div>
+      <MobileHeader />
 
-      {/* 모바일 헤더 */}
-      <div className="md:hidden bg-linear-to-br from-orange-500 to-orange-300 rounded-b-3xl px-5 pt-8 pb-8 shrink-0">
+      {/* 모바일/태블릿 헤더 */}
+      <div className="lg:hidden bg-linear-to-br from-orange-500 to-orange-300 rounded-b-3xl px-5 pt-8 pb-8 shrink-0">
         <div className="flex items-center gap-4 mb-6">
           <AvatarMobile initial={DUMMY_USER.initial} />
           <div className="flex-1">
@@ -397,7 +401,7 @@ export default function MyProfilePage() {
       </div>
 
       {/* 데스크탑 레이아웃 */}
-      <div className="hidden md:block flex-1">
+      <div className="hidden lg:block flex-1">
         <div className="max-w-[1200px] mx-auto px-6 py-12">
           <div className="flex gap-6">
             {/* 사이드바 */}
@@ -589,8 +593,83 @@ export default function MyProfilePage() {
         </div>
       </div>
 
-      {/* 모바일 메뉴 */}
-      <div className="md:hidden flex-1 overflow-y-auto px-5 py-6">
+      {/* 모바일/태블릿 메뉴 */}
+      <div className="lg:hidden flex-1 overflow-y-auto px-5 py-6">
+        {/* 펫시터 탭: 프로필 카드 */}
+        {userType === "sitter" && (
+          <div className="mb-5">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-stone-900">펫시터 프로필</h3>
+              <span className="text-xs text-gray-400">공개 중</span>
+            </div>
+            <div className="bg-white rounded-2xl border border-orange-100 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.08)] p-4">
+              {/* 프로필 헤더 */}
+              <div className="flex items-center gap-3 mb-3">
+                <Avatar initial={DUMMY_SITTER_PROFILE.initial} size="lg" variant="orange" className="shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="text-base font-bold text-stone-900">{DUMMY_SITTER_PROFILE.name}</span>
+                    {DUMMY_SITTER_PROFILE.verified && (
+                      <span className="px-1.5 py-0.5 bg-orange-500 rounded text-white text-[10px] font-medium">인증</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 mb-0.5">
+                    <MapPin size={11} className="text-gray-400" />
+                    <span className="text-xs text-gray-500">{DUMMY_SITTER_PROFILE.location}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Star size={11} className="fill-amber-400 text-amber-400" />
+                    <span className="text-xs font-bold text-stone-900">{DUMMY_SITTER_PROFILE.rating}</span>
+                    <span className="text-xs text-gray-400">({DUMMY_SITTER_PROFILE.reviewCount}개 리뷰)</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 서비스 태그 */}
+              <div className="flex gap-1.5 flex-wrap mb-3">
+                {DUMMY_SITTER_PROFILE.services.map((s) => (
+                  <span key={s} className="px-2.5 py-1 bg-orange-50 rounded-full text-orange-500 text-xs font-medium">{s}</span>
+                ))}
+              </div>
+
+              {/* 통계 */}
+              <div className="grid grid-cols-3 gap-2 mb-3">
+                {[
+                  { label: "경력", value: DUMMY_SITTER_PROFILE.career },
+                  { label: "완료 건수", value: DUMMY_SITTER_PROFILE.completedCount },
+                  { label: "응답률", value: "98%" },
+                ].map((item) => (
+                  <div key={item.label} className="bg-orange-50 rounded-xl py-2 text-center">
+                    <p className="text-xs font-bold text-orange-500">{item.value}</p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">{item.label}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* 액션 버튼 */}
+              <div className="flex gap-2 pt-3 border-t border-orange-100">
+                <Link
+                  href="/myprofile/sitter-profile"
+                  className="flex-1 py-2 bg-orange-50 border border-orange-100 rounded-xl flex items-center justify-center gap-1.5 text-orange-500 text-xs font-medium"
+                >
+                  <User size={12} />
+                  프로필 보기
+                </Link>
+                <Link
+                  href="/myprofile/sitter-edit"
+                  className="flex-1 py-2 bg-orange-500 rounded-xl flex items-center justify-center gap-1.5 text-white text-xs font-medium"
+                >
+                  <Pencil size={12} />
+                  수정하기
+                </Link>
+                <button className="w-9 h-9 bg-orange-50 border border-orange-100 rounded-xl flex items-center justify-center shrink-0">
+                  <Trash2 size={14} className="text-orange-300" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="space-y-2 mb-5">
           {menuItems.map((item) => {
             const Icon = item.icon;
@@ -647,6 +726,9 @@ export default function MyProfilePage() {
           </button>
         </div>
       </div>
+
+      {/* 모바일/태블릿 바텀 네비 */}
+      <MobileBottomNav />
     </div>
   );
 }

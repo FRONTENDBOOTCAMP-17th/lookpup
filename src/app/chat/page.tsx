@@ -9,12 +9,10 @@ import {
   MoreVertical,
   Send,
   Plus,
-  Home,
-  MessageSquare,
-  User,
 } from "lucide-react";
-import Link from "next/link";
 import Header from "@/components/layout/Header";
+import MobileHeader from "@/components/layout/MobileHeader";
+import MobileBottomNav from "@/components/layout/MobileBottomNav";
 import Avatar from "@/components/ui/Avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -217,13 +215,6 @@ const Messages_Applicants: Record<number, Message[]> = {
   ],
 };
 
-const BOTTOM_NAV = [
-  { href: "/", icon: Home, label: "홈" },
-  { href: "/petsitters", icon: Search, label: "탐색" },
-  { href: "/chat", icon: MessageSquare, label: "채팅" },
-  { href: "/myprofile", icon: User, label: "프로필" },
-] as const;
-
 export default function ChatPage() {
   const router = useRouter();
   const [editMode, setEditMode] = useState(false);
@@ -362,12 +353,15 @@ export default function ChatPage() {
 
   return (
     <>
-      <Header />
+      <div className="hidden lg:block">
+        <Header />
+      </div>
+      <MobileHeader />
 
       {/* ── 모바일 레이아웃 (md 미만) ── */}
       <div
         className="md:hidden flex flex-col overflow-hidden"
-        style={{ height: "calc(100dvh - 64px)" }}
+        style={{ height: "calc(100dvh - 56px)" }}
       >
         {mobileChatView === "list" ? (
           /* 채팅 목록 뷰 */
@@ -417,7 +411,7 @@ export default function ChatPage() {
             </div>
 
             {/* 목록 */}
-            <div className="flex-1 overflow-y-auto pb-15">
+            <div className="flex-1 overflow-y-auto pb-18">
               {activeTab === "one_on_one" &&
                 rooms.map((room) => (
                   <ChatRoomItem
@@ -485,21 +479,7 @@ export default function ChatPage() {
               )}
             </div>
 
-            {/* 하단 네비게이션 */}
-            <div className="fixed bottom-0 left-0 right-0 h-15 bg-white border-t border-orange-100 flex z-40">
-              {BOTTOM_NAV.map(({ href, icon: Icon, label }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors ${
-                    href === "/chat" ? "text-orange-500" : "text-gray-400"
-                  }`}
-                >
-                  <Icon size={22} />
-                  <span className="text-[10px] font-medium">{label}</span>
-                </Link>
-              ))}
-            </div>
+            <MobileBottomNav />
           </div>
         ) : (
           /* 채팅방 뷰 */

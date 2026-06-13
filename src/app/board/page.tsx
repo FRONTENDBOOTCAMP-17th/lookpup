@@ -5,6 +5,8 @@ import Link from "next/link";
 import { MapPin, Calendar, DollarSign, Search, SlidersHorizontal, ChevronRight } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import MobileHeader from "@/components/layout/MobileHeader";
+import MobileBottomNav from "@/components/layout/MobileBottomNav";
 
 // 더미데이터 꼬라박기
 
@@ -132,7 +134,10 @@ export default function BoardPage() {
 
   return (
     <>
-      <Header />
+      <div className="hidden lg:block">
+        <Header />
+      </div>
+      <MobileHeader />
 
       <main className="flex-1 bg-orange-50 min-h-screen">
         <div className="max-w-[1152px] mx-auto px-4 md:px-8 py-8 md:py-12">
@@ -227,7 +232,10 @@ export default function BoardPage() {
         </div>
       </main>
 
-      <Footer />
+      <div className="hidden lg:block">
+        <Footer />
+      </div>
+      <MobileBottomNav />
     </>
   );
 }

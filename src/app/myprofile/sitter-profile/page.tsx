@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, MapPin, Star, Shield, Eye } from "lucide-react";
+import { ChevronLeft, MapPin, Star, Shield, Eye, Heart, Share2 } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Avatar from "@/components/ui/Avatar";
 import KakaoMap from "@/components/KakaoMap";
-import SitterProfileCard from "@/components/sitter/SitterProfileCard";
+import MobileBottomNav from "@/components/layout/MobileBottomNav";
 
 // Mock data (추후 DB 연결 시 이 객체만 교체)
 
@@ -398,17 +398,114 @@ function SitterProfileTabs({
   );
 }
 
-//페이지 
+//페이지
 
 export default function SitterProfilePreviewPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabId>("intro");
+  const s = sitterProfileMock;
 
   return (
     <div className="min-h-screen flex flex-col bg-orange-50">
-      <Header />
+      {/* PC 헤더 */}
+      <div className="hidden lg:block">
+        <Header />
+      </div>
 
-      <main className="flex-1">
+      {/* ── 모바일/태블릿 레이아웃 ── */}
+      <div className="lg:hidden flex flex-col bg-white">
+        {/* 상단 이미지 영역 */}
+        <div className="relative w-full h-44 bg-gradient-to-br from-gray-200 to-gray-300 shrink-0">
+          {/* 뒤로가기 */}
+          <button
+            onClick={() => router.back()}
+            className="absolute top-12 left-4 w-9 h-9 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm"
+          >
+            <ChevronLeft size={20} className="text-stone-900" />
+          </button>
+          {/* 하트/공유 */}
+          <div className="absolute top-12 right-4 flex gap-2">
+            <button className="w-9 h-9 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm">
+              <Heart size={18} className="text-stone-900" />
+            </button>
+            <button className="w-9 h-9 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm">
+              <Share2 size={18} className="text-stone-900" />
+            </button>
+          </div>
+          {/* 아바타 + 이름/위치 오버레이 */}
+          <div className="absolute bottom-4 left-4 flex items-center gap-3">
+            <Avatar initial={s.initial} size="lg" variant="dark" />
+            <div>
+              <div className="flex items-center gap-2 mb-0.5">
+                <h2 className="text-base font-bold text-stone-900">{s.name}</h2>
+                {s.verified && (
+                  <span className="px-1.5 py-0.5 bg-orange-500 text-white text-[10px] font-medium rounded">인증</span>
+                )}
+              </div>
+              <div className="flex items-center gap-1 text-gray-500">
+                <MapPin size={11} />
+                <span className="text-xs">{s.location}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 별점 */}
+        <div className="px-5 py-3 bg-white flex items-center gap-1.5">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Star key={i} size={13} className="fill-amber-400 text-amber-400" />
+          ))}
+          <span className="text-sm font-bold text-stone-900">{s.rating}</span>
+          <span className="text-xs text-gray-400">({s.reviewCount}개 리뷰)</span>
+        </div>
+
+        {/* 서비스 태그 */}
+        <div className="flex flex-wrap gap-1.5 px-5 pb-4 bg-white">
+          {s.services.map((sv) => (
+            <span key={sv} className="px-3 py-1 bg-orange-50 text-orange-500 text-xs font-medium rounded-full">{sv}</span>
+          ))}
+        </div>
+
+        {/* 탭 바 */}
+        <div className="bg-white border-b border-orange-100 px-5 sticky top-0 z-10">
+          <div className="flex gap-6">
+            {TABS.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`pb-3 text-sm font-semibold transition-colors relative ${
+                  activeTab === tab.id ? "text-orange-500" : "text-gray-400"
+                }`}
+              >
+                {tab.label}
+                {activeTab === tab.id && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-500 rounded-t-full" />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 탭 콘텐츠 */}
+        <div className="flex-1 px-5 py-5 pb-44 bg-orange-50">
+          {activeTab === "intro" && <SitterIntroSection />}
+          {activeTab === "services" && <SitterServicesSection />}
+          {activeTab === "reviews" && <SitterReviewsSection />}
+          {activeTab === "location" && <SitterLocationSection />}
+        </div>
+
+        {/* 예약하기 버튼 (바텀 네비 위) */}
+        <div className="fixed bottom-[72px] left-0 right-0 z-40 bg-white border-t border-orange-100 px-5 py-3">
+          <button className="w-full py-3.5 bg-orange-500 text-white font-semibold rounded-xl text-sm hover:bg-orange-600 transition-colors">
+            예약하기
+          </button>
+        </div>
+
+        <MobileBottomNav />
+      </div>
+
+      {/* ── PC 레이아웃 ── */}
+      <main className="hidden lg:block flex-1">
         <div className="max-w-[1152px] mx-auto px-8 py-12">
           {/* 미리보기 안내 배너 */}
           <div className="flex items-center gap-3 mb-8 px-4 py-3 bg-orange-500/10 border border-orange-200 rounded-xl">

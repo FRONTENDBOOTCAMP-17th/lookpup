@@ -2,6 +2,8 @@ import Link from "next/link";
 import { ChevronLeft, Calendar, MessageSquare, CheckCircle, FileText } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import MobileHeader from "@/components/layout/MobileHeader";
+import MobileBottomNav from "@/components/layout/MobileBottomNav";
 
 //임시 더미데이터
 //추후 각 데이터에 따른 페이지 연동 필요!
@@ -108,7 +110,10 @@ function NotificationItem({
 export default function NotificationsPage() {
   return (
     <>
-      <Header />
+      <div className="hidden lg:block">
+        <Header />
+      </div>
+      <MobileHeader />
       <main className="flex-1 bg-orange-50 min-h-screen">
         <div className="max-w-[720px] mx-auto px-6 pt-12 pb-20">
           {/* 페이지 헤더 */}
@@ -159,7 +164,10 @@ export default function NotificationsPage() {
           </div>
         </div>
       </main>
-      <Footer />
+      <div className="hidden lg:block">
+        <Footer />
+      </div>
+      <MobileBottomNav />
     </>
   );
 }

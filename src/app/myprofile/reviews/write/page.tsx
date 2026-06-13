@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import Header from "@/components/layout/Header";
 import { CustomModal } from "@/components/common/CustomModal";
+import MobileHeader from "@/components/layout/MobileHeader";
+import MobileBottomNav from "@/components/layout/MobileBottomNav";
 
 // 상수
 
@@ -769,35 +771,13 @@ export default function ReviewWritePage() {
 
   return (
     <div className="min-h-screen bg-[#FFF8F3]">
-      {/* 데스크탑 헤더 */}
-      <div className="hidden md:block">
+      <div className="hidden lg:block">
         <Header />
       </div>
+      <MobileHeader />
 
-      {/* 모바일 헤더 */}
-      <div className="md:hidden sticky top-0 z-50 bg-white border-b border-[#FFE9D6]">
-        <div className="h-14 px-5 flex items-center">
-          <button
-            onClick={() =>
-              mobileScreen === 2 ? setMobileScreen(1) : router.back()
-            }
-            className="p-1 -ml-1 mr-3"
-          >
-            <ChevronLeft size={24} className="text-[#281A0E]" />
-          </button>
-          <span className="flex-1 text-center font-semibold text-[#281A0E] pr-8">
-            후기 작성
-          </span>
-          {mobileScreen === 2 && (
-            <span className="absolute right-5 text-xs text-[#6B7280] font-medium">
-              2 / 2
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* 데스크탑 / 태블릿 콘텐츠 */}
-      <div className="hidden md:block w-full max-w-160 mx-auto px-4 pt-12 pb-20">
+      {/* 데스크탑 콘텐츠 */}
+      <div className="hidden lg:block w-full max-w-160 mx-auto px-4 pt-12 pb-20">
         {/* 페이지 타이틀 */}
         <div className="flex items-center gap-4 mb-8">
           <button
@@ -827,7 +807,7 @@ export default function ReviewWritePage() {
       </div>
 
       {/* 모바일 콘텐츠 */}
-      <div className="md:hidden px-5 pt-4">
+      <div className="lg:hidden px-5 pt-4">
         {mobileScreen === 1 ? (
           <MobileScreen1
             reviewData={reviewData}
@@ -862,6 +842,8 @@ export default function ReviewWritePage() {
           router.back();
         }}
       />
+
+      <MobileBottomNav />
     </div>
   );
 }

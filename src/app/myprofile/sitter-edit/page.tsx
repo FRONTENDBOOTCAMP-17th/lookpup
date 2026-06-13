@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Avatar from "@/components/ui/Avatar";
+import MobileHeader from "@/components/layout/MobileHeader";
+import MobileBottomNav from "@/components/layout/MobileBottomNav";
 
 //상수
 
@@ -278,7 +280,10 @@ export default function SitterEditPage() {
 
   return (
     <div className="min-h-screen bg-orange-50 flex flex-col">
-      <Header />
+      <div className="hidden lg:block">
+        <Header />
+      </div>
+      <MobileHeader />
 
       <main className="flex-1 pb-24">
         <div className="max-w-[1152px] mx-auto px-8 pt-6">
@@ -608,6 +613,8 @@ export default function SitterEditPage() {
           </button>
         </div>
       </div>
+
+      <MobileBottomNav />
     </div>
   );
 }

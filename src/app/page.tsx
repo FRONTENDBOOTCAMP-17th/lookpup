@@ -16,6 +16,7 @@ import {
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import Avatar from "@/components/ui/Avatar";
+import MobileHeader from "@/components/layout/MobileHeader";
 
 // 더미데이터 꼬라박기
 
@@ -172,7 +173,10 @@ function PetsitterCard({
 export default function HomePage() {
   return (
     <>
-      <Header />
+      <div className="hidden lg:block">
+        <Header />
+      </div>
+      <MobileHeader />
 
       <main className="flex-1">
         {/* Hero */}

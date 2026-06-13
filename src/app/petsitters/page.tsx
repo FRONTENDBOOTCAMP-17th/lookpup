@@ -5,6 +5,8 @@ import Link from "next/link";
 import { MapPin, Search, SlidersHorizontal, Star } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Avatar from "@/components/ui/Avatar";
+import MobileHeader from "@/components/layout/MobileHeader";
+import MobileBottomNav from "@/components/layout/MobileBottomNav";
 import KakaoMap from "@/components/KakaoMap";
 
 const FILTERS = ["전체", "방문돌봄", "위탁돌봄", "산책", "인증만"] as const;
@@ -247,7 +249,10 @@ export default function PetsittersPage() {
 
   return (
     <>
-      <Header />
+      <div className="hidden lg:block">
+        <Header />
+      </div>
+      <MobileHeader />
       <main className="flex-1 bg-orange-50 min-h-screen">
         <div className="flex h-[calc(100vh-64px)]">
           {/* 지도 영역 */}
@@ -338,6 +343,7 @@ export default function PetsittersPage() {
           </div>
         </div>
       </main>
+      <MobileBottomNav />
     </>
   );
 }

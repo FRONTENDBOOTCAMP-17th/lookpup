@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { TrendingUp, Calendar, ChevronLeft, Download } from "lucide-react";
 import Header from "@/components/layout/Header";
+import MobileHeader from "@/components/layout/MobileHeader";
+import MobileBottomNav from "@/components/layout/MobileBottomNav";
 
 interface Transaction {
   id: number;
@@ -79,24 +81,14 @@ export default function EarningsPage() {
 
   return (
     <div className="min-h-screen bg-[#FFF8F3]">
-      {/* 데스크탑 헤더 */}
-      <div className="hidden md:block">
+      <div className="hidden lg:block">
         <Header />
       </div>
-
-      {/* 모바일 헤더 */}
-      <div className="md:hidden sticky top-0 z-50 bg-white border-b border-[#FFE9D6]">
-        <div className="h-14 px-5 flex items-center gap-3">
-          <button onClick={() => router.back()} className="p-1 -ml-1">
-            <ChevronLeft size={24} className="text-[#281A0E]" />
-          </button>
-          <span className="flex-1 font-semibold text-[#281A0E]">수익 관리</span>
-        </div>
-      </div>
+      <MobileHeader />
 
       <div className="w-full max-w-[1200px] mx-auto px-4 md:px-6 pt-6 md:pt-12 pb-10 md:pb-20">
-        {/* 데스크탑 타이틀 */}
-        <div className="hidden md:flex items-center justify-between mb-8">
+        {/* 페이지 타이틀 */}
+        <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <button
               onClick={() => router.back()}
@@ -182,13 +174,13 @@ export default function EarningsPage() {
         <div className="bg-white border border-[#FFE9D6] rounded-2xl p-6 shadow-[0_2px_12px_rgba(232,116,42,0.06)]">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-[#281A0E]">거래 내역</h2>
-            <button className="hidden md:flex h-9 px-4 rounded-xl border border-[#E8742A] text-sm font-medium text-[#E8742A] hover:bg-[#FFF8F3] transition-colors items-center">
+            <button className="hidden lg:flex h-9 px-4 rounded-xl border border-[#E8742A] text-sm font-medium text-[#E8742A] hover:bg-[#FFF8F3] transition-colors items-center">
               필터
             </button>
           </div>
 
           {/* 데스크탑 테이블 */}
-          <div className="hidden md:block overflow-x-auto">
+          <div className="hidden lg:block overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-[#FFE9D6]">
@@ -247,7 +239,7 @@ export default function EarningsPage() {
           </div>
 
           {/* 모바일 목록 */}
-          <div className="md:hidden space-y-3">
+          <div className="lg:hidden space-y-3">
             {TRANSACTIONS.map((transaction) => (
               <div key={transaction.id} className="p-4 bg-[#FFF8F3] rounded-xl">
                 <div className="flex items-start justify-between mb-2">
@@ -282,6 +274,8 @@ export default function EarningsPage() {
           </div>
         </div>
       </div>
+
+      <MobileBottomNav />
     </div>
   );
 }
