@@ -5,14 +5,15 @@ import {
   Send,
   Plus,
   MoreVertical,
-  MapPin,
-  Check,
   X,
   CreditCard,
   ClipboardList,
   Camera,
 } from "lucide-react";
 import Avatar from "@/components/ui/Avatar";
+import SitterProfileCard, {
+  type SitterProfile,
+} from "@/components/sitter/SitterProfileCard";
 
 // 1:1 채팅의 각 목록
 export type ChatRoom = {
@@ -45,7 +46,7 @@ export type Applicant = {
 // 채팅창 메시지
 export type Message = {
   id: number;
-  from: string;
+  from: "me" | "other" | "divider";
   text: string;
   time?: string;
 };
@@ -217,7 +218,7 @@ export function ApplicantCard({
                 onConfirm(applicant.id);
               }}
               disabled={confirmedId !== null}
-              className="flex-2 py-1.5 text-xs text-white bg-orange-500 rounded-lg hover:bg-orange-600 disabled:opacity-40 disabled:cursor-default transition-colors font-medium"
+              className="flex-1 py-1.5 text-xs text-white bg-orange-500 rounded-lg hover:bg-orange-600 disabled:opacity-40 disabled:cursor-default transition-colors font-medium"
             >
               선택 확정
             </button>
@@ -366,116 +367,34 @@ export function ApplicantProfilePopup({
   applicant,
   onClose,
 }: ApplicantProfilePopupProps) {
+  const profile: SitterProfile = {
+    name: applicant.name,
+    initial: applicant.initial,
+    verified: true,
+    location: applicant.location ?? "",
+    rating: applicant.rating,
+    reviewCount: applicant.reviewCount ?? 0,
+    services: applicant.services ?? [],
+    career: applicant.experience ?? "",
+    completedCount: applicant.completedJobs ?? "",
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
       onClick={onClose}
     >
       <div
-        className="w-80 bg-white rounded-2xl overflow-hidden shadow-2xl relative"
+        className="relative w-80"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* 상단 그라디언트 바 */}
-        <div
-          className="h-2 w-full"
-          style={{
-            background: "linear-gradient(90deg, #E8742A 0%, #F5A468 100%)",
-          }}
-        />
-
-        {/* 닫기 버튼 */}
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 p-1 rounded-full hover:bg-orange-50 transition-colors"
+          className="absolute top-3 right-3 z-10 p-1 rounded-full hover:bg-orange-50 transition-colors"
         >
           <X size={16} className="text-gray-400" />
         </button>
-
-        <div className="px-5 pt-4 pb-5">
-          {/* 아바타 + 이름 */}
-          <div className="flex items-start gap-4 mb-4">
-            <div className="relative shrink-0">
-              <Avatar initial={applicant.initial} size="lg" variant="orange" />
-              <div className="absolute bottom-0 right-0 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center shadow">
-                <Check size={10} className="text-white" strokeWidth={3} />
-              </div>
-            </div>
-
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-stone-900 text-lg font-bold">
-                  {applicant.name}
-                </span>
-                <span className="px-2.5 py-0.5 bg-orange-500 text-white text-[10px] font-medium rounded-md">
-                  인증
-                </span>
-              </div>
-              {applicant.location && (
-                <div className="flex items-center gap-1 text-gray-500 text-xs mb-1.5">
-                  <MapPin size={12} />
-                  <span>{applicant.location}</span>
-                </div>
-              )}
-              <div className="flex items-center gap-1">
-                <Star size={13} className="text-yellow-400 fill-yellow-400" />
-                <span className="text-stone-900 text-sm font-bold">
-                  {applicant.rating}
-                </span>
-                {applicant.reviewCount && (
-                  <span className="text-gray-400 text-xs">
-                    ({applicant.reviewCount}개 리뷰)
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* 서비스 태그 */}
-          {applicant.services && applicant.services.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-4">
-              {applicant.services.map((service) => (
-                <span
-                  key={service}
-                  className="px-3 py-1 bg-orange-50 text-orange-500 text-xs font-medium rounded-full"
-                >
-                  {service}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {/* 통계 */}
-          {(applicant.experience ||
-            applicant.completedJobs ||
-            applicant.responseRate) && (
-            <div className="grid grid-cols-3 gap-2">
-              {applicant.experience && (
-                <div className="bg-orange-50 rounded-xl py-2.5 px-2 text-center">
-                  <p className="text-orange-500 text-sm font-bold">
-                    {applicant.experience}
-                  </p>
-                  <p className="text-gray-400 text-[11px] mt-1">경력</p>
-                </div>
-              )}
-              {applicant.completedJobs && (
-                <div className="bg-orange-50 rounded-xl py-2.5 px-2 text-center">
-                  <p className="text-orange-500 text-sm font-bold">
-                    {applicant.completedJobs}
-                  </p>
-                  <p className="text-gray-400 text-[11px] mt-1">완료 건수</p>
-                </div>
-              )}
-              {applicant.responseRate && (
-                <div className="bg-orange-50 rounded-xl py-2.5 px-2 text-center">
-                  <p className="text-orange-500 text-sm font-bold">
-                    {applicant.responseRate}
-                  </p>
-                  <p className="text-gray-400 text-[11px] mt-1">응답률</p>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+        <SitterProfileCard profile={profile} />
       </div>
     </div>
   );

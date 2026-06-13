@@ -9,11 +9,7 @@ import {
   MoreVertical,
   Send,
   Plus,
-  Home,
-  MessageSquare,
-  User,
 } from "lucide-react";
-import Link from "next/link";
 import Header from "@/components/layout/Header";
 import Avatar from "@/components/ui/Avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -28,7 +24,7 @@ import {
   type ChatRoom,
   type Applicant,
   type Message,
-} from "./chat_components";
+} from "@/components/common/chat/chat_components";
 import { CustomModalPayment } from "@/components/common/CustomModalPayment";
 import CareRecordModal from "@/components/common/chat/CareRecordModal";
 
@@ -73,8 +69,16 @@ const Chat_One_On_One: ChatRoom[] = [
 ];
 
 const DUMMY_POSTS = [
-  { id: "post-1", title: "포메라니안 쿠키 산책 도우미 구합니다", status: "모집중" },
-  { id: "post-2", title: "말티즈 몽이 주말 방문 돌봄 부탁드려요", status: "모집중" },
+  {
+    id: "post-1",
+    title: "포메라니안 쿠키 산책 도우미 구합니다",
+    status: "모집중",
+  },
+  {
+    id: "post-2",
+    title: "말티즈 몽이 주말 방문 돌봄 부탁드려요",
+    status: "모집중",
+  },
 ];
 
 const Chat_Applicants: Applicant[] = [
@@ -217,13 +221,6 @@ const Messages_Applicants: Record<number, Message[]> = {
   ],
 };
 
-const BOTTOM_NAV = [
-  { href: "/", icon: Home, label: "홈" },
-  { href: "/petsitters", icon: Search, label: "탐색" },
-  { href: "/chat", icon: MessageSquare, label: "채팅" },
-  { href: "/myprofile", icon: User, label: "프로필" },
-] as const;
-
 export default function ChatPage() {
   const router = useRouter();
   const [editMode, setEditMode] = useState(false);
@@ -361,14 +358,11 @@ export default function ChatPage() {
     confirmedId === null;
 
   return (
-    <>
+    <div className="h-screen overflow-hidden flex flex-col">
       <Header />
 
       {/* ── 모바일 레이아웃 (md 미만) ── */}
-      <div
-        className="md:hidden flex flex-col overflow-hidden"
-        style={{ height: "calc(100dvh - 64px)" }}
-      >
+      <div className="md:hidden flex flex-col flex-1 overflow-hidden">
         {mobileChatView === "list" ? (
           /* 채팅 목록 뷰 */
           <div className="flex flex-col h-full">
@@ -417,7 +411,17 @@ export default function ChatPage() {
             </div>
 
             {/* 목록 */}
-            <div className="flex-1 overflow-y-auto pb-15">
+            <ScrollArea className="flex-1 overflow-hidden">
+              {activeTab === "one_on_one" && rooms.length === 0 && (
+                <p className="text-center text-stone-400 text-sm pt-16">
+                  새로운 채팅이 존재하지 않습니다
+                </p>
+              )}
+              {activeTab === "applicants" && applicants.length === 0 && (
+                <p className="text-center text-stone-400 text-sm pt-16">
+                  새로운 채팅이 존재하지 않습니다
+                </p>
+              )}
               {activeTab === "one_on_one" &&
                 rooms.map((room) => (
                   <ChatRoomItem
@@ -436,7 +440,10 @@ export default function ChatPage() {
               {activeTab === "applicants" && (
                 <>
                   {DUMMY_POSTS.map((post) => {
-                    const group = applicants.filter((a) => a.postId === post.id);
+                    const group = applicants.filter(
+                      (a) => a.postId === post.id,
+                    );
+                    if (group.length === 0) return null;
                     const isCollapsed = collapsedPosts.has(post.id);
                     return (
                       <div key={post.id}>
@@ -445,7 +452,7 @@ export default function ChatPage() {
                           className="w-full px-5 py-3 bg-orange-50 border-b border-orange-100 flex items-center justify-between hover:bg-orange-100 transition-colors"
                         >
                           <div className="text-left">
-                            <p className="text-sm font-medium text-stone-900 truncate max-w-[220px]">
+                            <p className="text-sm font-medium text-stone-900 truncate max-w-55">
                               {post.title}
                             </p>
                             <p className="text-xs text-gray-400 mt-0.5">
@@ -483,23 +490,7 @@ export default function ChatPage() {
                   })}
                 </>
               )}
-            </div>
-
-            {/* 하단 네비게이션 */}
-            <div className="fixed bottom-0 left-0 right-0 h-15 bg-white border-t border-orange-100 flex z-40">
-              {BOTTOM_NAV.map(({ href, icon: Icon, label }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors ${
-                    href === "/chat" ? "text-orange-500" : "text-gray-400"
-                  }`}
-                >
-                  <Icon size={22} />
-                  <span className="text-[10px] font-medium">{label}</span>
-                </Link>
-              ))}
-            </div>
+            </ScrollArea>
           </div>
         ) : (
           /* 채팅방 뷰 */
@@ -643,7 +634,10 @@ export default function ChatPage() {
               <ChatPlusPanel
                 onPaymentRequest={
                   activeTab === "one_on_one"
-                    ? () => { setPlusMenuOpen(false); setPaymentModalOpen(true); }
+                    ? () => {
+                        setPlusMenuOpen(false);
+                        setPaymentModalOpen(true);
+                      }
                     : undefined
                 }
                 onSendCareRecord={
@@ -682,7 +676,7 @@ export default function ChatPage() {
       </div>
 
       {/* ── 데스크톱 레이아웃 (md 이상) ── */}
-      <div className="hidden md:flex h-[calc(100vh-64px)] bg-orange-50 overflow-hidden">
+      <div className="hidden md:flex flex-1 bg-orange-50 overflow-hidden">
         {/* 사이드바 */}
         <div className="w-96 bg-white border-r border-orange-100 flex flex-col shrink-0">
           {/* 헤더 */}
@@ -732,7 +726,7 @@ export default function ChatPage() {
 
           {/* 1:1 채팅 목록 */}
           {activeTab === "one_on_one" && (
-            <div className="flex-1 overflow-y-auto">
+            <ScrollArea className="flex-1 overflow-hidden">
               {rooms.map((room) => (
                 <ChatRoomItem
                   key={room.id}
@@ -743,14 +737,15 @@ export default function ChatPage() {
                   onClick={setSelectedRoomId}
                 />
               ))}
-            </div>
+            </ScrollArea>
           )}
 
           {/* 지원 목록 */}
           {activeTab === "applicants" && (
-            <div className="flex-1 overflow-y-auto flex flex-col">
+            <ScrollArea className="flex-1 overflow-hidden">
               {DUMMY_POSTS.map((post) => {
                 const group = applicants.filter((a) => a.postId === post.id);
+                if (group.length === 0) return null;
                 const isCollapsed = collapsedPosts.has(post.id);
                 return (
                   <div key={post.id}>
@@ -759,7 +754,7 @@ export default function ChatPage() {
                       className="w-full px-5 py-3 bg-orange-50 border-b border-orange-100 flex items-center justify-between hover:bg-orange-100 transition-colors shrink-0"
                     >
                       <div className="text-left">
-                        <p className="text-sm font-medium text-stone-900 truncate max-w-[200px]">
+                        <p className="text-sm font-medium text-stone-900 truncate max-w-50">
                           {post.title}
                         </p>
                         <p className="text-xs text-gray-400 mt-0.5">
@@ -792,7 +787,7 @@ export default function ChatPage() {
                   </div>
                 );
               })}
-            </div>
+            </ScrollArea>
           )}
         </div>
 
@@ -888,12 +883,18 @@ export default function ChatPage() {
                 <ChatPlusPanel
                   onPaymentRequest={
                     activeTab === "one_on_one"
-                      ? () => { setPlusMenuOpen(false); setPaymentModalOpen(true); }
+                      ? () => {
+                          setPlusMenuOpen(false);
+                          setPaymentModalOpen(true);
+                        }
                       : undefined
                   }
                   onSendCareRecord={
                     activeTab === "one_on_one"
-                      ? () => { setPlusMenuOpen(false); setCareRecordOpen(true); }
+                      ? () => {
+                          setPlusMenuOpen(false);
+                          setCareRecordOpen(true);
+                        }
                       : undefined
                   }
                   onSendPhoto={() => setPlusMenuOpen(false)}
@@ -928,7 +929,6 @@ export default function ChatPage() {
         onClose={() => setCareRecordOpen(false)}
         serviceType="care"
       />
-
-    </>
+    </div>
   );
 }
