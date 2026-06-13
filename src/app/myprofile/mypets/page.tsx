@@ -109,7 +109,7 @@ function Backdrop({ children }: { children: React.ReactNode }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/35 backdrop-blur-sm" />
-      <div className="relative z-10">{children}</div>
+      <div className="relative z-10 w-full flex justify-center">{children}</div>
     </div>
   );
 }
@@ -474,16 +474,16 @@ function EditModal({
             </FormField>
 
             {/* 나이 + 몸무게 */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField label="나이">
                 <div className="flex items-center gap-2">
                   <input
                     type="number"
                     value={form.age}
                     onChange={(e) => update("age", Number(e.target.value))}
-                    className="flex-1 h-11 px-4 border border-[#FFE9D6] rounded-xl text-[#281A0E] focus:outline-none focus:border-[#E8742A] transition-colors"
+                    className="flex-1 min-w-0 h-11 px-4 border border-[#FFE9D6] rounded-xl text-[#281A0E] focus:outline-none focus:border-[#E8742A] transition-colors"
                   />
-                  <span className="text-sm text-[#6B7280]">살</span>
+                  <span className="shrink-0 text-sm text-[#6B7280]">살</span>
                 </div>
               </FormField>
               <FormField label="몸무게">
@@ -493,9 +493,9 @@ function EditModal({
                     step="0.1"
                     value={form.weight}
                     onChange={(e) => update("weight", Number(e.target.value))}
-                    className="flex-1 h-11 px-4 border border-[#FFE9D6] rounded-xl text-[#281A0E] focus:outline-none focus:border-[#E8742A] transition-colors"
+                    className="flex-1 min-w-0 h-11 px-4 border border-[#FFE9D6] rounded-xl text-[#281A0E] focus:outline-none focus:border-[#E8742A] transition-colors"
                   />
-                  <span className="text-sm text-[#6B7280]">kg</span>
+                  <span className="shrink-0 text-sm text-[#6B7280]">kg</span>
                 </div>
               </FormField>
             </div>
@@ -788,6 +788,30 @@ export default function MyPetsPage() {
 
       {/* 모바일 콘텐츠 */}
       <div className="lg:hidden px-4 pt-4 pb-28">
+        {/* 모바일 상단 영역 */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.back()}
+              className="w-10 h-10 rounded-xl border border-[#FFE9D6] flex items-center justify-center hover:bg-[#FFF8F3] transition-colors shrink-0"
+            >
+              <ChevronLeft size={20} className="text-[#281A0E]" />
+            </button>
+            <div>
+              <h2 className="text-xl font-bold text-[#281A0E]">내 반려동물</h2>
+              <p className="text-xs text-[#6B7280] mt-0.5">
+                등록된 반려동물을 관리할 수 있어요
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleAddPet}
+            className="h-9 px-3 rounded-xl bg-[#E8742A] text-white font-semibold hover:bg-[#D4621A] transition-colors flex items-center gap-1.5 text-xs shrink-0"
+          >
+            <Plus size={14} /> 추가
+          </button>
+        </div>
+
         {pets.length === 0 ? (
           <EmptyState onAdd={handleAddPet} />
         ) : (
