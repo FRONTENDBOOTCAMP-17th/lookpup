@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   ChevronLeft,
+  ChevronRight,
   Dog,
   Calendar,
   Clock,
@@ -270,6 +271,34 @@ export default function PostsManagePage() {
   const [sort, setSort] = useState<SortType>("latest");
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
+  // 모바일 탭 가로 스크롤
+  const tabsRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  useEffect(() => {
+    const el = tabsRef.current;
+    if (!el) return;
+    const update = () => {
+      setCanScrollLeft(el.scrollLeft > 1);
+      setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+    };
+    update();
+    el.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => {
+      el.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+  }, []);
+
+  const scrollTabs = (dir: "left" | "right") => {
+    const el = tabsRef.current;
+    if (!el) return;
+    const amount = el.clientWidth * 0.7;
+    el.scrollBy({ left: dir === "left" ? -amount : amount, behavior: "smooth" });
+  };
+
   const filtered =
     activeTab === "all"
       ? posts
@@ -351,26 +380,57 @@ export default function PostsManagePage() {
         </div>
 
         {/* 탭 필터 */}
-        <div className="flex gap-1 mt-6 overflow-x-auto pb-1">
-          {TABS.map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs transition-all ${
-                  isActive
-                    ? "bg-stone-900 text-white shadow-sm"
-                    : "bg-white border border-orange-100 text-gray-500"
-                }`}
-              >
-                {tab.label}{" "}
-                <span className={isActive ? "text-white/80" : "text-gray-400"}>
-                  {tabCounts[tab.id]}
-                </span>
-              </button>
-            );
-          })}
+        <div className="flex items-center gap-1.5 mt-6">
+          {/* 모바일 이전 버튼 */}
+          <button
+            type="button"
+            aria-label="이전 탭"
+            onClick={() => scrollTabs("left")}
+            disabled={!canScrollLeft}
+            className="md:hidden shrink-0 w-8 h-8 rounded-full bg-white border border-[#FFE9D6] flex items-center justify-center text-[#6B7280] disabled:opacity-30 transition-opacity"
+          >
+            <ChevronLeft size={16} />
+          </button>
+
+          <div
+            ref={tabsRef}
+            className="flex-1 min-w-0 flex gap-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden bg-white border border-[#FFE9D6] rounded-2xl p-1 scroll-smooth"
+          >
+            {TABS.map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex-1 min-w-fit px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${
+                    isActive
+                      ? "bg-[#E8742A] text-white"
+                      : "text-[#6B7280] hover:text-[#281A0E]"
+                  }`}
+                >
+                  {tab.label}
+                  {tabCounts[tab.id] > 0 && (
+                    <span
+                      className={`ml-1.5 text-xs ${isActive ? "text-white/80" : "text-[#9CA3AF]"}`}
+                    >
+                      {tabCounts[tab.id]}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* 모바일 다음 버튼 */}
+          <button
+            type="button"
+            aria-label="다음 탭"
+            onClick={() => scrollTabs("right")}
+            disabled={!canScrollRight}
+            className="md:hidden shrink-0 w-8 h-8 rounded-full bg-white border border-[#FFE9D6] flex items-center justify-center text-[#6B7280] disabled:opacity-30 transition-opacity"
+          >
+            <ChevronRight size={16} />
+          </button>
         </div>
 
         {/* 총 건수 + 정렬 */}
