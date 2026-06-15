@@ -1,14 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Check, CreditCard, Calendar } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Check,
+  CreditCard,
+  Calendar,
+} from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { format, differenceInDays } from "date-fns";
 import { ko } from "date-fns/locale";
 import { useBookingStore } from "@/store/bookingStore";
 import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
 import RangePicker from "@/components/ui/RangePicker";
+import SimpleTimePicker from "@/components/ui/SimpleTimePicker";
 import { CustomModal } from "@/components/common/CustomModal";
 import { PaymentModalContent } from "@/components/common/PaymentModalContent";
 
@@ -72,9 +80,6 @@ const SERVICES: {
   { key: "hotel", label: "펫호텔", emoji: "🏨", desc: "장기 위탁 돌봄" },
 ];
 
-// 날짜 포맷 헬퍼
-// 좀 디자인 구림 (나중에..수정)
-// 지난 날짜는 다른색으로 표기해야할지?
 function formatDateRange(range: DateRange | undefined): string {
   if (!range?.from) return "-";
   if (!range.to || range.from.getTime() === range.to.getTime()) {
@@ -83,23 +88,26 @@ function formatDateRange(range: DateRange | undefined): string {
   return `${format(range.from, "yyyy년 M월 d일", { locale: ko })} ~ ${format(range.to, "M월 d일 (EEE)", { locale: ko })}`;
 }
 
+/** HH:mm → "오전 02:30" 형태 출력 추가함 */
+function formatTime12h(value: string): string {
+  if (!value) return "--:--";
+  const [h, m] = value.split(":").map(Number);
+  const period = h >= 12 ? "오후" : "오전";
+  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${period} ${String(h12).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
 function calcNights(range: DateRange | undefined): number {
   if (!range?.from || !range?.to) return 1;
   const d = differenceInDays(range.to, range.from);
   return d > 0 ? d : 1;
 }
 
-// 공통 레이아웃
-function StepCard({
-  children,
-  step,
-  title,
-  total = 5,
+// 예약 요약 박스
+function BookingSummary({
+  rows,
 }: {
-  children: React.ReactNode;
-  step: number;
-  title: string;
-  total?: number;
+  rows: { label: string; value: string }[];
 }) {
   const router = useRouter();
   return (
@@ -132,8 +140,8 @@ function BookingSummary({
   rows: { label: string; value: string }[];
 }) {
   return (
-    <div className="p-4 sm:p-5 bg-orange-50 rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100">
-      <p className="text-stone-900 text-base font-semibold mb-3">예약 요약</p>
+    <div className="p-4 sm:p-5 bg-white rounded-2xl border border-[#ffe9d6]">
+      <p className="text-[#281a0e] text-base font-semibold mb-3">예약 요약</p>
       <div className="flex flex-col gap-2">
         {rows.map((r) => (
           <div key={r.label} className="flex justify-between text-sm gap-2">
@@ -148,31 +156,8 @@ function BookingSummary({
   );
 }
 
-// 다음 버튼
-function NextButton({
-  label = "다음",
-  onClick,
-  disabled,
-}: {
-  label?: string;
-  onClick: () => void;
-  disabled?: boolean;
-}) {
-  return (
-    <div className="px-4 sm:px-6 md:px-8 py-5 bg-white border-t border-orange-100 flex items-center shrink-0">
-      <button
-        onClick={onClick}
-        disabled={disabled}
-        className="w-full min-h-[44px] h-12 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-200 text-white text-base font-semibold rounded-[10px] transition-colors"
-      >
-        {label}
-      </button>
-    </div>
-  );
-}
-
-// Step 1: 날짜 선택
-function StepDate({ onNext }: { onNext: () => void }) {
+// Step 1: 날짜 선택 콘텐츠
+function StepDateContent() {
   const { dateRange, setDateRange } = useBookingStore();
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
@@ -180,14 +165,18 @@ function StepDate({ onNext }: { onNext: () => void }) {
   const total = PETSITTER.pricePerDay * nights;
 
   return (
-    <StepCard step={1} title="날짜 선택">
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
+      <div className="bg-white rounded-2xl border border-[#ffe9d6] p-4 sm:p-7">
+        <h2 className="text-lg font-semibold text-[#281a0e] mb-5">
+          날짜를 선택해주세요
+        </h2>
+
         {/* 달력 */}
-        <div className="p-4 sm:p-6 bg-orange-50 rounded-2xl overflow-x-auto">
+        <div className="p-3 sm:p-5 bg-[#fff8f3] rounded-2xl border border-[#ffe9d6] overflow-x-auto">
           <RangePicker value={dateRange} onChange={setDateRange} />
         </div>
 
-        {/* 선택된 날짜 표시 */}
+        {/* 선택된 날짜 + 시간 요약 표시 */}
         {dateRange?.from && (
           <div className="p-4 bg-orange-500/10 rounded-xl flex items-center gap-2">
             <Calendar size={20} className="text-orange-500 shrink-0" />
@@ -203,7 +192,7 @@ function StepDate({ onNext }: { onNext: () => void }) {
         )}
 
         {/* 시간 입력 */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-5">
           <div className="flex flex-col gap-1.5">
             <label className="text-stone-900 text-sm font-medium">
               시작 시간
@@ -211,8 +200,8 @@ function StepDate({ onNext }: { onNext: () => void }) {
             <input
               type="time"
               value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
-              className="w-full h-11 px-4 bg-orange-50 rounded-xl border border-orange-100 text-stone-900 text-sm outline-none focus:border-orange-300 transition-colors"
+              onChange={setStartTime}
+              placeholder="시작 시간 선택"
             />
           </div>
           <div className="flex flex-col gap-1.5">
@@ -222,33 +211,29 @@ function StepDate({ onNext }: { onNext: () => void }) {
             <input
               type="time"
               value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
-              className="w-full h-11 px-4 bg-orange-50 rounded-xl border border-orange-100 text-stone-900 text-sm outline-none focus:border-orange-300 transition-colors"
+              onChange={setEndTime}
+              placeholder="종료 시간 선택"
             />
           </div>
         </div>
-
-        {/* 예약 요약 */}
-        <BookingSummary
-          rows={[
-            { label: "펫시터", value: PETSITTER.name },
-            { label: "서비스", value: PETSITTER.service },
-            { label: "금액", value: `${total.toLocaleString()}원` },
-          ]}
-        />
       </div>
-      <NextButton onClick={onNext} disabled={!dateRange?.from} />
-    </StepCard>
+
+      <BookingSummary
+        rows={[
+          { label: "펫시터", value: PETSITTER.name },
+          { label: "서비스", value: PETSITTER.service },
+          { label: "금액", value: `${total.toLocaleString()}원` },
+        ]}
+      />
+    </div>
   );
 }
 
-// Step 2: 반려동물 선택 + 서비스 선택
-function StepPet({
-  onNext,
+// Step 2: 반려동물 + 서비스 선택 콘텐츠
+function StepPetContent({
   selectedService,
   setSelectedService,
 }: {
-  onNext: () => void;
   selectedService: ServiceKey | null;
   setSelectedService: (s: ServiceKey) => void;
 }) {
@@ -297,14 +282,14 @@ function StepPet({
               );
             })}
 
-            <button
-              onClick={() => router.push("/pet-register")}
-              className="w-full min-h-[44px] h-14 rounded-2xl border border-orange-100 text-orange-500 text-base font-medium hover:bg-orange-50 transition-colors"
-            >
-              + 반려동물 추가
-            </button>
-          </div>
+          <button
+            onClick={() => router.push("/pet-register")}
+            className="w-full min-h-[44px] h-14 rounded-2xl border-2 border-dashed border-[#ffe9d6] text-gray-400 text-sm font-medium hover:border-[#e8742a]/50 hover:text-[#e8742a] transition-colors"
+          >
+            + 반려동물 추가
+          </button>
         </div>
+      </div>
 
         {/* 서비스 선택 */}
         <div>
@@ -359,17 +344,32 @@ function StepPet({
           ]}
         />
       </div>
-      <NextButton onClick={onNext} disabled={!petId || !selectedService} />
-    </StepCard>
+
+      <BookingSummary
+        rows={[
+          { label: "날짜", value: formatDateRange(dateRange) },
+          {
+            label: "서비스",
+            value: selectedService
+              ? (SERVICES.find((s) => s.key === selectedService)?.label ?? "-")
+              : "-",
+          },
+          {
+            label: "반려동물",
+            value: petId
+              ? (PETS.find((p) => p.id === petId)?.name ?? "-")
+              : "-",
+          },
+        ]}
+      />
+    </div>
   );
 }
 
-// Step 3: 특이사항
-function StepNote({
-  onNext,
+// Step 3: 특이사항 콘텐츠
+function StepNoteContent({
   selectedService,
 }: {
-  onNext: () => void;
   selectedService: ServiceKey | null;
 }) {
   const { dateRange, petId, note, setNote } = useBookingStore();
@@ -398,9 +398,10 @@ function StepNote({
               e.target.value.length <= MAX && setNote(e.target.value)
             }
             placeholder={`펫시터에게 전달할 특이사항을 입력해주세요\n예) 낯선 사람 경계함, 약 복용 필요 등`}
-            className="w-full h-44 px-4 py-3 pb-8 bg-orange-50 rounded-xl border border-orange-100 text-base text-stone-900 placeholder-stone-900/50 outline-none resize-none focus:border-orange-300 transition-colors"
+            rows={7}
+            className="w-full px-4 py-3 pb-8 bg-white border border-[#ffe9d6] rounded-xl text-[#281a0e] placeholder:text-gray-400 outline-none resize-none focus:border-[#e8742a] transition-colors"
           />
-          <span className="absolute bottom-3 right-4 text-gray-500 text-xs">
+          <span className="absolute bottom-3 right-4 text-gray-400 text-xs">
             {note.length}/{MAX}
           </span>
         </div>
@@ -414,7 +415,7 @@ function StepNote({
               <button
                 key={q}
                 onClick={() => appendQuickNote(q)}
-                className="min-h-[44px] h-9 px-4 bg-orange-50 border border-orange-100 text-stone-900 text-xs font-medium rounded-full hover:border-orange-300 hover:bg-orange-100 transition-colors"
+                className="min-h-[36px] px-4 py-1 border border-[#ffe9d6] text-gray-500 text-xs font-medium rounded-full hover:border-[#e8742a]/50 hover:text-[#e8742a] transition-colors"
               >
                 {q}
               </button>
@@ -435,24 +436,33 @@ function StepNote({
           ]}
         />
       </div>
-      <NextButton onClick={onNext} />
-    </StepCard>
+
+      <BookingSummary
+        rows={[
+          { label: "날짜", value: formatDateRange(dateRange) },
+          {
+            label: "반려동물",
+            value: petId
+              ? (PETS.find((p) => p.id === petId)?.name ?? "-")
+              : "-",
+          },
+          { label: "서비스", value: serviceLabel },
+        ]}
+      />
+    </div>
   );
 }
 
-// Step 4: 결제
-function StepPayment({
-  onNext,
+// Step 4: 결제 콘텐츠
+function StepPaymentContent({
   selectedService,
 }: {
-  onNext: () => void;
   selectedService: ServiceKey | null;
 }) {
   const { dateRange, petId } = useBookingStore();
 
   const nights = calcNights(dateRange);
   const servicePrice = PETSITTER.pricePerDay * nights;
-  const total = servicePrice + PLATFORM_FEE;
   const pet = PETS.find((p) => p.id === petId);
   const serviceLabel = selectedService
     ? (SERVICES.find((s) => s.key === selectedService)?.label ??
@@ -645,22 +655,42 @@ function StepComplete({
             </div>
           </div>
         </div>
-
-        {/* 버튼 */}
-        <div className="w-full max-w-sm sm:max-w-[384px] flex flex-col gap-4">
-          <button
-            onClick={goChat}
-            className="w-full min-h-[44px] h-12 bg-white border border-orange-500 text-orange-500 text-base font-semibold rounded-[10px] hover:bg-orange-50 transition-colors"
-          >
-            채팅으로 인사하기
-          </button>
-          <button
-            onClick={goHome}
-            className="w-full min-h-[44px] h-12 text-orange-500 text-base font-semibold hover:underline transition-colors"
-          >
-            홈으로 돌아가기
-          </button>
+        <div className="flex flex-col gap-2">
+          <div className="flex justify-between text-sm gap-2">
+            <span className="text-gray-500 shrink-0">날짜</span>
+            <span className="text-[#281a0e] font-medium text-right">
+              {formatDateRange(dateRange)}
+            </span>
+          </div>
+          <div className="flex justify-between text-sm gap-2">
+            <span className="text-gray-500 shrink-0">반려동물</span>
+            <span className="text-[#281a0e] font-medium">
+              {pet?.name ?? "-"}
+            </span>
+          </div>
+          <div className="flex justify-between text-sm gap-2">
+            <span className="text-gray-500 shrink-0">결제금액</span>
+            <span className="text-[#e8742a] font-semibold">
+              {total.toLocaleString()}원
+            </span>
+          </div>
         </div>
+      </div>
+
+      {/* 버튼 */}
+      <div className="w-full max-w-sm sm:max-w-[384px] flex flex-col gap-4">
+        <button
+          onClick={goChat}
+          className="w-full min-h-[44px] h-12 bg-white border border-[#e8742a] text-[#e8742a] text-base font-semibold rounded-xl hover:bg-[#fff8f3] transition-colors"
+        >
+          채팅으로 인사하기
+        </button>
+        <button
+          onClick={goHome}
+          className="w-full min-h-[44px] h-12 text-[#e8742a] text-base font-semibold hover:underline transition-colors"
+        >
+          홈으로 돌아가기
+        </button>
       </div>
     </div>
   );
@@ -699,6 +729,68 @@ export default function BookPage() {
         )}
         {step === 5 && <StepComplete selectedService={selectedService} />}
       </main>
+
+      {/* 하단 네비게이션 */}
+      {step < 5 && (
+        <div className="sticky bottom-0 bg-white border-t border-[#ffe9d6] z-10">
+          <div className="max-w-[820px] mx-auto flex items-center justify-between h-19 px-6">
+            <button
+              type="button"
+              onClick={() => (step > 1 ? setStep((s) => s - 1) : router.back())}
+              className="h-11 px-6 rounded-xl border border-[#ffe9d6] flex items-center gap-1.5 text-gray-500 text-[15px] font-medium hover:bg-[#fff8f3] transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              이전
+            </button>
+
+            <span className="text-sm text-gray-500">
+              {step} / {TOTAL_STEPS}
+            </span>
+
+            {step < 4 ? (
+              <button
+                type="button"
+                onClick={() => canNext() && setStep((s) => s + 1)}
+                className={`h-11 px-6 rounded-xl flex items-center gap-1.5 text-[15px] font-semibold transition-colors ${
+                  canNext()
+                    ? "bg-[#e8742a] text-white hover:opacity-90"
+                    : "bg-[#ffe9d6] text-gray-500 cursor-default"
+                }`}
+              >
+                다음 단계
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleNext}
+                disabled={!canNext()}
+                className={`h-11 px-6 rounded-xl text-[15px] font-semibold transition-colors ${
+                  canNext()
+                    ? "bg-[#e8742a] text-white hover:opacity-90"
+                    : "bg-[#ffe9d6] text-gray-500 cursor-default"
+                }`}
+              >
+                결제하기 {total.toLocaleString()}원
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      <Footer />
+
+      <CustomModal
+        open={showPaymentModal}
+        preset="payment"
+        onClose={() => setShowPaymentModal(false)}
+        onConfirm={handlePayConfirm}
+      >
+        <PaymentModalContent
+          amount={servicePrice}
+          feeRate={PLATFORM_FEE / servicePrice}
+        />
+      </CustomModal>
     </>
   );
 }

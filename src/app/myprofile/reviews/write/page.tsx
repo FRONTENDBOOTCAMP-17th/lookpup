@@ -769,13 +769,10 @@ export default function ReviewWritePage() {
 
   return (
     <div className="min-h-screen bg-[#FFF8F3]">
-      {/* 데스크탑 헤더 */}
-      <div className="hidden md:block">
-        <Header />
-      </div>
+      <Header />
 
       {/* 모바일 헤더 */}
-      <div className="md:hidden sticky top-0 z-50 bg-white border-b border-[#FFE9D6]">
+      <div className="md:hidden sticky top-16 z-50 bg-white border-b border-[#FFE9D6]">
         <div className="h-14 px-5 flex items-center">
           <button
             onClick={() =>
