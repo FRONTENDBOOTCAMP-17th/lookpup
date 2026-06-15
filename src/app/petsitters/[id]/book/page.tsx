@@ -13,17 +13,41 @@ import { CustomModal } from "@/components/common/CustomModal";
 import { PaymentModalContent } from "@/components/common/PaymentModalContent";
 
 // 더미 데이터
-const PETSITTER = { id: 1, name: "김민지", initial: "김", service: "방문돌봄", pricePerDay: 30000 };
+const PETSITTER = {
+  id: 1,
+  name: "김민지",
+  initial: "김",
+  service: "방문돌봄",
+  pricePerDay: 30000,
+};
 const PLATFORM_FEE = 3000;
 const PETS = [
-  { id: 1, name: "뭉치", type: "강아지", breed: "포메라니안", age: 3, weight: 4 },
-  { id: 2, name: "나비", type: "고양이", breed: "러시안블루", age: 2, weight: 3.5 },
+  {
+    id: 1,
+    name: "뭉치",
+    type: "강아지",
+    breed: "포메라니안",
+    age: 3,
+    weight: 4,
+  },
+  {
+    id: 2,
+    name: "나비",
+    type: "고양이",
+    breed: "러시안블루",
+    age: 2,
+    weight: 3.5,
+  },
 ];
 const QUICK_NOTES = ["알러지 있음", "야간 돌봄 필요", "약 복용 중"];
 
 type PaymentMethodKey = "card" | "kakaopay" | "tosspay";
 
-const PAYMENT_METHODS: { key: PaymentMethodKey; label: string; emoji: string }[] = [
+const PAYMENT_METHODS: {
+  key: PaymentMethodKey;
+  label: string;
+  emoji: string;
+}[] = [
   { key: "card", label: "신용/체크카드", emoji: "💳" },
   { key: "kakaopay", label: "카카오페이", emoji: "💛" },
   { key: "tosspay", label: "토스페이", emoji: "💙" },
@@ -31,8 +55,18 @@ const PAYMENT_METHODS: { key: PaymentMethodKey; label: string; emoji: string }[]
 
 type ServiceKey = "visit" | "home" | "walk" | "hotel";
 
-const SERVICES: { key: ServiceKey; label: string; emoji: string; desc: string }[] = [
-  { key: "visit", label: "방문돌봄", emoji: "🏠", desc: "보호자님 집에서 돌봄" },
+const SERVICES: {
+  key: ServiceKey;
+  label: string;
+  emoji: string;
+  desc: string;
+}[] = [
+  {
+    key: "visit",
+    label: "방문돌봄",
+    emoji: "🏠",
+    desc: "보호자님 집에서 돌봄",
+  },
   { key: "home", label: "위탁돌봄", emoji: "🏡", desc: "펫시터 집에서 돌봄" },
   { key: "walk", label: "산책", emoji: "🚶", desc: "반려동물 산책 서비스" },
   { key: "hotel", label: "펫호텔", emoji: "🏨", desc: "장기 위탁 돌봄" },
@@ -78,7 +112,9 @@ function StepCard({
           >
             <ChevronLeft size={20} className="text-stone-900" />
           </button>
-          <span className="text-stone-900 text-base sm:text-lg font-semibold truncate">{title}</span>
+          <span className="text-stone-900 text-base sm:text-lg font-semibold truncate">
+            {title}
+          </span>
         </div>
         <span className="text-gray-500 text-sm font-medium shrink-0 ml-2">
           {step}/{total}
@@ -90,7 +126,11 @@ function StepCard({
 }
 
 // 예약 요약 박스
-function BookingSummary({ rows }: { rows: { label: string; value: string }[] }) {
+function BookingSummary({
+  rows,
+}: {
+  rows: { label: string; value: string }[];
+}) {
   return (
     <div className="p-4 sm:p-5 bg-orange-50 rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100">
       <p className="text-stone-900 text-base font-semibold mb-3">예약 요약</p>
@@ -98,7 +138,9 @@ function BookingSummary({ rows }: { rows: { label: string; value: string }[] }) 
         {rows.map((r) => (
           <div key={r.label} className="flex justify-between text-sm gap-2">
             <span className="text-gray-500 shrink-0">{r.label}</span>
-            <span className="text-stone-900 font-medium text-right">{r.value}</span>
+            <span className="text-stone-900 font-medium text-right">
+              {r.value}
+            </span>
           </div>
         ))}
       </div>
@@ -149,9 +191,13 @@ function StepDate({ onNext }: { onNext: () => void }) {
         {dateRange?.from && (
           <div className="p-4 bg-orange-500/10 rounded-xl flex items-center gap-2">
             <Calendar size={20} className="text-orange-500 shrink-0" />
-            <span className="text-orange-500 text-sm sm:text-base font-semibold">{formatDateRange(dateRange)}</span>
+            <span className="text-orange-500 text-sm sm:text-base font-semibold">
+              {formatDateRange(dateRange)}
+            </span>
             {nights > 1 && (
-              <span className="ml-auto text-orange-500 text-sm font-medium shrink-0">{nights}일</span>
+              <span className="ml-auto text-orange-500 text-sm font-medium shrink-0">
+                {nights}일
+              </span>
             )}
           </div>
         )}
@@ -159,7 +205,9 @@ function StepDate({ onNext }: { onNext: () => void }) {
         {/* 시간 입력 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="flex flex-col gap-1.5">
-            <label className="text-stone-900 text-sm font-medium">시작 시간</label>
+            <label className="text-stone-900 text-sm font-medium">
+              시작 시간
+            </label>
             <input
               type="time"
               value={startTime}
@@ -168,7 +216,9 @@ function StepDate({ onNext }: { onNext: () => void }) {
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-stone-900 text-sm font-medium">종료 시간</label>
+            <label className="text-stone-900 text-sm font-medium">
+              종료 시간
+            </label>
             <input
               type="time"
               value={endTime}
@@ -210,7 +260,9 @@ function StepPet({
       <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 flex flex-col gap-6">
         {/* 반려동물 선택 */}
         <div>
-          <h2 className="text-stone-900 text-base sm:text-lg font-semibold mb-3">반려동물을 선택하세요</h2>
+          <h2 className="text-stone-900 text-base sm:text-lg font-semibold mb-3">
+            반려동물을 선택하세요
+          </h2>
           <div className="flex flex-col gap-3">
             {PETS.map((pet) => {
               const selected = petId === pet.id;
@@ -227,7 +279,9 @@ function StepPet({
                   <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-stone-900 text-sm sm:text-base font-semibold">{pet.name}</span>
+                      <span className="text-stone-900 text-sm sm:text-base font-semibold">
+                        {pet.name}
+                      </span>
                       <span className="px-2 py-0.5 bg-white border border-orange-100 text-orange-500 text-[10px] font-medium rounded-full shrink-0">
                         {pet.type}
                       </span>
@@ -236,7 +290,9 @@ function StepPet({
                       {pet.breed} · {pet.age}살 · {pet.weight}kg
                     </p>
                   </div>
-                  {selected && <Check size={20} className="text-orange-500 shrink-0" />}
+                  {selected && (
+                    <Check size={20} className="text-orange-500 shrink-0" />
+                  )}
                 </button>
               );
             })}
@@ -252,7 +308,9 @@ function StepPet({
 
         {/* 서비스 선택 */}
         <div>
-          <h2 className="text-stone-900 text-base sm:text-lg font-semibold mb-3">제공 서비스를 선택해주세요</h2>
+          <h2 className="text-stone-900 text-base sm:text-lg font-semibold mb-3">
+            제공 서비스를 선택해주세요
+          </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {SERVICES.map((svc) => {
               const selected = selectedService === svc.key;
@@ -268,10 +326,14 @@ function StepPet({
                 >
                   <span className="text-2xl shrink-0">{svc.emoji}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-stone-900 text-sm font-semibold">{svc.label}</p>
+                    <p className="text-stone-900 text-sm font-semibold">
+                      {svc.label}
+                    </p>
                     <p className="text-gray-500 text-xs">{svc.desc}</p>
                   </div>
-                  {selected && <Check size={18} className="text-orange-500 shrink-0" />}
+                  {selected && (
+                    <Check size={18} className="text-orange-500 shrink-0" />
+                  )}
                 </button>
               );
             })}
@@ -281,8 +343,19 @@ function StepPet({
         <BookingSummary
           rows={[
             { label: "날짜", value: formatDateRange(dateRange) },
-            { label: "서비스", value: selectedService ? SERVICES.find((s) => s.key === selectedService)?.label ?? "-" : "-" },
-            { label: "반려동물", value: petId ? PETS.find((p) => p.id === petId)?.name ?? "-" : "-" },
+            {
+              label: "서비스",
+              value: selectedService
+                ? (SERVICES.find((s) => s.key === selectedService)?.label ??
+                  "-")
+                : "-",
+            },
+            {
+              label: "반려동물",
+              value: petId
+                ? (PETS.find((p) => p.id === petId)?.name ?? "-")
+                : "-",
+            },
           ]}
         />
       </div>
@@ -307,17 +380,23 @@ function StepNote({
     if (next.length <= MAX) setNote(next);
   }
 
-  const serviceLabel = selectedService ? SERVICES.find((s) => s.key === selectedService)?.label ?? "-" : "-";
+  const serviceLabel = selectedService
+    ? (SERVICES.find((s) => s.key === selectedService)?.label ?? "-")
+    : "-";
 
   return (
     <StepCard step={3} title="특이사항">
       <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 flex flex-col gap-6">
-        <h2 className="text-stone-900 text-base sm:text-lg font-semibold">특이사항을 입력해주세요</h2>
+        <h2 className="text-stone-900 text-base sm:text-lg font-semibold">
+          특이사항을 입력해주세요
+        </h2>
 
         <div className="relative">
           <textarea
             value={note}
-            onChange={(e) => e.target.value.length <= MAX && setNote(e.target.value)}
+            onChange={(e) =>
+              e.target.value.length <= MAX && setNote(e.target.value)
+            }
             placeholder={`펫시터에게 전달할 특이사항을 입력해주세요\n예) 낯선 사람 경계함, 약 복용 필요 등`}
             className="w-full h-44 px-4 py-3 pb-8 bg-orange-50 rounded-xl border border-orange-100 text-base text-stone-900 placeholder-stone-900/50 outline-none resize-none focus:border-orange-300 transition-colors"
           />
@@ -327,7 +406,9 @@ function StepNote({
         </div>
 
         <div>
-          <p className="text-stone-900 text-sm font-medium mb-3">자주 선택되는 특이사항</p>
+          <p className="text-stone-900 text-sm font-medium mb-3">
+            자주 선택되는 특이사항
+          </p>
           <div className="flex gap-2 flex-wrap">
             {QUICK_NOTES.map((q) => (
               <button
@@ -344,7 +425,12 @@ function StepNote({
         <BookingSummary
           rows={[
             { label: "날짜", value: formatDateRange(dateRange) },
-            { label: "반려동물", value: petId ? PETS.find((p) => p.id === petId)?.name ?? "-" : "-" },
+            {
+              label: "반려동물",
+              value: petId
+                ? (PETS.find((p) => p.id === petId)?.name ?? "-")
+                : "-",
+            },
             { label: "서비스", value: serviceLabel },
           ]}
         />
@@ -362,16 +448,20 @@ function StepPayment({
   onNext: () => void;
   selectedService: ServiceKey | null;
 }) {
-  const { dateRange, petId, paymentMethod, setPaymentMethod } = useBookingStore();
+  const { dateRange, petId } = useBookingStore();
+
   const nights = calcNights(dateRange);
   const servicePrice = PETSITTER.pricePerDay * nights;
   const total = servicePrice + PLATFORM_FEE;
   const pet = PETS.find((p) => p.id === petId);
-  const serviceLabel = selectedService ? SERVICES.find((s) => s.key === selectedService)?.label ?? PETSITTER.service : PETSITTER.service;
+  const serviceLabel = selectedService
+    ? (SERVICES.find((s) => s.key === selectedService)?.label ??
+      PETSITTER.service)
+    : PETSITTER.service;
+
   const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   function handlePay() {
-    if (!paymentMethod) return;
     setShowPaymentModal(true);
   }
 
@@ -385,14 +475,24 @@ function StepPayment({
       <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 flex flex-col gap-6">
         {/* 주문 정보 */}
         <div className="p-4 sm:p-5 bg-orange-50 rounded-2xl border border-orange-100">
-          <p className="text-stone-900 text-base font-semibold mb-4">주문 정보</p>
+          <p className="text-stone-900 text-base font-semibold mb-4">
+            주문 정보
+          </p>
+
           <div className="pb-4 border-b border-orange-100 flex items-start gap-3">
             <div className="w-10 h-10 bg-white rounded-full border border-orange-100 flex items-center justify-center shrink-0">
-              <span className="text-orange-500 text-base font-semibold">{PETSITTER.initial}</span>
+              <span className="text-orange-500 text-base font-semibold">
+                {PETSITTER.initial}
+              </span>
             </div>
+
             <div className="min-w-0">
-              <p className="text-stone-900 text-base font-medium">{PETSITTER.name} 펫시터</p>
-              <p className="text-gray-500 text-sm">{serviceLabel} · {formatDateRange(dateRange)}</p>
+              <p className="text-stone-900 text-base font-medium">
+                {PETSITTER.name} 펫시터
+              </p>
+              <p className="text-gray-500 text-sm">
+                {serviceLabel} · {formatDateRange(dateRange)}
+              </p>
               {pet && (
                 <p className="text-gray-500 text-sm">
                   {pet.name} ({pet.breed})
@@ -400,46 +500,31 @@ function StepPayment({
               )}
             </div>
           </div>
+
           <div className="pt-4 flex flex-col gap-2">
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">서비스 금액</span>
               <span className="text-stone-900">
-                {servicePrice.toLocaleString()}원{nights > 1 ? ` (${nights}일)` : ""}
+                {servicePrice.toLocaleString()}원
+                {nights > 1 ? ` (${nights}일)` : ""}
               </span>
             </div>
+
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">플랫폼 수수료</span>
-              <span className="text-stone-900">{PLATFORM_FEE.toLocaleString()}원</span>
+              <span className="text-stone-900">
+                {PLATFORM_FEE.toLocaleString()}원
+              </span>
             </div>
-            <div className="flex justify-between pt-2 border-t border-orange-100">
-              <span className="text-stone-900 text-base font-bold">총 결제금액</span>
-              <span className="text-orange-500 text-xl font-bold">{total.toLocaleString()}원</span>
-            </div>
-          </div>
-        </div>
 
-        {/* 결제 수단 */}
-        <div>
-          <p className="text-stone-900 text-base sm:text-lg font-semibold mb-4">결제 수단</p>
-          <div className="flex flex-col gap-3">
-            {PAYMENT_METHODS.map((m) => {
-              const selected = paymentMethod === m.key;
-              return (
-                <button
-                  key={m.key}
-                  onClick={() => setPaymentMethod(m.key)}
-                  className={`w-full min-h-[44px] p-4 sm:p-5 rounded-xl border flex items-center gap-3 transition-colors ${
-                    selected
-                      ? "border-orange-500 bg-orange-50"
-                      : "border-orange-100 bg-orange-50 hover:border-orange-300"
-                  }`}
-                >
-                  <span className="text-2xl">{m.emoji}</span>
-                  <span className="text-stone-900 text-base font-medium">{m.label}</span>
-                  {selected && <Check size={18} className="text-orange-500 ml-auto" />}
-                </button>
-              );
-            })}
+            <div className="flex justify-between pt-2 border-t border-orange-100">
+              <span className="text-stone-900 text-base font-bold">
+                총 결제금액
+              </span>
+              <span className="text-orange-500 text-xl font-bold">
+                {total.toLocaleString()}원
+              </span>
+            </div>
           </div>
         </div>
 
@@ -447,10 +532,13 @@ function StepPayment({
         <div className="p-4 bg-white rounded-xl border border-orange-100">
           <div className="flex items-center gap-2 mb-2">
             <CreditCard size={16} className="text-gray-400" />
-            <p className="text-stone-900 text-base font-medium">환불 정책 확인</p>
+            <p className="text-stone-900 text-base font-medium">
+              환불 정책 확인
+            </p>
           </div>
           <p className="text-gray-500 text-sm leading-6">
-            예약 24시간 전까지 무료 취소 가능합니다. 24시간 이내 취소 시 50% 환불, 당일 취소 시 환불 불가합니다.
+            예약 24시간 전까지 무료 취소 가능합니다. 24시간 이내 취소 시 50%
+            환불, 당일 취소 시 환불 불가합니다.
           </p>
         </div>
       </div>
@@ -458,7 +546,6 @@ function StepPayment({
       <NextButton
         label={`결제하기 ${total.toLocaleString()}원`}
         onClick={handlePay}
-        disabled={!paymentMethod}
       />
 
       <CustomModal
@@ -467,20 +554,30 @@ function StepPayment({
         onClose={() => setShowPaymentModal(false)}
         onConfirm={handlePayConfirm}
       >
-        <PaymentModalContent amount={servicePrice} feeRate={PLATFORM_FEE / servicePrice} />
+        <PaymentModalContent
+          amount={servicePrice}
+          feeRate={PLATFORM_FEE / servicePrice}
+        />
       </CustomModal>
     </StepCard>
   );
 }
 
 // Step 5: 예약 완료
-function StepComplete({ selectedService }: { selectedService: ServiceKey | null }) {
+function StepComplete({
+  selectedService,
+}: {
+  selectedService: ServiceKey | null;
+}) {
   const router = useRouter();
   const { dateRange, petId, reset } = useBookingStore();
   const nights = calcNights(dateRange);
   const total = PETSITTER.pricePerDay * nights + PLATFORM_FEE;
   const pet = PETS.find((p) => p.id === petId);
-  const serviceLabel = selectedService ? SERVICES.find((s) => s.key === selectedService)?.label ?? PETSITTER.service : PETSITTER.service;
+  const serviceLabel = selectedService
+    ? (SERVICES.find((s) => s.key === selectedService)?.label ??
+      PETSITTER.service)
+    : PETSITTER.service;
 
   function goHome() {
     reset();
@@ -500,7 +597,9 @@ function StepComplete({ selectedService }: { selectedService: ServiceKey | null 
           <Check size={36} className="text-white" strokeWidth={3} />
         </div>
 
-        <h1 className="text-stone-900 text-2xl sm:text-3xl font-bold mb-3 text-center">예약이 완료되었습니다!</h1>
+        <h1 className="text-stone-900 text-2xl sm:text-3xl font-bold mb-3 text-center">
+          예약이 완료되었습니다!
+        </h1>
         <p className="text-gray-500 text-sm sm:text-base text-center leading-6 mb-8 sm:mb-10">
           펫시터에게 예약 알림이 전송되었습니다.
           <br />
@@ -509,28 +608,40 @@ function StepComplete({ selectedService }: { selectedService: ServiceKey | null 
 
         {/* 예약 정보 카드 */}
         <div className="w-full max-w-sm sm:max-w-[384px] p-4 sm:p-5 bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100 mb-8">
-          <p className="text-stone-900 text-base font-semibold mb-4">예약 정보</p>
+          <p className="text-stone-900 text-base font-semibold mb-4">
+            예약 정보
+          </p>
           <div className="flex items-start gap-3 pb-3 border-b border-orange-100 mb-3">
             <div className="w-10 h-10 bg-orange-50 rounded-full border border-orange-100 flex items-center justify-center shrink-0">
-              <span className="text-orange-500 text-base font-semibold">{PETSITTER.initial}</span>
+              <span className="text-orange-500 text-base font-semibold">
+                {PETSITTER.initial}
+              </span>
             </div>
             <div>
-              <p className="text-stone-900 text-base font-medium">{PETSITTER.name} 펫시터</p>
+              <p className="text-stone-900 text-base font-medium">
+                {PETSITTER.name} 펫시터
+              </p>
               <p className="text-gray-500 text-sm">{serviceLabel}</p>
             </div>
           </div>
           <div className="flex flex-col gap-2">
             <div className="flex justify-between text-sm gap-2">
               <span className="text-gray-500 shrink-0">날짜</span>
-              <span className="text-stone-900 font-medium text-right">{formatDateRange(dateRange)}</span>
+              <span className="text-stone-900 font-medium text-right">
+                {formatDateRange(dateRange)}
+              </span>
             </div>
             <div className="flex justify-between text-sm gap-2">
               <span className="text-gray-500 shrink-0">반려동물</span>
-              <span className="text-stone-900 font-medium">{pet?.name ?? "-"}</span>
+              <span className="text-stone-900 font-medium">
+                {pet?.name ?? "-"}
+              </span>
             </div>
             <div className="flex justify-between text-sm gap-2">
               <span className="text-gray-500 shrink-0">결제금액</span>
-              <span className="text-orange-500 font-semibold">{total.toLocaleString()}원</span>
+              <span className="text-orange-500 font-semibold">
+                {total.toLocaleString()}원
+              </span>
             </div>
           </div>
         </div>
@@ -558,7 +669,9 @@ function StepComplete({ selectedService }: { selectedService: ServiceKey | null 
 // 메인 페이지
 export default function BookPage() {
   const [step, setStep] = useState(1);
-  const [selectedService, setSelectedService] = useState<ServiceKey | null>(null);
+  const [selectedService, setSelectedService] = useState<ServiceKey | null>(
+    null,
+  );
 
   return (
     <>
@@ -572,8 +685,18 @@ export default function BookPage() {
             setSelectedService={setSelectedService}
           />
         )}
-        {step === 3 && <StepNote onNext={() => setStep(4)} selectedService={selectedService} />}
-        {step === 4 && <StepPayment onNext={() => setStep(5)} selectedService={selectedService} />}
+        {step === 3 && (
+          <StepNote
+            onNext={() => setStep(4)}
+            selectedService={selectedService}
+          />
+        )}
+        {step === 4 && (
+          <StepPayment
+            onNext={() => setStep(5)}
+            selectedService={selectedService}
+          />
+        )}
         {step === 5 && <StepComplete selectedService={selectedService} />}
       </main>
     </>
