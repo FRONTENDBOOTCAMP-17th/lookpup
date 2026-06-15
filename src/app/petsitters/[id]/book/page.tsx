@@ -16,10 +16,17 @@ import { useBookingStore } from "@/store/bookingStore";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import RangePicker from "@/components/ui/RangePicker";
+import SimpleTimePicker from "@/components/ui/SimpleTimePicker";
 import { CustomModal } from "@/components/common/CustomModal";
 import { PaymentModalContent } from "@/components/common/PaymentModalContent";
 
-const STEP_LABELS = ["날짜 선택", "반려동물·서비스", "특이사항", "결제", "완료"];
+const STEP_LABELS = [
+  "날짜 선택",
+  "반려동물·서비스",
+  "특이사항",
+  "결제",
+  "완료",
+];
 const TOTAL_STEPS = 5;
 
 const PETSITTER = {
@@ -51,12 +58,15 @@ const PETS = [
 const QUICK_NOTES = ["알러지 있음", "야간 돌봄 필요", "약 복용 중"];
 
 type PaymentMethodKey = "card" | "kakaopay" | "tosspay";
-const PAYMENT_METHODS: { key: PaymentMethodKey; label: string; emoji: string }[] =
-  [
-    { key: "card", label: "신용/체크카드", emoji: "💳" },
-    { key: "kakaopay", label: "카카오페이", emoji: "💛" },
-    { key: "tosspay", label: "토스페이", emoji: "💙" },
-  ];
+const PAYMENT_METHODS: {
+  key: PaymentMethodKey;
+  label: string;
+  emoji: string;
+}[] = [
+  { key: "card", label: "신용/체크카드", emoji: "💳" },
+  { key: "kakaopay", label: "카카오페이", emoji: "💛" },
+  { key: "tosspay", label: "토스페이", emoji: "💙" },
+];
 
 type ServiceKey = "visit" | "home" | "walk" | "hotel";
 const SERVICES: {
@@ -65,7 +75,12 @@ const SERVICES: {
   emoji: string;
   desc: string;
 }[] = [
-  { key: "visit", label: "방문돌봄", emoji: "🏠", desc: "보호자님 집에서 돌봄" },
+  {
+    key: "visit",
+    label: "방문돌봄",
+    emoji: "🏠",
+    desc: "보호자님 집에서 돌봄",
+  },
   { key: "home", label: "위탁돌봄", emoji: "🏡", desc: "펫시터 집에서 돌봄" },
   { key: "walk", label: "산책", emoji: "🚶", desc: "반려동물 산책 서비스" },
   { key: "hotel", label: "펫호텔", emoji: "🏨", desc: "장기 위탁 돌봄" },
@@ -79,6 +94,15 @@ function formatDateRange(range: DateRange | undefined): string {
   return `${format(range.from, "yyyy년 M월 d일", { locale: ko })} ~ ${format(range.to, "M월 d일 (EEE)", { locale: ko })}`;
 }
 
+/** HH:mm → "오전 02:30" 형태 출력 추가함 */
+function formatTime12h(value: string): string {
+  if (!value) return "--:--";
+  const [h, m] = value.split(":").map(Number);
+  const period = h >= 12 ? "오후" : "오전";
+  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${period} ${String(h12).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
 function calcNights(range: DateRange | undefined): number {
   if (!range?.from || !range?.to) return 1;
   const d = differenceInDays(range.to, range.from);
@@ -86,7 +110,11 @@ function calcNights(range: DateRange | undefined): number {
 }
 
 // 예약 요약 박스
-function BookingSummary({ rows }: { rows: { label: string; value: string }[] }) {
+function BookingSummary({
+  rows,
+}: {
+  rows: { label: string; value: string }[];
+}) {
   return (
     <div className="p-4 sm:p-5 bg-white rounded-2xl border border-[#ffe9d6]">
       <p className="text-[#281a0e] text-base font-semibold mb-3">예약 요약</p>
@@ -124,17 +152,31 @@ function StepDateContent() {
           <RangePicker value={dateRange} onChange={setDateRange} />
         </div>
 
-        {/* 선택된 날짜 표시 */}
+        {/* 선택된 날짜 + 시간 요약 표시 */}
         {dateRange?.from && (
-          <div className="mt-4 p-4 bg-[#fff8f3] rounded-xl border border-[#ffe9d6] flex items-center gap-2">
-            <Calendar size={18} className="text-[#e8742a] shrink-0" />
-            <span className="text-[#e8742a] text-sm sm:text-base font-semibold">
-              {formatDateRange(dateRange)}
-            </span>
-            {nights > 1 && (
-              <span className="ml-auto text-[#e8742a] text-sm font-medium shrink-0">
-                {nights}일
+          <div className="mt-4 p-4 bg-[#fff8f3] rounded-xl border border-[#ffe9d6] flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <Calendar size={18} className="text-[#e8742a] shrink-0" />
+              <span className="text-[#e8742a] text-sm sm:text-base font-semibold">
+                {formatDateRange(dateRange)}
               </span>
+              {nights > 1 && (
+                <span className="ml-auto text-[#e8742a] text-sm font-medium shrink-0">
+                  {nights}일
+                </span>
+              )}
+            </div>
+            {(startTime || endTime) && (
+              <div className="flex items-center gap-1.5 pl-6 text-sm text-gray-500">
+                <span>시간</span>
+                <span className="text-[#281a0e] font-medium">
+                  {startTime ? formatTime12h(startTime) : "--:--"}
+                </span>
+                <span>~</span>
+                <span className="text-[#281a0e] font-medium">
+                  {endTime ? formatTime12h(endTime) : "--:--"}
+                </span>
+              </div>
             )}
           </div>
         )}
@@ -145,22 +187,20 @@ function StepDateContent() {
             <label className="text-sm font-medium text-[#281a0e]">
               시작 시간
             </label>
-            <input
-              type="time"
+            <SimpleTimePicker
               value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
-              className="w-full h-12 px-4 bg-white border border-[#ffe9d6] rounded-xl text-[#281a0e] outline-none focus:border-[#e8742a] transition-colors"
+              onChange={setStartTime}
+              placeholder="시작 시간 선택"
             />
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-[#281a0e]">
               종료 시간
             </label>
-            <input
-              type="time"
+            <SimpleTimePicker
               value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
-              className="w-full h-12 px-4 bg-white border border-[#ffe9d6] rounded-xl text-[#281a0e] outline-none focus:border-[#e8742a] transition-colors"
+              onChange={setEndTime}
+              placeholder="종료 시간 선택"
             />
           </div>
         </div>
@@ -469,8 +509,8 @@ function StepPaymentContent({
           <p className="text-[#281a0e] text-base font-medium">환불 정책 확인</p>
         </div>
         <p className="text-gray-500 text-sm leading-6">
-          예약 24시간 전까지 무료 취소 가능합니다. 24시간 이내 취소 시 50%
-          환불, 당일 취소 시 환불 불가합니다.
+          예약 24시간 전까지 무료 취소 가능합니다. 24시간 이내 취소 시 50% 환불,
+          당일 취소 시 환불 불가합니다.
         </p>
       </div>
     </div>
@@ -544,7 +584,9 @@ function StepCompleteContent({
           </div>
           <div className="flex justify-between text-sm gap-2">
             <span className="text-gray-500 shrink-0">반려동물</span>
-            <span className="text-[#281a0e] font-medium">{pet?.name ?? "-"}</span>
+            <span className="text-[#281a0e] font-medium">
+              {pet?.name ?? "-"}
+            </span>
           </div>
           <div className="flex justify-between text-sm gap-2">
             <span className="text-gray-500 shrink-0">결제금액</span>
@@ -578,7 +620,7 @@ function StepCompleteContent({
 export default function BookPage() {
   const [step, setStep] = useState(1);
   const [selectedService, setSelectedService] = useState<ServiceKey | null>(
-    null
+    null,
   );
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const { dateRange, petId, paymentMethod } = useBookingStore();
@@ -708,9 +750,7 @@ export default function BookPage() {
           <div className="max-w-[820px] mx-auto flex items-center justify-between h-19 px-6">
             <button
               type="button"
-              onClick={() =>
-                step > 1 ? setStep((s) => s - 1) : router.back()
-              }
+              onClick={() => (step > 1 ? setStep((s) => s - 1) : router.back())}
               className="h-11 px-6 rounded-xl border border-[#ffe9d6] flex items-center gap-1.5 text-gray-500 text-[15px] font-medium hover:bg-[#fff8f3] transition-colors"
             >
               <ChevronLeft className="w-4 h-4" />
