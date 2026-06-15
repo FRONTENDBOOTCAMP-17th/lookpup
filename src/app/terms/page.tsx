@@ -1,0 +1,207 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { ChevronLeft } from "lucide-react";
+import Header from "@/components/layout/Header";
+
+const PRIVACY_LINKS: Record<string, string> = {
+  개인정보처리방침: "/privacy",
+};
+
+function renderItemText(text: string) {
+  const match = text.match(/^([\s\S]*?)\[([^\]]+)\]([\s\S]*)$/);
+  if (match && PRIVACY_LINKS[match[2]]) {
+    return (
+      <>
+        {match[1]}
+        <Link
+          href={PRIVACY_LINKS[match[2]]}
+          className="text-[#E8742A] underline underline-offset-2 hover:opacity-70 transition-opacity"
+        >
+          {match[2]}
+        </Link>
+        {match[3]}
+      </>
+    );
+  }
+  return text;
+}
+
+const ARTICLES = [
+  {
+    title: "제1조 약관의 목적",
+    content: [
+      "본 약관은 봐주개(이하 '플랫폼'이라 합니다)가 제공하는 펫시팅 매칭 서비스 이용에 관한 권리, 의무 및 책임사항을 규정하기 위해 제정되었습니다.",
+    ],
+  },
+  {
+    title: "제2조 정의",
+    items: [
+      "서비스: 펫시터와 보호자를 연결하는 온라인 매칭 플랫폼",
+      "회원: 이 약관에 동의하고 서비스에 가입한 개인 사용자",
+      "펫시터: 펫 돌봄 서비스를 제공하기로 등록한 회원",
+      "보호자: 펫시팅 서비스를 이용하는 회원",
+    ],
+  },
+  {
+    title: "제3조 약관의 효력 및 변경",
+    items: [
+      "본 약관은 회원이 서비스 가입 시 동의함으로 효력이 발생합니다.",
+      "봐주개는 관계 법령에 위배되지 않는 범위 내에서 약관을 변경할 수 있으며, 변경 시 최소 7일 전에 공지합니다.",
+      "변경된 약관에 동의하지 않는 회원은 서비스 탈퇴가 가능합니다.",
+    ],
+  },
+  {
+    title: "제4조 회원 가입",
+    items: [
+      "봐주개 회원 가입 자격은 다음과 같습니다:\n• 보호자(서비스 이용자): 만 16세 이상\n• 펫시터(서비스 제공자): 만 18세 이상",
+      "가입 시 요구되는 정보는 다음과 같습니다:\n• 기본 정보: 이름, 생년월일, 연락처\n• 주소: 실제 거주 지역\n• 기타: 서비스 이용 목적에 따른 추가 정보",
+      "타인의 정보로 가입하거나 거짓 정보를 제공한 경우, 서비스 이용이 제한될 수 있습니다.",
+    ],
+  },
+  {
+    title: "제5조 회원의 의무",
+    items: [
+      "정보 관리와 관련하여 회원은 가입 시 제공한 정보를 최신 상태로 유지하는 것을 권장합니다. 정확하지 않은 정보로 인한 문제는 회원이 책임집니다.",
+      "회원은 자신의 계정과 비밀번호를 안전하게 관리해야 하며, 타인에게 공개해서는 안 됩니다.",
+      "서비스 이용과 관련하여 회원은 다른 회원을 괴롭히거나 거짓 정보로 피해를 주는 행위를 해서는 안 됩니다. 또한 관련 법률을 위반하거나 서비스 약관에 어긋나는 행동을 하는 것도 금지됩니다.",
+    ],
+  },
+  {
+    title: "제6조 회원 탈퇴",
+    items: [
+      "회원은 언제든지 탈퇴 신청이 가능합니다. 단, 진행 중인 펫시팅 예약이 있을 경우 먼저 처리한 후 탈퇴해야 합니다.",
+      "탈퇴 후 개인정보 처리에 관한 자세한 내용은 [개인정보처리방침]을 참고하시기 바랍니다.",
+    ],
+  },
+  {
+    title: "제7조 펫시터 등록 및 책임",
+    items: [
+      "펫시터 등록을 희망하는 회원은 경력, 전문 분야, 가용 시간 등의 추가 정보를 제공해야 합니다. 봐주개는 필요시 펫시터 자격 확인 또는 신원 검증을 요청할 수 있습니다.",
+      "펫시터의 책임은 다음과 같습니다:\n• 안전하고 신뢰할 수 있는 서비스를 제공해야 합니다.\n• 보호자와 합의한 서비스 내용을 성실히 이행해야 합니다.\n• 돌봄 중 발생하는 펫의 상태 변화를 즉시 보호자에게 알려야 합니다.",
+    ],
+  },
+  {
+    title: "제8조 서비스 이용",
+    items: [
+      "보호자는 원하는 펫시터를 선택하여 예약 신청할 수 있습니다. 펫시터는 예약 신청에 대해 수락 또는 거절할 수 있으며, 예약이 확정되면 양 회원은 이를 준수해야 합니다.",
+      "보호자는 예약 시간 최소 24시간 전에 취소할 수 있습니다. 24시간 이내 취소 시 취소 수수료가 발생할 수 있으며, 환불은 취소 신청 후 7영업일 이내에 처리됩니다.",
+      "모든 결제는 봐주개에서 지정한 결제 수단을 통해 이루어집니다. 봐주개는 결제 정보의 안전성을 최우선으로 관리하며, 결제 관련 문의는 고객 지원팀으로 문의해주시기 바랍니다.",
+    ],
+  },
+  {
+    title: "제9조 책임 및 면책",
+    items: [
+      "봐주개는 기술적 안정성을 최대한 보장하기 위해 노력하며, 회원 간의 분쟁 발생 시 중재 역할을 할 수 있습니다.",
+      "봐주개는 다음의 경우에 책임을 지지 않습니다:\n• 천재지변이나 기술적 결함으로 인한 서비스 중단\n• 회원의 과실 또는 부주의로 인한 손해\n• 제3자의 불법 행위로 인한 손해\n• 펫의 건강 문제나 안전 사고 (펫시터와 보호자 간의 직접 계약 관계)\n• 회원 간의 개인적 분쟁이나 합의 불이행",
+    ],
+  },
+];
+
+export default function TermsPage() {
+  const router = useRouter();
+
+  return (
+    <div className="min-h-screen bg-[#FFF8F3]">
+      <Header />
+
+      {/* 모바일 헤더 */}
+      <div className="md:hidden sticky top-16 z-50 bg-white border-b border-[#FFE9D6]">
+        <div className="h-14 px-5 flex items-center gap-3">
+          <button onClick={() => router.back()} className="p-1 -ml-1">
+            <ChevronLeft size={24} className="text-[#281A0E]" />
+          </button>
+          <span className="flex-1 font-semibold text-[#281A0E]">이용약관</span>
+        </div>
+      </div>
+
+      <div className="w-full max-w-200 mx-auto px-4 md:px-6 pt-6 md:pt-12 pb-16">
+        {/* 데스크탑 타이틀 */}
+        <div className="hidden md:flex items-center gap-4 mb-8">
+          <button
+            onClick={() => router.back()}
+            className="w-10 h-10 rounded-xl border border-[#FFE9D6] flex items-center justify-center hover:bg-[#FFF8F3] transition-colors shrink-0"
+          >
+            <ChevronLeft size={20} className="text-[#281A0E]" />
+          </button>
+          <div>
+            <h2 className="text-2xl font-bold text-[#281A0E]">이용약관</h2>
+            <p className="text-sm text-[#6B7280] mt-1">
+              봐주개 서비스 이용약관
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          {/* 인사말 + 조항 전체 박스 */}
+          <div className="bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-[#FFE9D6] p-6 flex flex-col gap-6">
+            {/* 인사말 */}
+            <div>
+              <h1 className="text-xl font-bold text-[#281A0E] mb-4">
+                봐주개 이용약관
+              </h1>
+              <p className="text-sm text-[#6B7280] leading-relaxed">
+                안녕하십니까. 우리 아이를 믿고 맡길 수 있는 반려동물 돌봄 플랫폼
+                봐주개의 서비스를 이용해주셔서 감사합니다.
+              </p>
+              <p className="text-sm text-[#6B7280] leading-relaxed mt-2">
+                본 약관은 봐주개가 제공하는 펫시팅 서비스의 이용과 관련하여
+                봐주개와 이용자 간의 권리, 의무 및 책임사항을 정하고 있습니다.
+              </p>
+              <p className="text-sm text-[#6B7280] leading-relaxed mt-2">
+                본 약관에 동의하여 봐주개가 제공하는 다양한 서비스를
+                이용해주시길 바랍니다.
+              </p>
+            </div>
+
+            {/* 조항 목록 */}
+            {ARTICLES.map((article, index) => (
+              <div key={article.title}>
+                {index > 0 && (
+                  <div className="border-t border-[#FFE9D6] mb-6" />
+                )}
+                <h2 className="text-base font-bold text-[#E8742A] mb-3">
+                  {article.title}
+                </h2>
+                {"content" in article && article.content ? (
+                  <div className="flex flex-col gap-2">
+                    {article.content.map((text, i) => (
+                      <p
+                        key={i}
+                        className="text-sm text-[#281A0E] leading-relaxed"
+                      >
+                        {text}
+                      </p>
+                    ))}
+                  </div>
+                ) : (
+                  <ol className="flex flex-col gap-3">
+                    {article.items?.map((item, i) => (
+                      <li key={i} className="flex gap-2">
+                        <span className="text-sm font-semibold text-[#E8742A] leading-relaxed shrink-0">
+                          {i + 1}.
+                        </span>
+                        <p className="text-sm text-[#281A0E] leading-relaxed whitespace-pre-line">
+                          {renderItemText(item)}
+                        </p>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* 적용일자 */}
+          <div className="bg-[#FFF0E8] rounded-2xl border border-[#FFE9D6] px-6 py-4">
+            <p className="text-sm font-semibold text-[#E8742A]">적용일자</p>
+            <p className="text-sm text-[#6B7280] mt-1">
+              본 약관은 2026년 7월 1일부터 적용됩니다.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

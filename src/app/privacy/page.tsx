@@ -1,0 +1,243 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { ChevronLeft } from "lucide-react";
+import Header from "@/components/layout/Header";
+
+type TitledItem = { title: string; text: string };
+type ArticleItem = string | TitledItem;
+
+type Article = {
+  title: string;
+  content?: string[];
+  items?: ArticleItem[];
+};
+
+function isTitledItem(item: ArticleItem): item is TitledItem {
+  return typeof item === "object" && "title" in item;
+}
+
+const ARTICLES: Article[] = [
+  {
+    title: "제1조 개인정보의 처리 목적",
+    items: [
+      {
+        title: "회원 가입 및 관리",
+        text: "회원 가입의사 확인, 본인 식별·인증, 회원자격 유지·관리, 서비스 부정이용 방지, 각종 고지·통지, 고충처리를 위해 개인정보를 처리합니다.",
+      },
+      {
+        title: "펫시팅 서비스 제공",
+        text: "펫시터 등록 및 프로필 관리, 보호자와 펫시터 간의 매칭, 예약 관리, 서비스 이용 현황 파악을 위해 개인정보를 처리합니다.",
+      },
+      {
+        title: "결제 및 정산",
+        text: "요금 결제, 정산, 환불 처리, 결제 관련 분쟁 해결을 위해 개인정보를 처리합니다.",
+      },
+      {
+        title: "고충처리",
+        text: "민원인의 신원 확인, 민원사항 확인, 사실조사를 위한 연락·통지, 처리결과 통보를 위해 개인정보를 처리합니다.",
+      },
+      {
+        title: "서비스 개선 및 분석",
+        text: "서비스 이용 패턴 분석, 사용성 개선, 맞춤형 서비스 제공을 위해 개인정보를 처리합니다.",
+      },
+    ],
+  },
+  {
+    title: "제2조 개인정보의 처리 및 보유 기간",
+    items: [
+      "봐주개는 법령에 따른 개인정보 보유·이용기간 또는 정보주체로부터 동의받은 개인정보 보유·이용기간 내에서 개인정보를 처리·보유합니다.",
+      "각각의 개인정보 처리 및 보유 기간은 다음과 같습니다:\n• 회원 기본정보(이름, 생년월일, 연락처, 주소): 회원 탈퇴 시까지\n• 펫 정보(종류, 나이, 특이사항): 회원 탈퇴 시까지\n• 펫시터 경력·자격 정보(자격증, 신원확인 자료 등): 회원 탈퇴 후 2년\n• 결제 정보(카드번호, 계좌): 거래 완료 후 5년 (전자상거래법에 따른 보관)\n• 예약 및 이용 기록: 거래 완료 후 5년\n• 리뷰·평점: 작성자 탈퇴 후 1년",
+    ],
+  },
+  {
+    title: "제3조 개인정보의 제3자 제공",
+    items: [
+      "봐주개는 정보주체의 개인정보를 제1조에서 명시한 범위 내에서만 처리하며, 정보주체의 동의, 법률의 특별한 규정 등 「개인정보 보호법」 제17조 및 제18조에 해당하는 경우에만 개인정보를 제3자에게 제공합니다.",
+      "봐주개는 다음과 같이 개인정보를 제3자에게 제공하고 있습니다:\n• 제공받는 자: 예약 상대방 회원(펫시터 또는 보호자)\n• 제공 목적: 펫시팅 서비스 제공을 위한 상호 연락\n• 제공 항목: 연락처, 주소 등 서비스 제공에 필요한 정보\n• 보유·이용 기간: 거래 완료 후 3년",
+    ],
+  },
+  {
+    title: "제4조 개인정보 처리업무의 위탁",
+    items: [
+      "봐주개는 다음과 같이 개인정보 처리업무를 위탁하고 있습니다:\n• 위탁받는 자: 결제 처리 업체\n• 위탁 업무: 결제 처리 및 결제 정보 관리\n• 보유·이용 기간: 거래 완료 후 5년",
+      "봐주개는 위탁계약 체결 시 위탁업무 수행목적 외 개인정보 처리 금지, 기술적·관리적 보호조치, 재위탁 제한 등을 명시하고, 수탁자가 개인정보를 안전하게 처리하는지 감독합니다.",
+    ],
+  },
+  {
+    title: "제5조 개인정보의 파기절차 및 방법",
+    items: [
+      "봐주개는 개인정보 보유기간의 경과, 처리목적 달성 등 개인정보가 불필요하게 되었을 때에는 지체없이 해당 개인정보를 파기합니다.",
+      "파기절차: 파기 사유가 발생한 개인정보를 선정하고, 개인정보 보호책임자의 승인을 받아 개인정보를 파기합니다.",
+      "파기방법\n• 전자적 파일 형태로 저장된 개인정보는 기록을 재생할 수 없는 방법으로 삭제합니다.\n• 종이 문서에 기록·저장된 개인정보는 분쇄하거나 소각하여 파기합니다.",
+    ],
+  },
+  {
+    title: "제6조 개인정보의 안전성 확보조치",
+    items: [
+      {
+        title: "기술적 조치",
+        text: "HTTPS 암호화 통신, 데이터베이스 암호화 저장, 접근권한 관리 및 통제, 정기적인 보안 점검을 시행합니다.",
+      },
+      {
+        title: "관리적 조치",
+        text: "개인정보 처리 규정 수립·시행, 직원 비밀유지 의무 부과, 접근 권한 최소화를 시행합니다.",
+      },
+      {
+        title: "물리적 조치",
+        text: "보안 데이터센터 이용, 서버실 접근 제한을 시행합니다.",
+      },
+    ],
+  },
+  {
+    title: "제7조 개인정보 자동 수집 장치의 설치·운영 및 거부",
+    items: [
+      "봐주개는 이용자에게 개별적인 맞춤서비스를 제공하기 위해 이용정보를 저장하고 수시로 불러오는 '쿠키(cookie)'를 사용합니다.",
+      "쿠키의 사용 목적: 이용자의 방문 기록, 이용 형태, 보안 접속 여부 등을 파악하여 최적화된 정보를 제공하기 위해 사용됩니다.",
+      "쿠키의 거부: 웹 브라우저 설정을 통해 쿠키 저장을 거부할 수 있으며, 거부 시 일부 서비스 이용에 제한이 발생할 수 있습니다.",
+    ],
+  },
+  {
+    title: "제8조 정보주체의 권리·의무 및 행사방법",
+    items: [
+      "정보주체는 봐주개에 대해 언제든지 개인정보 열람·정정·삭제·처리정지 요구 등의 권리를 행사할 수 있습니다.",
+      "권리 행사 방법:\n• 서면 또는 직접 방문을 통한 신청",
+      "봐주개는 정보주체의 요청에 대해 지체없이 조치합니다. 단, 개인정보 열람 및 처리정지 요구는 「개인정보 보호법」 제35조, 제37조에 따라 제한될 수 있으며, 다른 법령에서 수집 대상으로 명시된 개인정보의 정정·삭제는 요청할 수 없습니다.",
+    ],
+  },
+  {
+    title: "제9조 개인정보 보호책임자",
+    items: [
+      "봐주개는 개인정보 처리에 관한 업무를 총괄하여 책임지고, 정보주체의 불만처리 및 피해구제를 위하여 개인정보 보호책임자를 지정하고 있습니다.\n• 담당부서: 고객 지원팀",
+      "정보주체는 봐주개 서비스 이용 중 발생한 개인정보 관련 문의, 불만처리, 피해구제 등을 고객 지원팀으로 문의할 수 있습니다.",
+    ],
+  },
+  {
+    title: "제10조 권익침해 구제방법",
+    items: [
+      "개인정보 침해신고센터(한국인터넷진흥원 운영)\n• 홈페이지: privacy.kisa.or.kr\n• 전화: (국번없이) 118",
+      "개인정보 분쟁조정위원회\n• 홈페이지: www.kopico.go.kr\n• 전화: (국번없이) 1833-6972",
+      "대검찰청 사이버범죄수사단\n• 홈페이지: www.spo.go.kr",
+      "경찰청 사이버안전국\n• 전화: 182",
+    ],
+  },
+  {
+    title: "제11조 개인정보 처리방침의 변경",
+    content: [
+      "본 개인정보 처리방침은 법적 필요나 서비스 개선을 위해 변경될 수 있으며, 변경 시 최소 7일 전에 공지합니다.",
+    ],
+  },
+];
+
+export default function PrivacyPage() {
+  const router = useRouter();
+
+  return (
+    <div className="min-h-screen bg-[#FFF8F3]">
+      <Header />
+
+      {/* 모바일 헤더 */}
+      <div className="md:hidden sticky top-16 z-50 bg-white border-b border-[#FFE9D6]">
+        <div className="h-14 px-5 flex items-center gap-3">
+          <button onClick={() => router.back()} className="p-1 -ml-1">
+            <ChevronLeft size={24} className="text-[#281A0E]" />
+          </button>
+          <span className="flex-1 font-semibold text-[#281A0E]">
+            개인정보 처리방침
+          </span>
+        </div>
+      </div>
+
+      <div className="w-full max-w-200 mx-auto px-4 md:px-6 pt-6 md:pt-12 pb-16">
+        {/* 데스크탑 타이틀 */}
+        <div className="hidden md:flex items-center gap-4 mb-8">
+          <button
+            onClick={() => router.back()}
+            className="w-10 h-10 rounded-xl border border-[#FFE9D6] flex items-center justify-center hover:bg-[#FFF8F3] transition-colors shrink-0"
+          >
+            <ChevronLeft size={20} className="text-[#281A0E]" />
+          </button>
+          <div>
+            <h2 className="text-2xl font-bold text-[#281A0E]">
+              개인정보 처리방침
+            </h2>
+            <p className="text-sm text-[#6B7280] mt-1">
+              봐주개 개인정보 처리방침
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          {/* 소개 + 조항 전체 박스 */}
+          <div className="bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-[#FFE9D6] p-6 flex flex-col gap-6">
+            {/* 소개 */}
+            <div>
+              <h1 className="text-xl font-bold text-[#281A0E] mb-4">
+                봐주개 개인정보 처리방침
+              </h1>
+              <p className="text-sm text-[#6B7280] leading-relaxed">
+                봐주개(이하 "봐주개")는 「개인정보 보호법」 제30조에 따라
+                정보주체의 개인정보를 보호하고, 이와 관련한 고충을 신속하고
+                원활하게 처리할 수 있도록 하기 위하여 다음과 같이 개인정보
+                처리방침을 수립·공개합니다.
+              </p>
+            </div>
+
+            {/* 조항 목록 */}
+            {ARTICLES.map((article, index) => (
+              <div key={article.title}>
+                {index > 0 && (
+                  <div className="border-t border-[#FFE9D6] mb-6" />
+                )}
+                <h2 className="text-base font-bold text-[#E8742A] mb-3">
+                  {article.title}
+                </h2>
+                {"content" in article && article.content ? (
+                  <div className="flex flex-col gap-2">
+                    {article.content.map((text, i) => (
+                      <p
+                        key={i}
+                        className="text-sm text-[#281A0E] leading-relaxed"
+                      >
+                        {text}
+                      </p>
+                    ))}
+                  </div>
+                ) : (
+                  <ol className="flex flex-col gap-3">
+                    {article.items?.map((item, i) => (
+                      <li key={i} className="flex gap-2">
+                        <span className="text-sm font-semibold text-[#E8742A] leading-relaxed shrink-0">
+                          {i + 1}.
+                        </span>
+                        {isTitledItem(item) ? (
+                          <p className="text-sm text-[#281A0E] leading-relaxed">
+                            <span className="font-semibold">{item.title}</span>
+                            <br />
+                            {item.text}
+                          </p>
+                        ) : (
+                          <p className="text-sm text-[#281A0E] leading-relaxed whitespace-pre-line">
+                            {item}
+                          </p>
+                        )}
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* 적용일자 */}
+          <div className="bg-[#FFF0E8] rounded-2xl border border-[#FFE9D6] px-6 py-4">
+            <p className="text-sm font-semibold text-[#E8742A]">적용일자</p>
+            <p className="text-sm text-[#6B7280] mt-1">
+              본 개인정보 처리방침은 2026년 7월 1일부터 적용됩니다.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
