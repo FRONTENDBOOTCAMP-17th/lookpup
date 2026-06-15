@@ -226,22 +226,25 @@ function StepPetContent({
   setSelectedService: (s: ServiceKey) => void;
 }) {
   const router = useRouter();
-  const { dateRange, petId, setPet } = useBookingStore();
+  const { dateRange, petIds, togglePet } = useBookingStore();
 
   return (
     <div className="flex flex-col gap-4">
       {/* 반려동물 선택 */}
       <div className="bg-white rounded-2xl border border-[#ffe9d6] p-4 sm:p-7">
-        <h2 className="text-lg font-semibold text-[#281a0e] mb-4">
-          반려동물을 선택하세요
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-[#281a0e]">
+            반려동물을 선택하세요
+          </h2>
+          <span className="text-xs text-gray-400">중복 선택 가능</span>
+        </div>
         <div className="flex flex-col gap-3">
           {PETS.map((pet) => {
-            const selected = petId === pet.id;
+            const selected = petIds.includes(pet.id);
             return (
               <button
                 key={pet.id}
-                onClick={() => setPet(pet.id, pet.name)}
+                onClick={() => togglePet(pet.id, pet.name)}
                 className={`w-full p-4 sm:p-5 rounded-2xl border text-left flex items-center gap-3 sm:gap-4 transition-colors ${
                   selected
                     ? "bg-[#fff8f3] border-[#e8742a]"
@@ -323,8 +326,8 @@ function StepPetContent({
           },
           {
             label: "반려동물",
-            value: petId
-              ? (PETS.find((p) => p.id === petId)?.name ?? "-")
+            value: petIds.length > 0
+              ? petIds.map((id) => PETS.find((p) => p.id === id)?.name ?? "").filter(Boolean).join(", ")
               : "-",
           },
         ]}
@@ -339,7 +342,7 @@ function StepNoteContent({
 }: {
   selectedService: ServiceKey | null;
 }) {
-  const { dateRange, petId, note, setNote } = useBookingStore();
+  const { dateRange, petIds, note, setNote } = useBookingStore();
   const MAX = 500;
 
   function appendQuickNote(quick: string) {
@@ -396,8 +399,8 @@ function StepNoteContent({
           { label: "날짜", value: formatDateRange(dateRange) },
           {
             label: "반려동물",
-            value: petId
-              ? (PETS.find((p) => p.id === petId)?.name ?? "-")
+            value: petIds.length > 0
+              ? petIds.map((id) => PETS.find((p) => p.id === id)?.name ?? "").filter(Boolean).join(", ")
               : "-",
           },
           { label: "서비스", value: serviceLabel },
@@ -413,11 +416,11 @@ function StepPaymentContent({
 }: {
   selectedService: ServiceKey | null;
 }) {
-  const { dateRange, petId, paymentMethod, setPaymentMethod } =
+  const { dateRange, petIds, paymentMethod, setPaymentMethod } =
     useBookingStore();
   const nights = calcNights(dateRange);
   const servicePrice = PETSITTER.pricePerDay * nights;
-  const pet = PETS.find((p) => p.id === petId);
+  const selectedPets = PETS.filter((p) => petIds.includes(p.id));
   const serviceLabel = selectedService
     ? (SERVICES.find((s) => s.key === selectedService)?.label ??
       PETSITTER.service)
@@ -441,9 +444,9 @@ function StepPaymentContent({
             <p className="text-gray-500 text-sm">
               {serviceLabel} · {formatDateRange(dateRange)}
             </p>
-            {pet && (
+            {selectedPets.length > 0 && (
               <p className="text-gray-500 text-sm">
-                {pet.name} ({pet.breed})
+                {selectedPets.map((p) => `${p.name} (${p.breed})`).join(", ")}
               </p>
             )}
           </div>
@@ -473,35 +476,6 @@ function StepPaymentContent({
         </div>
       </div>
 
-      {/* 결제 수단 */}
-      <div className="bg-white rounded-2xl border border-[#ffe9d6] p-4 sm:p-7">
-        <p className="text-[#281a0e] text-lg font-semibold mb-4">결제 수단</p>
-        <div className="flex flex-col gap-3">
-          {PAYMENT_METHODS.map((m) => {
-            const selected = paymentMethod === m.key;
-            return (
-              <button
-                key={m.key}
-                onClick={() => setPaymentMethod(m.key)}
-                className={`w-full min-h-[44px] p-4 sm:p-5 rounded-xl border flex items-center gap-3 transition-colors ${
-                  selected
-                    ? "border-[#e8742a] bg-[#fff8f3]"
-                    : "border-[#ffe9d6] bg-white hover:border-[#e8742a]/50"
-                }`}
-              >
-                <span className="text-2xl">{m.emoji}</span>
-                <span className="text-[#281a0e] text-base font-medium">
-                  {m.label}
-                </span>
-                {selected && (
-                  <Check size={18} className="text-[#e8742a] ml-auto" />
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
       {/* 환불 정책 */}
       <div className="bg-white rounded-2xl border border-[#ffe9d6] p-4 sm:p-5">
         <div className="flex items-center gap-2 mb-2">
@@ -524,10 +498,10 @@ function StepCompleteContent({
   selectedService: ServiceKey | null;
 }) {
   const router = useRouter();
-  const { dateRange, petId, reset } = useBookingStore();
+  const { dateRange, petIds, reset } = useBookingStore();
   const nights = calcNights(dateRange);
   const total = PETSITTER.pricePerDay * nights + PLATFORM_FEE;
-  const pet = PETS.find((p) => p.id === petId);
+  const selectedPetNames = PETS.filter((p) => petIds.includes(p.id)).map((p) => p.name);
   const serviceLabel = selectedService
     ? (SERVICES.find((s) => s.key === selectedService)?.label ??
       PETSITTER.service)
@@ -584,8 +558,8 @@ function StepCompleteContent({
           </div>
           <div className="flex justify-between text-sm gap-2">
             <span className="text-gray-500 shrink-0">반려동물</span>
-            <span className="text-[#281a0e] font-medium">
-              {pet?.name ?? "-"}
+            <span className="text-[#281a0e] font-medium text-right">
+              {selectedPetNames.length > 0 ? selectedPetNames.join(", ") : "-"}
             </span>
           </div>
           <div className="flex justify-between text-sm gap-2">
@@ -623,7 +597,7 @@ export default function BookPage() {
     null,
   );
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const { dateRange, petId, paymentMethod } = useBookingStore();
+  const { dateRange, petIds, paymentMethod } = useBookingStore();
   const router = useRouter();
 
   const nights = calcNights(dateRange);
@@ -632,15 +606,14 @@ export default function BookPage() {
 
   function canNext(): boolean {
     if (step === 1) return !!dateRange?.from;
-    if (step === 2) return !!petId && !!selectedService;
+    if (step === 2) return petIds.length > 0 && !!selectedService;
     if (step === 3) return true;
-    if (step === 4) return !!paymentMethod;
+    if (step === 4) return true;
     return false;
   }
 
   function handleNext() {
     if (step === 4) {
-      if (!paymentMethod) return;
       setShowPaymentModal(true);
     } else if (canNext()) {
       setStep((s) => s + 1);
