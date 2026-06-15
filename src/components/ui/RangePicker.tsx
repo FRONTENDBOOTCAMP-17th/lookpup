@@ -1,8 +1,5 @@
 "use client";
 
-//날짜 범위 선택 컴포넌트 shadcn 데이 막대 선택이 안되서 일단 안넣음... 
-// 그리고 너무 구리더라구요 디자인...
-
 import { useState } from "react";
 import { DateRange } from "react-day-picker";
 import {
@@ -55,10 +52,8 @@ export default function RangePicker({ value, onChange }: Props) {
     if (isBefore(day, today)) return;
 
     if (!value?.from || (value.from && value.to)) {
-      // 첫 클릭 또는 재선택
       onChange({ from: day, to: undefined });
     } else {
-      // 두 번째 클릭
       if (isSameDay(day, value.from)) {
         onChange(undefined);
       } else if (isBefore(day, value.from)) {
@@ -69,10 +64,13 @@ export default function RangePicker({ value, onChange }: Props) {
     }
   }
 
-  function classifyDay(day: Date): "start" | "end" | "middle" | "single" | "none" {
+  function classifyDay(
+    day: Date
+  ): "start" | "end" | "middle" | "single" | "none" {
     if (!value?.from) return "none";
     const { from, to } = value;
-    if (!to || isSameDay(from, to)) return isSameDay(day, from) ? "single" : "none";
+    if (!to || isSameDay(from, to))
+      return isSameDay(day, from) ? "single" : "none";
     if (isSameDay(day, from)) return "start";
     if (isSameDay(day, to)) return "end";
     if (isWithinInterval(day, { start: from, end: to })) return "middle";
@@ -82,30 +80,33 @@ export default function RangePicker({ value, onChange }: Props) {
   const weeks = buildWeeks(month);
 
   return (
-    <div className="select-none">
+    <div className="select-none bg-white rounded-2xl border border-[#ffe9d6] p-4 sm:p-6">
       {/* 월 네비게이션 */}
       <div className="flex items-center justify-between mb-6">
         <button
           onClick={() => setMonth((m) => subMonths(m, 1))}
-          className="p-1 rounded-full hover:bg-orange-100 transition-colors"
+          className="w-8 h-8 flex items-center justify-center rounded-lg border border-[#ffe9d6] hover:bg-[#fff8f3] transition-colors"
         >
-          <ChevronLeft size={20} className="text-gray-500" />
+          <ChevronLeft size={16} className="text-gray-500" />
         </button>
-        <span className="text-stone-900 text-lg font-semibold">
+        <span className="text-[#281a0e] text-base font-semibold">
           {format(month, "yyyy년 M월", { locale: ko })}
         </span>
         <button
           onClick={() => setMonth((m) => addMonths(m, 1))}
-          className="p-1 rounded-full hover:bg-orange-100 transition-colors"
+          className="w-8 h-8 flex items-center justify-center rounded-lg border border-[#ffe9d6] hover:bg-[#fff8f3] transition-colors"
         >
-          <ChevronRight size={20} className="text-gray-500" />
+          <ChevronRight size={16} className="text-gray-500" />
         </button>
       </div>
 
       {/* 요일 헤더 */}
       <div className="grid grid-cols-7 mb-2">
         {DAY_LABELS.map((d) => (
-          <div key={d} className="text-center text-xs font-medium text-gray-400 py-1">
+          <div
+            key={d}
+            className="text-center text-xs font-medium text-gray-400 py-1"
+          >
             {d}
           </div>
         ))}
@@ -122,41 +123,47 @@ export default function RangePicker({ value, onChange }: Props) {
               const kind = classifyDay(day);
               const isToday = isSameDay(day, today);
 
-              // 막대 배경 레이어 스타일
+              // 범위 배경 막대
               let barClass = "";
-              if (kind === "start") barClass = "bg-orange-200/60 rounded-r-none rounded-l-full left-1/2 right-0";
-              else if (kind === "end") barClass = "bg-orange-200/60 rounded-l-none rounded-r-full left-0 right-1/2";
-              else if (kind === "middle") barClass = "bg-orange-200/60 left-0 right-0";
+              if (kind === "start")
+                barClass =
+                  "bg-[#ffe9d6]/70 rounded-r-none rounded-l-full left-1/2 right-0";
+              else if (kind === "end")
+                barClass =
+                  "bg-[#ffe9d6]/70 rounded-l-none rounded-r-full left-0 right-1/2";
+              else if (kind === "middle")
+                barClass = "bg-[#ffe9d6]/70 left-0 right-0";
 
-              // 주의 첫날/마지막날 막대 끊기
               const isWeekStart = di === 0;
               const isWeekEnd = di === 6;
-              if (kind === "middle" && isWeekStart) barClass = "bg-orange-200/60 rounded-l-full left-0 right-0";
-              if (kind === "middle" && isWeekEnd) barClass = "bg-orange-200/60 rounded-r-full left-0 right-0";
+              if (kind === "middle" && isWeekStart)
+                barClass = "bg-[#ffe9d6]/70 rounded-l-full left-0 right-0";
+              if (kind === "middle" && isWeekEnd)
+                barClass = "bg-[#ffe9d6]/70 rounded-r-full left-0 right-0";
 
               return (
-                <div key={di} className="relative flex items-center justify-center h-10">
-                  {/* 막대 레이어 */}
+                <div
+                  key={di}
+                  className="relative flex items-center justify-center h-10"
+                >
                   {barClass && (
                     <div className={`absolute inset-y-1 ${barClass} z-0`} />
                   )}
 
-                  {/* 날짜 원 */}
                   <button
                     onClick={() => handleDayClick(day)}
                     disabled={past}
-                    className={`
-                      relative z-10 w-9 h-9 rounded-full text-sm font-medium transition-colors
-                      ${past ? "text-gray-300 cursor-not-allowed" : "cursor-pointer"}
-                      ${kind === "start" || kind === "end" || kind === "single"
-                        ? "bg-orange-500 text-white"
+                    className={[
+                      "relative z-10 w-9 h-9 rounded-full text-sm font-medium transition-colors",
+                      past ? "text-gray-300 cursor-not-allowed" : "cursor-pointer",
+                      kind === "start" || kind === "end" || kind === "single"
+                        ? "bg-[#e8742a] text-white"
                         : kind === "middle"
-                        ? "text-stone-900 hover:bg-orange-100"
-                        : isToday
-                        ? "text-orange-500 font-bold hover:bg-orange-50"
-                        : "text-stone-900 hover:bg-orange-50"
-                      }
-                    `}
+                          ? "text-[#281a0e] hover:bg-[#fff8f3]"
+                          : isToday
+                            ? "text-[#e8742a] font-bold hover:bg-[#fff8f3]"
+                            : "text-[#281a0e] hover:bg-[#fff8f3]",
+                    ].join(" ")}
                   >
                     {format(day, "d")}
                   </button>
