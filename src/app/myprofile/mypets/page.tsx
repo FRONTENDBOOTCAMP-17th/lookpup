@@ -107,7 +107,7 @@ function Backdrop({ children }: { children: React.ReactNode }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/35 backdrop-blur-sm" />
-      <div className="relative z-10">{children}</div>
+      <div className="relative z-10 w-full flex justify-center">{children}</div>
     </div>
   );
 }
@@ -123,7 +123,7 @@ function DeleteModal({
 }) {
   return (
     <Backdrop>
-      <div className="bg-white rounded-[20px] w-115 max-w-full p-8 shadow-[0_12px_32px_rgba(0,0,0,0.12)]">
+      <div className="bg-white rounded-[20px] w-[460px] max-w-[calc(100vw-32px)] p-8 shadow-[0_12px_16px_rgba(0,0,0,0.12)]">
         <div className="flex flex-col items-center text-center">
           <div className="w-14 h-14 bg-[#FFF0E8] rounded-full flex items-center justify-center mb-4">
             <AlertTriangle size={28} className="text-[#E8742A]" />
@@ -172,17 +172,17 @@ function DeleteModal({
 }
 
 function SuccessModal({
-  pet,
+  petName,
   onView,
   onClose,
 }: {
-  pet: Pet;
+  petName: string;
   onView: () => void;
   onClose: () => void;
 }) {
   return (
     <Backdrop>
-      <div className="bg-white rounded-[20px] w-120 max-w-full p-8 shadow-[0_12px_32px_rgba(0,0,0,0.12)]">
+      <div className="bg-white rounded-[20px] w-[480px] max-w-[calc(100vw-32px)] p-8 shadow-[0_12px_16px_rgba(0,0,0,0.12)]">
         <div className="flex flex-col items-center text-center">
           <div className="w-16 h-16 bg-[#FFF0E8] rounded-full flex items-center justify-center mb-4">
             <CheckCircle2 size={36} className="text-[#E8742A]" />
@@ -194,18 +194,14 @@ function SuccessModal({
             이제 돌봄 요청 시 선택할 수 있습니다.
           </p>
 
+          {/* 등록된 반려동물 미리보기 */}
           <div className="w-full flex items-center gap-3 p-4 bg-[#FFF8F3] rounded-xl mb-6">
-            <div
-              className="w-14 h-14 rounded-xl flex items-center justify-center text-3xl shrink-0"
-              style={{
-                background: `linear-gradient(135deg, ${pet.bgFrom}, ${pet.bgTo})`,
-              }}
-            >
-              {pet.emoji}
+            <div className="w-12 h-12 rounded-xl bg-[#FDE8C4] flex items-center justify-center text-2xl shrink-0">
+              🐾
             </div>
             <div className="text-left">
-              <p className="font-semibold text-[#281A0E]">{pet.name}</p>
-              <p className="text-sm text-[#6B7280]">{pet.breed}</p>
+              <p className="font-semibold text-[#281A0E]">{petName}</p>
+              <p className="text-sm text-[#6B7280]">방금 등록됨</p>
             </div>
           </div>
 
@@ -472,16 +468,16 @@ function EditModal({
             </FormField>
 
             {/* 나이 + 몸무게 */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField label="나이">
                 <div className="flex items-center gap-2">
                   <input
                     type="number"
                     value={form.age}
                     onChange={(e) => update("age", Number(e.target.value))}
-                    className="flex-1 h-11 px-4 border border-[#FFE9D6] rounded-xl text-[#281A0E] focus:outline-none focus:border-[#E8742A] transition-colors"
+                    className="flex-1 min-w-0 h-11 px-4 border border-[#FFE9D6] rounded-xl text-[#281A0E] focus:outline-none focus:border-[#E8742A] transition-colors"
                   />
-                  <span className="text-sm text-[#6B7280]">살</span>
+                  <span className="shrink-0 text-sm text-[#6B7280]">살</span>
                 </div>
               </FormField>
               <FormField label="몸무게">
@@ -491,9 +487,9 @@ function EditModal({
                     step="0.1"
                     value={form.weight}
                     onChange={(e) => update("weight", Number(e.target.value))}
-                    className="flex-1 h-11 px-4 border border-[#FFE9D6] rounded-xl text-[#281A0E] focus:outline-none focus:border-[#E8742A] transition-colors"
+                    className="flex-1 min-w-0 h-11 px-4 border border-[#FFE9D6] rounded-xl text-[#281A0E] focus:outline-none focus:border-[#E8742A] transition-colors"
                   />
-                  <span className="text-sm text-[#6B7280]">kg</span>
+                  <span className="shrink-0 text-sm text-[#6B7280]">kg</span>
                 </div>
               </FormField>
             </div>
@@ -722,7 +718,8 @@ export default function MyPetsPage() {
 
   const handleSaveEdit = (updated: Pet) => {
     setPets((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
-    setModal(null);
+    setTargetPet(updated);
+    setModal("success");
   };
 
   const handleAddPet = () => router.push("/pet-register");
@@ -803,6 +800,7 @@ export default function MyPetsPage() {
 
       {/* 모바일 콘텐츠 */}
       <div className="md:hidden px-4 pt-4 pb-28">
+
         {pets.length === 0 ? (
           <EmptyState onAdd={handleAddPet} />
         ) : (
@@ -828,27 +826,20 @@ export default function MyPetsPage() {
       </button>
 
       {/* 모달 */}
-      {/* 반려동물 삭제 기능 모달 */}
-      <CustomModal
-        open={modal === "delete" && targetPet !== null}
-        preset="deletePost"
-        title={`${targetPet?.name ?? "반려동물"}의 정보를 삭제하시겠어요?`}
-        description="삭제된 정보는 복구할 수 없습니다."
-        onClose={() => setModal(null)}
-        onConfirm={handleDelete}
-      />
-
-      {/* 반려동물 등록 완료 기능 모달 */}
-      <CustomModal
-        open={modal === "success" && targetPet !== null}
-        preset="success"
-        title="등록이 완료되었어요"
-        description={`${targetPet?.name ?? "반려동물"}이(가) 등록되었습니다.\n이제 돌봄 요청 시 선택할 수 있습니다.`}
-        cancelText="확인"
-        confirmText="내 반려동물 보기"
-        onClose={() => setModal(null)}
-        onConfirm={() => setModal(null)}
-      />
+      {modal === "delete" && targetPet && (
+        <DeleteModal
+          pet={targetPet}
+          onClose={() => setModal(null)}
+          onConfirm={handleDelete}
+        />
+      )}
+      {modal === "success" && targetPet && (
+        <SuccessModal
+          petName={targetPet.name}
+          onClose={() => setModal(null)}
+          onView={() => setModal(null)}
+        />
+      )}
       {modal === "edit" && targetPet && (
         <EditModal
           pet={targetPet}

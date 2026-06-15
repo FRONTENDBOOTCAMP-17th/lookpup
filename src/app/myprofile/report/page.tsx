@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, AlertTriangle, Check, ImagePlus, X } from "lucide-react";
+import { ChevronLeft, AlertTriangle, Check, ImagePlus, X } from "lucide-react";
 import Header from "@/components/layout/Header";
 import { CustomModal } from "@/components/common/CustomModal";
 import { AvatarReport } from "@/components/ui/Avatar";
@@ -44,17 +44,31 @@ export default function ReportPage() {
 
   return (
     <div className="min-h-screen bg-[#fff8f3]">
-      <Header />
+      <div className="hidden md:block">
+        <Header />
+      </div>
 
-      <main className="max-w-190 mx-auto px-4 md:px-6 pt-12 pb-20">
+      {/* 모바일 헤더 */}
+      <div className="md:hidden sticky top-0 z-50 bg-white border-b border-[#FFE9D6]">
+        <div className="h-14 px-5 flex items-center gap-3">
+          <button type="button" onClick={() => router.back()} className="p-1 -ml-1">
+            <ChevronLeft size={24} className="text-[#281A0E]" />
+          </button>
+          <span className="flex-1 font-semibold text-[#281A0E]">
+            신고하기
+          </span>
+        </div>
+      </div>
+
+      <main className="max-w-190 mx-auto px-4 md:px-6 pt-4 md:pt-12 pb-20">
         {/* 페이지 타이틀 */}
-        <div className="flex items-center gap-3">
+        <div className="hidden md:flex items-center gap-3">
           <button
             type="button"
             onClick={() => router.back()}
-            className="w-10 h-10 flex items-center justify-center border border-[#ffe9d6] rounded-xl shrink-0"
+            className="p-1 -ml-1"
           >
-            <ArrowLeft className="w-5 h-5 text-[#281a0e]" />
+            <ChevronLeft size={20} className="text-[#281a0e]" />
           </button>
           <h1 className="text-2xl font-bold text-[#281a0e]">신고하기</h1>
         </div>
