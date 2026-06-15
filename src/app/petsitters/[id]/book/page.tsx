@@ -20,15 +20,7 @@ import SimpleTimePicker from "@/components/ui/SimpleTimePicker";
 import { CustomModal } from "@/components/common/CustomModal";
 import { PaymentModalContent } from "@/components/common/PaymentModalContent";
 
-const STEP_LABELS = [
-  "날짜 선택",
-  "반려동물·서비스",
-  "특이사항",
-  "결제",
-  "완료",
-];
-const TOTAL_STEPS = 5;
-
+// 더미 데이터
 const PETSITTER = {
   id: 1,
   name: "김민지",
@@ -58,6 +50,7 @@ const PETS = [
 const QUICK_NOTES = ["알러지 있음", "야간 돌봄 필요", "약 복용 중"];
 
 type PaymentMethodKey = "card" | "kakaopay" | "tosspay";
+
 const PAYMENT_METHODS: {
   key: PaymentMethodKey;
   label: string;
@@ -69,6 +62,7 @@ const PAYMENT_METHODS: {
 ];
 
 type ServiceKey = "visit" | "home" | "walk" | "hotel";
+
 const SERVICES: {
   key: ServiceKey;
   label: string;
@@ -115,6 +109,36 @@ function BookingSummary({
 }: {
   rows: { label: string; value: string }[];
 }) {
+  const router = useRouter();
+  return (
+    <div className="w-full max-w-[800px] bg-white rounded-2xl shadow-[0px_4px_20px_0px_rgba(232,116,42,0.15)] flex flex-col overflow-hidden">
+      <div className="h-14 px-4 sm:px-6 md:px-8 bg-white border-b border-orange-100 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <button
+            onClick={() => router.back()}
+            className="p-1 hover:bg-orange-50 rounded-lg transition-colors shrink-0"
+          >
+            <ChevronLeft size={20} className="text-stone-900" />
+          </button>
+          <span className="text-stone-900 text-base sm:text-lg font-semibold truncate">
+            {title}
+          </span>
+        </div>
+        <span className="text-gray-500 text-sm font-medium shrink-0 ml-2">
+          {step}/{total}
+        </span>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+// 예약 요약 박스
+function BookingSummary({
+  rows,
+}: {
+  rows: { label: string; value: string }[];
+}) {
   return (
     <div className="p-4 sm:p-5 bg-white rounded-2xl border border-[#ffe9d6]">
       <p className="text-[#281a0e] text-base font-semibold mb-3">예약 요약</p>
@@ -122,7 +146,7 @@ function BookingSummary({
         {rows.map((r) => (
           <div key={r.label} className="flex justify-between text-sm gap-2">
             <span className="text-gray-500 shrink-0">{r.label}</span>
-            <span className="text-[#281a0e] font-medium text-right">
+            <span className="text-stone-900 font-medium text-right">
               {r.value}
             </span>
           </div>
@@ -154,29 +178,15 @@ function StepDateContent() {
 
         {/* 선택된 날짜 + 시간 요약 표시 */}
         {dateRange?.from && (
-          <div className="mt-4 p-4 bg-[#fff8f3] rounded-xl border border-[#ffe9d6] flex flex-col gap-2">
-            <div className="flex items-center gap-2">
-              <Calendar size={18} className="text-[#e8742a] shrink-0" />
-              <span className="text-[#e8742a] text-sm sm:text-base font-semibold">
-                {formatDateRange(dateRange)}
+          <div className="p-4 bg-orange-500/10 rounded-xl flex items-center gap-2">
+            <Calendar size={20} className="text-orange-500 shrink-0" />
+            <span className="text-orange-500 text-sm sm:text-base font-semibold">
+              {formatDateRange(dateRange)}
+            </span>
+            {nights > 1 && (
+              <span className="ml-auto text-orange-500 text-sm font-medium shrink-0">
+                {nights}일
               </span>
-              {nights > 1 && (
-                <span className="ml-auto text-[#e8742a] text-sm font-medium shrink-0">
-                  {nights}일
-                </span>
-              )}
-            </div>
-            {(startTime || endTime) && (
-              <div className="flex items-center gap-1.5 pl-6 text-sm text-gray-500">
-                <span>시간</span>
-                <span className="text-[#281a0e] font-medium">
-                  {startTime ? formatTime12h(startTime) : "--:--"}
-                </span>
-                <span>~</span>
-                <span className="text-[#281a0e] font-medium">
-                  {endTime ? formatTime12h(endTime) : "--:--"}
-                </span>
-              </div>
             )}
           </div>
         )}
@@ -184,20 +194,22 @@ function StepDateContent() {
         {/* 시간 입력 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-5">
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-[#281a0e]">
+            <label className="text-stone-900 text-sm font-medium">
               시작 시간
             </label>
-            <SimpleTimePicker
+            <input
+              type="time"
               value={startTime}
               onChange={setStartTime}
               placeholder="시작 시간 선택"
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-[#281a0e]">
+            <label className="text-stone-900 text-sm font-medium">
               종료 시간
             </label>
-            <SimpleTimePicker
+            <input
+              type="time"
               value={endTime}
               onChange={setEndTime}
               placeholder="종료 시간 선택"
@@ -261,16 +273,12 @@ function StepPetContent({
                       {pet.type}
                     </span>
                   </div>
-                  <p className="text-gray-500 text-xs sm:text-sm">
-                    {pet.breed} · {pet.age}살 · {pet.weight}kg
-                  </p>
-                </div>
-                {selected && (
-                  <Check size={20} className="text-[#e8742a] shrink-0" />
-                )}
-              </button>
-            );
-          })}
+                  {selected && (
+                    <Check size={20} className="text-orange-500 shrink-0" />
+                  )}
+                </button>
+              );
+            })}
 
           <button
             onClick={() => router.push("/pet-register")}
@@ -281,38 +289,58 @@ function StepPetContent({
         </div>
       </div>
 
-      {/* 서비스 선택 */}
-      <div className="bg-white rounded-2xl border border-[#ffe9d6] p-4 sm:p-7">
-        <h2 className="text-lg font-semibold text-[#281a0e] mb-4">
-          제공 서비스를 선택해주세요
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {SERVICES.map((svc) => {
-            const selected = selectedService === svc.key;
-            return (
-              <button
-                key={svc.key}
-                onClick={() => setSelectedService(svc.key)}
-                className={`w-full p-4 rounded-2xl border text-left flex items-center gap-3 transition-colors ${
-                  selected
-                    ? "bg-[#fff8f3] border-[#e8742a]"
-                    : "bg-white border-[#ffe9d6] hover:border-[#e8742a]/50"
-                }`}
-              >
-                <span className="text-2xl shrink-0">{svc.emoji}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[#281a0e] text-sm font-semibold">
-                    {svc.label}
-                  </p>
-                  <p className="text-gray-500 text-xs">{svc.desc}</p>
-                </div>
-                {selected && (
-                  <Check size={18} className="text-[#e8742a] shrink-0" />
-                )}
-              </button>
-            );
-          })}
+        {/* 서비스 선택 */}
+        <div>
+          <h2 className="text-stone-900 text-base sm:text-lg font-semibold mb-3">
+            제공 서비스를 선택해주세요
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {SERVICES.map((svc) => {
+              const selected = selectedService === svc.key;
+              return (
+                <button
+                  key={svc.key}
+                  onClick={() => setSelectedService(svc.key)}
+                  className={`w-full p-4 rounded-2xl border text-left flex items-center gap-3 transition-colors ${
+                    selected
+                      ? "bg-orange-50 border-orange-500"
+                      : "bg-orange-50 border-orange-100 hover:border-orange-300"
+                  }`}
+                >
+                  <span className="text-2xl shrink-0">{svc.emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-stone-900 text-sm font-semibold">
+                      {svc.label}
+                    </p>
+                    <p className="text-gray-500 text-xs">{svc.desc}</p>
+                  </div>
+                  {selected && (
+                    <Check size={18} className="text-orange-500 shrink-0" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
+
+        <BookingSummary
+          rows={[
+            { label: "날짜", value: formatDateRange(dateRange) },
+            {
+              label: "서비스",
+              value: selectedService
+                ? (SERVICES.find((s) => s.key === selectedService)?.label ??
+                  "-")
+                : "-",
+            },
+            {
+              label: "반려동물",
+              value: petId
+                ? (PETS.find((p) => p.id === petId)?.name ?? "-")
+                : "-",
+            },
+          ]}
+        />
       </div>
 
       <BookingSummary
@@ -355,9 +383,9 @@ function StepNoteContent({
     : "-";
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="bg-white rounded-2xl border border-[#ffe9d6] p-4 sm:p-7">
-        <h2 className="text-lg font-semibold text-[#281a0e] mb-5">
+    <StepCard step={3} title="특이사항">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 flex flex-col gap-6">
+        <h2 className="text-stone-900 text-base sm:text-lg font-semibold">
           특이사항을 입력해주세요
         </h2>
 
@@ -376,8 +404,8 @@ function StepNoteContent({
           </span>
         </div>
 
-        <div className="mt-4">
-          <p className="text-[#281a0e] text-sm font-medium mb-3">
+        <div>
+          <p className="text-stone-900 text-sm font-medium mb-3">
             자주 선택되는 특이사항
           </p>
           <div className="flex gap-2 flex-wrap">
@@ -392,6 +420,19 @@ function StepNoteContent({
             ))}
           </div>
         </div>
+
+        <BookingSummary
+          rows={[
+            { label: "날짜", value: formatDateRange(dateRange) },
+            {
+              label: "반려동물",
+              value: petId
+                ? (PETS.find((p) => p.id === petId)?.name ?? "-")
+                : "-",
+            },
+            { label: "서비스", value: serviceLabel },
+          ]}
+        />
       </div>
 
       <BookingSummary
@@ -426,6 +467,17 @@ function StepPaymentContent({
       PETSITTER.service)
     : PETSITTER.service;
 
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+
+  function handlePay() {
+    setShowPaymentModal(true);
+  }
+
+  function handlePayConfirm() {
+    setShowPaymentModal(false);
+    onNext();
+  }
+
   return (
     <div className="flex flex-col gap-4">
       {/* 주문 정보 */}
@@ -448,33 +500,40 @@ function StepPaymentContent({
               <p className="text-gray-500 text-sm">
                 {selectedPets.map((p) => `${p.name} (${p.breed})`).join(", ")}
               </p>
-            )}
+              {pet && (
+                <p className="text-gray-500 text-sm">
+                  {pet.name} ({pet.breed})
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="pt-4 flex flex-col gap-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500">서비스 금액</span>
+              <span className="text-stone-900">
+                {servicePrice.toLocaleString()}원
+                {nights > 1 ? ` (${nights}일)` : ""}
+              </span>
+            </div>
+
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500">플랫폼 수수료</span>
+              <span className="text-stone-900">
+                {PLATFORM_FEE.toLocaleString()}원
+              </span>
+            </div>
+
+            <div className="flex justify-between pt-2 border-t border-orange-100">
+              <span className="text-stone-900 text-base font-bold">
+                총 결제금액
+              </span>
+              <span className="text-orange-500 text-xl font-bold">
+                {total.toLocaleString()}원
+              </span>
+            </div>
           </div>
         </div>
-        <div className="pt-4 flex flex-col gap-2">
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-500">서비스 금액</span>
-            <span className="text-[#281a0e]">
-              {servicePrice.toLocaleString()}원
-              {nights > 1 ? ` (${nights}일)` : ""}
-            </span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-500">플랫폼 수수료</span>
-            <span className="text-[#281a0e]">
-              {PLATFORM_FEE.toLocaleString()}원
-            </span>
-          </div>
-          <div className="flex justify-between pt-3 border-t border-[#ffe9d6]">
-            <span className="text-[#281a0e] text-base font-bold">
-              총 결제금액
-            </span>
-            <span className="text-[#e8742a] text-xl font-bold">
-              {(servicePrice + PLATFORM_FEE).toLocaleString()}원
-            </span>
-          </div>
-        </div>
-      </div>
 
       {/* 환불 정책 */}
       <div className="bg-white rounded-2xl border border-[#ffe9d6] p-4 sm:p-5">
@@ -492,7 +551,7 @@ function StepPaymentContent({
 }
 
 // Step 5: 예약 완료
-function StepCompleteContent({
+function StepComplete({
   selectedService,
 }: {
   selectedService: ServiceKey | null;
@@ -518,35 +577,59 @@ function StepCompleteContent({
   }
 
   return (
-    <div className="flex flex-col items-center py-8">
-      {/* 완료 아이콘 */}
-      <div className="w-20 h-20 sm:w-24 sm:h-24 bg-[#e8742a] rounded-full shadow-[0px_4px_20px_0px_rgba(232,116,42,0.30)] flex items-center justify-center mb-6">
-        <Check size={36} className="text-white" strokeWidth={3} />
-      </div>
+    <div className="w-full max-w-[800px] bg-white rounded-2xl shadow-[0px_4px_20px_0px_rgba(232,116,42,0.15)] overflow-hidden">
+      <div className="px-4 sm:px-8 py-10 sm:py-12 flex flex-col items-center">
+        {/* 완료 아이콘 */}
+        <div className="w-20 h-20 sm:w-24 sm:h-24 bg-orange-500 rounded-full shadow-[0px_4px_20px_0px_rgba(232,116,42,0.30)] flex items-center justify-center mb-6">
+          <Check size={36} className="text-white" strokeWidth={3} />
+        </div>
 
-      <h1 className="text-[#281a0e] text-2xl sm:text-3xl font-bold mb-3 text-center">
-        예약이 완료되었습니다!
-      </h1>
-      <p className="text-gray-500 text-sm sm:text-base text-center leading-6 mb-8">
-        펫시터에게 예약 알림이 전송되었습니다.
-        <br />
-        채팅으로 자세한 사항을 상담하세요.
-      </p>
+        <h1 className="text-stone-900 text-2xl sm:text-3xl font-bold mb-3 text-center">
+          예약이 완료되었습니다!
+        </h1>
+        <p className="text-gray-500 text-sm sm:text-base text-center leading-6 mb-8 sm:mb-10">
+          펫시터에게 예약 알림이 전송되었습니다.
+          <br />
+          채팅으로 자세한 사항을 상담하세요.
+        </p>
 
-      {/* 예약 정보 카드 */}
-      <div className="w-full max-w-sm sm:max-w-[384px] bg-white rounded-2xl border border-[#ffe9d6] p-4 sm:p-5 mb-8">
-        <p className="text-[#281a0e] text-base font-semibold mb-4">예약 정보</p>
-        <div className="flex items-start gap-3 pb-3 border-b border-[#ffe9d6] mb-3">
-          <div className="w-10 h-10 bg-[#fff8f3] rounded-full border border-[#ffe9d6] flex items-center justify-center shrink-0">
-            <span className="text-[#e8742a] text-base font-semibold">
-              {PETSITTER.initial}
-            </span>
+        {/* 예약 정보 카드 */}
+        <div className="w-full max-w-sm sm:max-w-[384px] p-4 sm:p-5 bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100 mb-8">
+          <p className="text-stone-900 text-base font-semibold mb-4">
+            예약 정보
+          </p>
+          <div className="flex items-start gap-3 pb-3 border-b border-orange-100 mb-3">
+            <div className="w-10 h-10 bg-orange-50 rounded-full border border-orange-100 flex items-center justify-center shrink-0">
+              <span className="text-orange-500 text-base font-semibold">
+                {PETSITTER.initial}
+              </span>
+            </div>
+            <div>
+              <p className="text-stone-900 text-base font-medium">
+                {PETSITTER.name} 펫시터
+              </p>
+              <p className="text-gray-500 text-sm">{serviceLabel}</p>
+            </div>
           </div>
-          <div>
-            <p className="text-[#281a0e] text-base font-medium">
-              {PETSITTER.name} 펫시터
-            </p>
-            <p className="text-gray-500 text-sm">{serviceLabel}</p>
+          <div className="flex flex-col gap-2">
+            <div className="flex justify-between text-sm gap-2">
+              <span className="text-gray-500 shrink-0">날짜</span>
+              <span className="text-stone-900 font-medium text-right">
+                {formatDateRange(dateRange)}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm gap-2">
+              <span className="text-gray-500 shrink-0">반려동물</span>
+              <span className="text-stone-900 font-medium">
+                {pet?.name ?? "-"}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm gap-2">
+              <span className="text-gray-500 shrink-0">결제금액</span>
+              <span className="text-orange-500 font-semibold">
+                {total.toLocaleString()}원
+              </span>
+            </div>
           </div>
         </div>
         <div className="flex flex-col gap-2">
@@ -628,93 +711,28 @@ export default function BookPage() {
   return (
     <>
       <Header />
-
-      <main className="flex-1 bg-[#fff8f3] min-h-screen pb-28">
-        <div className="max-w-[820px] mx-auto px-4 sm:px-6 pt-10">
-          {/* 페이지 헤더 */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() =>
-                  step > 1 ? setStep((s) => s - 1) : router.back()
-                }
-                className="w-10 h-10 rounded-xl border border-[#ffe9d6] flex items-center justify-center text-[#281a0e] hover:bg-[#fff8f3] transition-colors"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <h1 className="text-2xl font-bold text-[#281a0e]">
-                {step === 5 ? "예약 완료" : "펫시터 예약"}
-              </h1>
-            </div>
-            {step < 5 && (
-              <span className="text-sm text-gray-500">
-                {step} / {TOTAL_STEPS}
-              </span>
-            )}
-          </div>
-
-          {/* 스텝 인디케이터 */}
-          {step < 5 && (
-            <div className="flex items-start w-full pt-8">
-              {STEP_LABELS.map((label, i) => {
-                const num = i + 1;
-                const isActive = step === num;
-                const isDone = step > num;
-                return (
-                  <Fragment key={label}>
-                    <div className="flex flex-col items-center gap-1 shrink-0">
-                      <div
-                        className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors ${
-                          isActive || isDone
-                            ? "bg-[#e8742a] text-white"
-                            : "border-2 border-[#ffe9d6] text-gray-500"
-                        }`}
-                      >
-                        {isDone ? <Check className="size-3.5" /> : num}
-                      </div>
-                      <span
-                        className={`text-[10px] sm:text-xs text-center leading-tight ${
-                          isActive
-                            ? "font-bold text-[#281a0e]"
-                            : "font-normal text-gray-500"
-                        }`}
-                      >
-                        {label}
-                      </span>
-                    </div>
-                    {i < STEP_LABELS.length - 1 && (
-                      <div
-                        className={`flex-1 h-px mt-4 mx-2 ${
-                          isDone ? "bg-[#e8742a]" : "bg-[#ffe9d6]"
-                        }`}
-                      />
-                    )}
-                  </Fragment>
-                );
-              })}
-            </div>
-          )}
-
-          {/* 단계별 콘텐츠 */}
-          <div className="pt-8">
-            {step === 1 && <StepDateContent />}
-            {step === 2 && (
-              <StepPetContent
-                selectedService={selectedService}
-                setSelectedService={setSelectedService}
-              />
-            )}
-            {step === 3 && (
-              <StepNoteContent selectedService={selectedService} />
-            )}
-            {step === 4 && (
-              <StepPaymentContent selectedService={selectedService} />
-            )}
-            {step === 5 && (
-              <StepCompleteContent selectedService={selectedService} />
-            )}
-          </div>
-        </div>
+      <main className="min-h-screen bg-orange-50 py-8 sm:py-12 flex flex-col items-center px-4">
+        {step === 1 && <StepDate onNext={() => setStep(2)} />}
+        {step === 2 && (
+          <StepPet
+            onNext={() => setStep(3)}
+            selectedService={selectedService}
+            setSelectedService={setSelectedService}
+          />
+        )}
+        {step === 3 && (
+          <StepNote
+            onNext={() => setStep(4)}
+            selectedService={selectedService}
+          />
+        )}
+        {step === 4 && (
+          <StepPayment
+            onNext={() => setStep(5)}
+            selectedService={selectedService}
+          />
+        )}
+        {step === 5 && <StepComplete selectedService={selectedService} />}
       </main>
 
       {/* 하단 네비게이션 */}

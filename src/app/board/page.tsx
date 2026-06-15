@@ -6,6 +6,7 @@ import { MapPin, Calendar, DollarSign, ChevronRight } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import SearchFilterBar from "@/components/common/SearchFilterBar";
+import Pill from "@/components/ui/Pill";
 
 // 더미데이터 꼬라박기
 
@@ -79,9 +80,7 @@ function PostCard({ post }: { post: (typeof POSTS)[0] }) {
         <div className="flex-1 flex flex-col gap-2 min-w-0 pr-6">
           {/* 카테고리 + 제목 */}
           <div className="flex items-center gap-3">
-            <span className="shrink-0 px-3 py-1 bg-orange-50 rounded-full text-orange-500 text-xs font-medium">
-              {post.category}
-            </span>
+            <Pill className="shrink-0">{post.category}</Pill>
             <span className="text-stone-900 text-lg font-semibold truncate">
               {post.title}
             </span>
