@@ -9,7 +9,9 @@ import Avatar from "@/components/ui/Avatar";
 import KakaoMap from "@/components/KakaoMap";
 import BackButton from "@/components/common/BackButton";
 import Pill from "@/components/ui/Pill";
-import { MapPin, Star, ChevronLeft } from "lucide-react";
+import { MapPin, ChevronLeft } from "lucide-react";
+import StarRow from "@/components/ui/StarRow";
+import StatGrid from "@/components/ui/StatGrid";
 
 // 더미더미더미
 const SITTER = {
@@ -92,31 +94,6 @@ const STATS = [
 const TABS = ["소개", "서비스", "후기", "위치"] as const;
 type Tab = (typeof TABS)[number];
 
-function StarRow({ size }: { size: number }) {
-  return (
-    <>
-      {Array.from({ length: 5 }).map((_, i) => (
-        <Star key={i} size={size} className="fill-amber-400 text-amber-400" />
-      ))}
-    </>
-  );
-}
-
-function StatGrid({ className }: { className?: string }) {
-  return (
-    <div className={`grid grid-cols-2 gap-2 ${className ?? ""}`}>
-      {STATS.map((item) => (
-        <div
-          key={item.label}
-          className="bg-orange-50 rounded-xl py-2 text-center"
-        >
-          <p className="text-xs font-bold text-orange-500">{item.value}</p>
-          <p className="text-[10px] text-gray-400 mt-0.5">{item.label}</p>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 export default function PetsitterProfilePage() {
   const params = useParams();
@@ -366,7 +343,7 @@ export default function PetsitterProfilePage() {
                   ))}
                 </div>
 
-                <StatGrid className="w-full mb-6" />
+                <StatGrid stats={STATS} className="w-full mb-6" />
 
                 <Link
                   href={`/petsitters/${sitterId}/book`}
@@ -395,7 +372,7 @@ export default function PetsitterProfilePage() {
                     <Pill key={s}>{s}</Pill>
                   ))}
                 </div>
-                <StatGrid className="px-5 pb-5" />
+                <StatGrid stats={STATS} className="px-5 pb-5" />
               </div>
 
               {/* 탭 바 (모바일/데스크톱 공유) */}
