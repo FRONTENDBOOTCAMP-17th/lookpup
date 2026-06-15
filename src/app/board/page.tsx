@@ -12,6 +12,8 @@ import Pill from "@/components/ui/Pill";
 
 const CATEGORIES = ["전체", "방문돌봄", "위탁돌봄", "산책", "펫호텔", "픽업"];
 
+const SORT_OPTIONS = ["최신순"] as const;
+
 const POSTS = [
   {
     id: 1,
@@ -126,7 +128,6 @@ function PostCard({ post }: { post: (typeof POSTS)[0] }) {
 export default function BoardPage() {
   const [activeCategory, setActiveCategory] = useState("전체");
   const [searchQuery, setSearchQuery] = useState("");
-
   const filtered = POSTS.filter((p) => {
     const matchCategory =
       activeCategory === "전체" || p.category === activeCategory;
@@ -135,7 +136,7 @@ export default function BoardPage() {
       p.title.includes(searchQuery) ||
       p.desc.includes(searchQuery);
     return matchCategory && matchSearch;
-  });
+  }).sort((a, b) => a.id - b.id);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -168,18 +169,15 @@ export default function BoardPage() {
               onFilterChange={setActiveCategory}
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
+              sortOptions={SORT_OPTIONS}
             />
           </div>
 
           {/* 목록 헤더 */}
-          <div className="flex items-center justify-between mb-4">
+          <div className="mb-4">
             <span className="text-gray-500 text-sm">
               총 {filtered.length}개의 구인글
             </span>
-            <select className="h-9 px-3 bg-white border border-orange-100 rounded-lg text-sm text-stone-900 outline-none cursor-pointer hover:border-orange-300 transition-colors">
-              <option>최신순</option>
-              <option>조회순</option>
-            </select>
           </div>
 
           {/* 게시글 목록 */}
