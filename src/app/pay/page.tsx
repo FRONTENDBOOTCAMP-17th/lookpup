@@ -1,69 +1,24 @@
 "use client";
 
-import { useState, useTransition } from "react";
 import { CreditCard, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { usePortOne } from "@/hooks/usePortOne";
 
 const AMOUNT = 1000;
-const STORE_ID = process.env.NEXT_PUBLIC_PORTONE_STORE_ID!;
-const CHANNEL_KEY = process.env.NEXT_PUBLIC_PORTONE_IDENTITY_CHANNEL_KEY_TOSS;
-
-type Status = "idle" | "success" | "fail";
 
 export default function PayPage() {
-  const [status, setStatus] = useState<Status>("idle");
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const { status, errorMessage, isPending, requestPayment } = usePortOne();
 
   const handlePay = () => {
-    startTransition(async () => {
-      setStatus("idle");
-      setErrorMessage(null);
-
-      try {
-        console.log("STORE_ID:", STORE_ID);
-        console.log("CHANNEL_KEY:", CHANNEL_KEY);
-        const PortOne = await import("@portone/browser-sdk/v2");
-        const paymentId = `pay_${Date.now()}`;
-
-        const response = await PortOne.requestPayment({
-          storeId: STORE_ID,
-          channelKey: CHANNEL_KEY,
-          paymentId,
-          orderName: "테스트 결제",
-          totalAmount: AMOUNT,
-          currency: "KRW",
-          payMethod: "CARD",
-          // 추가
-          redirectUrl: `${window.location.origin}/pay/complete`,
-          customer: {
-            fullName: "테스트",
-            phoneNumber: "010-0000-0000",
-            email: "test@test.com",
-          },
-        });
-
-        if (!response) {
-          setStatus("fail");
-          setErrorMessage("결제창이 닫혔습니다.");
-          return;
-        }
-
-        if ("code" in response) {
-          setStatus("fail");
-          setErrorMessage(response.message ?? "결제에 실패했습니다.");
-          return;
-        }
-
-        console.log("결제 완료 응답:", response);
-        setStatus("success");
-      } catch (err) {
-        setStatus("fail");
-        setErrorMessage(
-          err instanceof Error
-            ? err.message
-            : "알 수 없는 오류가 발생했습니다.",
-        );
-      }
+    requestPayment({
+      paymentId: `pay_${Date.now()}`,
+      orderName: "테스트 결제",
+      totalAmount: AMOUNT,
+      redirectUrl: `${window.location.origin}/pay/complete`,
+      customer: {
+        fullName: "테스트",
+        phoneNumber: "010-0000-0000",
+        email: "test@test.com",
+      },
     });
   };
 
