@@ -135,7 +135,6 @@ function DeleteModal({
             삭제된 정보는 복구할 수 없습니다.
           </p>
 
-          {/* 반려동물 미리보기 */}
           <div className="w-full flex items-center gap-3 p-4 bg-[#FFF8F3] rounded-xl mb-6">
             <div
               className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0"
@@ -148,6 +147,65 @@ function DeleteModal({
             <div className="text-left">
               <p className="font-semibold text-[#281A0E]">{pet.name}</p>
               <p className="text-sm text-[#6B7280]">{pet.breed}</p>
+            </div>
+          </div>
+
+          <div className="flex gap-3 w-full">
+            <button
+              onClick={onClose}
+              className="flex-1 h-12 rounded-xl border border-[#FFE9D6] text-[#6B7280] font-medium hover:border-[#E8742A]/50 transition-colors"
+            >
+              취소
+            </button>
+            <button
+              onClick={onConfirm}
+              className="flex-1 h-12 rounded-xl bg-[#E8742A] text-white font-semibold hover:bg-[#D4621A] transition-colors"
+            >
+              삭제하기
+            </button>
+          </div>
+        </div>
+      </div>
+    </Backdrop>
+  );
+}
+
+function BulkDeleteModal({
+  count,
+  onClose,
+  onConfirm,
+}: {
+  count: number;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <Backdrop>
+      <div className="bg-white rounded-[20px] w-[460px] max-w-[calc(100vw-32px)] p-8 shadow-[0_12px_16px_rgba(0,0,0,0.12)]">
+        <div className="flex flex-col items-center text-center">
+          <div className="w-14 h-14 bg-[#FFF0E8] rounded-full flex items-center justify-center mb-4">
+            <AlertTriangle size={28} className="text-[#E8742A]" />
+          </div>
+          <h3 className="text-xl font-bold text-[#281A0E] mb-2">
+            등록된 정보를 삭제하시겠어요?
+          </h3>
+          <p className="text-sm text-[#6B7280] mb-6">
+            선택한 반려동물 {count}마리를 삭제합니다.
+            <br />
+            삭제된 정보는 복구할 수 없습니다.
+          </p>
+
+          <div className="w-full flex items-center gap-3 p-4 bg-[#FFF8F3] rounded-xl mb-6">
+            <div className="w-12 h-12 rounded-xl bg-[#FDE8C4] flex items-center justify-center text-2xl shrink-0">
+              🐾
+            </div>
+            <div className="text-left">
+              <p className="font-semibold text-[#281A0E]">
+                {count}마리 선택됨
+              </p>
+              <p className="text-sm text-[#6B7280]">
+                선택된 반려동물이 모두 삭제됩니다
+              </p>
             </div>
           </div>
 
@@ -194,7 +252,6 @@ function SuccessModal({
             이제 돌봄 요청 시 선택할 수 있습니다.
           </p>
 
-          {/* 등록된 반려동물 미리보기 */}
           <div className="w-full flex items-center gap-3 p-4 bg-[#FFF8F3] rounded-xl mb-6">
             <div className="w-12 h-12 rounded-xl bg-[#FDE8C4] flex items-center justify-center text-2xl shrink-0">
               🐾
@@ -260,119 +317,6 @@ function GuideModal({
               className="w-full h-12 rounded-xl border border-[#FFE9D6] text-[#6B7280] font-medium hover:border-[#E8742A]/50 transition-colors"
             >
               나중에 하기
-            </button>
-          </div>
-        </div>
-      </div>
-    </Backdrop>
-  );
-}
-
-function SelectionModal({
-  pets,
-  onClose,
-}: {
-  pets: Pet[];
-  onClose: () => void;
-}) {
-  const [selected, setSelected] = useState<string[]>([]);
-
-  const toggle = (id: string) =>
-    setSelected((prev) =>
-      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id],
-    );
-
-  return (
-    <Backdrop>
-      <div className="bg-white rounded-[20px] w-225 max-w-full shadow-[0_12px_32px_rgba(0,0,0,0.12)] overflow-hidden">
-        {/* 헤더 */}
-        <div className="px-8 pt-8 pb-5 border-b border-[#FFE9D6] flex items-start justify-between">
-          <div>
-            <h3 className="text-xl font-bold text-[#281A0E]">반려동물 선택</h3>
-            <p className="text-sm text-[#6B7280] mt-0.5">
-              함께 돌봄을 받을 반려동물을 선택해주세요
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1 hover:bg-[#FFF8F3] rounded-lg transition-colors"
-          >
-            <X size={20} className="text-[#6B7280]" />
-          </button>
-        </div>
-
-        {/* 그리드 */}
-        <div className="p-6 grid grid-cols-3 sm:grid-cols-3 gap-4">
-          {pets.map((pet) => {
-            const isSelected = selected.includes(pet.id);
-            return (
-              <button
-                key={pet.id}
-                onClick={() => toggle(pet.id)}
-                className={`relative flex flex-col overflow-hidden rounded-xl border-2 transition-all ${
-                  isSelected
-                    ? "border-[#E8742A] shadow-[0_0_0_3px_rgba(232,116,42,0.15)]"
-                    : "border-[#FFE9D6] hover:border-[#E8742A]/40"
-                }`}
-              >
-                <div
-                  className="h-30 w-full flex items-center justify-center text-4xl"
-                  style={{
-                    background: `linear-gradient(135deg, ${pet.bgFrom}, ${pet.bgTo})`,
-                  }}
-                >
-                  {pet.emoji}
-                  <div className="absolute top-2 left-2 bg-[#FFF8F3]/90 px-2.5 py-0.5 rounded-full border border-[#FFE9D6]">
-                    <span className="text-[11px] font-semibold text-[#E8742A]">
-                      {ANIMAL_TYPE_LABEL[pet.animal_type]}
-                    </span>
-                  </div>
-                  {isSelected && (
-                    <div className="absolute top-2 right-2 w-5 h-5 bg-[#E8742A] rounded-full flex items-center justify-center">
-                      <Check size={11} className="text-white" />
-                    </div>
-                  )}
-                </div>
-                <div className="bg-white py-3 px-3 text-center">
-                  <p className="text-sm font-semibold text-[#281A0E]">
-                    {pet.name}
-                  </p>
-                  <p className="text-xs text-[#6B7280] mt-0.5">{pet.breed}</p>
-                  <p className="text-xs text-[#6B7280]">{pet.age}살</p>
-                </div>
-              </button>
-            );
-          })}
-
-          {/* 반려동물 추가 카드 */}
-          <button className="flex flex-col items-center justify-center gap-2 h-50 rounded-xl border-2 border-dashed border-[#FFE9D6] hover:border-[#E8742A]/60 hover:bg-[#FFFAF7] transition-all group">
-            <div className="w-10 h-10 rounded-full bg-[#FFF8F3] flex items-center justify-center group-hover:bg-[#FFF0E8] transition-colors">
-              <Plus size={20} className="text-[#E8742A]" />
-            </div>
-            <span className="text-sm font-medium text-[#6B7280]">
-              새 반려동물 등록
-            </span>
-          </button>
-        </div>
-
-        {/* 푸터 */}
-        <div className="px-8 pb-8 pt-4 border-t border-[#FFE9D6] flex items-center justify-between">
-          <span className="text-sm font-medium text-[#6B7280]">
-            {selected.length > 0 && `${selected.length}마리 선택됨`}
-          </span>
-          <div className="flex gap-3">
-            <button
-              onClick={() => setSelected([])}
-              className="h-11 px-6 rounded-xl border border-[#FFE9D6] text-[#6B7280] font-medium hover:border-[#E8742A]/50 transition-colors"
-            >
-              선택 취소
-            </button>
-            <button
-              onClick={onClose}
-              disabled={selected.length === 0}
-              className="h-11 px-6 rounded-xl bg-[#E8742A] text-white font-semibold disabled:bg-[#FFE9D6] disabled:text-[#6B7280] hover:bg-[#D4621A] transition-colors"
-            >
-              선택 완료
             </button>
           </div>
         </div>
@@ -570,26 +514,54 @@ function PetCard({
   pet,
   onEdit,
   onDelete,
+  isSelectionMode = false,
+  isSelected = false,
+  onSelect,
 }: {
   pet: Pet;
   onEdit: () => void;
   onDelete: () => void;
+  isSelectionMode?: boolean;
+  isSelected?: boolean;
+  onSelect?: () => void;
 }) {
   return (
-    <div className="group bg-white border border-[#FFE9D6] rounded-2xl overflow-hidden hover:border-[#E8742A] hover:shadow-[0_2px_12px_rgba(232,116,42,0.10)] transition-all cursor-default">
+    <div
+      onClick={isSelectionMode ? onSelect : undefined}
+      className={`group bg-white border rounded-2xl overflow-hidden transition-all ${
+        isSelectionMode
+          ? `cursor-pointer ${
+              isSelected
+                ? "border-[#E8742A] shadow-[0_0_0_3px_rgba(232,116,42,0.15)]"
+                : "border-[#FFE9D6] hover:border-[#E8742A]/40"
+            }`
+          : "border-[#FFE9D6] hover:border-[#E8742A] hover:shadow-[0_2px_12px_rgba(232,116,42,0.10)] cursor-default"
+      }`}
+    >
       {/* 사진 영역 */}
       <div
-        className="relative h-45 flex items-center justify-center text-6xl"
+        className="relative h-45 flex items-center justify-center"
         style={{
           background: `linear-gradient(135deg, ${pet.bgFrom}, ${pet.bgTo})`,
         }}
       >
-        {pet.emoji}
-        <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full border border-[#FFE9D6]">
+        <span className="text-6xl leading-none">{pet.emoji}</span>
+        <div className="absolute top-3 left-3 bg-white/90 px-2.5 py-1 rounded-full border border-[#FFE9D6]">
           <span className="text-xs font-semibold text-[#E8742A]">
             {ANIMAL_TYPE_LABEL[pet.animal_type]}
           </span>
         </div>
+        {isSelectionMode && (
+          <div
+            className={`absolute top-3 right-3 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+              isSelected
+                ? "bg-[#E8742A] border-[#E8742A]"
+                : "bg-white/80 border-[#D1D5DB]"
+            }`}
+          >
+            {isSelected && <Check size={13} className="text-white" />}
+          </div>
+        )}
       </div>
 
       {/* 정보 */}
@@ -600,20 +572,28 @@ function PetCard({
           {pet.age}살 · {pet.weight}kg · {pet.gender}
         </p>
 
-        <div className="border-t border-[#FFE9D6] mt-4 pt-4 flex gap-2">
-          <button
-            onClick={onEdit}
-            className="flex-1 h-9 rounded-xl border border-[#FFE9D6] text-sm font-medium text-[#6B7280] hover:border-[#E8742A]/50 hover:text-[#E8742A] transition-colors flex items-center justify-center gap-1.5"
-          >
-            <Pencil size={13} /> 수정하기
-          </button>
-          <button
-            onClick={onDelete}
-            className="h-9 px-4 rounded-xl text-sm font-medium text-[#DC2626] hover:bg-red-50 transition-colors flex items-center gap-1.5"
-          >
-            <Trash2 size={13} /> 삭제
-          </button>
-        </div>
+        {!isSelectionMode && (
+          <div className="border-t border-[#FFE9D6] mt-4 pt-4 flex gap-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+              className="flex-1 h-9 rounded-xl border border-[#FFE9D6] text-sm font-medium text-[#6B7280] hover:border-[#E8742A]/50 hover:text-[#E8742A] transition-colors flex items-center justify-center gap-1.5"
+            >
+              <Pencil size={13} /> 수정하기
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              className="h-9 px-4 rounded-xl text-sm font-medium text-[#DC2626] hover:bg-red-50 transition-colors flex items-center gap-1.5"
+            >
+              <Trash2 size={13} /> 삭제
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -623,20 +603,50 @@ function PetCardMobile({
   pet,
   onEdit,
   onDelete,
+  isSelectionMode = false,
+  isSelected = false,
+  onSelect,
 }: {
   pet: Pet;
   onEdit: () => void;
   onDelete: () => void;
+  isSelectionMode?: boolean;
+  isSelected?: boolean;
+  onSelect?: () => void;
 }) {
   return (
-    <div className="bg-white border border-[#FFE9D6] rounded-2xl p-4 flex gap-4 items-center">
-      <div
-        className="w-24 h-24 rounded-xl flex items-center justify-center text-4xl shrink-0"
-        style={{
-          background: `linear-gradient(135deg, ${pet.bgFrom}, ${pet.bgTo})`,
-        }}
-      >
-        {pet.emoji}
+    <div
+      onClick={isSelectionMode ? onSelect : undefined}
+      className={`bg-white border rounded-2xl p-4 flex gap-4 items-center transition-all ${
+        isSelectionMode
+          ? `cursor-pointer ${
+              isSelected
+                ? "border-[#E8742A] shadow-[0_0_0_3px_rgba(232,116,42,0.15)]"
+                : "border-[#FFE9D6] hover:border-[#E8742A]/40"
+            }`
+          : "border-[#FFE9D6]"
+      }`}
+    >
+      <div className="relative shrink-0">
+        <div
+          className="w-24 h-24 rounded-xl flex items-center justify-center text-4xl"
+          style={{
+            background: `linear-gradient(135deg, ${pet.bgFrom}, ${pet.bgTo})`,
+          }}
+        >
+          {pet.emoji}
+        </div>
+        {isSelectionMode && (
+          <div
+            className={`absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+              isSelected
+                ? "bg-[#E8742A] border-[#E8742A]"
+                : "bg-white border-[#D1D5DB]"
+            }`}
+          >
+            {isSelected && <Check size={13} className="text-white" />}
+          </div>
+        )}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-0.5">
@@ -649,20 +659,28 @@ function PetCardMobile({
         <p className="text-xs text-[#6B7280] mt-0.5">
           {pet.age}살 · {pet.weight}kg
         </p>
-        <div className="flex gap-2 mt-3">
-          <button
-            onClick={onEdit}
-            className="h-8 px-3 rounded-lg border border-[#FFE9D6] text-xs font-medium text-[#6B7280] hover:border-[#E8742A]/50 hover:text-[#E8742A] transition-colors flex items-center gap-1"
-          >
-            <Pencil size={11} /> 수정
-          </button>
-          <button
-            onClick={onDelete}
-            className="h-8 px-3 rounded-lg text-xs font-medium text-[#DC2626] hover:bg-red-50 transition-colors flex items-center gap-1"
-          >
-            <Trash2 size={11} /> 삭제
-          </button>
-        </div>
+        {!isSelectionMode && (
+          <div className="flex gap-2 mt-3">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+              className="h-8 px-3 rounded-lg border border-[#FFE9D6] text-xs font-medium text-[#6B7280] hover:border-[#E8742A]/50 hover:text-[#E8742A] transition-colors flex items-center gap-1"
+            >
+              <Pencil size={11} /> 수정
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              className="h-8 px-3 rounded-lg text-xs font-medium text-[#DC2626] hover:bg-red-50 transition-colors flex items-center gap-1"
+            >
+              <Trash2 size={11} /> 삭제
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -682,7 +700,7 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
       </p>
       <button
         onClick={onAdd}
-        className="h-12 px-8 rounded-xl bg-[#E8742A] text-white font-semibold hover:bg-[#D4621A] transition-colors flex items-center gap-2"
+        className="h-12 px-8 rounded-xl bg-orange-500 text-white font-semibold hover:bg-orange-600 transition-colors flex items-center gap-2"
       >
         <Plus size={18} />
         반려동물 등록하기
@@ -693,13 +711,15 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
 
 // 페이지
 
-type ModalType = "delete" | "success" | "edit" | "select" | "guide" | null;
+type ModalType = "delete" | "bulk-delete" | "success" | "edit" | "guide" | null;
 
 export default function MyPetsPage() {
   const router = useRouter();
   const [pets, setPets] = useState<Pet[]>(INITIAL_PETS);
   const [modal, setModal] = useState<ModalType>(null);
   const [targetPet, setTargetPet] = useState<Pet | null>(null);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const openDelete = (pet: Pet) => {
     setTargetPet(pet);
@@ -710,9 +730,32 @@ export default function MyPetsPage() {
     setModal("edit");
   };
 
+  const enterSelectionMode = () => {
+    setIsSelectionMode(true);
+    setSelectedIds([]);
+  };
+
+  const exitSelectionMode = () => {
+    setIsSelectionMode(false);
+    setSelectedIds([]);
+  };
+
+  const toggleSelection = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id],
+    );
+  };
+
   const handleDelete = () => {
     if (!targetPet) return;
     setPets((prev) => prev.filter((p) => p.id !== targetPet.id));
+    setModal(null);
+  };
+
+  const handleBulkDelete = () => {
+    setPets((prev) => prev.filter((p) => !selectedIds.includes(p.id)));
+    setSelectedIds([]);
+    setIsSelectionMode(false);
     setModal(null);
   };
 
@@ -731,18 +774,51 @@ export default function MyPetsPage() {
       {/* 모바일 헤더 */}
       <div className="md:hidden sticky top-16 z-50 bg-white border-b border-[#FFE9D6]">
         <div className="h-14 px-5 flex items-center gap-3">
-          <button onClick={() => router.back()} className="p-1 -ml-1">
-            <ChevronLeft size={24} className="text-[#281A0E]" />
-          </button>
-          <span className="flex-1 font-semibold text-[#281A0E]">
-            내 반려동물
-          </span>
-          <button
-            onClick={handleAddPet}
-            className="h-9 px-4 rounded-xl bg-[#E8742A] text-white text-sm font-semibold flex items-center gap-1"
-          >
-            <Plus size={15} /> 추가
-          </button>
+          {isSelectionMode ? (
+            <>
+              <button
+                onClick={exitSelectionMode}
+                className="text-sm font-medium text-[#6B7280] shrink-0"
+              >
+                취소
+              </button>
+              <span className="flex-1 font-semibold text-[#281A0E] text-center">
+                {selectedIds.length > 0
+                  ? `${selectedIds.length}마리 선택됨`
+                  : "반려동물 선택"}
+              </span>
+              <button
+                onClick={() => setModal("bulk-delete")}
+                disabled={selectedIds.length === 0}
+                className="h-9 px-4 rounded-xl text-sm font-semibold flex items-center gap-1 shrink-0 disabled:text-[#D1D5DB] text-[#DC2626]"
+              >
+                <Trash2 size={14} /> 삭제
+              </button>
+            </>
+          ) : (
+            <>
+              <button onClick={() => router.back()} className="p-1 -ml-1">
+                <ChevronLeft size={24} className="text-[#281A0E]" />
+              </button>
+              <span className="flex-1 font-semibold text-[#281A0E]">
+                내 반려동물
+              </span>
+              {pets.length > 0 && (
+                <button
+                  onClick={enterSelectionMode}
+                  className="h-9 px-3 rounded-xl border border-[#FFE9D6] text-[#6B7280] text-sm font-medium"
+                >
+                  선택
+                </button>
+              )}
+              <button
+                onClick={handleAddPet}
+                className="h-9 px-4 rounded-xl bg-orange-500 text-white text-sm font-semibold flex items-center gap-1 hover:bg-orange-600 transition-colors"
+              >
+                <Plus size={15} /> 추가
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -764,19 +840,46 @@ export default function MyPetsPage() {
               </p>
             </div>
           </div>
-          <div className="flex gap-3">
-            <button
-              onClick={() => setModal("select")}
-              className="h-11 px-5 rounded-xl border border-[#FFE9D6] text-[#6B7280] font-medium hover:border-[#E8742A]/50 hover:text-[#E8742A] transition-colors text-sm"
-            >
-              반려동물 선택
-            </button>
-            <button
-              onClick={handleAddPet}
-              className="h-11 px-5 rounded-xl bg-[#E8742A] text-white font-semibold hover:bg-[#D4621A] transition-colors flex items-center gap-2 text-sm"
-            >
-              <Plus size={16} /> 반려동물 추가
-            </button>
+          <div className="flex gap-3 items-center">
+            {isSelectionMode ? (
+              <>
+                {selectedIds.length > 0 && (
+                  <span className="text-sm text-[#6B7280]">
+                    {selectedIds.length}마리 선택됨
+                  </span>
+                )}
+                <button
+                  onClick={exitSelectionMode}
+                  className="h-11 px-5 rounded-xl border border-[#FFE9D6] text-[#6B7280] font-medium hover:border-[#E8742A]/50 transition-colors text-sm"
+                >
+                  선택 취소
+                </button>
+                <button
+                  onClick={() => setModal("bulk-delete")}
+                  disabled={selectedIds.length === 0}
+                  className="h-11 px-5 rounded-xl bg-[#E8742A] text-white font-semibold hover:bg-[#D4621A] disabled:bg-[#FFE9D6] disabled:text-[#6B7280] transition-colors flex items-center gap-2 text-sm"
+                >
+                  <Trash2 size={16} /> 삭제하기
+                </button>
+              </>
+            ) : (
+              <>
+                {pets.length > 0 && (
+                  <button
+                    onClick={enterSelectionMode}
+                    className="h-11 px-5 rounded-xl border border-[#FFE9D6] text-[#6B7280] font-medium hover:border-[#E8742A]/50 hover:text-[#E8742A] transition-colors text-sm"
+                  >
+                    반려동물 선택
+                  </button>
+                )}
+                <button
+                  onClick={handleAddPet}
+                  className="h-11 px-5 rounded-xl bg-orange-500 text-white font-semibold hover:bg-orange-600 transition-colors flex items-center gap-2 text-sm"
+                >
+                  <Plus size={16} /> 반려동물 추가
+                </button>
+              </>
+            )}
           </div>
         </div>
 
@@ -790,6 +893,9 @@ export default function MyPetsPage() {
                 pet={pet}
                 onEdit={() => openEdit(pet)}
                 onDelete={() => openDelete(pet)}
+                isSelectionMode={isSelectionMode}
+                isSelected={selectedIds.includes(pet.id)}
+                onSelect={() => toggleSelection(pet.id)}
               />
             ))}
           </div>
@@ -809,6 +915,9 @@ export default function MyPetsPage() {
                 pet={pet}
                 onEdit={() => openEdit(pet)}
                 onDelete={() => openDelete(pet)}
+                isSelectionMode={isSelectionMode}
+                isSelected={selectedIds.includes(pet.id)}
+                onSelect={() => toggleSelection(pet.id)}
               />
             ))}
           </div>
@@ -816,12 +925,14 @@ export default function MyPetsPage() {
       </div>
 
       {/* 모바일 추가 버튼 */}
-      <button
-        onClick={handleAddPet}
-        className="md:hidden fixed bottom-22 right-5 w-14 h-14 bg-[#E8742A] rounded-full flex items-center justify-center shadow-[0_4px_16px_rgba(232,116,42,0.4)] hover:bg-[#D4621A] transition-colors z-30"
-      >
-        <Plus size={24} className="text-white" />
-      </button>
+      {!isSelectionMode && (
+        <button
+          onClick={handleAddPet}
+          className="md:hidden fixed bottom-22 right-5 w-14 h-14 bg-orange-500 rounded-full flex items-center justify-center shadow-[0_4px_16px_rgba(249,115,22,0.4)] hover:bg-orange-600 transition-colors z-30"
+        >
+          <Plus size={24} className="text-white" />
+        </button>
+      )}
 
       {/* 모달 */}
       {modal === "delete" && targetPet && (
@@ -829,6 +940,13 @@ export default function MyPetsPage() {
           pet={targetPet}
           onClose={() => setModal(null)}
           onConfirm={handleDelete}
+        />
+      )}
+      {modal === "bulk-delete" && (
+        <BulkDeleteModal
+          count={selectedIds.length}
+          onClose={() => setModal(null)}
+          onConfirm={handleBulkDelete}
         />
       )}
       {modal === "success" && targetPet && (
@@ -844,9 +962,6 @@ export default function MyPetsPage() {
           onClose={() => setModal(null)}
           onSave={handleSaveEdit}
         />
-      )}
-      {modal === "select" && (
-        <SelectionModal pets={pets} onClose={() => setModal(null)} />
       )}
       {modal === "guide" && (
         <GuideModal onRegister={handleAddPet} onLater={() => setModal(null)} />

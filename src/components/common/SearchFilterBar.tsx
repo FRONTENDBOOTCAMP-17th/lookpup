@@ -1,18 +1,20 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { Search, SlidersHorizontal } from "lucide-react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 interface SearchFilterBarProps {
   placeholder?: string;
-  /** 필터 탭 목록 (읽기 전용 배열) */
   filters: readonly string[];
-  /** 현재 선택된 필터 값 */
   activeFilter: string;
   onFilterChange: (filter: string) => void;
   searchQuery: string;
   onSearchChange: (value: string) => void;
   className?: string;
+  sortOptions?: readonly string[];
+  sortBy?: string | null;
+  onSortChange?: (sort: string) => void;
 }
 
 /**
@@ -27,7 +29,23 @@ export default function SearchFilterBar({
   searchQuery,
   onSearchChange,
   className = "",
+  sortOptions,
+  sortBy,
+  onSortChange,
 }: SearchFilterBarProps) {
+  const [isSortOpen, setIsSortOpen] = useState(false);
+  const sortRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (sortRef.current && !sortRef.current.contains(e.target as Node)) {
+        setIsSortOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   return (
     <div className={`flex flex-col gap-4 ${className}`}>
       {/* 검색 입력창 */}
@@ -42,11 +60,43 @@ export default function SearchFilterBar({
             className="flex-1 min-w-0 bg-transparent text-sm md:text-base text-stone-900 placeholder:text-stone-900/50 outline-none"
           />
         </div>
+
         {/* 필터 버튼 */}
-        <button className="shrink-0 flex items-center gap-1.5 px-3 md:px-4 py-3 bg-orange-50 rounded-xl text-stone-900 font-medium hover:bg-orange-100 transition-colors">
-          <SlidersHorizontal className="w-4 h-4 md:w-5 md:h-5" />
-          <span className="text-sm hidden sm:inline">필터</span>
-        </button>
+        <div ref={sortRef} className="relative shrink-0">
+          <button
+            onClick={() => sortOptions && setIsSortOpen((prev) => !prev)}
+            className={`flex items-center gap-1.5 px-3 md:px-4 py-3 rounded-xl font-medium transition-colors ${
+              sortBy
+                ? "bg-orange-500 text-white"
+                : "bg-orange-50 text-stone-900 hover:bg-orange-100"
+            }`}
+          >
+            <SlidersHorizontal className="w-4 h-4 md:w-5 md:h-5" />
+            <span className="text-sm hidden sm:inline">필터</span>
+          </button>
+
+          {isSortOpen && sortOptions && (
+            <ul className="absolute right-0 mt-2 w-36 bg-white border border-orange-100 rounded-xl shadow-lg z-50 overflow-hidden">
+              {sortOptions.map((option) => (
+                <li key={option}>
+                  <button
+                    onClick={() => {
+                      onSortChange?.(option);
+                      setIsSortOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-orange-50 ${
+                      sortBy === option
+                        ? "text-orange-500 font-semibold bg-orange-50"
+                        : "text-stone-700"
+                    }`}
+                  >
+                    {option}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
 
       {/* 필터 탭 */}

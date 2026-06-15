@@ -6,7 +6,6 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import Avatar from "@/components/ui/Avatar";
 import KakaoMap from "@/components/KakaoMap";
-import BackButton from "@/components/common/BackButton";
 import Pill from "@/components/ui/Pill";
 import { MapPin, ChevronLeft, Eye } from "lucide-react";
 import StarRow from "@/components/ui/StarRow";
@@ -352,7 +351,13 @@ export default function SitterProfilePreviewPage() {
       <main className="hidden md:flex flex-1 bg-orange-50 min-h-screen">
         <div className="max-w-7xl mx-auto px-4 sm:px-10 py-12 w-full">
           {/* 뒤로가기 버튼의 경우 컴포넌트 유형2 생성 시 그것으로 교체할 것!! */}
-          <BackButton href="/myprofile" className="mb-6" />
+          <button
+            onClick={() => router.back()}
+            className="flex items-center gap-2 text-gray-500 hover:text-orange-500 transition-colors w-fit mb-6"
+          >
+            <ChevronLeft className="w-5 h-5" />
+            <span className="text-base">뒤로 가기</span>
+          </button>
 
           {/* 미리보기 안내 바 */}
           <div className="flex items-center gap-3 mb-8 px-4 py-3 bg-orange-500/10 border border-orange-200 rounded-xl">
