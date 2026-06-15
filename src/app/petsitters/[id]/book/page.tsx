@@ -14,6 +14,7 @@ import { format, differenceInDays } from "date-fns";
 import { ko } from "date-fns/locale";
 import { useBookingStore } from "@/store/bookingStore";
 import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
 import RangePicker from "@/components/ui/RangePicker";
 import { CustomModal } from "@/components/common/CustomModal";
 import { PaymentModalContent } from "@/components/common/PaymentModalContent";
@@ -750,6 +751,8 @@ export default function BookPage() {
           </div>
         </div>
       )}
+
+      <Footer />
 
       <CustomModal
         open={showPaymentModal}
