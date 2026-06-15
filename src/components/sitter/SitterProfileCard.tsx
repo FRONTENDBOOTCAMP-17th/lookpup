@@ -1,5 +1,6 @@
 import { MapPin, Star } from "lucide-react";
 import Avatar from "@/components/ui/Avatar";
+import Pill from "@/components/ui/Pill";
 
 export interface SitterProfile {
   name: string;
@@ -62,12 +63,7 @@ export default function SitterProfileCard({ profile: p, className = "" }: Props)
         {/* 서비스 태그 */}
         <div className="flex gap-2 flex-wrap">
           {p.services.map((s) => (
-            <span
-              key={s}
-              className="px-3 py-1 bg-orange-50 rounded-full text-orange-500 text-xs font-medium"
-            >
-              {s}
-            </span>
+            <Pill key={s}>{s}</Pill>
           ))}
         </div>
 
