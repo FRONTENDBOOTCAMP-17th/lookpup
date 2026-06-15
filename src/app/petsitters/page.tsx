@@ -13,6 +13,9 @@ import SearchFilterBar from "@/components/common/SearchFilterBar";
 const FILTERS = ["전체", "방문돌봄", "위탁돌봄", "산책", "인증만"] as const;
 type Filter = (typeof FILTERS)[number];
 
+const SORT_OPTIONS = ["평점순", "리뷰 많은 순", "낮은 가격순", "높은 가격순"] as const;
+type SortOption = (typeof SORT_OPTIONS)[number];
+
 const PETSITTERS = [
   {
     id: 1,
@@ -215,6 +218,7 @@ export default function PetsittersPage() {
     lng: number;
   } | null>(null);
   const [selectedSitterId, setSelectedSitterId] = useState<number | null>(null);
+  const [sortBy, setSortBy] = useState<SortOption | null>(null);
   const cardRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
   useEffect(() => {
@@ -227,9 +231,21 @@ export default function PetsittersPage() {
 
   useEffect(() => {
     if (selectedSitterId === null) return;
-    cardRefs.current
-      .get(selectedSitterId)
-      ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    const card = cardRefs.current.get(selectedSitterId);
+    if (!card) return;
+
+    const viewport = card.closest<HTMLElement>('[data-slot="scroll-area-viewport"]');
+    if (!viewport) {
+      card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      return;
+    }
+
+    const cardRect = card.getBoundingClientRect();
+    const viewportRect = viewport.getBoundingClientRect();
+    viewport.scrollTo({
+      top: viewport.scrollTop + cardRect.top - viewportRect.top - 20,
+      behavior: "smooth",
+    });
   }, [selectedSitterId]);
 
   const filtered = PETSITTERS.filter((s) => {
@@ -243,6 +259,10 @@ export default function PetsittersPage() {
       s.district.includes(searchQuery);
     return matchFilter && matchSearch;
   }).sort((a, b) => {
+    if (sortBy === "평점순") return b.rating - a.rating;
+    if (sortBy === "리뷰 많은 순") return b.reviewCount - a.reviewCount;
+    if (sortBy === "낮은 가격순") return a.price - b.price;
+    if (sortBy === "높은 가격순") return b.price - a.price;
     if (!userPosition) return 0;
     return (
       haversineKm(userPosition.lat, userPosition.lng, a.lat, a.lng) -
@@ -253,7 +273,7 @@ export default function PetsittersPage() {
   return (
     <>
       <Header />
-      <main className="flex-1 bg-orange-50 min-h-screen overflow-x-hidden">
+      <main className="flex-1 bg-orange-50 overflow-x-hidden md:overflow-hidden">
         <div className="flex flex-col md:flex-row md:h-[calc(100vh-64px)]">
           {/* 지도 영역 */}
           <div className="h-[40vh] md:h-full md:flex-1 relative overflow-hidden">
@@ -281,16 +301,21 @@ export default function PetsittersPage() {
                 onFilterChange={(f) => setActiveFilter(f as Filter)}
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
+                sortOptions={SORT_OPTIONS}
+                sortBy={sortBy}
+                onSortChange={(v) => setSortBy(v as SortOption)}
               />
             </div>
 
             {/* 결과 리스트 */}
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 min-h-0">
               <div className="p-4 md:p-6">
                 <p className="text-stone-900 text-lg font-semibold mb-4">
-                  {userPosition
-                    ? "현위치 기준 가까운 순"
-                    : `총 ${filtered.length}명의 펫시터`}
+                  {sortBy
+                    ? `${sortBy} · ${filtered.length}명`
+                    : userPosition
+                      ? `현위치 기준 가까운 순 · ${filtered.length}명`
+                      : `총 ${filtered.length}명의 펫시터`}
                 </p>
                 <div className="flex flex-col gap-4">
                   {filtered.map((sitter) => (
