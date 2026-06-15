@@ -291,12 +291,9 @@ export default function MyProfilePage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-orange-50">
-      {/* 데스크탑 헤더 */}
-      <div className="hidden md:block">
-        <Header />
-      </div>
+      <Header />
 
-      {/* 모바일 헤더 */}
+      {/* 모바일 프로필 */}
       <div className="md:hidden bg-linear-to-br from-orange-500 to-orange-300 rounded-b-3xl px-5 pt-8 pb-8 shrink-0">
         <div className="flex items-center gap-4 mb-6">
           <AvatarMobile initial={DUMMY_USER.initial} />
