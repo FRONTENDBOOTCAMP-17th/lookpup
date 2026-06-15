@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Bell,
   ChevronRight,
@@ -15,6 +15,11 @@ import {
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { signOut } from "@/app/actions/auth";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 
 const NAV_ITEMS = [
   { href: "/petsitters", label: "펫시터 찾기" },
@@ -31,6 +36,7 @@ interface UserProfile {
 
 export default function Header() {
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -67,7 +73,9 @@ export default function Header() {
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         setIsLoggedIn(true);
         fetchUserProfile(session.user.id);
@@ -143,7 +151,7 @@ export default function Header() {
 
             {/* 우측 액션 */}
             {isLoggedIn ? (
-              <div className="w-40 flex items-center justify-start gap-2 shrink-0">
+              <div className="flex items-center gap-2 shrink-0">
                 {/* 알림 */}
                 <Link
                   href="/notifications"
@@ -158,24 +166,62 @@ export default function Header() {
                   )}
                 </Link>
 
-                {/* 프로필 */}
-                <Link
-                  href="/myprofile"
-                  aria-label="마이페이지로 이동"
-                  className="pl-1"
-                >
-                  <div className="size-9 rounded-full bg-gradient-to-br from-orange-500 to-orange-300 flex items-center justify-center text-white text-sm font-bold leading-5 hover:ring-2 hover:ring-orange-200 transition">
-                    {userProfile?.initial ?? "?"}
-                  </div>
-                </Link>
+                {/* 아바타 + HoverCard 드롭다운 */}
+                <HoverCard openDelay={80} closeDelay={100}>
+                  <HoverCardTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label="계정 메뉴 열기"
+                      className="ml-1 size-9 rounded-full bg-gradient-to-br from-orange-500 to-orange-300 flex items-center justify-center text-white text-sm font-bold leading-5 hover:ring-2 hover:ring-orange-200 transition cursor-pointer"
+                    >
+                      {userProfile?.initial ?? "?"}
+                    </button>
+                  </HoverCardTrigger>
+                  <HoverCardContent
+                    align="end"
+                    sideOffset={8}
+                    className="w-44 p-1 bg-white border border-[#ffe9d6] rounded-xl ring-0 shadow-[0px_4px_20px_0px_rgba(232,116,42,0.15)]"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => router.push("/myprofile")}
+                      className="w-full px-3 py-2.5 flex items-center gap-3 text-sm text-stone-900 rounded-lg hover:bg-orange-50 transition-colors"
+                    >
+                      <User
+                        size={16}
+                        className="text-orange-500 shrink-0"
+                        strokeWidth={1.8}
+                      />
+                      마이페이지
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => router.push("/chat")}
+                      className="w-full px-3 py-2.5 flex items-center gap-3 text-sm text-stone-900 rounded-lg hover:bg-orange-50 transition-colors"
+                    >
+                      <MessageSquare
+                        size={16}
+                        className="text-orange-500 shrink-0"
+                        strokeWidth={1.8}
+                      />
+                      채팅
+                    </button>
 
-                {/* 채팅 */}
-                <Link
-                  href="/chat"
-                  className="ml-1 h-9 px-4 inline-flex items-center justify-center rounded-[10px] bg-orange-500 text-white text-xs font-normal leading-5 hover:bg-orange-600 transition-colors"
-                >
-                  채팅
-                </Link>
+                    <div className="mx-2 my-1 h-px bg-[#ffe9d6]" />
+                    <button
+                      type="button"
+                      onClick={() => signOut()}
+                      className="w-full px-3 py-2.5 flex items-center gap-3 text-sm text-gray-500 rounded-lg hover:bg-orange-50 transition-colors"
+                    >
+                      <LogOut
+                        size={16}
+                        className="text-gray-400 shrink-0"
+                        strokeWidth={1.8}
+                      />
+                      로그아웃
+                    </button>
+                  </HoverCardContent>
+                </HoverCard>
               </div>
             ) : (
               <div className="flex items-center gap-2.5 shrink-0">
@@ -184,13 +230,6 @@ export default function Header() {
                   className="h-9 px-4 inline-flex items-center justify-center rounded-[10px] border border-orange-500 bg-white text-orange-500 text-xs font-normal leading-5 hover:bg-orange-50 transition-colors"
                 >
                   로그인
-                </Link>
-
-                <Link
-                  href="/auth/signup"
-                  className="h-9 px-5 inline-flex items-center justify-center rounded-[10px] bg-orange-500 text-white text-xs font-normal leading-5 hover:bg-orange-600 transition-colors"
-                >
-                  회원가입
                 </Link>
               </div>
             )}
@@ -221,7 +260,11 @@ export default function Header() {
                     aria-label="알림 보기"
                     className="relative p-2 rounded-full hover:bg-orange-50 transition-colors"
                   >
-                    <Bell size={20} className="text-gray-500" strokeWidth={1.8} />
+                    <Bell
+                      size={20}
+                      className="text-gray-500"
+                      strokeWidth={1.8}
+                    />
                     {unreadCount > 0 && (
                       <span className="absolute -top-0.5 -right-0.5 size-4 bg-red-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold leading-4">
                         {unreadCount}
@@ -319,7 +362,9 @@ export default function Header() {
                     {isLoggedIn && (
                       <ChevronRight
                         size={16}
-                        className={isActive ? "text-orange-500" : "text-gray-300"}
+                        className={
+                          isActive ? "text-orange-500" : "text-gray-300"
+                        }
                         strokeWidth={2}
                       />
                     )}
@@ -343,14 +388,22 @@ export default function Header() {
                   >
                     <span className="inline-flex items-center gap-3">
                       <span className="size-8 bg-orange-50 rounded-xl flex items-center justify-center">
-                        <User size={16} className="text-orange-500" strokeWidth={1.8} />
+                        <User
+                          size={16}
+                          className="text-orange-500"
+                          strokeWidth={1.8}
+                        />
                       </span>
                       <span className="text-stone-900 text-base font-medium leading-6">
                         마이페이지
                       </span>
                     </span>
 
-                    <ChevronRight size={16} className="text-gray-300" strokeWidth={2} />
+                    <ChevronRight
+                      size={16}
+                      className="text-gray-300"
+                      strokeWidth={2}
+                    />
                   </Link>
 
                   <Link
@@ -371,7 +424,11 @@ export default function Header() {
                       </span>
                     </span>
 
-                    <ChevronRight size={16} className="text-gray-300" strokeWidth={2} />
+                    <ChevronRight
+                      size={16}
+                      className="text-gray-300"
+                      strokeWidth={2}
+                    />
                   </Link>
                 </div>
 
@@ -386,13 +443,17 @@ export default function Header() {
                     onClick={() => signOut()}
                     className="w-full h-12 rounded-xl border border-orange-100 bg-white flex items-center justify-center gap-2 text-gray-500 text-sm font-normal leading-6 hover:bg-orange-50 transition-colors"
                   >
-                    <LogOut size={16} className="text-gray-500" strokeWidth={1.8} />
+                    <LogOut
+                      size={16}
+                      className="text-gray-500"
+                      strokeWidth={1.8}
+                    />
                     로그아웃
                   </button>
                 </div>
               </>
             ) : (
-              /* 비로그인 상태 로그인 / 회원가입 */
+              /* 비로그인 상태 로그인 */
               <div className="w-full px-5 pt-4 pb-5 flex flex-col gap-3">
                 <Link
                   href="/auth/login"
@@ -400,14 +461,6 @@ export default function Header() {
                   className="w-full h-12 rounded-[10px] border border-orange-500 bg-white flex items-center justify-center text-orange-500 text-base font-normal leading-6 hover:bg-orange-50 transition-colors"
                 >
                   로그인
-                </Link>
-
-                <Link
-                  href="/auth/signup"
-                  onClick={closeMobileMenu}
-                  className="w-full h-12 rounded-[10px] bg-orange-500 flex items-center justify-center text-white text-base font-normal leading-6 hover:bg-orange-600 transition-colors"
-                >
-                  회원가입
                 </Link>
               </div>
             )}
