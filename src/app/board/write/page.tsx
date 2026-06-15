@@ -22,6 +22,7 @@ import {
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import RangePicker from "@/components/ui/RangePicker";
+import SimpleTimePicker from "@/components/ui/SimpleTimePicker";
 import { supabase } from "@/lib/supabase";
 
 const STEPS = ["서비스 선택", "날짜·장소", "반려동물", "상세 내용"];
@@ -353,52 +354,30 @@ export default function BoardWritePage() {
                     />
                   </div>
 
-                  {/* 시간 입력 — Anima: h-[98px] items-center gap-4 pt-6 */}
-                  <div className="flex items-center gap-4 pt-6 h-24">
-                    {/* 시작 시간 */}
-                    <div className="flex flex-col items-start flex-1">
-                      <span className="text-sm text-gray-500 pb-1.5">
+                  {/* 시간 입력 */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-5">
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-sm font-medium text-[#281a0e]">
                         시작 시간
                       </span>
-                      <input
-                        type="time"
+                      <SimpleTimePicker
                         value={form.start_time}
-                        onChange={(e) =>
-                          setForm((prev) => ({
-                            ...prev,
-                            start_time: e.target.value,
-                          }))
+                        onChange={(value) =>
+                          setForm((prev) => ({ ...prev, start_time: value }))
                         }
-                        className={`h-12 w-full px-4 bg-white border border-[#ffe9d6] rounded-xl outline-none focus:border-[#e8742a] transition ${
-                          form.start_time
-                            ? "text-[#281a0e]"
-                            : "text-transparent"
-                        }`}
+                        placeholder="시작 시간 선택"
                       />
                     </div>
-
-                    {/* ~ 구분자 — Anima: items-start pt-4 → 인풋 높이 중간쯤 */}
-                    <span className="shrink-0 text-gray-500 text-[15px] self-end pb-3">
-                      ~
-                    </span>
-
-                    {/* 종료 시간 */}
-                    <div className="flex flex-col items-start flex-1">
-                      <span className="text-sm text-gray-500 pb-1.5">
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-sm font-medium text-[#281a0e]">
                         종료 시간
                       </span>
-                      <input
-                        type="time"
+                      <SimpleTimePicker
                         value={form.end_time}
-                        onChange={(e) =>
-                          setForm((prev) => ({
-                            ...prev,
-                            end_time: e.target.value,
-                          }))
+                        onChange={(value) =>
+                          setForm((prev) => ({ ...prev, end_time: value }))
                         }
-                        className={`h-12 w-full px-4 bg-white border border-[#ffe9d6] rounded-xl outline-none focus:border-[#e8742a] transition ${
-                          form.end_time ? "text-[#281a0e]" : "text-transparent"
-                        }`}
+                        placeholder="종료 시간 선택"
                       />
                     </div>
                   </div>

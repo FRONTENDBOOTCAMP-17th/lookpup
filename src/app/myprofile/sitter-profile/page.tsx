@@ -408,6 +408,9 @@ export default function SitterProfilePreviewPage() {
     <div className="min-h-screen flex flex-col bg-orange-50">
       {/* ── 모바일/태블릿 레이아웃 ── */}
       <div className="lg:hidden flex flex-col bg-white">
+        {/* 모바일 헤더 */}
+        <Header />
+
         {/* 상단 이미지 영역 */}
         <div className="relative w-full h-44 bg-gradient-to-br from-gray-200 to-gray-300 shrink-0">
           {/* 뒤로가기 */}
@@ -461,7 +464,7 @@ export default function SitterProfilePreviewPage() {
         </div>
 
         {/* 탭 바 */}
-        <div className="bg-white border-b border-orange-100 px-5 sticky top-0 z-10">
+        <div className="bg-white border-b border-orange-100 px-5 sticky top-16 z-10">
           <div className="flex gap-6">
             {TABS.map((tab) => (
               <button

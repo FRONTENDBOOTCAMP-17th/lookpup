@@ -44,12 +44,10 @@ export default function ReportPage() {
 
   return (
     <div className="min-h-screen bg-[#fff8f3]">
-      <div className="hidden md:block">
-        <Header />
-      </div>
+      <Header />
 
       {/* 모바일 헤더 */}
-      <div className="md:hidden sticky top-0 z-50 bg-white border-b border-[#FFE9D6]">
+      <div className="md:hidden sticky top-16 z-50 bg-white border-b border-[#FFE9D6]">
         <div className="h-14 px-5 flex items-center gap-3">
           <button type="button" onClick={() => router.back()} className="p-1 -ml-1">
             <ChevronLeft size={24} className="text-[#281A0E]" />
