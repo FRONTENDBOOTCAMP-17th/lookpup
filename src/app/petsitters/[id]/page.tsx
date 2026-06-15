@@ -8,6 +8,9 @@ import Avatar from "@/components/ui/Avatar";
 import KakaoMap from "@/components/KakaoMap";
 import { MapPin, Star } from "lucide-react";
 import BackButton from "@/components/common/BackButton";
+import Pill from "@/components/ui/Pill";
+
+//더미더미 더미데이터
 
 const SITTER = {
   name: "김민지",
@@ -131,12 +134,27 @@ export default function PetsitterProfilePage() {
               {/* 서비스 태그 */}
               <div className="flex gap-2 flex-wrap justify-center mb-6">
                 {SITTER.services.map((s) => (
-                  <span
-                    key={s}
-                    className="px-3 py-1 bg-orange-50 text-[#E8742A] text-xs font-medium rounded-full"
+                  <Pill key={s}>{s}</Pill>
+                ))}
+              </div>
+
+              {/* 경력 / 완료 */}
+              <div className="w-full grid grid-cols-2 gap-2 mb-6">
+                {[
+                  { label: "경력", value: SITTER.experience },
+                  { label: "완료", value: SITTER.completedCount },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className="bg-orange-50 rounded-xl py-2 text-center"
                   >
-                    {s}
-                  </span>
+                    <p className="text-xs font-bold text-orange-500">
+                      {item.value}
+                    </p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">
+                      {item.label}
+                    </p>
+                  </div>
                 ))}
               </div>
 
@@ -184,38 +202,11 @@ export default function PetsitterProfilePage() {
 
                   <div className="bg-white rounded-2xl shadow-[0px_2px_12px_rgba(232,116,42,0.10)] border border-orange-100 p-5">
                     <h3 className="text-stone-900 text-lg font-semibold mb-4">
-                      경력 및 실적
-                    </h3>
-                    <div className="grid grid-cols-2 gap-8">
-                      <div className="bg-orange-50 rounded-xl p-6 flex flex-col items-center">
-                        <span className="text-[#E8742A] text-3xl font-bold">
-                          {SITTER.experience}
-                        </span>
-                        <span className="text-gray-500 text-sm mt-2">경력</span>
-                      </div>
-                      <div className="bg-orange-50 rounded-xl p-6 flex flex-col items-center">
-                        <span className="text-[#E8742A] text-3xl font-bold">
-                          {SITTER.completedCount}
-                        </span>
-                        <span className="text-gray-500 text-sm mt-2">
-                          완료 건수
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-white rounded-2xl shadow-[0px_2px_12px_rgba(232,116,42,0.10)] border border-orange-100 p-5">
-                    <h3 className="text-stone-900 text-lg font-semibold mb-4">
                       돌봄 가능
                     </h3>
                     <div className="flex gap-2 flex-wrap">
                       {SITTER.pets.map((pet) => (
-                        <span
-                          key={pet}
-                          className="px-3 py-1 bg-orange-50 text-[#E8742A] text-xs font-medium rounded-full"
-                        >
-                          {pet}
-                        </span>
+                        <Pill key={pet}>{pet}</Pill>
                       ))}
                     </div>
                   </div>

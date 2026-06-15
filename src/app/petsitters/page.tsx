@@ -5,6 +5,7 @@ import Link from "next/link";
 import { MapPin, Star } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Avatar from "@/components/ui/Avatar";
+import Pill from "@/components/ui/Pill";
 import KakaoMap from "@/components/KakaoMap";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import SearchFilterBar from "@/components/common/SearchFilterBar";
@@ -182,12 +183,7 @@ function PetsitterCard({ sitter, isSelected, distance }: PetsitterCardProps) {
         {/* 서비스 태그 */}
         <div className="flex gap-2 mt-4">
           {sitter.services.map((s) => (
-            <span
-              key={s}
-              className="px-3 py-1 bg-orange-50 text-orange-500 text-xs font-medium rounded-full"
-            >
-              {s}
-            </span>
+            <Pill key={s}>{s}</Pill>
           ))}
         </div>
 
