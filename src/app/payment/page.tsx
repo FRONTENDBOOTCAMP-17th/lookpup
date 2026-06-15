@@ -5,9 +5,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { CreditCard, ChevronLeft } from "lucide-react";
 import Header from "@/components/layout/Header";
 import { CustomModal } from "@/components/common/CustomModal";
+import { usePortOne } from "@/hooks/usePortOne";
 
 //total 결제 페이지
-//  금액 포맷 
+//  금액 포맷
 function formatKRW(value: number) {
   return value.toLocaleString("ko-KR") + "원";
 }
@@ -49,6 +50,7 @@ function PriceBreakdown({
 function PaymentPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { isPending, requestPayment } = usePortOne();
 
   // URL 파라미터
   // 예: /payment?amount=35000&fee=0.05&source=chat&roomId=1&sitterName=김민지&serviceName=방문돌봄
@@ -67,7 +69,6 @@ function PaymentPageContent() {
   const [showPayModal, setShowPayModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [isPaying, setIsPaying] = useState(false);
 
   // 뒤로가기 목적지
   function getBackHref() {
@@ -76,19 +77,32 @@ function PaymentPageContent() {
     return "/";
   }
 
-  // 결제 처리 (PortOne 연동 예정)
-  async function processPayment() {
-    setIsPaying(true);
-    try {
-      // IMP.request_pay({ ... }) 연동 여기에 하면됩니다~!!!!
-      await new Promise((r) => setTimeout(r, 800)); // 임시 딜레이
-      setShowPayModal(false);
-      setShowSuccessModal(true);
-    } catch {
-      setShowPayModal(false);
-      setIsPaying(false);
-    }
-  }
+  const handlePay = () => {
+    requestPayment(
+      {
+        paymentId: `pay_${Date.now()}`,
+        orderName: serviceName,
+        totalAmount: total,
+        currency: "KRW",
+        payMethod: "CARD",
+        redirectUrl: `${window.location.origin}/payment/complete`,
+        customer: {
+          fullName: "테스트",
+          phoneNumber: "010-0000-0000",
+          email: "test@test.com",
+        },
+      },
+      {
+        onSuccess: () => {
+          setShowPayModal(false);
+          setShowSuccessModal(true);
+        },
+        onFail: () => {
+          setShowPayModal(false);
+        },
+      },
+    );
+  };
 
   function handleSuccessConfirm() {
     setShowSuccessModal(false);
@@ -120,11 +134,14 @@ function PaymentPageContent() {
 
         {/* 메인 카드 */}
         <div className="w-full max-w-[800px] bg-white rounded-2xl shadow-[0px_4px_20px_0px_rgba(232,116,42,0.15)] overflow-hidden">
-
           {/* 상단: 아이콘 + 타이틀 */}
           <div className="px-6 sm:px-7 pt-8 pb-6 flex flex-col items-center gap-4">
             <div className="w-20 h-20 sm:w-24 sm:h-24 bg-orange-50 rounded-2xl flex items-center justify-center shrink-0">
-              <CreditCard size={40} className="text-orange-500" strokeWidth={1.5} />
+              <CreditCard
+                size={40}
+                className="text-orange-500"
+                strokeWidth={1.5}
+              />
             </div>
             <div className="flex flex-col items-center gap-2 text-center">
               <h2 className="text-stone-900 text-xl sm:text-3xl font-bold leading-tight">
@@ -182,8 +199,12 @@ function PaymentPageContent() {
           {/* 안내 문구 */}
           <div className="px-6 sm:px-7 pb-6 text-center">
             <p className="text-gray-400 text-xs leading-5">
-              결제 진행 시 <span className="text-orange-400 font-medium">이용약관</span> 및{" "}
-              <span className="text-orange-400 font-medium">개인정보처리방침</span>에 동의하는 것으로 간주됩니다.
+              결제 진행 시{" "}
+              <span className="text-orange-400 font-medium">이용약관</span> 및{" "}
+              <span className="text-orange-400 font-medium">
+                개인정보처리방침
+              </span>
+              에 동의하는 것으로 간주됩니다.
             </p>
           </div>
         </div>
@@ -193,11 +214,11 @@ function PaymentPageContent() {
       <CustomModal
         open={showPayModal}
         preset="payment"
-        onClose={() => !isPaying && setShowPayModal(false)}
-        onConfirm={processPayment}
-        showCloseButton={!isPaying}
-        closeOnOverlay={!isPaying}
-        confirmText={isPaying ? "결제 중..." : "결제하기"}
+        onClose={() => !isPending && setShowPayModal(false)}
+        onConfirm={handlePay}
+        showCloseButton={!isPending}
+        closeOnOverlay={!isPending}
+        confirmText={isPending ? "결제 중..." : "결제하기"}
       >
         <PriceBreakdown amount={amount} feeRate={feeRate} />
       </CustomModal>

@@ -1,22 +1,16 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import type * as PortOneV2 from "@portone/browser-sdk/v2";
 
-type PortOneSDK = typeof import("@portone/browser-sdk/v2");
+type PortOneSDK = typeof PortOneV2;
 type PaymentStatus = "idle" | "success" | "fail";
+type RequestPaymentBody = Parameters<PortOneSDK["requestPayment"]>[0];
+type RequestPaymentParams = Omit<RequestPaymentBody, "storeId" | "channelKey">;
 
-interface RequestPaymentParams {
-  paymentId: string;
-  orderName: string;
-  totalAmount: number;
-  currency?: string;
-  payMethod?: string;
-  redirectUrl?: string;
-  customer?: {
-    fullName?: string;
-    phoneNumber?: string;
-    email?: string;
-  };
+interface PaymentCallbacks {
+  onSuccess?: () => void;
+  onFail?: () => void;
 }
 
 const STORE_ID = process.env.NEXT_PUBLIC_PORTONE_STORE_ID!;
@@ -34,7 +28,10 @@ export function usePortOne() {
     });
   }, []);
 
-  const requestPayment = (params: RequestPaymentParams) => {
+  const requestPayment = (
+    params: RequestPaymentParams,
+    callbacks?: PaymentCallbacks,
+  ) => {
     if (isPending || !portOneRef.current) return;
 
     setIsPending(true);
@@ -46,28 +43,30 @@ export function usePortOne() {
     PortOne.requestPayment({
       storeId: STORE_ID,
       channelKey: CHANNEL_KEY,
-      currency: "KRW",
-      payMethod: "CARD",
       ...params,
     })
       .then((response) => {
         if (!response) {
           setStatus("fail");
           setErrorMessage("결제창이 닫혔습니다.");
+          callbacks?.onFail?.();
           return;
         }
         if ("code" in response) {
           setStatus("fail");
           setErrorMessage(response.message ?? "결제에 실패했습니다.");
+          callbacks?.onFail?.();
           return;
         }
         setStatus("success");
+        callbacks?.onSuccess?.();
       })
       .catch((err: unknown) => {
         setStatus("fail");
         setErrorMessage(
           err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다.",
         );
+        callbacks?.onFail?.();
       })
       .finally(() => {
         setIsPending(false);
