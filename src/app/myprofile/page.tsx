@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useUserStore } from "@/store/userStore";
 import {
   ChevronRight,
   Dog,
@@ -267,6 +268,13 @@ function SitterActions() {
 
 export default function MyProfilePage() {
   const router = useRouter();
+  const { user, isLoading } = useUserStore();
+
+  useEffect(() => {
+    if (!isLoading && !user?.isVerified) {
+      router.replace("/auth/verification");
+    }
+  }, [isLoading, user?.isVerified, router]);
 
   const [userType, setUserType] = useState<"owner" | "sitter">("owner");
   const [selectedMenu, setSelectedMenu] = useState("profile");

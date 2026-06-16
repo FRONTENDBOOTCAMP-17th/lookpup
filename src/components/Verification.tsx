@@ -1,12 +1,24 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { ShieldCheck } from "lucide-react";
-import { completeSignup } from "./actions";
 
-export default function SignupForm() {
-  const router = useRouter();
+interface VerificationProps {
+  // PortOne 인증 성공 후 호출 — 비즈니스 로직(DB 저장 등)을 여기서 처리
+  // { error: string }을 반환하면 에러 메시지를 표시, 아무것도 반환하지 않으면 onSuccess 호출
+  onVerified: (
+    identityVerificationId: string,
+  ) => Promise<{ error?: string } | void>;
+  // onVerified 성공 후 호출 — 페이지 이동 등
+  onSuccess?: () => void;
+  buttonText?: string;
+}
+
+export default function Verification({
+  onVerified,
+  onSuccess,
+  buttonText = "본인인증하기",
+}: VerificationProps) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -24,23 +36,21 @@ export default function SignupForm() {
         identityVerificationId,
       });
 
-      if (!response) {
-        setError("본인인증에 실패했습니다.");
+      if (!response || "code" in response) {
+        setError(
+          (response as { message?: string } | null)?.message ??
+            "본인인증에 실패했습니다.",
+        );
         return;
       }
 
-      if (response.code) {
-        setError(response.message ?? "본인인증에 실패했습니다.");
-        return;
-      }
-
-      const result = await completeSignup(identityVerificationId);
+      const result = await onVerified(identityVerificationId);
       if (result?.error) {
         setError(result.error);
         return;
       }
 
-      router.push("/");
+      onSuccess?.();
     });
   };
 
@@ -58,7 +68,7 @@ export default function SignupForm() {
         className="w-full h-14 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-200 text-white rounded-xl flex items-center justify-center gap-3 text-base font-medium transition-colors"
       >
         <ShieldCheck size={18} />
-        {isPending ? "처리 중..." : "본인인증하기"}
+        {isPending ? "처리 중..." : buttonText}
       </button>
     </div>
   );

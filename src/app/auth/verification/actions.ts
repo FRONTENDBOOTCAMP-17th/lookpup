@@ -34,7 +34,11 @@ export async function completeSignup(identityVerificationId: string) {
       },
     );
 
-    if (!portoneRes.ok) return { error: "본인인증 결과 조회에 실패했습니다." };
+    if (!portoneRes.ok) {
+      const body = await portoneRes.text();
+      console.error("[completeSignup] PortOne API error", portoneRes.status, body);
+      return { error: `결과 조회 실패 (${portoneRes.status}): ${body}` };
+    }
 
     const verificationData: PortOneVerificationResult = await portoneRes.json();
 

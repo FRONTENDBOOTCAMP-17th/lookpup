@@ -103,17 +103,6 @@ export default function LoginPage() {
             </button>
           </div>
 
-          {/* 회원가입 링크 */}
-          <p className="text-center text-sm mt-6">
-            <span className="text-gray-500">처음 이용하시나요? </span>
-            <Link
-              href="/auth/signup"
-              className="text-orange-500 font-medium hover:underline"
-            >
-              회원가입
-            </Link>
-          </p>
-
           {/* 약관 동의 안내 */}
           <p className="text-center text-gray-500 text-xs mt-5 leading-5">
             계속 진행하면{" "}
