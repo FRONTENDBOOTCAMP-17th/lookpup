@@ -42,7 +42,7 @@ export async function GET(request: Request) {
           });
         }
 
-        return NextResponse.redirect(`${origin}/auth/signup`);
+        return NextResponse.redirect(`${origin}/auth/verification`);
       }
     }
   }

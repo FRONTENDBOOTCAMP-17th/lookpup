@@ -243,7 +243,7 @@ export default async function AboutPage() {
             <div className="flex flex-row gap-4">
               {!isLoggedIn && (
                 <Link
-                  href="/auth/signup"
+                  href="/auth/verification"
                   className="w-40 h-12 bg-white text-orange-500 text-base font-semibold rounded-[10px] border border-orange-500 flex items-center justify-center hover:bg-orange-50 transition-colors"
                 >
                   회원가입

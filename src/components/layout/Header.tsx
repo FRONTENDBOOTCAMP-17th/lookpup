@@ -13,13 +13,13 @@ import {
   User,
   X,
 } from "lucide-react";
-import { createClient } from "@/utils/supabase/client";
 import { signOut } from "@/app/actions/auth";
 import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
+import { useUserStore } from "@/store/userStore";
 
 const NAV_ITEMS = [
   { href: "/petsitters", label: "펫시터 찾기" },
@@ -27,66 +27,13 @@ const NAV_ITEMS = [
   { href: "/about", label: "서비스 소개" },
 ];
 
-interface UserProfile {
-  name: string;
-  email: string;
-  initial: string;
-  verified: boolean;
-}
-
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-
+  const { user, isLoggedIn, isLoading, clearUser } = useUserStore();
   const unreadCount = 2;
-
-  useEffect(() => {
-    const supabase = createClient();
-
-    const fetchUserProfile = async (userId: string) => {
-      const { data } = await supabase
-        .from("users")
-        .select("full_name, email, is_verified")
-        .eq("id", userId)
-        .single();
-
-      if (data) {
-        setUserProfile({
-          name: data.full_name ?? "",
-          email: data.email ?? "",
-          initial: data.full_name ? data.full_name.charAt(0) : "?",
-          verified: data.is_verified ?? false,
-        });
-      } else {
-        setUserProfile(null);
-      }
-    };
-
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) {
-        setIsLoggedIn(true);
-        fetchUserProfile(user.id);
-      }
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setIsLoggedIn(true);
-        fetchUserProfile(session.user.id);
-      } else {
-        setIsLoggedIn(false);
-        setUserProfile(null);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
 
   const isActivePath = (href: string) => {
     return pathname === href || pathname.startsWith(`${href}/`);
@@ -150,7 +97,7 @@ export default function Header() {
             </nav>
 
             {/* 우측 액션 */}
-            {isLoggedIn ? (
+            {isLoading ? null : isLoggedIn ? (
               <div className="flex items-center gap-2 shrink-0">
                 {/* 알림 */}
                 <Link
@@ -174,7 +121,7 @@ export default function Header() {
                       aria-label="계정 메뉴 열기"
                       className="ml-1 size-9 rounded-full bg-gradient-to-br from-orange-500 to-orange-300 flex items-center justify-center text-white text-sm font-bold leading-5 hover:ring-2 hover:ring-orange-200 transition cursor-pointer"
                     >
-                      {userProfile?.initial ?? "?"}
+                      {user?.fullName?.charAt(0) ?? "?"}
                     </button>
                   </HoverCardTrigger>
                   <HoverCardContent
@@ -210,7 +157,7 @@ export default function Header() {
                     <div className="mx-2 my-1 h-px bg-[#ffe9d6]" />
                     <button
                       type="button"
-                      onClick={() => signOut()}
+                      onClick={() => { clearUser(); signOut(); }}
                       className="w-full px-3 py-2.5 flex items-center gap-3 text-sm text-gray-500 rounded-lg hover:bg-orange-50 transition-colors"
                     >
                       <LogOut
@@ -252,7 +199,7 @@ export default function Header() {
             </Link>
 
             <div className="flex items-center gap-1.5">
-              {isLoggedIn && (
+              {!isLoading && isLoggedIn && (
                 <>
                   {/* 모바일 알림 */}
                   <Link
@@ -278,7 +225,7 @@ export default function Header() {
                     aria-label="마이페이지로 이동"
                     className="hidden min-[480px]:flex size-8 rounded-full bg-gradient-to-br from-orange-500 to-orange-300 items-center justify-center text-white text-sm font-bold leading-5"
                   >
-                    {userProfile?.initial ?? "?"}
+                    {user?.fullName?.charAt(0) ?? "?"}
                   </Link>
                 </>
               )}
@@ -306,23 +253,23 @@ export default function Header() {
         {/* Mobile Dropdown Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden w-full bg-white border-t border-orange-100 border-b shadow-[0px_4px_20px_0px_rgba(40,26,14,0.10)]">
-            {isLoggedIn && (
+            {!isLoading && isLoggedIn && (
               <div className="w-full px-5 py-4 bg-orange-50 border-b border-orange-100 flex items-center gap-3">
                 <Link
                   href="/myprofile"
                   onClick={closeMobileMenu}
                   className="size-11 rounded-full bg-gradient-to-br from-orange-500 to-orange-300 flex items-center justify-center text-white text-base font-bold leading-6 shrink-0"
                 >
-                  {userProfile?.initial ?? "?"}
+                  {user?.fullName?.charAt(0) ?? "?"}
                 </Link>
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="text-stone-900 text-base font-bold leading-6">
-                      {userProfile?.name || "사용자"}
+                      {user?.fullName || "사용자"}
                     </p>
 
-                    {userProfile?.verified && (
+                    {user?.isVerified && (
                       <span className="px-1.5 h-5 rounded-sm bg-orange-500 flex items-center text-white text-[10px] font-normal leading-4">
                         인증
                       </span>
@@ -330,7 +277,7 @@ export default function Header() {
                   </div>
 
                   <p className="mt-0.5 text-gray-400 text-xs font-normal leading-4 truncate">
-                    {userProfile?.email || ""}
+                    {user?.email || ""}
                   </p>
                 </div>
               </div>
@@ -377,93 +324,94 @@ export default function Header() {
               <div className="h-px w-full bg-orange-100" />
             </div>
 
-            {isLoggedIn ? (
-              <>
-                {/* 로그인 상태 추가 메뉴 */}
-                <div className="w-full px-4 py-2 flex flex-col">
+            {!isLoading &&
+              (isLoggedIn ? (
+                <>
+                  {/* 로그인 상태 추가 메뉴 */}
+                  <div className="w-full px-4 py-2 flex flex-col">
+                    <Link
+                      href="/myprofile"
+                      onClick={closeMobileMenu}
+                      className="px-4 py-3 rounded-xl inline-flex items-center justify-between hover:bg-orange-50 transition-colors"
+                    >
+                      <span className="inline-flex items-center gap-3">
+                        <span className="size-8 bg-orange-50 rounded-xl flex items-center justify-center">
+                          <User
+                            size={16}
+                            className="text-orange-500"
+                            strokeWidth={1.8}
+                          />
+                        </span>
+                        <span className="text-stone-900 text-base font-medium leading-6">
+                          마이페이지
+                        </span>
+                      </span>
+
+                      <ChevronRight
+                        size={16}
+                        className="text-gray-300"
+                        strokeWidth={2}
+                      />
+                    </Link>
+
+                    <Link
+                      href="/chat"
+                      onClick={closeMobileMenu}
+                      className="px-4 py-3 rounded-xl inline-flex items-center justify-between hover:bg-orange-50 transition-colors"
+                    >
+                      <span className="inline-flex items-center gap-3">
+                        <span className="size-8 bg-blue-50 rounded-xl flex items-center justify-center">
+                          <MessageSquare
+                            size={16}
+                            className="text-blue-500"
+                            strokeWidth={1.8}
+                          />
+                        </span>
+                        <span className="text-stone-900 text-base font-medium leading-6">
+                          채팅
+                        </span>
+                      </span>
+
+                      <ChevronRight
+                        size={16}
+                        className="text-gray-300"
+                        strokeWidth={2}
+                      />
+                    </Link>
+                  </div>
+
+                  <div className="px-5">
+                    <div className="h-px w-full bg-orange-100" />
+                  </div>
+
+                  {/* 로그아웃 */}
+                  <div className="w-full px-5 py-4">
+                    <button
+                      type="button"
+                      onClick={() => { clearUser(); signOut(); }}
+                      className="w-full h-12 rounded-xl border border-orange-100 bg-white flex items-center justify-center gap-2 text-gray-500 text-sm font-normal leading-6 hover:bg-orange-50 transition-colors"
+                    >
+                      <LogOut
+                        size={16}
+                        className="text-gray-500"
+                        strokeWidth={1.8}
+                      />
+                      로그아웃
+                    </button>
+                  </div>
+                </>
+              ) : (
+                /* 비로그인 상태 로그인 */
+                <div className="w-full px-5 pt-4 pb-5 flex flex-col gap-3">
                   <Link
-                    href="/myprofile"
+                    href="/auth/login"
                     onClick={closeMobileMenu}
-                    className="px-4 py-3 rounded-xl inline-flex items-center justify-between hover:bg-orange-50 transition-colors"
+                    className="w-full h-12 rounded-[10px] border border-orange-500 bg-white flex items-center justify-center text-orange-500 text-base font-normal leading-6 hover:bg-orange-50 transition-colors"
                   >
-                    <span className="inline-flex items-center gap-3">
-                      <span className="size-8 bg-orange-50 rounded-xl flex items-center justify-center">
-                        <User
-                          size={16}
-                          className="text-orange-500"
-                          strokeWidth={1.8}
-                        />
-                      </span>
-                      <span className="text-stone-900 text-base font-medium leading-6">
-                        마이페이지
-                      </span>
-                    </span>
-
-                    <ChevronRight
-                      size={16}
-                      className="text-gray-300"
-                      strokeWidth={2}
-                    />
-                  </Link>
-
-                  <Link
-                    href="/chat"
-                    onClick={closeMobileMenu}
-                    className="px-4 py-3 rounded-xl inline-flex items-center justify-between hover:bg-orange-50 transition-colors"
-                  >
-                    <span className="inline-flex items-center gap-3">
-                      <span className="size-8 bg-blue-50 rounded-xl flex items-center justify-center">
-                        <MessageSquare
-                          size={16}
-                          className="text-blue-500"
-                          strokeWidth={1.8}
-                        />
-                      </span>
-                      <span className="text-stone-900 text-base font-medium leading-6">
-                        채팅
-                      </span>
-                    </span>
-
-                    <ChevronRight
-                      size={16}
-                      className="text-gray-300"
-                      strokeWidth={2}
-                    />
+                    로그인
                   </Link>
                 </div>
-
-                <div className="px-5">
-                  <div className="h-px w-full bg-orange-100" />
-                </div>
-
-                {/* 로그아웃 */}
-                <div className="w-full px-5 py-4">
-                  <button
-                    type="button"
-                    onClick={() => signOut()}
-                    className="w-full h-12 rounded-xl border border-orange-100 bg-white flex items-center justify-center gap-2 text-gray-500 text-sm font-normal leading-6 hover:bg-orange-50 transition-colors"
-                  >
-                    <LogOut
-                      size={16}
-                      className="text-gray-500"
-                      strokeWidth={1.8}
-                    />
-                    로그아웃
-                  </button>
-                </div>
-              </>
-            ) : (
-              /* 비로그인 상태 로그인 */
-              <div className="w-full px-5 pt-4 pb-5 flex flex-col gap-3">
-                <Link
-                  href="/auth/login"
-                  onClick={closeMobileMenu}
-                  className="w-full h-12 rounded-[10px] border border-orange-500 bg-white flex items-center justify-center text-orange-500 text-base font-normal leading-6 hover:bg-orange-50 transition-colors"
-                >
-                  로그인
-                </Link>
-              </div>
-            )}
+              ))}
           </div>
         )}
       </div>
