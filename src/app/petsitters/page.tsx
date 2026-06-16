@@ -10,7 +10,7 @@ import KakaoMap from "@/components/KakaoMap";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import SearchFilterBar from "@/components/common/SearchFilterBar";
 import { calculateDistanceKm, formatDistance } from "@/utils/distance";
-import { searchAddressToCoord, coordToRegion } from "@/utils/kakaoGeocode";
+import { searchPlaceToCoord, coordToRegion } from "@/utils/kakaoGeocode";
 
 const FILTERS = ["전체", "방문돌봄", "위탁돌봄", "산책"] as const;
 type Filter = (typeof FILTERS)[number];
@@ -141,6 +141,84 @@ const PETSITTERS = [
     lat: 37.5141,
     lng: 127.1128,
   },
+  {
+    id: 10,
+    name: "신지호",
+    initial: "신",
+    district: "종로구",
+    neighborhood: "청진동",
+    rating: 4.8,
+    reviewCount: 29,
+    price: 31000,
+    services: ["방문돌봄", "산책"],
+    lat: 37.5704,
+    lng: 126.9816,
+  },
+  {
+    id: 11,
+    name: "임나은",
+    initial: "임",
+    district: "성동구",
+    neighborhood: "성수동",
+    rating: 4.7,
+    reviewCount: 44,
+    price: 27000,
+    services: ["위탁돌봄", "방문돌봄"],
+    lat: 37.5448,
+    lng: 127.0557,
+  },
+  {
+    id: 12,
+    name: "배준서",
+    initial: "배",
+    district: "마포구",
+    neighborhood: "합정동",
+    rating: 4.6,
+    reviewCount: 18,
+    price: 29000,
+    services: ["산책", "방문돌봄"],
+    lat: 37.5497,
+    lng: 126.9143,
+  },
+  {
+    id: 13,
+    name: "홍수빈",
+    initial: "홍",
+    district: "용산구",
+    neighborhood: "이태원동",
+    rating: 4.9,
+    reviewCount: 55,
+    price: 36000,
+    services: ["방문돌봄", "위탁돌봄", "산책"],
+    lat: 37.5345,
+    lng: 126.9942,
+  },
+  {
+    id: 14,
+    name: "전민재",
+    initial: "전",
+    district: "광진구",
+    neighborhood: "건대입구동",
+    rating: 4.5,
+    reviewCount: 21,
+    price: 26000,
+    services: ["산책"],
+    lat: 37.5403,
+    lng: 127.0699,
+  },
+  {
+    id: 15,
+    name: "류지아",
+    initial: "류",
+    district: "동작구",
+    neighborhood: "사당동",
+    rating: 4.8,
+    reviewCount: 33,
+    price: 30000,
+    services: ["방문돌봄", "산책"],
+    lat: 37.4763,
+    lng: 126.9815,
+  },
 ];
 
 const DEFAULT_CENTER = { lat: 37.4979, lng: 127.0276 };
@@ -241,18 +319,18 @@ export default function PetsittersPage() {
     });
   }, [selectedSitterId]);
 
-  // 동/구/시/로/길 키워드로 끝날 때만 Geocoder로 위치 변환 (300ms debounce)
+  // 검색어로 장소 검색 → 지도 중심 이동 (500ms debounce)
   useEffect(() => {
     const q = searchQuery.trim();
-    if (!q || !/[동구시로길]$/.test(q)) return;
+    if (!q) return;
     const timer = setTimeout(() => {
-      searchAddressToCoord(q).then((result) => {
+      searchPlaceToCoord(q).then((result) => {
         if (result) {
           setBasePosition({ lat: result.lat, lng: result.lng });
           setBaseLabel(result.addressName);
         }
       });
-    }, 300);
+    }, 500);
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
@@ -263,11 +341,10 @@ export default function PetsittersPage() {
       async ({ coords }) => {
         const pos = { lat: coords.latitude, lng: coords.longitude };
         setBasePosition(pos);
+        setBaseLabel("현재 위치"); // GPS 성공 시 즉시 레이블 변경
         const region = await coordToRegion(pos.lat, pos.lng);
         if (region) {
-          setBaseLabel(`내 위치 (${region.dong || region.sigungu})`);
-        } else {
-          setBaseLabel("내 위치");
+          setBaseLabel(`현재 위치 (${region.dong || region.sigungu})`);
         }
         setLocationLoading(false);
       },

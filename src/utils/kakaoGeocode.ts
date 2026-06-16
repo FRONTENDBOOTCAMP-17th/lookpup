@@ -31,6 +31,28 @@ export function searchAddressToCoord(query: string): Promise<CoordResult | null>
   });
 }
 
+// 장소명/키워드 검색 (홍대, 삼성 서울병원 등 장소명에 적합)
+export function searchPlaceToCoord(query: string): Promise<CoordResult | null> {
+  return new Promise((resolve) => {
+    if (typeof window === "undefined" || !window.kakao?.maps?.services) {
+      resolve(null);
+      return;
+    }
+    const places = new window.kakao.maps.services.Places();
+    places.keywordSearch(query, (result: any[], status: string) => {
+      if (status === window.kakao.maps.services.Status.OK && result.length > 0) {
+        resolve({
+          lat: parseFloat(result[0].y),
+          lng: parseFloat(result[0].x),
+          addressName: result[0].place_name,
+        });
+      } else {
+        resolve(null);
+      }
+    });
+  });
+}
+
 export function coordToRegion(lat: number, lng: number): Promise<RegionResult | null> {
   return new Promise((resolve) => {
     if (typeof window === "undefined" || !window.kakao?.maps?.services) {
