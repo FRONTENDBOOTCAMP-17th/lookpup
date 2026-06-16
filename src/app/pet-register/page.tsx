@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Camera } from "lucide-react";
 import Header from "@/components/layout/Header";
+import { createPet } from "@/app/actions/pets";
 
 const COMMON_NOTES = ["알러지 있음", "약 복용 중", "사람 경계", "다른 동물 경계", "분리불안"];
 
@@ -53,11 +54,36 @@ export default function PetRegisterPage() {
     });
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!petType) { alert("동물 종류를 선택해주세요."); return; }
     if (!name.trim()) { alert("이름을 입력해주세요."); return; }
     if (!gender) { alert("성별을 선택해주세요."); return; }
+
+    // 화면은 성별(male/female) + 중성화(boolean)로 따로 받지만,
+    // DB는 MALE / FEMALE / MALE_NEUTERED / FEMALE_NEUTERED 한 값으로 받음 → 조합
+    const genderValue =
+      gender === "male"
+        ? neutered ? "MALE_NEUTERED" : "MALE"
+        : neutered ? "FEMALE_NEUTERED" : "FEMALE";
+
+    const result = await createPet({
+      name: name.trim(),
+      animal_type: petType,
+      breed: breed.trim() || null,
+      age: age ? parseInt(age) : 0,
+      gender: genderValue,
+      weight: weight ? parseFloat(weight) : 0,
+      image_url: null, // 사진은 blob URL이라 미저장 — Supabase Storage 업로드는 별도 작업
+      caution: notes.trim() || null,
+    });
+
+    if (result.error) {
+      alert(result.error.message);
+      return;
+    }
+
     alert("반려동물이 등록되었습니다!");
+    router.back();
   };
 
   const inputCls = "w-full h-12 px-4 py-3 bg-white rounded-xl border border-[#ffe9d6] text-base font-normal text-[#281a0e] placeholder:text-gray-400 focus:outline-none focus:border-[#e8742a] transition-all";

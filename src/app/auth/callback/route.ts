@@ -29,7 +29,7 @@ export async function GET(request: Request) {
 
         //신규 유저면 기본 정보만 INSERT
         if (!existingUser) {
-          await db.from("users").insert({
+          const { error: insertError } = await db.from("users").insert({
             id: user.id,
             email: user.email ?? "",
             provider: user.app_metadata.provider ?? "google",
@@ -40,6 +40,7 @@ export async function GET(request: Request) {
             role: "owner",
             is_verified: false,
           });
+          if (insertError) console.error("[auth/callback] users INSERT 실패:", insertError);
         }
 
         return NextResponse.redirect(`${origin}/auth/signup`);
