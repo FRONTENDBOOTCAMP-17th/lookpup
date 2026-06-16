@@ -50,6 +50,7 @@ export default function ChatPage() {
   );
   const [input, setInput] = useState("");
   const [sendError, setSendError] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -74,15 +75,20 @@ export default function ChatPage() {
   }, [messages]);
 
   async function handleSend() {
-    if (!input.trim() || !activeRoomId) return;
+    if (!input.trim() || !activeRoomId || sending) return;
     setSendError(null);
-    const result = await sendMessage(activeRoomId, input.trim());
-    if (result.error) {
-      setSendError(result.error.message);
-      return;
+    setSending(true);
+    try {
+      const result = await sendMessage(activeRoomId, input.trim());
+      if (result.error) {
+        setSendError(result.error.message);
+        return;
+      }
+      if (result.data) addMessage(result.data);
+      setInput("");
+    } finally {
+      setSending(false);
     }
-    if (result.data) addMessage(result.data);
-    setInput("");
   }
 
   // 로그인 유저 ID 가져오기
@@ -471,7 +477,8 @@ export default function ChatPage() {
               />
               <button
                 onClick={handleSend}
-                className="w-11 h-11 bg-orange-500 rounded-xl flex items-center justify-center shrink-0"
+                disabled={sending}
+                className="w-11 h-11 bg-orange-500 rounded-xl flex items-center justify-center shrink-0 disabled:opacity-50"
               >
                 <Send size={16} className="text-white" />
               </button>
