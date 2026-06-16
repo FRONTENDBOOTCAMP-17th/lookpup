@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { Fragment, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { DateRange } from "react-day-picker";
 import {
@@ -23,7 +23,8 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import RangePicker from "@/components/ui/RangePicker";
 import SimpleTimePicker from "@/components/ui/SimpleTimePicker";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/client";
+import { createRequest } from "@/app/actions/requests";
 
 const STEPS = ["서비스 선택", "날짜·장소", "반려동물", "상세 내용"];
 
@@ -67,6 +68,21 @@ const SITTER_CONDITIONS = [
   "흡연자 제외",
 ];
 
+type Pet = {
+  id: string;
+  name: string;
+  type: string;
+  age: number | null;
+  weight: number | null;
+  emoji: string;
+};
+
+const ANIMAL_TYPE_MAP: Record<string, { label: string; emoji: string }> = {
+  dog: { label: "강아지", emoji: "🐶" },
+  cat: { label: "고양이", emoji: "🐱" },
+  other: { label: "기타", emoji: "🐾" },
+};
+
 type FormState = {
   service_type: string;
   budget: string;
@@ -87,6 +103,34 @@ export default function BoardWritePage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // 더미 사용 시: useState<Pet[]>(DUMMY_PETS as unknown as Pet[])
+  const [pets, setPets] = useState<Pet[]>([]);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase
+        .from("pets")
+        .select("id, name, animal_type, age, weight")
+        .eq("owner_id", user.id)
+        .is("deleted_at", null)
+        .then(({ data }) => {
+          if (data && data.length > 0) {
+            setPets(
+              data.map((p) => ({
+                id: p.id,
+                name: p.name,
+                type: ANIMAL_TYPE_MAP[p.animal_type]?.label ?? p.animal_type,
+                age: p.age,
+                weight: p.weight,
+                emoji: ANIMAL_TYPE_MAP[p.animal_type]?.emoji ?? "🐾",
+              })),
+            );
+          }
+        });
+    });
+  }, []);
   const [form, setForm] = useState<FormState>({
     service_type: "",
     budget: "",
@@ -127,31 +171,39 @@ export default function BoardWritePage() {
     }));
 
   const handleSubmit = async () => {
+    if (!form.startDate) return;
     setIsSubmitting(true);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      alert("로그인이 필요합니다.");
-      router.push("/auth/login");
-      return;
+
+    const startDatetime = new Date(form.startDate);
+    if (form.start_time) {
+      const [h, m] = form.start_time.split(":").map(Number);
+      startDatetime.setHours(h, m, 0, 0);
     }
-    const { error } = await supabase.from("requests").insert({
+    const endDatetime = form.endDate ? new Date(form.endDate) : new Date(form.startDate);
+    if (form.end_time) {
+      const [h, m] = form.end_time.split(":").map(Number);
+      endDatetime.setHours(h, m, 0, 0);
+    }
+
+    const result = await createRequest({
+      pet_ids: form.selected_pets,
       title: form.title,
       content: form.content,
-      request_type: form.service_type,
+      request_type: form.service_type as "walk" | "care" | "hotel" | "pickup",
+      start_datetime: startDatetime.toISOString(),
+      end_datetime: endDatetime.toISOString(),
+      budget: form.budget ? parseInt(form.budget) : 0,
       location: form.location || form.location_type,
-      start_datetime: form.startDate ?? null,
-      end_datetime: form.endDate ?? null,
-      budget: form.budget ? parseInt(form.budget) : null,
-      owner_id: user.id,
-      status: "open",
+      latitude: 0,
+      longitude: 0,
     });
-    if (error) {
-      alert("글 작성에 실패했습니다.");
+
+    if (result.error) {
+      alert(result.error.message);
       setIsSubmitting(false);
       return;
     }
+
     router.push("/board");
   };
 
@@ -467,7 +519,8 @@ export default function BoardWritePage() {
                 </p>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {DUMMY_PETS.map((pet) => {
+                  {/* 더미 사용 시: DUMMY_PETS.map */}
+                {pets.map((pet) => {
                     const isSelected = form.selected_pets.includes(pet.id);
                     return (
                       <button
