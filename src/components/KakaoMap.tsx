@@ -78,6 +78,13 @@ export default function KakaoMap({
     basePositionRef.current = basePosition;
   }, [basePosition]);
 
+  // 재마운트 시 kakao가 이미 로드된 경우 직접 initMap 호출
+  useEffect(() => {
+    if (window.kakao?.maps) {
+      window.kakao.maps.load(initMap);
+    }
+  }, []);
+
   // center prop 변경 시 지도 pan
   useEffect(() => {
     if (mapRef.current && center) {

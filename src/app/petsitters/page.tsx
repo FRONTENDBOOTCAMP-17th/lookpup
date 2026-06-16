@@ -309,6 +309,7 @@ export default function PetsittersPage() {
       <Header />
 
       {/* 위치 동의 모달 */}
+      {/* 아직 제대로 연동 안함~~ㅋ */}
       {showLocationModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-2xl p-6 mx-4 max-w-sm w-full shadow-xl">
@@ -321,7 +322,8 @@ export default function PetsittersPage() {
               </h2>
             </div>
             <p className="text-gray-500 text-sm mb-5 leading-relaxed">
-              현재 위치를 사용하면 가까운 펫시터를 더 정확하게 찾을 수 있어요.
+              현재 위치를 사용하면 가까운 펫시터를 찾을 수 있어요!
+              <br />
               위치 정보는 펫시터 거리 계산에만 사용됩니다.
             </p>
             <div className="flex gap-3">
@@ -353,7 +355,15 @@ export default function PetsittersPage() {
             )}
             <KakaoMap
               markers={filtered.map(
-                ({ lat, lng, id, name, district, neighborhood, distanceKm }) => ({
+                ({
+                  lat,
+                  lng,
+                  id,
+                  name,
+                  district,
+                  neighborhood,
+                  distanceKm,
+                }) => ({
                   lat,
                   lng,
                   id,
