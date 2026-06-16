@@ -313,14 +313,20 @@ export default function PetsittersPage() {
           {/* 지도 영역 */}
           <div className="h-[40vh] md:h-full md:flex-1 relative overflow-hidden">
             <KakaoMap
-              markers={filtered.map(({ lat, lng, id, certified }) => ({
-                lat,
-                lng,
-                id,
-                certified,
-              }))}
+              markers={filtered.map(
+                ({ lat, lng, id, certified, name, district, neighborhood }) => ({
+                  lat,
+                  lng,
+                  id,
+                  certified,
+                  name,
+                  district,
+                  neighborhood,
+                }),
+              )}
               center={userPosition ?? DEFAULT_CENTER}
               level={7}
+              selectedMarkerId={selectedSitterId}
               onMarkerClick={setSelectedSitterId}
             />
           </div>
