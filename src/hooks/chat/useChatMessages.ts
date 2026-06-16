@@ -88,5 +88,17 @@ export function useChatMessages(
     };
   }, [activeRoomId, userId]);
 
-  return { messages };
+  function addMessage(m: MessageApiItem) {
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: m.id,
+        from: m.sender_id === userId ? "me" : "other",
+        text: m.content,
+        time: formatTime(m.created_at),
+      },
+    ]);
+  }
+
+  return { messages, addMessage };
 }

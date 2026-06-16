@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { Search, ChevronLeft, MoreVertical, Send, Plus } from "lucide-react";
@@ -51,6 +51,7 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [sendError, setSendError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { rooms, applicants, loading, error, deleteRoom, deleteApplicant } =
     useChatRooms();
@@ -66,7 +67,11 @@ export default function ChatPage() {
   const activeRoomId =
     activeTab === "one_on_one" ? selectedRoomId : selectedApplicantId;
 
-  const { messages } = useChatMessages(activeRoomId, userId);
+  const { messages, addMessage } = useChatMessages(activeRoomId, userId);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   async function handleSend() {
     if (!input.trim() || !activeRoomId) return;
@@ -76,6 +81,7 @@ export default function ChatPage() {
       setSendError(result.error.message);
       return;
     }
+    if (result.data) addMessage(result.data);
     setInput("");
   }
 
@@ -374,7 +380,7 @@ export default function ChatPage() {
             </div>
 
             {/* 메시지 영역 */}
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 min-h-0">
               <div
                 className="px-4 py-4 flex flex-col gap-4"
                 onClick={() => {
@@ -398,6 +404,7 @@ export default function ChatPage() {
                       </span>
                     </div>
                   )}
+                <div ref={messagesEndRef} />
               </div>
             </ScrollArea>
 
@@ -627,7 +634,7 @@ export default function ChatPage() {
                 onReport={() => router.push("/myprofile/report")}
               />
 
-              <ScrollArea className="flex-1">
+              <ScrollArea className="flex-1 min-h-0">
                 <div
                   className="px-8 py-6 flex flex-col gap-6"
                   onClick={() => {
@@ -654,6 +661,7 @@ export default function ChatPage() {
                         </span>
                       </div>
                     )}
+                  <div ref={messagesEndRef} />
                 </div>
               </ScrollArea>
 
