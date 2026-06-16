@@ -9,11 +9,11 @@ import {
   Plus,
   Check,
   Home,
-  Heart,
+  // Heart,  // ← foster 비활성화로 미사용 (SERVICE_TYPES 주석 참고)
   PawPrint,
   Moon,
   Car,
-  MoreHorizontal,
+  // MoreHorizontal,  // ← other 비활성화로 미사용 (SERVICE_TYPES 주석 참고)
   Save,
   Send,
   MapPin,
@@ -30,11 +30,30 @@ const STEPS = ["서비스 선택", "날짜·장소", "반려동물", "상세 내
 
 const SERVICE_TYPES = [
   { label: "방문 돌봄", icon: Home, value: "care" },
-  { label: "위탁 돌봄", icon: Heart, value: "foster" },
+  // ⚠️ "위탁 돌봄"(foster) / "기타"(other) 임시 비활성화 (2026-06-16)
+  //
+  // 이유: DB requests.request_type이 walk/care/hotel/pickup 4개만 허용할 가능성이 높음.
+  //       (actions/requests.ts의 RequestInput.request_type 타입도 이 4개로 제한되어 있음)
+  //       foster/other 선택 시 저장이 실패하므로, 활성화 전까지 버튼 자체를 노출하지 않음.
+  //
+  // ✅ 활성화하려면 (Supabase 권한이 있는 팀장에게 요청 필요):
+  //   1) 실제 제약 확인 — Supabase SQL Editor에서:
+  //        select conname, pg_get_constraintdef(oid)
+  //        from pg_constraint
+  //        where conrelid = 'requests'::regclass and contype = 'c';
+  //      → 아무것도 안 나오면 제약 없음(바로 4번으로). request_type = ANY(...) 가 나오면 2번.
+  //   2) 제약이 있으면 교체 (conname은 1번 결과값으로):
+  //        alter table requests drop constraint requests_request_type_check;
+  //        alter table requests add constraint requests_request_type_check
+  //          check (request_type in ('walk','care','hotel','pickup','foster','other'));
+  //   3) actions/requests.ts의 request_type 타입에 "foster" | "other" 추가
+  //   4) 아래 두 줄(foster/other)과 상단 import의 Heart, MoreHorizontal 주석 해제
+  //
+  // { label: "위탁 돌봄", icon: Heart, value: "foster" },
   { label: "산책", icon: PawPrint, value: "walk" },
   { label: "펫 호텔", icon: Moon, value: "hotel" },
   { label: "픽업 서비스", icon: Car, value: "pickup" },
-  { label: "기타", icon: MoreHorizontal, value: "other" },
+  // { label: "기타", icon: MoreHorizontal, value: "other" },
 ];
 
 const BUDGET_PRESETS = [10000, 20000, 30000, 50000];

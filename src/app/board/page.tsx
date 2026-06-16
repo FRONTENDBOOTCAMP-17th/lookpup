@@ -202,8 +202,7 @@ export default function BoardPage() {
         p.title.includes(searchQuery) ||
         p.desc.includes(searchQuery);
       return matchCategory && matchSearch;
-    })
-    .sort((a, b) => a.id - b.id);
+    });
 
   return (
     <div className="min-h-screen flex flex-col">
