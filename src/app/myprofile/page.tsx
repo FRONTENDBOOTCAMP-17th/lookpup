@@ -268,11 +268,6 @@ function SitterActions() {
 export default function MyProfilePage() {
   const router = useRouter();
 
-  const handleLogout = async () => {
-    await createClient().auth.signOut();
-    router.push("/");
-  };
-
   const [userType, setUserType] = useState<"owner" | "sitter">("owner");
   const [selectedMenu, setSelectedMenu] = useState("profile");
 
