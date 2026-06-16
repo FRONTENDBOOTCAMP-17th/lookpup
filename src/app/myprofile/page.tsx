@@ -27,8 +27,6 @@ import Avatar, { AvatarMobile } from "@/components/ui/Avatar";
 import SitterProfileCard from "@/components/sitter/SitterProfileCard";
 import { signOut } from "@/app/actions/auth";
 
-// 더미데이터
-
 interface MenuItem {
   id: string;
   icon: React.ElementType;
@@ -36,13 +34,6 @@ interface MenuItem {
   link: string;
   color: string;
 }
-
-const DUMMY_USER = {
-  name: "김민수",
-  email: "kimminsu@example.com",
-  initial: "김",
-  verified: true,
-};
 
 const DUMMY_OWNER_STATS = [
   { label: "총 예약", value: "12건" },
@@ -299,12 +290,12 @@ export default function MyProfilePage() {
       {/* 모바일 프로필 */}
       <div className="md:hidden bg-linear-to-br from-orange-500 to-orange-300 rounded-b-3xl px-5 pt-8 pb-8 shrink-0">
         <div className="flex items-center gap-4 mb-6">
-          <AvatarMobile initial={DUMMY_USER.initial} />
+          <AvatarMobile initial={user?.fullName?.charAt(0) ?? "?"} />
           <div className="flex-1">
             <h3 className="text-white font-semibold text-lg mb-1">
-              {DUMMY_USER.name}
+              {user?.fullName ?? ""}
             </h3>
-            {DUMMY_USER.verified && (
+            {user?.isVerified && (
               <div className="inline-block px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full border border-white/30">
                 <span className="text-white text-xs font-medium">본인인증</span>
               </div>
@@ -336,19 +327,14 @@ export default function MyProfilePage() {
                 {/* 프로필 */}
                 <div className="text-center pb-5 mb-4 border-b border-orange-100">
                   <Avatar
-                    initial={DUMMY_USER.initial}
+                    initial={user?.fullName?.charAt(0) ?? "?"}
                     size="xl"
                     className="mx-auto mb-3"
                   />
                   <h2 className="text-2xl font-bold text-stone-900 mb-1">
-                    {DUMMY_USER.name}
+                    {user?.fullName ?? ""}
                   </h2>
-                  {DUMMY_USER.verified && (
-                    <span className="inline-block px-3 py-1 bg-orange-500 rounded text-white text-xs font-medium mb-2">
-                      본인인증
-                    </span>
-                  )}
-                  <p className="text-xs text-gray-500">{DUMMY_USER.email}</p>
+                  <p className="text-xs text-gray-500">{user?.email ?? ""}</p>
                 </div>
 
                 {/* 역할 토글 */}
