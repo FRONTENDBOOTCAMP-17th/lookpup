@@ -9,6 +9,7 @@ import Pill from "@/components/ui/Pill";
 import KakaoMap from "@/components/KakaoMap";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import SearchFilterBar from "@/components/common/SearchFilterBar";
+import { calculateDistanceKm, formatDistance } from "@/utils/distance";
 
 const FILTERS = ["전체", "방문돌봄", "위탁돌봄", "산책", "인증만"] as const;
 type Filter = (typeof FILTERS)[number];
@@ -153,26 +154,10 @@ const PETSITTERS = [
 
 const DEFAULT_CENTER = { lat: 37.4979, lng: 127.0276 };
 
-function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number) {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLng = ((lng2 - lng1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLng / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-function formatDistance(km: number) {
-  return km < 1 ? `${Math.round(km * 1000)}m` : `${km.toFixed(1)}km`;
-}
-
 interface PetsitterCardProps {
   sitter: (typeof PETSITTERS)[number];
   isSelected: boolean;
-  distance?: number;
+  distance: number;
 }
 
 function PetsitterCard({ sitter, isSelected, distance }: PetsitterCardProps) {
@@ -204,11 +189,9 @@ function PetsitterCard({ sitter, isSelected, distance }: PetsitterCardProps) {
               <span className="text-gray-500 text-sm">
                   {sitter.district} {sitter.neighborhood}
                 </span>
-              {distance !== undefined && (
-                <span className="text-gray-400 text-xs">
+              <span className="text-gray-400 text-xs">
                   · {formatDistance(distance)}
                 </span>
-              )}
             </div>
           </div>
         </div>
@@ -280,30 +263,38 @@ export default function PetsittersPage() {
     });
   }, [selectedSitterId]);
 
-  const filtered = PETSITTERS.filter((s) => {
-    const matchFilter =
-      activeFilter === "전체"
-        ? true
-        : activeFilter === "인증만"
-          ? s.certified
-          : s.services.includes(activeFilter);
-    const matchSearch =
-      searchQuery === "" ||
-      s.name.includes(searchQuery) ||
-      s.district.includes(searchQuery) ||
-      s.neighborhood.includes(searchQuery);
-    return matchFilter && matchSearch;
-  }).sort((a, b) => {
-    if (sortBy === "평점순") return b.rating - a.rating;
-    if (sortBy === "리뷰 많은 순") return b.reviewCount - a.reviewCount;
-    if (sortBy === "낮은 가격순") return a.price - b.price;
-    if (sortBy === "높은 가격순") return b.price - a.price;
-    if (!userPosition) return 0;
-    return (
-      haversineKm(userPosition.lat, userPosition.lng, a.lat, a.lng) -
-      haversineKm(userPosition.lat, userPosition.lng, b.lat, b.lng)
-    );
-  });
+  const basePosition = userPosition ?? DEFAULT_CENTER;
+
+  const sittersWithDistance = PETSITTERS.map((sitter) => ({
+    ...sitter,
+    distanceKm: calculateDistanceKm(basePosition, {
+      lat: sitter.lat,
+      lng: sitter.lng,
+    }),
+  }));
+
+  const filtered = sittersWithDistance
+    .filter((s) => {
+      const matchFilter =
+        activeFilter === "전체"
+          ? true
+          : activeFilter === "인증만"
+            ? s.certified
+            : s.services.includes(activeFilter);
+      const matchSearch =
+        searchQuery === "" ||
+        s.name.includes(searchQuery) ||
+        s.district.includes(searchQuery) ||
+        s.neighborhood.includes(searchQuery);
+      return matchFilter && matchSearch;
+    })
+    .sort((a, b) => {
+      if (sortBy === "평점순") return b.rating - a.rating;
+      if (sortBy === "리뷰 많은 순") return b.reviewCount - a.reviewCount;
+      if (sortBy === "낮은 가격순") return a.price - b.price;
+      if (sortBy === "높은 가격순") return b.price - a.price;
+      return a.distanceKm - b.distanceKm;
+    });
 
   return (
     <>
@@ -356,7 +347,7 @@ export default function PetsittersPage() {
                     ? `${sortBy} · ${filtered.length}명`
                     : userPosition
                       ? `내 위치 기준 가까운 순 · ${filtered.length}명`
-                      : `총 ${filtered.length}명의 펫시터`}
+                      : `강남역 기준 가까운 순 · ${filtered.length}명`}
                 </p>
                 <div className="flex flex-col gap-4">
                   {filtered.map((sitter) => (
@@ -370,16 +361,7 @@ export default function PetsittersPage() {
                       <PetsitterCard
                         sitter={sitter}
                         isSelected={selectedSitterId === sitter.id}
-                        distance={
-                          userPosition
-                            ? haversineKm(
-                                userPosition.lat,
-                                userPosition.lng,
-                                sitter.lat,
-                                sitter.lng,
-                              )
-                            : undefined
-                        }
+                        distance={sitter.distanceKm}
                       />
                     </div>
                   ))}
