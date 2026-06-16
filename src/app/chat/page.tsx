@@ -1,73 +1,30 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Search,
-  ChevronLeft,
-  ChevronDown,
-  MoreVertical,
-  Send,
-  Plus,
-} from "lucide-react";
+import { createClient } from "@/utils/supabase/client";
+import { Search, ChevronLeft, MoreVertical, Send, Plus } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Avatar from "@/components/ui/Avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   ChatRoomItem,
-  ApplicantCard,
   ChatWindowHeader,
   MessageBubble,
   ChatInput,
   ChatPlusPanel,
   ApplicantProfilePopup,
-  type ChatRoom,
+  ApplicantPostGroup,
   type Applicant,
-  type Message,
 } from "@/components/common/chat/chat_components";
 import { CustomModalPayment } from "@/components/common/CustomModalPayment";
 import CareRecordModal from "@/components/common/chat/CareRecordModal";
+import { sendMessage } from "@/app/actions/chat";
+import { useChatRooms } from "@/hooks/chat/useChatRooms";
+import { useRequest } from "@/hooks/chat/useRequest";
+import { useChatMessages } from "@/hooks/chat/useChatMessages";
 
-// 더미데이터
-const Chat_One_On_One: ChatRoom[] = [
-  {
-    id: 1,
-    name: "김민지",
-    initial: "김",
-    sub: "예약 진행중 · 6월 11일 오전 9시",
-    lastMessage: "네, 그 시간에 가능합니다!",
-    time: "오후 2:30",
-    unread: 2,
-  },
-  {
-    id: 2,
-    name: "이서연",
-    initial: "이",
-    sub: "1:1 채팅",
-    lastMessage: "사진 감사합니다",
-    time: "오전 11:15",
-    unread: 0,
-  },
-  {
-    id: 3,
-    name: "박준호",
-    initial: "박",
-    sub: "1:1 채팅",
-    lastMessage: "알겠습니다",
-    time: "어제",
-    unread: 0,
-  },
-  {
-    id: 4,
-    name: "최예진",
-    initial: "최",
-    sub: "1:1 채팅",
-    lastMessage: "예약 완료했습니다",
-    time: "6월 10일",
-    unread: 1,
-  },
-];
-
+// 더미더미더미데이터
 const DUMMY_POSTS = [
   {
     id: "post-1",
@@ -81,165 +38,66 @@ const DUMMY_POSTS = [
   },
 ];
 
-const Chat_Applicants: Applicant[] = [
-  {
-    id: 0,
-    postId: "post-1",
-    name: "김시터",
-    initial: "김",
-    rating: 4.8,
-    preview: "잘 부탁드립니다! 강아지 산책...",
-    unread: 2,
-    location: "서울 마포구",
-    reviewCount: 47,
-    services: ["방문돌봄", "위탁돌봄", "산책"],
-    experience: "5년",
-    completedJobs: "230건",
-    responseRate: "98%",
-  },
-  {
-    id: 1,
-    postId: "post-1",
-    name: "이시터",
-    initial: "이",
-    rating: 4.5,
-    preview: "언제든지 연락 주세요~",
-    unread: 0,
-    location: "서울 강남구",
-    reviewCount: 23,
-    services: ["방문돌봄", "산책"],
-    experience: "3년",
-    completedJobs: "95건",
-    responseRate: "95%",
-  },
-  {
-    id: 2,
-    postId: "post-2",
-    name: "박시터",
-    initial: "박",
-    rating: 4.9,
-    preview: "경력 5년입니다 :)",
-    unread: 0,
-    location: "서울 송파구",
-    reviewCount: 61,
-    services: ["방문돌봄", "위탁돌봄"],
-    experience: "7년",
-    completedJobs: "310건",
-    responseRate: "99%",
-  },
-  {
-    id: 3,
-    postId: "post-2",
-    name: "최시터",
-    initial: "최",
-    rating: 4.7,
-    preview: "자격증 보유하고 있어요",
-    unread: 1,
-    location: "서울 관악구",
-    reviewCount: 38,
-    services: ["산책", "위탁돌봄"],
-    experience: "4년",
-    completedJobs: "150건",
-    responseRate: "96%",
-  },
-];
-
-const Messages_one_on_one: Message[] = [
-  {
-    id: 1,
-    from: "other",
-    text: "안녕하세요! 6월 15일에 방문돌봄 예약 가능할까요?",
-    time: "오후 2:15",
-  },
-  {
-    id: 2,
-    from: "me",
-    text: "네, 안녕하세요! 그날 오전 시간대는 어떠세요?",
-    time: "오후 2:18",
-  },
-  {
-    id: 3,
-    from: "other",
-    text: "좋습니다! 오전 10시쯤 가능하신가요?",
-    time: "오후 2:20",
-  },
-  { id: 4, from: "divider", text: "2024년 6월 14일" },
-  { id: 5, from: "me", text: "네, 그 시간에 가능합니다!", time: "오후 2:30" },
-  {
-    id: 6,
-    from: "other",
-    text: "감사합니다. 그럼 예약 진행하겠습니다",
-    time: "오후 2:32",
-  },
-];
-
-const Messages_Applicants: Record<number, Message[]> = {
-  0: [
-    {
-      id: 1,
-      from: "other",
-      text: "안녕하세요! 구인글 보고 지원했습니다 😊",
-      time: "오후 2:10",
-    },
-    {
-      id: 2,
-      from: "me",
-      text: "네 안녕하세요! 매일 오전 가능하신가요?",
-      time: "오후 2:13",
-    },
-    {
-      id: 3,
-      from: "other",
-      text: "네, 평일 오전 9시~11시 가능합니다!",
-      time: "오후 2:16",
-    },
-  ],
-  1: [
-    {
-      id: 1,
-      from: "other",
-      text: "안녕하세요! 지원합니다.",
-      time: "오전 10:00",
-    },
-    { id: 2, from: "me", text: "경력이 어떻게 되세요?", time: "오전 10:05" },
-  ],
-  2: [
-    {
-      id: 1,
-      from: "other",
-      text: "경력 5년입니다. 잘 부탁드려요!",
-      time: "오전 9:00",
-    },
-  ],
-  3: [
-    {
-      id: 1,
-      from: "other",
-      text: "자격증 보유하고 있습니다!",
-      time: "오후 1:00",
-    },
-  ],
-};
-
 export default function ChatPage() {
   const router = useRouter();
   const [editMode, setEditMode] = useState(false);
-  const [rooms, setRooms] = useState(Chat_One_On_One);
-  const [applicants, setApplicants] = useState(Chat_Applicants);
-
   const [activeTab, setActiveTab] = useState<"one_on_one" | "applicants">(
     "one_on_one",
   );
-  const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
-  const [input, setInput] = useState("");
-
-  const [selectedApplicantId, setSelectedApplicantId] = useState<number | null>(
+  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
+  const [selectedApplicantId, setSelectedApplicantId] = useState<string | null>(
     null,
   );
+  const [input, setInput] = useState("");
+  const [sendError, setSendError] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const [rejectedIds, setRejectedIds] = useState<Set<number>>(new Set());
-  const [confirmedId, setConfirmedId] = useState<number | null>(null);
-  const [sysMessages, setSysMessages] = useState<Record<number, string>>({});
+  const { rooms, applicants, loading, error, deleteRoom, deleteApplicant } =
+    useChatRooms();
+  const {
+    rejectedIds,
+    confirmedId,
+    sysMessages,
+    rejectApplicant,
+    confirmApplicant,
+    getApplicantBadge,
+  } = useRequest(applicants);
+
+  const activeRoomId =
+    activeTab === "one_on_one" ? selectedRoomId : selectedApplicantId;
+
+  const { messages, addMessage } = useChatMessages(activeRoomId, userId);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  async function handleSend() {
+    if (!input.trim() || !activeRoomId || sending) return;
+    setSendError(null);
+    setSending(true);
+    try {
+      const result = await sendMessage(activeRoomId, input.trim());
+      if (result.error) {
+        setSendError(result.error.message);
+        return;
+      }
+      if (result.data) addMessage(result.data);
+      setInput("");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  // 로그인 유저 ID 가져오기
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth
+      .getUser()
+      .then(({ data }) => setUserId(data.user?.id ?? null));
+  }, []);
 
   const [mobileChatView, setMobileChatView] = useState<"list" | "room">("list");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -257,7 +115,7 @@ export default function ChatPage() {
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [careRecordOpen, setCareRecordOpen] = useState(false);
 
-  function openApplicantProfile(id: number) {
+  function openApplicantProfile(id: string) {
     const found = applicants.find((a) => a.id === id) ?? null;
     setProfilePopupApplicant(found);
   }
@@ -270,56 +128,14 @@ export default function ChatPage() {
     (a) => a.id === selectedApplicantId,
   );
 
-  function deleteRoom(id: number) {
-    const next = rooms.filter((r) => r.id !== id);
-    setRooms(next);
-    if (selectedRoomId === id) setSelectedRoomId(next[0]?.id ?? null);
+  function handleDeleteRoom(id: string) {
+    deleteRoom(id);
+    if (selectedRoomId === id) setSelectedRoomId(null);
   }
 
-  function deleteApplicant(id: number) {
-    const next = applicants.filter((a) => a.id !== id);
-    setApplicants(next);
-    if (selectedApplicantId === id) setSelectedApplicantId(next[0]?.id ?? null);
-  }
-
-  function rejectApplicant(id: number) {
-    if (confirmedId === id || rejectedIds.has(id)) return;
-    setRejectedIds((prev) => new Set(prev).add(id));
-    setSysMessages((prev) => ({
-      ...prev,
-      [id]: `${Chat_Applicants[id].name}님을 거절했습니다`,
-    }));
-  }
-
-  function confirmApplicant(id: number) {
-    if (rejectedIds.has(id) || confirmedId !== null) return;
-    setConfirmedId(id);
-
-    const newRejected = new Set(rejectedIds);
-    const newMessages: Record<number, string> = { ...sysMessages };
-    Chat_Applicants.forEach((a) => {
-      if (a.id !== id) {
-        newRejected.add(a.id);
-        newMessages[a.id] = `${a.name}님을 거절했습니다`;
-      }
-    });
-    setRejectedIds(newRejected);
-    newMessages[id] = `${Chat_Applicants[id].name}님을 선택 확정했습니다 🎉`;
-    setSysMessages(newMessages);
-  }
-
-  function getApplicantBadge(id: number) {
-    if (rejectedIds.has(id))
-      return { label: "거절됨", className: "bg-stone-100 text-stone-400" };
-    if (confirmedId === id)
-      return { label: "선택됨", className: "bg-orange-50 text-orange-500" };
-    const unread = Chat_Applicants[id].unread;
-    if (unread > 0)
-      return {
-        label: `새 메시지 ${unread}`,
-        className: "bg-green-50 text-green-700",
-      };
-    return { label: "읽음", className: "bg-stone-100 text-stone-400" };
+  function handleDeleteApplicant(id: string) {
+    deleteApplicant(id);
+    if (selectedApplicantId === id) setSelectedApplicantId(null);
   }
 
   function getHeaderBadge() {
@@ -412,16 +228,32 @@ export default function ChatPage() {
 
             {/* 목록 */}
             <ScrollArea className="flex-1 overflow-hidden">
-              {activeTab === "one_on_one" && rooms.length === 0 && (
+              {loading && (
                 <p className="text-center text-stone-400 text-sm pt-16">
-                  새로운 채팅이 존재하지 않습니다
+                  불러오는 중...
                 </p>
               )}
-              {activeTab === "applicants" && applicants.length === 0 && (
+              {!loading && error && (
                 <p className="text-center text-stone-400 text-sm pt-16">
-                  새로운 채팅이 존재하지 않습니다
+                  {error}
                 </p>
               )}
+              {!loading &&
+                !error &&
+                activeTab === "one_on_one" &&
+                rooms.length === 0 && (
+                  <p className="text-center text-stone-400 text-sm pt-16">
+                    새로운 채팅이 존재하지 않습니다
+                  </p>
+                )}
+              {!loading &&
+                !error &&
+                activeTab === "applicants" &&
+                applicants.length === 0 && (
+                  <p className="text-center text-stone-400 text-sm pt-16">
+                    새로운 채팅이 존재하지 않습니다
+                  </p>
+                )}
               {activeTab === "one_on_one" &&
                 rooms.map((room) => (
                   <ChatRoomItem
@@ -429,7 +261,7 @@ export default function ChatPage() {
                     room={room}
                     isSelected={false}
                     editMode={editMode}
-                    onDelete={deleteRoom}
+                    onDelete={handleDeleteRoom}
                     onClick={(id) => {
                       setSelectedRoomId(id);
                       setMobileChatView("room");
@@ -439,55 +271,30 @@ export default function ChatPage() {
 
               {activeTab === "applicants" && (
                 <>
-                  {DUMMY_POSTS.map((post) => {
-                    const group = applicants.filter(
-                      (a) => a.postId === post.id,
-                    );
-                    if (group.length === 0) return null;
-                    const isCollapsed = collapsedPosts.has(post.id);
-                    return (
-                      <div key={post.id}>
-                        <button
-                          onClick={() => togglePostCollapse(post.id)}
-                          className="w-full px-5 py-3 bg-orange-50 border-b border-orange-100 flex items-center justify-between hover:bg-orange-100 transition-colors"
-                        >
-                          <div className="text-left">
-                            <p className="text-sm font-medium text-stone-900 truncate max-w-55">
-                              {post.title}
-                            </p>
-                            <p className="text-xs text-gray-400 mt-0.5">
-                              지원자 {group.length}명 · {post.status}
-                            </p>
-                          </div>
-                          <ChevronDown
-                            size={16}
-                            className={`text-gray-400 shrink-0 transition-transform duration-200 ${isCollapsed ? "-rotate-90" : ""}`}
-                          />
-                        </button>
-                        {!isCollapsed &&
-                          group.map((applicant) => (
-                            <ApplicantCard
-                              key={applicant.id}
-                              applicant={applicant}
-                              badge={getApplicantBadge(applicant.id)}
-                              isRejected={rejectedIds.has(applicant.id)}
-                              isConfirmed={confirmedId === applicant.id}
-                              isSelected={false}
-                              confirmedId={confirmedId}
-                              editMode={editMode}
-                              onDelete={deleteApplicant}
-                              onReject={rejectApplicant}
-                              onConfirm={confirmApplicant}
-                              onSelect={(id) => {
-                                setSelectedApplicantId(id);
-                                setMobileChatView("room");
-                              }}
-                              onAvatarClick={openApplicantProfile}
-                            />
-                          ))}
-                      </div>
-                    );
-                  })}
+                  {DUMMY_POSTS.map((post) => (
+                    <ApplicantPostGroup
+                      key={post.id}
+                      post={post}
+                      applicants={applicants.filter(
+                        (a) => a.postId === post.id,
+                      )}
+                      isCollapsed={collapsedPosts.has(post.id)}
+                      selectedApplicantId={selectedApplicantId}
+                      rejectedIds={rejectedIds}
+                      confirmedId={confirmedId}
+                      editMode={editMode}
+                      onToggle={() => togglePostCollapse(post.id)}
+                      onDelete={handleDeleteApplicant}
+                      onReject={rejectApplicant}
+                      onConfirm={confirmApplicant}
+                      onSelect={(id) => {
+                        setSelectedApplicantId(id);
+                        setMobileChatView("room");
+                      }}
+                      onAvatarClick={openApplicantProfile}
+                      getApplicantBadge={getApplicantBadge}
+                    />
+                  ))}
                 </>
               )}
             </ScrollArea>
@@ -550,12 +357,12 @@ export default function ChatPage() {
                             activeTab === "one_on_one" &&
                             selectedRoomId !== null
                           )
-                            deleteRoom(selectedRoomId);
+                            handleDeleteRoom(selectedRoomId);
                           else if (
                             activeTab === "applicants" &&
                             selectedApplicantId !== null
                           )
-                            deleteApplicant(selectedApplicantId);
+                            handleDeleteApplicant(selectedApplicantId);
                           setMobileChatView("list");
                           setMobileMenuOpen(false);
                         }}
@@ -579,19 +386,14 @@ export default function ChatPage() {
             </div>
 
             {/* 메시지 영역 */}
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 min-h-0">
               <div
                 className="px-4 py-4 flex flex-col gap-4"
                 onClick={() => {
                   if (plusMenuOpen) setPlusMenuOpen(false);
                 }}
               >
-                {(activeTab === "one_on_one"
-                  ? Messages_one_on_one
-                  : selectedApplicantId !== null
-                    ? (Messages_Applicants[selectedApplicantId] ?? [])
-                    : []
-                ).map((msg) => (
+                {messages.map((msg) => (
                   <MessageBubble
                     key={msg.id}
                     msg={msg}
@@ -608,6 +410,7 @@ export default function ChatPage() {
                       </span>
                     </div>
                   )}
+                <div ref={messagesEndRef} />
               </div>
             </ScrollArea>
 
@@ -650,6 +453,11 @@ export default function ChatPage() {
             )}
 
             {/* 입력창 */}
+            {sendError && (
+              <p className="px-4 py-1 text-xs text-red-500 bg-red-50 border-t border-red-100 shrink-0">
+                {sendError}
+              </p>
+            )}
             <div className="px-4 py-3 bg-white border-t border-orange-100 flex items-center gap-2.5 shrink-0">
               <button
                 onClick={() => setPlusMenuOpen((v) => !v)}
@@ -667,7 +475,11 @@ export default function ChatPage() {
                 placeholder="메시지를 입력하세요"
                 className="flex-1 h-11 px-4 bg-orange-50 rounded-2xl text-sm text-stone-900 placeholder-stone-900/50 outline-none"
               />
-              <button className="w-11 h-11 bg-orange-500 rounded-xl flex items-center justify-center shrink-0">
+              <button
+                onClick={handleSend}
+                disabled={sending}
+                className="w-11 h-11 bg-orange-500 rounded-xl flex items-center justify-center shrink-0 disabled:opacity-50"
+              >
                 <Send size={16} className="text-white" />
               </button>
             </div>
@@ -733,7 +545,7 @@ export default function ChatPage() {
                   room={room}
                   isSelected={selectedRoomId === room.id}
                   editMode={editMode}
-                  onDelete={deleteRoom}
+                  onDelete={handleDeleteRoom}
                   onClick={setSelectedRoomId}
                 />
               ))}
@@ -743,57 +555,40 @@ export default function ChatPage() {
           {/* 지원 목록 */}
           {activeTab === "applicants" && (
             <ScrollArea className="flex-1 overflow-hidden">
-              {DUMMY_POSTS.map((post) => {
-                const group = applicants.filter((a) => a.postId === post.id);
-                if (group.length === 0) return null;
-                const isCollapsed = collapsedPosts.has(post.id);
-                return (
-                  <div key={post.id}>
-                    <button
-                      onClick={() => togglePostCollapse(post.id)}
-                      className="w-full px-5 py-3 bg-orange-50 border-b border-orange-100 flex items-center justify-between hover:bg-orange-100 transition-colors shrink-0"
-                    >
-                      <div className="text-left">
-                        <p className="text-sm font-medium text-stone-900 truncate max-w-50">
-                          {post.title}
-                        </p>
-                        <p className="text-xs text-gray-400 mt-0.5">
-                          지원자 {group.length}명 · {post.status}
-                        </p>
-                      </div>
-                      <ChevronDown
-                        size={16}
-                        className={`text-gray-400 shrink-0 transition-transform duration-200 ${isCollapsed ? "-rotate-90" : ""}`}
-                      />
-                    </button>
-                    {!isCollapsed &&
-                      group.map((applicant) => (
-                        <ApplicantCard
-                          key={applicant.id}
-                          applicant={applicant}
-                          badge={getApplicantBadge(applicant.id)}
-                          isRejected={rejectedIds.has(applicant.id)}
-                          isConfirmed={confirmedId === applicant.id}
-                          isSelected={selectedApplicantId === applicant.id}
-                          confirmedId={confirmedId}
-                          editMode={editMode}
-                          onDelete={deleteApplicant}
-                          onReject={rejectApplicant}
-                          onConfirm={confirmApplicant}
-                          onSelect={setSelectedApplicantId}
-                          onAvatarClick={openApplicantProfile}
-                        />
-                      ))}
-                  </div>
-                );
-              })}
+              {DUMMY_POSTS.map((post) => (
+                <ApplicantPostGroup
+                  key={post.id}
+                  post={post}
+                  applicants={applicants.filter((a) => a.postId === post.id)}
+                  isCollapsed={collapsedPosts.has(post.id)}
+                  selectedApplicantId={selectedApplicantId}
+                  rejectedIds={rejectedIds}
+                  confirmedId={confirmedId}
+                  editMode={editMode}
+                  onToggle={() => togglePostCollapse(post.id)}
+                  onDelete={handleDeleteApplicant}
+                  onReject={rejectApplicant}
+                  onConfirm={confirmApplicant}
+                  onSelect={setSelectedApplicantId}
+                  onAvatarClick={openApplicantProfile}
+                  getApplicantBadge={getApplicantBadge}
+                />
+              ))}
             </ScrollArea>
           )}
         </div>
 
         {/* 채팅창 */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          {(activeTab === "one_on_one" && rooms.length === 0) ||
+          {loading ? (
+            <div className="flex-1 flex items-center justify-center">
+              <p className="text-stone-400 text-sm">불러오는 중...</p>
+            </div>
+          ) : error ? (
+            <div className="flex-1 flex items-center justify-center">
+              <p className="text-stone-400 text-sm">{error}</p>
+            </div>
+          ) : (activeTab === "one_on_one" && rooms.length === 0) ||
           (activeTab === "applicants" && applicants.length === 0) ? (
             <div className="flex-1 flex items-center justify-center">
               <p className="text-stone-400 text-sm">
@@ -836,27 +631,24 @@ export default function ChatPage() {
                 }}
                 onLeaveChat={() => {
                   if (activeTab === "one_on_one" && selectedRoomId !== null)
-                    deleteRoom(selectedRoomId);
+                    handleDeleteRoom(selectedRoomId);
                   else if (
                     activeTab === "applicants" &&
                     selectedApplicantId !== null
                   )
-                    deleteApplicant(selectedApplicantId);
+                    handleDeleteApplicant(selectedApplicantId);
                 }}
                 onReport={() => router.push("/myprofile/report")}
               />
 
-              <ScrollArea className="flex-1">
+              <ScrollArea className="flex-1 min-h-0">
                 <div
                   className="px-8 py-6 flex flex-col gap-6"
                   onClick={() => {
                     if (plusMenuOpen) setPlusMenuOpen(false);
                   }}
                 >
-                  {(activeTab === "one_on_one"
-                    ? Messages_one_on_one
-                    : (Messages_Applicants[selectedApplicantId!] ?? [])
-                  ).map((msg) => (
+                  {messages.map((msg) => (
                     <MessageBubble
                       key={msg.id}
                       msg={msg}
@@ -876,6 +668,7 @@ export default function ChatPage() {
                         </span>
                       </div>
                     )}
+                  <div ref={messagesEndRef} />
                 </div>
               </ScrollArea>
 
@@ -900,9 +693,15 @@ export default function ChatPage() {
                   onSendPhoto={() => setPlusMenuOpen(false)}
                 />
               )}
+              {sendError && (
+                <p className="px-8 py-1 text-xs text-red-500 bg-red-50 border-t border-red-100 shrink-0">
+                  {sendError}
+                </p>
+              )}
               <ChatInput
                 input={input}
                 onChange={setInput}
+                onSend={handleSend}
                 showPlusButton={true}
                 plusOpen={plusMenuOpen}
                 onPlusToggle={() => setPlusMenuOpen((v) => !v)}

@@ -9,6 +9,7 @@ import {
   CreditCard,
   ClipboardList,
   Camera,
+  ChevronDown,
 } from "lucide-react";
 import Avatar from "@/components/ui/Avatar";
 import SitterProfileCard, {
@@ -17,7 +18,7 @@ import SitterProfileCard, {
 
 // 1:1 채팅의 각 목록
 export type ChatRoom = {
-  id: number;
+  id: string;
   name: string;
   initial: string;
   sub: string;
@@ -28,7 +29,7 @@ export type ChatRoom = {
 
 // 지원 목록의 각 목록
 export type Applicant = {
-  id: number;
+  id: string;
   postId: string;
   name: string;
   initial: string;
@@ -40,12 +41,11 @@ export type Applicant = {
   services?: string[];
   experience?: string;
   completedJobs?: string;
-  responseRate?: string;
 };
 
 // 채팅창 메시지
 export type Message = {
-  id: number;
+  id: string;
   from: "me" | "other" | "divider";
   text: string;
   time?: string;
@@ -62,8 +62,8 @@ type ChatRoomItemProps = {
   room: ChatRoom;
   isSelected: boolean;
   editMode: boolean;
-  onDelete: (id: number) => void;
-  onClick: (id: number) => void;
+  onDelete: (id: string) => void;
+  onClick: (id: string) => void;
 };
 
 export function ChatRoomItem({
@@ -120,13 +120,13 @@ type ApplicantCardProps = {
   isRejected: boolean;
   isConfirmed: boolean;
   isSelected: boolean;
-  confirmedId: number | null;
+  confirmedId: string | null;
   editMode: boolean;
-  onDelete: (id: number) => void;
-  onReject: (id: number) => void;
-  onConfirm: (id: number) => void;
-  onSelect: (id: number) => void;
-  onAvatarClick?: (id: number) => void;
+  onDelete: (id: string) => void;
+  onReject: (id: string) => void;
+  onConfirm: (id: string) => void;
+  onSelect: (id: string) => void;
+  onAvatarClick?: (id: string) => void;
 };
 
 export function ApplicantCard({
@@ -384,10 +384,7 @@ export function ApplicantProfilePopup({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
       onClick={onClose}
     >
-      <div
-        className="relative w-80"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="relative w-80" onClick={(e) => e.stopPropagation()}>
         <button
           onClick={onClose}
           className="absolute top-3 right-3 z-10 p-1 rounded-full hover:bg-orange-50 transition-colors"
@@ -489,10 +486,96 @@ export function ChatInput({
           placeholder="메시지를 입력하세요"
           className="flex-1 h-14 px-5 py-4 bg-orange-50 rounded-2xl text-base text-stone-900 placeholder-stone-900/50 outline-none"
         />
-        <button onClick={onSend} className="w-12 h-12 bg-orange-500 hover:bg-orange-600 rounded-xl flex items-center justify-center transition-colors">
+        <button
+          onClick={onSend}
+          className="w-12 h-12 bg-orange-500 hover:bg-orange-600 rounded-xl flex items-center justify-center transition-colors"
+        >
           <Send size={18} className="text-white" />
         </button>
       </div>
+    </div>
+  );
+}
+
+// 지원 목록 탭 : 구인글별 지원자 목록 그룹
+type Post = {
+  id: string;
+  title: string;
+  status: string;
+};
+
+type ApplicantPostGroupProps = {
+  post: Post;
+  applicants: Applicant[];
+  isCollapsed: boolean;
+  selectedApplicantId: string | null;
+  rejectedIds: Set<string>;
+  confirmedId: string | null;
+  editMode: boolean;
+  onToggle: () => void;
+  onDelete: (id: string) => void;
+  onReject: (id: string) => void;
+  onConfirm: (id: string) => void;
+  onSelect: (id: string) => void;
+  onAvatarClick?: (id: string) => void;
+  getApplicantBadge: (id: string) => Badge;
+};
+
+export function ApplicantPostGroup({
+  post,
+  applicants,
+  isCollapsed,
+  selectedApplicantId,
+  rejectedIds,
+  confirmedId,
+  editMode,
+  onToggle,
+  onDelete,
+  onReject,
+  onConfirm,
+  onSelect,
+  onAvatarClick,
+  getApplicantBadge,
+}: ApplicantPostGroupProps) {
+  if (applicants.length === 0) return null;
+
+  return (
+    <div>
+      <button
+        onClick={onToggle}
+        className="w-full px-5 py-3 bg-orange-50 border-b border-orange-100 flex items-center justify-between hover:bg-orange-100 transition-colors shrink-0"
+      >
+        <div className="text-left flex-1 min-w-0 mr-2">
+          <p className="text-sm font-medium text-stone-900 truncate">
+            {post.title}
+          </p>
+          <p className="text-xs text-gray-400 mt-0.5">
+            지원자 {applicants.length}명 · {post.status}
+          </p>
+        </div>
+        <ChevronDown
+          size={16}
+          className={`text-gray-400 shrink-0 transition-transform duration-200 ${isCollapsed ? "-rotate-90" : ""}`}
+        />
+      </button>
+      {!isCollapsed &&
+        applicants.map((applicant) => (
+          <ApplicantCard
+            key={applicant.id}
+            applicant={applicant}
+            badge={getApplicantBadge(applicant.id)}
+            isRejected={rejectedIds.has(applicant.id)}
+            isConfirmed={confirmedId === applicant.id}
+            isSelected={selectedApplicantId === applicant.id}
+            confirmedId={confirmedId}
+            editMode={editMode}
+            onDelete={onDelete}
+            onReject={onReject}
+            onConfirm={onConfirm}
+            onSelect={onSelect}
+            onAvatarClick={onAvatarClick}
+          />
+        ))}
     </div>
   );
 }
