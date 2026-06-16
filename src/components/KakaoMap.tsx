@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import Script from "next/script";
+import { formatDistance } from "@/utils/distance";
 
 declare global {
   interface Window {
@@ -13,10 +14,10 @@ export interface MapMarker {
   lat: number;
   lng: number;
   id: number;
-  certified?: boolean;
   name?: string;
   district?: string;
   neighborhood?: string;
+  distanceKm?: number;
 }
 
 interface KakaoMapProps {
@@ -26,19 +27,18 @@ interface KakaoMapProps {
   className?: string;
   selectedMarkerId?: number | null;
   onMarkerClick?: (id: number) => void;
+  basePosition?: { lat: number; lng: number };
 }
 
 function markerImageUrl(selected = false): string {
   const svg = selected
-    ? // 활성화 -> 원 + 오버레이
-      encodeURIComponent(
+    ? encodeURIComponent(
         `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
           <circle cx="12" cy="12" r="10" fill="#f97316" stroke="white" stroke-width="2.5"/>
           <circle cx="12" cy="12" r="4" fill="white"/>
         </svg>`,
       )
-    : // 기본 상태: 핀 형태
-      encodeURIComponent(
+    : encodeURIComponent(
         `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="42" viewBox="0 0 32 42">
           <path d="M16 0C7.163 0 0 7.163 0 16c0 10.667 16 26 16 26S32 26.667 32 16C32 7.163 24.837 0 16 0z" fill="#f97316" stroke="white" stroke-width="1.5"/>
           <circle cx="16" cy="16" r="6" fill="white"/>
@@ -60,18 +60,31 @@ export default function KakaoMap({
   className,
   selectedMarkerId,
   onMarkerClick,
+  basePosition,
 }: KakaoMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const kakaoMarkersRef = useRef<any[]>([]);
   const overlayRef = useRef<any>(null);
+  const polylineRef = useRef<any>(null);
   const onMarkerClickRef = useRef(onMarkerClick);
+  const basePositionRef = useRef(basePosition);
 
   useEffect(() => {
     onMarkerClickRef.current = onMarkerClick;
   }, [onMarkerClick]);
 
-  // 최초 1회 지도 초기화
+  useEffect(() => {
+    basePositionRef.current = basePosition;
+  }, [basePosition]);
+
+  // center prop 변경 시 지도 pan
+  useEffect(() => {
+    if (mapRef.current && center) {
+      mapRef.current.panTo(new window.kakao.maps.LatLng(center.lat, center.lng));
+    }
+  }, [center]);
+
   function initMap() {
     if (!containerRef.current || !window.kakao?.maps || mapRef.current) return;
 
@@ -86,28 +99,29 @@ export default function KakaoMap({
       level,
     });
 
-    // 빈 곳 클릭 시 오버레이 닫기
     window.kakao.maps.event.addListener(mapRef.current, "click", () => {
       if (overlayRef.current) {
         overlayRef.current.setMap(null);
         overlayRef.current = null;
+      }
+      if (polylineRef.current) {
+        polylineRef.current.setMap(null);
+        polylineRef.current = null;
       }
     });
 
     drawMarkers();
   }
 
-  // 마커만 다시 그리기 (지도 객체 유지)
   function drawMarkers() {
     const map = mapRef.current;
     if (!map) return;
 
-    // 기존 마커 제거
     kakaoMarkersRef.current.forEach((m) => m.setMap(null));
     kakaoMarkersRef.current = [];
 
     markers.forEach((marker) => {
-      const { lat, lng, id, name, district, neighborhood } = marker;
+      const { lat, lng, id, name, district, neighborhood, distanceKm } = marker;
       const selected = selectedMarkerId === id;
       const opt = getMarkerSize(selected);
       const position = new window.kakao.maps.LatLng(lat, lng);
@@ -127,13 +141,40 @@ export default function KakaoMap({
       kakaoMarkersRef.current.push(kakaoMarker);
 
       window.kakao.maps.event.addListener(kakaoMarker, "click", () => {
+        // 기존 오버레이 제거
         if (overlayRef.current) {
           overlayRef.current.setMap(null);
           overlayRef.current = null;
         }
+        // 기존 polyline 제거
+        if (polylineRef.current) {
+          polylineRef.current.setMap(null);
+          polylineRef.current = null;
+        }
 
         map.panTo(position);
         onMarkerClickRef.current?.(id);
+
+        // basePosition이 있으면 Polyline 그리기
+        const base = basePositionRef.current;
+        if (base) {
+          polylineRef.current = new window.kakao.maps.Polyline({
+            map,
+            path: [
+              new window.kakao.maps.LatLng(base.lat, base.lng),
+              position,
+            ],
+            strokeWeight: 2,
+            strokeColor: "#f97316",
+            strokeOpacity: 0.6,
+            strokeStyle: "dashed",
+          });
+        }
+
+        const distanceRow =
+          distanceKm !== undefined
+            ? `<div style="color:#f97316; font-size:11px; margin-top:3px;">약 ${formatDistance(distanceKm)}</div>`
+            : "";
 
         const content = document.createElement("div");
         content.innerHTML = `
@@ -152,6 +193,7 @@ export default function KakaoMap({
             <div style="color:#6B7280; font-size:12px; margin-top:2px;">
               ${district ?? ""} ${neighborhood ?? ""}
             </div>
+            ${distanceRow}
           </div>
         `;
 
@@ -165,7 +207,6 @@ export default function KakaoMap({
     });
   }
 
-  // markers 또는 selectedMarkerId 변경 시 마커만 다시 그림
   useEffect(() => {
     if (mapRef.current) {
       drawMarkers();
@@ -175,7 +216,7 @@ export default function KakaoMap({
   return (
     <div style={{ width: "100%", height: "100%" }} className={className}>
       <Script
-        src={`//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_KEY}&autoload=false`}
+        src={`//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_KEY}&autoload=false&libraries=services`}
         strategy="afterInteractive"
         onLoad={() => window.kakao.maps.load(initMap)}
       />
