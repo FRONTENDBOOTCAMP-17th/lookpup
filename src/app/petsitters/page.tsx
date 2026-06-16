@@ -13,117 +13,145 @@ import SearchFilterBar from "@/components/common/SearchFilterBar";
 const FILTERS = ["전체", "방문돌봄", "위탁돌봄", "산책", "인증만"] as const;
 type Filter = (typeof FILTERS)[number];
 
-const SORT_OPTIONS = ["평점순", "리뷰 많은 순", "낮은 가격순", "높은 가격순"] as const;
+const SORT_OPTIONS = [
+  "평점순",
+  "리뷰 많은 순",
+  "낮은 가격순",
+  "높은 가격순",
+] as const;
 type SortOption = (typeof SORT_OPTIONS)[number];
 
+//더미더미데이터 강남 중심으로 바꿔봄
 const PETSITTERS = [
   {
     id: 1,
     name: "김민지",
     initial: "김",
-    district: "마포구",
+    district: "강남구",
+    neighborhood: "역삼동",
     rating: 4.9,
     reviewCount: 47,
     price: 30000,
     services: ["방문돌봄", "산책"],
     certified: true,
-    lat: 37.5665,
-    lng: 126.9013,
+    lat: 37.5006,
+    lng: 127.0364,
   },
   {
     id: 2,
     name: "이서연",
     initial: "이",
     district: "강남구",
+    neighborhood: "삼성동",
     rating: 4.8,
     reviewCount: 32,
     price: 35000,
-    services: ["방문돌봄", "산책"],
+    services: ["방문돌봄", "위탁돌봄"],
     certified: false,
-    lat: 37.5172,
-    lng: 127.0473,
+    lat: 37.5146,
+    lng: 127.0565,
   },
   {
     id: 3,
     name: "박준호",
     initial: "박",
-    district: "용산구",
+    district: "강남구",
+    neighborhood: "논현동",
     rating: 4.7,
     reviewCount: 28,
     price: 28000,
-    services: ["방문돌봄", "산책"],
+    services: ["산책", "방문돌봄"],
     certified: false,
-    lat: 37.5326,
-    lng: 126.9907,
+    lat: 37.5112,
+    lng: 127.0218,
   },
   {
     id: 4,
     name: "최예진",
     initial: "최",
-    district: "성동구",
+    district: "서초구",
+    neighborhood: "서초동",
     rating: 4.6,
     reviewCount: 15,
     price: 32000,
     services: ["방문돌봄", "산책"],
     certified: true,
-    lat: 37.5633,
-    lng: 127.0369,
+    lat: 37.4901,
+    lng: 127.0175,
   },
   {
     id: 5,
     name: "정수아",
     initial: "정",
-    district: "송파구",
+    district: "서초구",
+    neighborhood: "반포동",
     rating: 4.5,
     reviewCount: 52,
     price: 38000,
-    services: ["방문돌봄", "산책"],
+    services: ["위탁돌봄", "방문돌봄"],
     certified: false,
-    lat: 37.5145,
-    lng: 127.1059,
+    lat: 37.5046,
+    lng: 126.9947,
   },
   {
     id: 6,
     name: "강태윤",
     initial: "강",
-    district: "광진구",
+    district: "서초구",
+    neighborhood: "양재동",
     rating: 4.9,
     reviewCount: 38,
     price: 25000,
-    services: ["방문돌봄", "산책"],
+    services: ["산책", "방문돌봄"],
     certified: false,
-    lat: 37.5385,
-    lng: 127.0823,
+    lat: 37.4847,
+    lng: 127.0344,
   },
   {
     id: 7,
     name: "윤지우",
     initial: "윤",
-    district: "서초구",
+    district: "송파구",
+    neighborhood: "잠실동",
     rating: 4.8,
     reviewCount: 41,
     price: 33000,
     services: ["방문돌봄", "산책"],
     certified: true,
-    lat: 37.4837,
-    lng: 127.0325,
+    lat: 37.5133,
+    lng: 127.1002,
   },
   {
     id: 8,
     name: "한소미",
     initial: "한",
-    district: "영등포구",
+    district: "송파구",
+    neighborhood: "문정동",
     rating: 4.7,
     reviewCount: 23,
     price: 29000,
-    services: ["방문돌봄", "산책"],
+    services: ["위탁돌봄", "산책"],
     certified: false,
-    lat: 37.5264,
-    lng: 126.8962,
+    lat: 37.4854,
+    lng: 127.1225,
+  },
+  {
+    id: 9,
+    name: "오하린",
+    initial: "오",
+    district: "송파구",
+    neighborhood: "방이동",
+    rating: 4.9,
+    reviewCount: 36,
+    price: 34000,
+    services: ["방문돌봄", "위탁돌봄", "산책"],
+    certified: true,
+    lat: 37.5141,
+    lng: 127.1128,
   },
 ];
 
-const SEOUL_CENTER = { lat: 37.5665, lng: 126.978 };
+const DEFAULT_CENTER = { lat: 37.4979, lng: 127.0276 };
 
 function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number) {
   const R = 6371;
@@ -173,7 +201,9 @@ function PetsitterCard({ sitter, isSelected, distance }: PetsitterCardProps) {
             </div>
             <div className="flex items-center gap-1 mt-1">
               <MapPin size={14} className="text-gray-400" />
-              <span className="text-gray-500 text-sm">{sitter.district}</span>
+              <span className="text-gray-500 text-sm">
+                  {sitter.district} {sitter.neighborhood}
+                </span>
               {distance !== undefined && (
                 <span className="text-gray-400 text-xs">
                   · {formatDistance(distance)}
@@ -234,7 +264,9 @@ export default function PetsittersPage() {
     const card = cardRefs.current.get(selectedSitterId);
     if (!card) return;
 
-    const viewport = card.closest<HTMLElement>('[data-slot="scroll-area-viewport"]');
+    const viewport = card.closest<HTMLElement>(
+      '[data-slot="scroll-area-viewport"]',
+    );
     if (!viewport) {
       card.scrollIntoView({ behavior: "smooth", block: "nearest" });
       return;
@@ -250,13 +282,16 @@ export default function PetsittersPage() {
 
   const filtered = PETSITTERS.filter((s) => {
     const matchFilter =
-      activeFilter === "전체" ? true :
-      activeFilter === "인증만" ? s.certified :
-      s.services.includes(activeFilter);
+      activeFilter === "전체"
+        ? true
+        : activeFilter === "인증만"
+          ? s.certified
+          : s.services.includes(activeFilter);
     const matchSearch =
       searchQuery === "" ||
       s.name.includes(searchQuery) ||
-      s.district.includes(searchQuery);
+      s.district.includes(searchQuery) ||
+      s.neighborhood.includes(searchQuery);
     return matchFilter && matchSearch;
   }).sort((a, b) => {
     if (sortBy === "평점순") return b.rating - a.rating;
@@ -278,14 +313,20 @@ export default function PetsittersPage() {
           {/* 지도 영역 */}
           <div className="h-[40vh] md:h-full md:flex-1 relative overflow-hidden">
             <KakaoMap
-              markers={filtered.map(({ lat, lng, id, certified }) => ({
-                lat,
-                lng,
-                id,
-                certified,
-              }))}
-              center={SEOUL_CENTER}
-              level={8}
+              markers={filtered.map(
+                ({ lat, lng, id, certified, name, district, neighborhood }) => ({
+                  lat,
+                  lng,
+                  id,
+                  certified,
+                  name,
+                  district,
+                  neighborhood,
+                }),
+              )}
+              center={userPosition ?? DEFAULT_CENTER}
+              level={7}
+              selectedMarkerId={selectedSitterId}
               onMarkerClick={setSelectedSitterId}
             />
           </div>
@@ -314,7 +355,7 @@ export default function PetsittersPage() {
                   {sortBy
                     ? `${sortBy} · ${filtered.length}명`
                     : userPosition
-                      ? `현위치 기준 가까운 순 · ${filtered.length}명`
+                      ? `내 위치 기준 가까운 순 · ${filtered.length}명`
                       : `총 ${filtered.length}명의 펫시터`}
                 </p>
                 <div className="flex flex-col gap-4">
