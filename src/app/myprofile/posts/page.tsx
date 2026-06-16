@@ -17,9 +17,75 @@ import {
 } from "lucide-react";
 import Header from "@/components/layout/Header";
 import { CustomModal } from "@/components/common/CustomModal";
+import { createClient } from "@/utils/supabase/client";
+import { deleteRequest, updateRequest } from "@/app/actions/requests";
 
-type PostStatus = "open" | "reserved" | "in-progress" | "completed" | "cancelled";
-type TabId = "all" | "open" | "reserved" | "in-progress" | "completed" | "cancelled";
+const REQUEST_TYPE_MAP: Record<string, string> = {
+  care: "방문돌봄",
+  foster: "위탁돌봄",
+  walk: "산책",
+  hotel: "펫호텔",
+  pickup: "픽업",
+};
+
+function formatPeriod(start: string, end: string) {
+  const s = new Date(start);
+  const e = new Date(end);
+  return `${s.getMonth() + 1}월 ${s.getDate()}일 - ${e.getMonth() + 1}월 ${e.getDate()}일`;
+}
+
+function formatRelativeTime(dateStr: string) {
+  const diffH = Math.floor((Date.now() - new Date(dateStr).getTime()) / 3600000);
+  if (diffH < 1) return "방금 전";
+  if (diffH < 24) return `${diffH}시간 전`;
+  return `${Math.floor(diffH / 24)}일 전`;
+}
+
+// DB에서 오는 구인글 타입
+type RequestRow = {
+  id: string;
+  title: string;
+  status: string;
+  request_type: string;
+  start_datetime: string;
+  end_datetime: string;
+  budget: number;
+  location: string;
+  created_at: string;
+  request_pets: Array<{ pets: { name: string; animal_type: string } | null }>;
+  applications: Array<{
+    status: string;
+    sitters: { users: { full_name: string } | null } | null;
+  }>;
+  reservations: Array<{ status: string }>;
+};
+
+// DB 데이터를 기존 Post 형태로 변환 (PostCard 재사용을 위해)
+function toPost(r: RequestRow): Post {
+  const pet = r.request_pets[0]?.pets;
+  const selected = r.applications.find((a) => a.status === "selected");
+  return {
+    id: r.id,
+    title: r.title,
+    status: r.status as PostStatus,
+    petName: pet ? `${pet.name} (${pet.animal_type})` : "(반려동물 없음)",
+    serviceType: REQUEST_TYPE_MAP[r.request_type] ?? r.request_type,
+    date: formatPeriod(r.start_datetime, r.end_datetime),
+    time: "(시간 정보 없음)", // DB에 time 필드 없음, 더미 유지
+    location: r.location,
+    price: r.budget,
+    createdAt: formatRelativeTime(r.created_at),
+    applicantCount: r.status === "open" ? r.applications.length : undefined,
+    sitterName: selected?.sitters?.users?.full_name ?? undefined,
+  };
+}
+
+// DB status 기준 4개 + 진행중은 reservations.status로 구분 예정
+// 진행중 탭을 제거하지 않고 유지하기 위해 PostStatus에 포함시켜 둠
+// 실제 in-progress 데이터는 reservations.status === 'in_progress'인 matched 구인글에서 옴
+// 현재는 matched를 기본 "예약완료"로 표시하고, 진행중 구분은 추후 구현
+type PostStatus = "open" | "matched" | "in-progress" | "completed" | "canceled";
+type TabId = "all" | "open" | "matched" | "in-progress" | "completed" | "canceled";
 type SortType = "latest" | "status";
 
 interface Post {
@@ -54,7 +120,7 @@ const DUMMY_POSTS: Post[] = [
   {
     id: "2",
     title: "포메라니안 쿠키 산책 도우미 구합니다",
-    status: "reserved",
+    status: "matched",
     petName: "쿠키 (포메라니안)",
     serviceType: "산책",
     date: "2026년 6월 12일 (목)",
@@ -93,7 +159,7 @@ const DUMMY_POSTS: Post[] = [
   {
     id: "5",
     title: "푸들 코코 산책 구인",
-    status: "cancelled",
+    status: "canceled",
     petName: "코코 (토이푸들)",
     serviceType: "산책",
     date: "2026년 5월 10일 (금)",
@@ -113,11 +179,12 @@ const STATUS_CONFIG: Record<
     badgeBg: "bg-emerald-100",
     badgeText: "text-emerald-500",
   },
-  reserved: {
+  matched: {
     label: "예약완료",
     badgeBg: "bg-blue-100",
     badgeText: "text-blue-500",
   },
+  // 진행중: reservations.status === 'in_progress'인 matched 구인글에서 표시 예정
   "in-progress": {
     label: "진행중",
     badgeBg: "bg-orange-50",
@@ -128,7 +195,7 @@ const STATUS_CONFIG: Record<
     badgeBg: "bg-gray-100",
     badgeText: "text-gray-500",
   },
-  cancelled: {
+  canceled: {
     label: "취소됨",
     badgeBg: "bg-red-100",
     badgeText: "text-red-500",
@@ -138,10 +205,11 @@ const STATUS_CONFIG: Record<
 const TABS: { id: TabId; label: string }[] = [
   { id: "all", label: "전체" },
   { id: "open", label: "모집중" },
-  { id: "reserved", label: "예약완료" },
+  { id: "matched", label: "예약완료" },
+  // 진행중: 현재는 reservations.status === 'in_progress'로 구분 예정, 탭은 유지
   { id: "in-progress", label: "진행중" },
   { id: "completed", label: "완료" },
-  { id: "cancelled", label: "취소됨" },
+  { id: "canceled", label: "취소됨" },
 ];
 
 function formatPrice(price: number) {
@@ -155,9 +223,15 @@ function countByStatus(posts: Post[], status: PostStatus) {
 function PostCard({
   post,
   onDelete,
+  onDetail,
+  onEdit,
+  onClose,
 }: {
   post: Post;
   onDelete: (id: string) => void;
+  onDetail: (id: string) => void;
+  onEdit: (id: string) => void;
+  onClose: (id: string) => void;
 }) {
   const config = STATUS_CONFIG[post.status];
   const isOpen = post.status === "open";
@@ -173,12 +247,12 @@ function PostCard({
           className={`shrink-0 whitespace-nowrap px-2.5 py-1 rounded-full text-xs flex items-center gap-1 ${config.badgeBg} ${config.badgeText}`}
         >
           {post.status === "open" && <CheckCircle size={10} />}
-          {post.status === "reserved" && <CheckCircle size={10} />}
+          {post.status === "matched" && <CheckCircle size={10} />}
           {post.status === "in-progress" && (
             <span className="size-2 rounded-full bg-orange-500 shrink-0" />
           )}
           {post.status === "completed" && <CheckCircle size={10} />}
-          {post.status === "cancelled" && <XCircle size={10} />}
+          {post.status === "canceled" && <XCircle size={10} />}
           {config.label}
         </span>
       </div>
@@ -237,14 +311,23 @@ function PostCard({
       {/* 액션 버튼 */}
       {isOpen ? (
         <div className="flex gap-2">
-          <button className="flex-1 py-2 bg-orange-50 border border-orange-100 rounded-xl text-orange-500 text-xs hover:bg-orange-100 transition-colors">
+          <button
+            onClick={() => onDetail(post.id)}
+            className="flex-1 py-2 bg-orange-50 border border-orange-100 rounded-xl text-orange-500 text-xs hover:bg-orange-100 transition-colors"
+          >
             상세보기
           </button>
-          <button className="flex-1 py-2 bg-orange-500 rounded-xl text-white text-xs flex items-center justify-center gap-1 hover:bg-orange-600 transition-colors">
+          <button
+            onClick={() => onEdit(post.id)}
+            className="flex-1 py-2 bg-orange-500 rounded-xl text-white text-xs flex items-center justify-center gap-1 hover:bg-orange-600 transition-colors"
+          >
             <Pencil size={10} />
             수정하기
           </button>
-          <button className="flex-1 py-2 bg-gray-100 rounded-xl text-gray-500 text-xs hover:bg-gray-200 transition-colors">
+          <button
+            onClick={() => onClose(post.id)}
+            className="flex-1 py-2 bg-gray-100 rounded-xl text-gray-500 text-xs hover:bg-gray-200 transition-colors"
+          >
             모집마감
           </button>
           <button
@@ -256,7 +339,10 @@ function PostCard({
           </button>
         </div>
       ) : (
-        <button className="w-full py-2 bg-orange-50 border border-orange-100 rounded-xl text-orange-500 text-xs hover:bg-orange-100 transition-colors">
+        <button
+          onClick={() => onDetail(post.id)}
+          className="w-full py-2 bg-orange-50 border border-orange-100 rounded-xl text-orange-500 text-xs hover:bg-orange-100 transition-colors"
+        >
           상세보기
         </button>
       )}
@@ -292,6 +378,27 @@ export default function PostsManagePage() {
     };
   }, []);
 
+  useEffect(() => {
+    async function fetchPosts() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("requests")
+        .select(
+          `*, request_pets(pets(name, animal_type)), applications(status, sitters(users!user_id(full_name))), reservations(status)`,
+        )
+        .eq("owner_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (!error && data) {
+        setPosts((data as unknown as RequestRow[]).map(toPost));
+      }
+    }
+    fetchPosts();
+  }, []);
+
   const scrollTabs = (dir: "left" | "right") => {
     const el = tabsRef.current;
     if (!el) return;
@@ -302,46 +409,47 @@ export default function PostsManagePage() {
   const filtered =
     activeTab === "all"
       ? posts
-      : posts.filter((p) =>
-          activeTab === "open"
-            ? p.status === "open"
-            : activeTab === "reserved"
-              ? p.status === "reserved"
-              : activeTab === "in-progress"
-                ? p.status === "in-progress"
-                : activeTab === "completed"
-                  ? p.status === "completed"
-                  : p.status === "cancelled",
-        );
+      : posts.filter((p) => p.status === activeTab);
 
   const sorted = [...filtered].sort((a, b) => {
     if (sort === "status") {
       const order: PostStatus[] = [
         "open",
-        "reserved",
+        "matched",
         "in-progress",
         "completed",
-        "cancelled",
+        "canceled",
       ];
       return order.indexOf(a.status) - order.indexOf(b.status);
     }
     return b.createdAt.localeCompare(a.createdAt);
   });
 
-  const confirmDelete = () => {
-    if (deleteTargetId) {
+  const confirmDelete = async () => {
+    if (!deleteTargetId) return;
+    const result = await deleteRequest(deleteTargetId);
+    if (!result.error) {
       setPosts((prev) => prev.filter((p) => p.id !== deleteTargetId));
-      setDeleteTargetId(null);
+    }
+    setDeleteTargetId(null);
+  };
+
+  const handleClose = async (id: string) => {
+    const result = await updateRequest(id, { status: "matched" });
+    if (!result.error) {
+      setPosts((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, status: "matched" as PostStatus } : p)),
+      );
     }
   };
 
   const tabCounts: Record<TabId, number> = {
     all: posts.length,
     open: countByStatus(posts, "open"),
-    reserved: countByStatus(posts, "reserved"),
+    matched: countByStatus(posts, "matched"),
     "in-progress": countByStatus(posts, "in-progress"),
     completed: countByStatus(posts, "completed"),
-    cancelled: countByStatus(posts, "cancelled"),
+    canceled: countByStatus(posts, "canceled"),
   };
 
   return (
@@ -363,10 +471,7 @@ export default function PostsManagePage() {
       <div className="flex-1 w-full max-w-[820px] mx-auto px-6 pt-6 pb-10">
         {/* 헤더 */}
         <div className="hidden md:flex items-center gap-3 mb-2">
-          <button
-            onClick={() => router.back()}
-            className="p-1 -ml-1"
-          >
+          <button onClick={() => router.back()} className="p-1 -ml-1">
             <ChevronLeft size={20} className="text-stone-900" />
           </button>
           <div>
@@ -463,6 +568,9 @@ export default function PostsManagePage() {
                 key={post.id}
                 post={post}
                 onDelete={(id) => setDeleteTargetId(id)}
+                onDetail={(id) => router.push(`/board/${id}`)}
+                onEdit={(id) => router.push(`/board/${id}/edit`)}
+                onClose={handleClose}
               />
             ))
           )}
