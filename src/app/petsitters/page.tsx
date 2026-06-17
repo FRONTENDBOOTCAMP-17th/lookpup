@@ -2,15 +2,18 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { MapPin, Star } from "lucide-react";
+import { MapPin, Star, LocateFixed } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Avatar from "@/components/ui/Avatar";
 import Pill from "@/components/ui/Pill";
 import KakaoMap from "@/components/KakaoMap";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import SearchFilterBar from "@/components/common/SearchFilterBar";
+import { calculateDistanceKm, formatDistance } from "@/utils/distance";
+import { searchPlaceToCoord, coordToRegion } from "@/utils/kakaoGeocode";
+import { supabase } from "@/lib/supabase";
 
-const FILTERS = ["전체", "방문돌봄", "위탁돌봄", "산책", "인증만"] as const;
+const FILTERS = ["전체", "방문돌봄", "위탁돌봄", "산책"] as const;
 type Filter = (typeof FILTERS)[number];
 
 const SORT_OPTIONS = [
@@ -21,158 +24,40 @@ const SORT_OPTIONS = [
 ] as const;
 type SortOption = (typeof SORT_OPTIONS)[number];
 
-//더미더미데이터 강남 중심으로 바꿔봄
-const PETSITTERS = [
-  {
-    id: 1,
-    name: "김민지",
-    initial: "김",
-    district: "강남구",
-    neighborhood: "역삼동",
-    rating: 4.9,
-    reviewCount: 47,
-    price: 30000,
-    services: ["방문돌봄", "산책"],
-    certified: true,
-    lat: 37.5006,
-    lng: 127.0364,
-  },
-  {
-    id: 2,
-    name: "이서연",
-    initial: "이",
-    district: "강남구",
-    neighborhood: "삼성동",
-    rating: 4.8,
-    reviewCount: 32,
-    price: 35000,
-    services: ["방문돌봄", "위탁돌봄"],
-    certified: false,
-    lat: 37.5146,
-    lng: 127.0565,
-  },
-  {
-    id: 3,
-    name: "박준호",
-    initial: "박",
-    district: "강남구",
-    neighborhood: "논현동",
-    rating: 4.7,
-    reviewCount: 28,
-    price: 28000,
-    services: ["산책", "방문돌봄"],
-    certified: false,
-    lat: 37.5112,
-    lng: 127.0218,
-  },
-  {
-    id: 4,
-    name: "최예진",
-    initial: "최",
-    district: "서초구",
-    neighborhood: "서초동",
-    rating: 4.6,
-    reviewCount: 15,
-    price: 32000,
-    services: ["방문돌봄", "산책"],
-    certified: true,
-    lat: 37.4901,
-    lng: 127.0175,
-  },
-  {
-    id: 5,
-    name: "정수아",
-    initial: "정",
-    district: "서초구",
-    neighborhood: "반포동",
-    rating: 4.5,
-    reviewCount: 52,
-    price: 38000,
-    services: ["위탁돌봄", "방문돌봄"],
-    certified: false,
-    lat: 37.5046,
-    lng: 126.9947,
-  },
-  {
-    id: 6,
-    name: "강태윤",
-    initial: "강",
-    district: "서초구",
-    neighborhood: "양재동",
-    rating: 4.9,
-    reviewCount: 38,
-    price: 25000,
-    services: ["산책", "방문돌봄"],
-    certified: false,
-    lat: 37.4847,
-    lng: 127.0344,
-  },
-  {
-    id: 7,
-    name: "윤지우",
-    initial: "윤",
-    district: "송파구",
-    neighborhood: "잠실동",
-    rating: 4.8,
-    reviewCount: 41,
-    price: 33000,
-    services: ["방문돌봄", "산책"],
-    certified: true,
-    lat: 37.5133,
-    lng: 127.1002,
-  },
-  {
-    id: 8,
-    name: "한소미",
-    initial: "한",
-    district: "송파구",
-    neighborhood: "문정동",
-    rating: 4.7,
-    reviewCount: 23,
-    price: 29000,
-    services: ["위탁돌봄", "산책"],
-    certified: false,
-    lat: 37.4854,
-    lng: 127.1225,
-  },
-  {
-    id: 9,
-    name: "오하린",
-    initial: "오",
-    district: "송파구",
-    neighborhood: "방이동",
-    rating: 4.9,
-    reviewCount: 36,
-    price: 34000,
-    services: ["방문돌봄", "위탁돌봄", "산책"],
-    certified: true,
-    lat: 37.5141,
-    lng: 127.1128,
-  },
-];
+const SERVICE_TYPE_MAP: Record<string, string> = {
+  walk: "산책",
+  care: "방문돌봄",
+  hotel: "위탁돌봄",
+  pickup: "픽업",
+};
+
+interface Sitter {
+  id: string;
+  name: string;
+  initial: string;
+  district: string;
+  neighborhood: string;
+  rating: number;
+  reviewCount: number;
+  price: number;
+  services: string[];
+  lat: number;
+  lng: number;
+}
+
+function parseArea(area: string | null): { district: string; neighborhood: string } {
+  if (!area) return { district: "", neighborhood: "" };
+  const cleaned = area.replace(/^서울\s*/, "").replace(/,.*$/, "").trim();
+  const parts = cleaned.split(/\s+/);
+  return { district: parts[0] ?? "", neighborhood: parts[1] ?? "" };
+}
 
 const DEFAULT_CENTER = { lat: 37.4979, lng: 127.0276 };
 
-function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number) {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLng = ((lng2 - lng1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLng / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-function formatDistance(km: number) {
-  return km < 1 ? `${Math.round(km * 1000)}m` : `${km.toFixed(1)}km`;
-}
-
 interface PetsitterCardProps {
-  sitter: (typeof PETSITTERS)[number];
+  sitter: Sitter;
   isSelected: boolean;
-  distance?: number;
+  distance: number;
 }
 
 function PetsitterCard({ sitter, isSelected, distance }: PetsitterCardProps) {
@@ -185,7 +70,6 @@ function PetsitterCard({ sitter, isSelected, distance }: PetsitterCardProps) {
             : "border-orange-100 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] hover:shadow-[0px_4px_16px_0px_rgba(232,116,42,0.18)]"
         }`}
       >
-        {/* 프로필 행 */}
         <div className="flex items-start gap-4">
           <Avatar initial={sitter.initial} size="lg" variant="orange" />
           <div className="flex-1 min-w-0">
@@ -193,34 +77,25 @@ function PetsitterCard({ sitter, isSelected, distance }: PetsitterCardProps) {
               <span className="text-stone-900 text-base font-semibold">
                 {sitter.name}
               </span>
-              {sitter.certified && (
-                <span className="px-2 py-0.5 bg-orange-500 rounded text-white text-[9px] font-medium leading-3">
-                  인증
-                </span>
-              )}
             </div>
             <div className="flex items-center gap-1 mt-1">
               <MapPin size={14} className="text-gray-400" />
               <span className="text-gray-500 text-sm">
-                  {sitter.district} {sitter.neighborhood}
-                </span>
-              {distance !== undefined && (
-                <span className="text-gray-400 text-xs">
-                  · {formatDistance(distance)}
-                </span>
-              )}
+                {sitter.district} {sitter.neighborhood}
+              </span>
+              <span className="text-gray-400 text-xs">
+                · {formatDistance(distance)}
+              </span>
             </div>
           </div>
         </div>
 
-        {/* 서비스 태그 */}
         <div className="flex gap-2 mt-4">
           {sitter.services.map((s) => (
             <Pill key={s}>{s}</Pill>
           ))}
         </div>
 
-        {/* 평점·가격 */}
         <div className="flex items-center justify-between mt-3 pt-3 border-t border-orange-100">
           <div className="flex items-center gap-1">
             <Star size={14} className="fill-amber-400 text-amber-400" />
@@ -241,24 +116,67 @@ function PetsitterCard({ sitter, isSelected, distance }: PetsitterCardProps) {
 }
 
 export default function PetsittersPage() {
+  const [sitters, setSitters] = useState<Sitter[]>([]);
   const [activeFilter, setActiveFilter] = useState<Filter>("전체");
   const [searchQuery, setSearchQuery] = useState("");
-  const [userPosition, setUserPosition] = useState<{
-    lat: number;
-    lng: number;
-  } | null>(null);
-  const [selectedSitterId, setSelectedSitterId] = useState<number | null>(null);
+  const [selectedSitterId, setSelectedSitterId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption | null>(null);
-  const cardRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+
+  const [basePosition, setBasePosition] = useState(DEFAULT_CENTER);
+  const [baseLabel, setBaseLabel] = useState("강남역");
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [showLocationModal, setShowLocationModal] = useState(true);
+
+  const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   useEffect(() => {
-    navigator.geolocation.getCurrentPosition(
-      ({ coords }) =>
-        setUserPosition({ lat: coords.latitude, lng: coords.longitude }),
-      () => {}, // 권한 거부 시 기본 순서 유지
-    );
+    type SitterRow = {
+      id: string;
+      available_area: string | null;
+      latitude: number | null;
+      longitude: number | null;
+      base_price: number | null;
+      rating: number | null;
+      full_name: string | null;
+      service_types: string[];
+    };
+
+    async function fetchSitters() {
+      const { data, error } = await supabase.rpc("get_petsitters_for_map");
+
+      if (error || !data) return;
+
+      const mapped: Sitter[] = (data as SitterRow[])
+        .filter((row) => row.latitude != null && row.longitude != null)
+        .map((row) => {
+          const name = row.full_name ?? "시터";
+          const { district, neighborhood } = parseArea(row.available_area);
+          const serviceTypes = row.service_types
+            .map((t) => SERVICE_TYPE_MAP[t] ?? t)
+            .filter(Boolean);
+
+          return {
+            id: row.id,
+            name,
+            initial: name.charAt(0),
+            district,
+            neighborhood,
+            rating: parseFloat(String(row.rating ?? 0)),
+            reviewCount: 0,
+            price: row.base_price ?? 0,
+            services: [...new Set(serviceTypes)],
+            lat: parseFloat(String(row.latitude)),
+            lng: parseFloat(String(row.longitude)),
+          };
+        });
+
+      setSitters(mapped);
+    }
+
+    fetchSitters();
   }, []);
 
+  // 카드 스크롤 동기화
   useEffect(() => {
     if (selectedSitterId === null) return;
     const card = cardRefs.current.get(selectedSitterId);
@@ -280,63 +198,141 @@ export default function PetsittersPage() {
     });
   }, [selectedSitterId]);
 
-  const filtered = PETSITTERS.filter((s) => {
-    const matchFilter =
-      activeFilter === "전체"
-        ? true
-        : activeFilter === "인증만"
-          ? s.certified
-          : s.services.includes(activeFilter);
-    const matchSearch =
-      searchQuery === "" ||
-      s.name.includes(searchQuery) ||
-      s.district.includes(searchQuery) ||
-      s.neighborhood.includes(searchQuery);
-    return matchFilter && matchSearch;
-  }).sort((a, b) => {
-    if (sortBy === "평점순") return b.rating - a.rating;
-    if (sortBy === "리뷰 많은 순") return b.reviewCount - a.reviewCount;
-    if (sortBy === "낮은 가격순") return a.price - b.price;
-    if (sortBy === "높은 가격순") return b.price - a.price;
-    if (!userPosition) return 0;
-    return (
-      haversineKm(userPosition.lat, userPosition.lng, a.lat, a.lng) -
-      haversineKm(userPosition.lat, userPosition.lng, b.lat, b.lng)
+  // 검색어로 장소 검색 → 지도 중심 이동 (500ms debounce)
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (!q) return;
+    const timer = setTimeout(() => {
+      searchPlaceToCoord(q).then((result) => {
+        if (result) {
+          setBasePosition({ lat: result.lat, lng: result.lng });
+          setBaseLabel(result.addressName);
+        }
+      });
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  function requestLocation() {
+    setLocationLoading(true);
+    setShowLocationModal(false);
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords }) => {
+        const pos = { lat: coords.latitude, lng: coords.longitude };
+        setBasePosition(pos);
+        setBaseLabel("현재 위치");
+        const region = await coordToRegion(pos.lat, pos.lng);
+        if (region) {
+          setBaseLabel(`현재 위치 (${region.dong || region.sigungu})`);
+        }
+        setLocationLoading(false);
+      },
+      () => {
+        setLocationLoading(false);
+      },
     );
-  });
+  }
+
+  const sittersWithDistance = sitters.map((sitter) => ({
+    ...sitter,
+    distanceKm: calculateDistanceKm(basePosition, {
+      lat: sitter.lat,
+      lng: sitter.lng,
+    }),
+  }));
+
+  const filtered = sittersWithDistance
+    .filter((s) => {
+      const matchFilter =
+        activeFilter === "전체" ? true : s.services.includes(activeFilter);
+      const matchSearch =
+        searchQuery === "" ||
+        s.name.includes(searchQuery) ||
+        s.district.includes(searchQuery) ||
+        s.neighborhood.includes(searchQuery);
+      return matchFilter && matchSearch;
+    })
+    .sort((a, b) => {
+      if (sortBy === "평점순") return b.rating - a.rating;
+      if (sortBy === "리뷰 많은 순") return b.reviewCount - a.reviewCount;
+      if (sortBy === "낮은 가격순") return a.price - b.price;
+      if (sortBy === "높은 가격순") return b.price - a.price;
+      return a.distanceKm - b.distanceKm;
+    });
 
   return (
     <>
       <Header />
+
+      {/* 위치 동의 모달 */}
+      {showLocationModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-2xl p-6 mx-4 max-w-sm w-full shadow-xl">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                <LocateFixed size={20} className="text-orange-500" />
+              </div>
+              <h2 className="text-stone-900 text-lg font-semibold">
+                현재 위치 사용
+              </h2>
+            </div>
+            <p className="text-gray-500 text-sm mb-5 leading-relaxed">
+              현재 위치를 사용하면 가까운 펫시터를 찾을 수 있어요!
+              <br />
+              위치 정보는 펫시터 거리 계산에만 사용됩니다.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowLocationModal(false)}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-500 text-sm font-medium"
+              >
+                나중에
+              </button>
+              <button
+                onClick={requestLocation}
+                className="flex-1 py-2.5 rounded-xl bg-orange-500 text-white text-sm font-medium"
+              >
+                동의하기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <main className="flex-1 bg-orange-50 overflow-x-hidden md:overflow-hidden">
         <div className="flex flex-col md:flex-row md:h-[calc(100vh-64px)]">
           {/* 지도 영역 */}
           <div className="h-[40vh] md:h-full md:flex-1 relative overflow-hidden">
+            {locationLoading && (
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 bg-white px-4 py-2 rounded-full shadow text-sm text-orange-500 font-medium">
+                위치 확인 중...
+              </div>
+            )}
             <KakaoMap
               markers={filtered.map(
-                ({ lat, lng, id, certified, name, district, neighborhood }) => ({
+                ({ lat, lng, id, name, district, neighborhood, distanceKm }) => ({
                   lat,
                   lng,
                   id,
-                  certified,
                   name,
                   district,
                   neighborhood,
+                  distanceKm,
                 }),
               )}
-              center={userPosition ?? DEFAULT_CENTER}
+              center={basePosition}
+              basePosition={basePosition}
               level={7}
               selectedMarkerId={selectedSitterId}
-              onMarkerClick={setSelectedSitterId}
+              onMarkerClick={(id) => setSelectedSitterId(String(id))}
             />
           </div>
 
           {/* 리스트 패널 */}
           <div className="w-full md:w-153.5 bg-white flex flex-col md:overflow-hidden">
-            {/* 검색·필터 헤더 */}
             <div className="p-4 md:p-6 border-b border-orange-100 shrink-0">
               <SearchFilterBar
-                placeholder="지역, 펫시터 검색"
+                placeholder="지역, 동 이름, 펫시터 검색"
                 filters={FILTERS}
                 activeFilter={activeFilter}
                 onFilterChange={(f) => setActiveFilter(f as Filter)}
@@ -348,15 +344,12 @@ export default function PetsittersPage() {
               />
             </div>
 
-            {/* 결과 리스트 */}
             <ScrollArea className="flex-1 min-h-0">
               <div className="p-4 md:p-6">
                 <p className="text-stone-900 text-lg font-semibold mb-4">
                   {sortBy
                     ? `${sortBy} · ${filtered.length}명`
-                    : userPosition
-                      ? `내 위치 기준 가까운 순 · ${filtered.length}명`
-                      : `총 ${filtered.length}명의 펫시터`}
+                    : `${baseLabel} 기준 가까운 순 · ${filtered.length}명`}
                 </p>
                 <div className="flex flex-col gap-4">
                   {filtered.map((sitter) => (
@@ -370,16 +363,7 @@ export default function PetsittersPage() {
                       <PetsitterCard
                         sitter={sitter}
                         isSelected={selectedSitterId === sitter.id}
-                        distance={
-                          userPosition
-                            ? haversineKm(
-                                userPosition.lat,
-                                userPosition.lng,
-                                sitter.lat,
-                                sitter.lng,
-                              )
-                            : undefined
-                        }
+                        distance={sitter.distanceKm}
                       />
                     </div>
                   ))}
