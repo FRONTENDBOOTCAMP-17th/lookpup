@@ -7,11 +7,11 @@ import {
   ChevronLeft,
   Check,
   Home,
-  // Heart,  // ← foster 비활성화로 미사용 (SERVICE_TYPES 주석 참고)
+  Heart,
   PawPrint,
   Moon,
   Car,
-  // MoreHorizontal,  // ← other 비활성화로 미사용 (SERVICE_TYPES 주석 참고)
+  MoreHorizontal,
   Send,
   MapPin,
 } from "lucide-react";
@@ -20,34 +20,15 @@ import Footer from "@/components/layout/Footer";
 import RangePicker from "@/components/ui/RangePicker";
 import SimpleTimePicker from "@/components/ui/SimpleTimePicker";
 import { createClient } from "@/utils/supabase/client";
-import { updateRequest } from "@/app/actions/requests";
+import { updateRequest, getRequestDetail } from "@/app/actions/requests";
 
 const SERVICE_TYPES = [
   { label: "방문 돌봄", icon: Home, value: "care" },
-  // ⚠️ "위탁 돌봄"(foster) / "기타"(other) 임시 비활성화 (2026-06-16)
-  //
-  // 이유: DB requests.request_type이 walk/care/hotel/pickup 4개만 허용할 가능성이 높음.
-  //       (actions/requests.ts의 RequestInput.request_type 타입도 이 4개로 제한되어 있음)
-  //       foster/other 선택 시 저장이 실패하므로, 활성화 전까지 버튼 자체를 노출하지 않음.
-  //
-  // ✅ 활성화하려면 (Supabase 권한이 있는 팀장에게 요청 필요):
-  //   1) 실제 제약 확인 — Supabase SQL Editor에서:
-  //        select conname, pg_get_constraintdef(oid)
-  //        from pg_constraint
-  //        where conrelid = 'requests'::regclass and contype = 'c';
-  //      → 아무것도 안 나오면 제약 없음(바로 4번으로). request_type = ANY(...) 가 나오면 2번.
-  //   2) 제약이 있으면 교체 (conname은 1번 결과값으로):
-  //        alter table requests drop constraint requests_request_type_check;
-  //        alter table requests add constraint requests_request_type_check
-  //          check (request_type in ('walk','care','hotel','pickup','foster','other'));
-  //   3) actions/requests.ts의 request_type 타입에 "foster" | "other" 추가
-  //   4) 아래 두 줄(foster/other)과 상단 import의 Heart, MoreHorizontal 주석 해제
-  //
-  // { label: "위탁 돌봄", icon: Heart, value: "foster" },
+  { label: "위탁 돌봄", icon: Heart, value: "foster" },
   { label: "산책", icon: PawPrint, value: "walk" },
   { label: "펫 호텔", icon: Moon, value: "hotel" },
   { label: "픽업 서비스", icon: Car, value: "pickup" },
-  // { label: "기타", icon: MoreHorizontal, value: "other" },
+  { label: "기타", icon: MoreHorizontal, value: "other" },
 ];
 
 const BUDGET_PRESETS = [10000, 20000, 30000, 50000];
@@ -108,13 +89,10 @@ export default function BoardEditPage() {
       if (!user) return;
 
       // 기존 구인글 데이터 조회 (pre-fill용)
-      const { data, error } = await supabase
-        .from("requests")
-        .select(`*, request_pets(pets(*))`)
-        .eq("id", id)
-        .single();
+      const result = await getRequestDetail(id);
 
-      if (!error && data) {
+      if ("data" in result && result.data) {
+        const data = result.data;
         // matched 상태면 수정 불가
         if (data.status === "matched") {
           setIsMatched(true);
@@ -130,11 +108,7 @@ export default function BoardEditPage() {
           start_time: `${String(start.getHours()).padStart(2, "0")}:${String(start.getMinutes()).padStart(2, "0")}`,
           end_time: `${String(end.getHours()).padStart(2, "0")}:${String(end.getMinutes()).padStart(2, "0")}`,
           location: data.location,
-          selected_pets: (
-            data.request_pets as Array<{ pets: { id: string } | null }>
-          )
-            .map((rp) => rp.pets?.id)
-            .filter((v): v is string => !!v),
+          selected_pets: data.pets ? [data.pets.id] : [],
           title: data.title,
           content: data.content ?? "",
         });
@@ -191,7 +165,13 @@ export default function BoardEditPage() {
     const result = await updateRequest(id, {
       title: form.title,
       content: form.content,
-      request_type: form.service_type as "walk" | "care" | "hotel" | "pickup",
+      request_type: form.service_type as
+        | "walk"
+        | "care"
+        | "hotel"
+        | "pickup"
+        | "foster"
+        | "other",
       start_datetime: startDatetime.toISOString(),
       end_datetime: endDatetime.toISOString(),
       budget: form.budget ? parseInt(form.budget) : 0,

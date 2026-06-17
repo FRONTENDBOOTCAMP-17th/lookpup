@@ -17,8 +17,7 @@ import {
 } from "lucide-react";
 import Header from "@/components/layout/Header";
 import { CustomModal } from "@/components/common/CustomModal";
-import { createClient } from "@/utils/supabase/client";
-import { deleteRequest, updateRequest } from "@/app/actions/requests";
+import { deleteRequest, updateRequest, getMyRequests } from "@/app/actions/requests";
 
 const REQUEST_TYPE_MAP: Record<string, string> = {
   care: "방문돌봄",
@@ -52,7 +51,7 @@ type RequestRow = {
   budget: number;
   location: string;
   created_at: string;
-  request_pets: Array<{ pets: { name: string; animal_type: string } | null }>;
+  pets: { name: string; animal_type: string } | null;
   applications: Array<{
     status: string;
     sitters: { users: { full_name: string } | null } | null;
@@ -62,7 +61,7 @@ type RequestRow = {
 
 // DB 데이터를 기존 Post 형태로 변환 (PostCard 재사용을 위해)
 function toPost(r: RequestRow): Post {
-  const pet = r.request_pets[0]?.pets;
+  const pet = r.pets;
   const selected = r.applications.find((a) => a.status === "selected");
   return {
     id: r.id,
@@ -379,24 +378,11 @@ export default function PostsManagePage() {
   }, []);
 
   useEffect(() => {
-    async function fetchPosts() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data, error } = await supabase
-        .from("requests")
-        .select(
-          `*, request_pets(pets(name, animal_type)), applications(status, sitters(users!user_id(full_name))), reservations(status)`,
-        )
-        .eq("owner_id", user.id)
-        .order("created_at", { ascending: false });
-
-      if (!error && data) {
-        setPosts((data as unknown as RequestRow[]).map(toPost));
+    getMyRequests().then((result) => {
+      if ("data" in result && result.data) {
+        setPosts((result.data as unknown as RequestRow[]).map(toPost));
       }
-    }
-    fetchPosts();
+    });
   }, []);
 
   const scrollTabs = (dir: "left" | "right") => {

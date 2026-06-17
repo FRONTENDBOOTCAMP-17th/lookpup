@@ -7,7 +7,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import SearchFilterBar from "@/components/common/SearchFilterBar";
 import Pill from "@/components/ui/Pill";
-import { createClient } from "@/utils/supabase/client";
+import { listOpenRequests } from "@/app/actions/requests";
 
 const CATEGORIES = ["전체", "방문돌봄", "위탁돌봄", "산책", "펫호텔", "픽업"];
 
@@ -165,32 +165,26 @@ export default function BoardPage() {
   // const [posts, setPosts] = useState<Post[]>([]);
 
   useEffect(() => {
-    const supabase = createClient();
-    supabase
-      .from("requests")
-      .select("*")
-      .eq("status", "open")
-      .order("created_at", { ascending: false })
-      .then(({ data }) => {
-        // data.length > 0 조건: DB에 데이터 없으면 더미 유지
-        // 실데이터만 쓰려면 if (data) 로 변경 (빈 배열도 통과시켜 더미 덮어씀)
-        if (data && data.length > 0) {
-          setPosts(
-            data.map((r) => ({
-              id: r.id,
-              category: REQUEST_TYPE_MAP[r.request_type] ?? r.request_type,
-              title: r.title,
-              desc: r.content ?? "",
-              location: r.location,
-              period: formatPeriod(r.start_datetime, r.end_datetime),
-              price: r.budget
-                ? r.budget.toLocaleString("ko-KR") + "원"
-                : "협의 가능",
-              createdAt: formatRelativeTime(r.created_at),
-            })),
-          );
-        }
-      });
+    listOpenRequests().then((result) => {
+      // data.length > 0 조건: DB에 데이터 없으면 더미 유지
+      // 실데이터만 쓰려면 if ("data" in result) 로 변경 (빈 배열도 통과시켜 더미 덮어씀)
+      if ("data" in result && result.data && result.data.length > 0) {
+        setPosts(
+          result.data.map((r) => ({
+            id: r.id,
+            category: REQUEST_TYPE_MAP[r.request_type] ?? r.request_type,
+            title: r.title,
+            desc: r.content ?? "",
+            location: r.location,
+            period: formatPeriod(r.start_datetime, r.end_datetime),
+            price: r.budget
+              ? r.budget.toLocaleString("ko-KR") + "원"
+              : "협의 가능",
+            createdAt: formatRelativeTime(r.created_at),
+          })),
+        );
+      }
+    });
   }, []);
 
   const filtered = posts

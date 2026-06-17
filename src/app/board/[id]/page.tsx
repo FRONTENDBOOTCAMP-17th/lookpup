@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { createClient } from "@/utils/supabase/client";
+import { getRequestDetail } from "@/app/actions/requests";
 import {
   MapPin,
   Calendar,
@@ -45,7 +45,7 @@ type RequestDetail = {
   status: string;
   created_at: string;
   users: { full_name: string; profile_image: string | null; is_verified: boolean } | null;
-  request_pets: Array<{ pets: Pet | null }>;
+  pets: Pet | null;
   applications: Application[];
 };
 
@@ -173,18 +173,11 @@ export default function BoardDetailPage() {
   const [post, setPost] = useState<RequestDetail | null>(null);
 
   useEffect(() => {
-    async function fetchPost() {
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from("requests")
-        .select(
-          `*, users!owner_id(full_name, profile_image, is_verified), request_pets(pets(*)), applications(*, sitters(id, users!user_id(full_name, profile_image)))`,
-        )
-        .eq("id", id)
-        .single();
-      if (!error && data) setPost(data as unknown as RequestDetail);
-    }
-    fetchPost();
+    getRequestDetail(id).then((result) => {
+      if ("data" in result && result.data) {
+        setPost(result.data as unknown as RequestDetail);
+      }
+    });
   }, [id]);
 
   return (
@@ -302,18 +295,14 @@ export default function BoardDetailPage() {
               </SectionCard>
 
               {/* 반려동물 */}
-              {post && post.request_pets.length > 0 && (
+              {post && post.pets && (
                 <SectionCard>
                   <h2 className="text-stone-900 text-xl font-bold">반려동물</h2>
                   <div className="flex flex-wrap gap-3">
-                    {post.request_pets.map(({ pets: pet }) =>
-                      pet ? (
-                        <div key={pet.id} className="flex items-center gap-2 px-4 py-2.5 bg-orange-50 rounded-lg">
-                          <span className="text-sm font-semibold text-stone-900">{pet.name}</span>
-                          <span className="text-xs text-gray-500">{pet.breed ?? pet.animal_type}</span>
-                        </div>
-                      ) : null,
-                    )}
+                    <div className="flex items-center gap-2 px-4 py-2.5 bg-orange-50 rounded-lg">
+                      <span className="text-sm font-semibold text-stone-900">{post.pets.name}</span>
+                      <span className="text-xs text-gray-500">{post.pets.breed ?? post.pets.animal_type}</span>
+                    </div>
                   </div>
                 </SectionCard>
               )}
