@@ -141,6 +141,14 @@ const result = await createSitter({
   latitude: 37.5665,
   longitude: 126.9780,
   base_price: 30000,
+  // 제공 서비스 (복수 선택)
+  // visit: 방문돌봄 / foster: 위탁돌봄 / walk: 산책 / hotel: 펫호텔
+  request_type: ["visit", "walk"],
+  // 돌봄 가능 동물 (복수 선택)
+  // small_dog / medium_dog / large_dog / cat
+  available_animals: ["small_dog", "medium_dog", "cat"],
+  certificate_urls: ["https://storage.example.com/cert1.pdf"],
+  activity_photo_urls: ["https://storage.example.com/photo1.jpg"],
   services: [
     { service_type: "walk", title: "산책", price: 15000 },
   ],
@@ -196,6 +204,7 @@ const res = await fetch(`/api/requests?owner_id=${userId}`);
 import { createRequest, updateRequest, deleteRequest } from "@/app/actions/requests";
 
 // pet_ids에 반려동물 UUID를 배열로 전달 (복수 선택 가능)
+// request_type: visit(방문돌봄) / foster(위탁돌봄) / walk(산책) / hotel(펫호텔)
 const result = await createRequest({
   pet_ids: ["pet-uuid-1", "pet-uuid-2"],
   title: "주말 산책 부탁드려요",
@@ -380,7 +389,7 @@ Transaction.Failed   → payments.status='failed'
 
 ## 12. 본인인증 Identity Verification
 
-> 최초 가입 시에는 `completeSignup` (app/auth/signup/actions.ts)을 사용합니다.  
+> 최초 가입 시에는 `completeSignup` (app/auth/verification/actions.ts)을 사용합니다.  
 > 이미 가입된 유저가 인증을 추가하려면 `verifyIdentity`를 사용합니다.
 
 ```ts
