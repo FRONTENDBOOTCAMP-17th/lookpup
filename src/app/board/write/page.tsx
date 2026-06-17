@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { Fragment, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { DateRange } from "react-day-picker";
 import {
@@ -9,11 +9,11 @@ import {
   Plus,
   Check,
   Home,
-  Heart,
+  // Heart,  // ← foster 비활성화로 미사용 (SERVICE_TYPES 주석 참고)
   PawPrint,
   Moon,
   Car,
-  MoreHorizontal,
+  // MoreHorizontal,  // ← other 비활성화로 미사용 (SERVICE_TYPES 주석 참고)
   Save,
   Send,
   MapPin,
@@ -23,17 +23,37 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import RangePicker from "@/components/ui/RangePicker";
 import SimpleTimePicker from "@/components/ui/SimpleTimePicker";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/client";
+import { createRequest } from "@/app/actions/requests";
 
 const STEPS = ["서비스 선택", "날짜·장소", "반려동물", "상세 내용"];
 
 const SERVICE_TYPES = [
   { label: "방문 돌봄", icon: Home, value: "care" },
-  { label: "위탁 돌봄", icon: Heart, value: "foster" },
+  // ⚠️ "위탁 돌봄"(foster) / "기타"(other) 임시 비활성화 (2026-06-16)
+  //
+  // 이유: DB requests.request_type이 walk/care/hotel/pickup 4개만 허용할 가능성이 높음.
+  //       (actions/requests.ts의 RequestInput.request_type 타입도 이 4개로 제한되어 있음)
+  //       foster/other 선택 시 저장이 실패하므로, 활성화 전까지 버튼 자체를 노출하지 않음.
+  //
+  // ✅ 활성화하려면 (Supabase 권한이 있는 팀장에게 요청 필요):
+  //   1) 실제 제약 확인 — Supabase SQL Editor에서:
+  //        select conname, pg_get_constraintdef(oid)
+  //        from pg_constraint
+  //        where conrelid = 'requests'::regclass and contype = 'c';
+  //      → 아무것도 안 나오면 제약 없음(바로 4번으로). request_type = ANY(...) 가 나오면 2번.
+  //   2) 제약이 있으면 교체 (conname은 1번 결과값으로):
+  //        alter table requests drop constraint requests_request_type_check;
+  //        alter table requests add constraint requests_request_type_check
+  //          check (request_type in ('walk','care','hotel','pickup','foster','other'));
+  //   3) actions/requests.ts의 request_type 타입에 "foster" | "other" 추가
+  //   4) 아래 두 줄(foster/other)과 상단 import의 Heart, MoreHorizontal 주석 해제
+  //
+  // { label: "위탁 돌봄", icon: Heart, value: "foster" },
   { label: "산책", icon: PawPrint, value: "walk" },
   { label: "펫 호텔", icon: Moon, value: "hotel" },
   { label: "픽업 서비스", icon: Car, value: "pickup" },
-  { label: "기타", icon: MoreHorizontal, value: "other" },
+  // { label: "기타", icon: MoreHorizontal, value: "other" },
 ];
 
 const BUDGET_PRESETS = [10000, 20000, 30000, 50000];
@@ -67,6 +87,21 @@ const SITTER_CONDITIONS = [
   "흡연자 제외",
 ];
 
+type Pet = {
+  id: string;
+  name: string;
+  type: string;
+  age: number | null;
+  weight: number | null;
+  emoji: string;
+};
+
+const ANIMAL_TYPE_MAP: Record<string, { label: string; emoji: string }> = {
+  dog: { label: "강아지", emoji: "🐶" },
+  cat: { label: "고양이", emoji: "🐱" },
+  other: { label: "기타", emoji: "🐾" },
+};
+
 type FormState = {
   service_type: string;
   budget: string;
@@ -87,6 +122,34 @@ export default function BoardWritePage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // 더미 사용 시: useState<Pet[]>(DUMMY_PETS as unknown as Pet[])
+  const [pets, setPets] = useState<Pet[]>([]);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase
+        .from("pets")
+        .select("id, name, animal_type, age, weight")
+        .eq("owner_id", user.id)
+        .is("deleted_at", null)
+        .then(({ data }) => {
+          if (data && data.length > 0) {
+            setPets(
+              data.map((p) => ({
+                id: p.id,
+                name: p.name,
+                type: ANIMAL_TYPE_MAP[p.animal_type]?.label ?? p.animal_type,
+                age: p.age,
+                weight: p.weight,
+                emoji: ANIMAL_TYPE_MAP[p.animal_type]?.emoji ?? "🐾",
+              })),
+            );
+          }
+        });
+    });
+  }, []);
   const [form, setForm] = useState<FormState>({
     service_type: "",
     budget: "",
@@ -127,31 +190,39 @@ export default function BoardWritePage() {
     }));
 
   const handleSubmit = async () => {
+    if (!form.startDate) return;
     setIsSubmitting(true);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      alert("로그인이 필요합니다.");
-      router.push("/auth/login");
-      return;
+
+    const startDatetime = new Date(form.startDate);
+    if (form.start_time) {
+      const [h, m] = form.start_time.split(":").map(Number);
+      startDatetime.setHours(h, m, 0, 0);
     }
-    const { error } = await supabase.from("requests").insert({
+    const endDatetime = form.endDate ? new Date(form.endDate) : new Date(form.startDate);
+    if (form.end_time) {
+      const [h, m] = form.end_time.split(":").map(Number);
+      endDatetime.setHours(h, m, 0, 0);
+    }
+
+    const result = await createRequest({
+      pet_ids: form.selected_pets,
       title: form.title,
       content: form.content,
-      request_type: form.service_type,
+      request_type: form.service_type as "walk" | "care" | "hotel" | "pickup",
+      start_datetime: startDatetime.toISOString(),
+      end_datetime: endDatetime.toISOString(),
+      budget: form.budget ? parseInt(form.budget) : 0,
       location: form.location || form.location_type,
-      start_datetime: form.startDate ?? null,
-      end_datetime: form.endDate ?? null,
-      budget: form.budget ? parseInt(form.budget) : null,
-      owner_id: user.id,
-      status: "open",
+      latitude: 0,
+      longitude: 0,
     });
-    if (error) {
-      alert("글 작성에 실패했습니다.");
+
+    if (result.error) {
+      alert(result.error.message);
       setIsSubmitting(false);
       return;
     }
+
     router.push("/board");
   };
 
@@ -467,7 +538,8 @@ export default function BoardWritePage() {
                 </p>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {DUMMY_PETS.map((pet) => {
+                  {/* 더미 사용 시: DUMMY_PETS.map */}
+                {pets.map((pet) => {
                     const isSelected = form.selected_pets.includes(pet.id);
                     return (
                       <button

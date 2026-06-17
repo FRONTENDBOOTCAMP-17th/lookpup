@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { getRequestDetail } from "@/app/actions/requests";
 import {
   MapPin,
   Calendar,
@@ -18,7 +19,52 @@ import SectionCard from "@/components/common/SectionCard";
 import { CustomModal } from "@/components/common/CustomModal";
 import BackButton from "@/components/common/BackButton";
 
+const STATUS_MAP: Record<string, string> = {
+  open: "모집중",
+  matched: "매칭완료",
+  completed: "완료",
+  canceled: "취소",
+};
+
+type Pet = { id: string; name: string; animal_type: string; breed: string | null };
+type Application = {
+  id: string;
+  message: string | null;
+  proposed_price: number | null;
+  status: string;
+  sitters: { id: string; users: { full_name: string } | null } | null;
+};
+type RequestDetail = {
+  id: string;
+  title: string;
+  content: string | null;
+  start_datetime: string;
+  end_datetime: string;
+  budget: number;
+  location: string;
+  status: string;
+  created_at: string;
+  users: { full_name: string; profile_image: string | null; is_verified: boolean } | null;
+  pets: Pet | null;
+  applications: Application[];
+};
+
+function formatPeriod(start: string, end: string) {
+  const s = new Date(start);
+  const e = new Date(end);
+  return `${s.getMonth() + 1}월 ${s.getDate()}일 - ${e.getMonth() + 1}월 ${e.getDate()}일`;
+}
+
+function formatRelativeTime(dateStr: string) {
+  const diffH = Math.floor((Date.now() - new Date(dateStr).getTime()) / 3600000);
+  if (diffH < 1) return "방금 전";
+  if (diffH < 24) return `${diffH}시간 전`;
+  return `${Math.floor(diffH / 24)}일 전`;
+}
+
 // 더미 데이터 : 뭘눌러도 이것만 나와요 우하하~~~
+// 실데이터 연결 후에도 fallback으로 사용 중 — post가 null이거나 해당 필드가 DB에 없는 경우 아래 값이 표시됨
+// (예: POST.time, POST.priceNote, POST.requirements, POST.views, POST.author.rating 등)
 
 const POST = {
   id: 1,
@@ -120,9 +166,19 @@ const SAFETY_TIPS = [
 
 // 페이지
 export default function BoardDetailPage() {
+  const { id } = useParams() as { id: string };
   const router = useRouter();
   const [comment, setComment] = useState("");
   const [showApplyModal, setShowApplyModal] = useState(false);
+  const [post, setPost] = useState<RequestDetail | null>(null);
+
+  useEffect(() => {
+    getRequestDetail(id).then((result) => {
+      if ("data" in result && result.data) {
+        setPost(result.data as unknown as RequestDetail);
+      }
+    });
+  }, [id]);
 
   return (
     <>
@@ -147,18 +203,18 @@ export default function BoardDetailPage() {
                   {/* 상태 + 메타 */}
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="px-3 py-1 bg-emerald-50 text-emerald-500 text-xs font-medium rounded-full">
-                      {POST.status}
+                      {post ? STATUS_MAP[post.status] ?? post.status : POST.status}
                     </span>
                     <div className="flex items-center gap-3 md:gap-4 text-gray-500 text-sm">
-                      <span>{POST.createdAt}</span>
+                      <span>{post ? formatRelativeTime(post.created_at) : POST.createdAt}</span>
                       <span>조회 {POST.views}</span>
-                      <span>지원 {POST.applicants}명</span>
+                      <span>지원 {post?.applications.length ?? POST.applicants}명</span>
                     </div>
                   </div>
 
                   {/* 제목 */}
                   <h1 className="text-2xl md:text-3xl font-bold text-stone-900">
-                    {POST.title}
+                    {post?.title ?? POST.title}
                   </h1>
 
                   {/* 상세 정보 그리드 */}
@@ -168,7 +224,7 @@ export default function BoardDetailPage() {
                       <div>
                         <p className="text-gray-500 text-xs">위치</p>
                         <p className="text-stone-900 text-base font-medium">
-                          {POST.location}
+                          {post?.location ?? POST.location}
                         </p>
                       </div>
                     </div>
@@ -177,7 +233,7 @@ export default function BoardDetailPage() {
                       <div>
                         <p className="text-gray-500 text-xs">기간</p>
                         <p className="text-stone-900 text-base font-medium">
-                          {POST.period}
+                          {post ? formatPeriod(post.start_datetime, post.end_datetime) : POST.period}
                         </p>
                       </div>
                     </div>
@@ -195,7 +251,7 @@ export default function BoardDetailPage() {
                       <div>
                         <p className="text-gray-500 text-xs">급여</p>
                         <p className="text-orange-500 text-base font-medium">
-                          {POST.price}
+                          {post ? `${post.budget.toLocaleString()}원` : POST.price}
                         </p>
                         <p className="text-gray-500 text-xs">
                           {POST.priceNote}
@@ -221,7 +277,7 @@ export default function BoardDetailPage() {
               <SectionCard>
                 <h2 className="text-stone-900 text-xl font-bold">상세 내용</h2>
                 <p className="text-stone-900 text-base leading-7 whitespace-pre-line">
-                  {POST.description}
+                  {post?.content ?? POST.description}
                 </p>
               </SectionCard>
 
@@ -237,6 +293,54 @@ export default function BoardDetailPage() {
                   ))}
                 </ul>
               </SectionCard>
+
+              {/* 반려동물 */}
+              {post && post.pets && (
+                <SectionCard>
+                  <h2 className="text-stone-900 text-xl font-bold">반려동물</h2>
+                  <div className="flex flex-wrap gap-3">
+                    <div className="flex items-center gap-2 px-4 py-2.5 bg-orange-50 rounded-lg">
+                      <span className="text-sm font-semibold text-stone-900">{post.pets.name}</span>
+                      <span className="text-xs text-gray-500">{post.pets.breed ?? post.pets.animal_type}</span>
+                    </div>
+                  </div>
+                </SectionCard>
+              )}
+
+              {/* 지원자 목록 */}
+              {post && (
+                <SectionCard>
+                  <h2 className="text-stone-900 text-xl font-bold">
+                    지원자 {post.applications.length}명
+                  </h2>
+                  {post.applications.length === 0 ? (
+                    <p className="text-gray-500 text-sm">아직 지원자가 없습니다.</p>
+                  ) : (
+                    <div className="flex flex-col gap-4">
+                      {post.applications.map((app) => (
+                        <div key={app.id} className="flex items-start gap-3 p-4 bg-orange-50 rounded-lg">
+                          <Avatar initial={app.sitters?.users?.full_name?.[0] ?? "?"} size="md" variant="orange" />
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-stone-900 text-sm font-semibold">
+                                {app.sitters?.users?.full_name ?? "알 수 없음"}
+                              </span>
+                              {app.proposed_price != null && (
+                                <span className="text-orange-500 text-sm font-semibold">
+                                  {app.proposed_price.toLocaleString()}원
+                                </span>
+                              )}
+                            </div>
+                            {app.message && (
+                              <p className="text-stone-900 text-sm leading-5">{app.message}</p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </SectionCard>
+              )}
 
               {/* 댓글 */}
               <SectionCard>
@@ -306,16 +410,16 @@ export default function BoardDetailPage() {
                 </h3>
                 <div className="flex items-start gap-3">
                   <Avatar
-                    initial={POST.author.initial}
+                    initial={post?.users?.full_name?.[0] ?? POST.author.initial}
                     size="lg"
                     variant="orange"
                   />
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-stone-900 text-base font-semibold">
-                        {POST.author.name}
+                        {post?.users?.full_name ?? POST.author.name}
                       </span>
-                      {POST.author.verified && (
+                      {(post?.users?.is_verified ?? POST.author.verified) && (
                         <span className="px-2 py-0.5 bg-orange-500 rounded text-white text-[9px] font-medium">
                           인증
                         </span>
@@ -349,7 +453,7 @@ export default function BoardDetailPage() {
               <SectionCard>
                 <div className="flex items-center justify-between">
                   <h3 className="text-stone-900 text-lg font-bold">
-                    {POST.author.name}님의 다른 게시물
+                    {post?.users?.full_name ?? POST.author.name}님의 다른 게시물
                   </h3>
                   <Link
                     href="/board"

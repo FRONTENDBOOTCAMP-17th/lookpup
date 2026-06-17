@@ -1,18 +1,51 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { MapPin, Calendar, DollarSign, ChevronRight } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import SearchFilterBar from "@/components/common/SearchFilterBar";
 import Pill from "@/components/ui/Pill";
-
-// 더미데이터 꼬라박기
+import { listOpenRequests } from "@/app/actions/requests";
 
 const CATEGORIES = ["전체", "방문돌봄", "위탁돌봄", "산책", "펫호텔", "픽업"];
 
 const SORT_OPTIONS = ["최신순"] as const;
+
+const REQUEST_TYPE_MAP: Record<string, string> = {
+  care: "방문돌봄",
+  foster: "위탁돌봄",
+  walk: "산책",
+  hotel: "펫호텔",
+  pickup: "픽업",
+};
+
+type Post = {
+  id: string;
+  category: string;
+  title: string;
+  desc: string;
+  location: string;
+  period: string;
+  price: string;
+  createdAt: string;
+};
+
+function formatPeriod(start: string, end: string) {
+  const s = new Date(start);
+  const e = new Date(end);
+  return `${s.getMonth() + 1}월 ${s.getDate()}일 - ${e.getMonth() + 1}월 ${e.getDate()}일`;
+}
+
+function formatRelativeTime(dateStr: string) {
+  const diffH = Math.floor(
+    (Date.now() - new Date(dateStr).getTime()) / 3600000,
+  );
+  if (diffH < 1) return "방금 전";
+  if (diffH < 24) return `${diffH}시간 전`;
+  return `${Math.floor(diffH / 24)}일 전`;
+}
 
 const POSTS = [
   {
@@ -74,7 +107,7 @@ const POSTS = [
 
 // 게시글 카드
 
-function PostCard({ post }: { post: (typeof POSTS)[0] }) {
+function PostCard({ post }: { post: Post }) {
   return (
     <Link href={`/board/${post.id}`}>
       <div className="p-5 bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100 flex justify-between items-start cursor-pointer hover:border-orange-500 hover:-translate-y-1 hover:shadow-[0px_8px_24px_0px_rgba(232,116,42,0.15)] transition-all duration-200">
@@ -115,7 +148,6 @@ function PostCard({ post }: { post: (typeof POSTS)[0] }) {
         {/* 오른쪽 메타 */}
         <div className="flex flex-col items-end gap-2 shrink-0">
           <span className="text-gray-400 text-xs">{post.createdAt}</span>
-          <span className="text-gray-400 text-xs">조회 {post.views}</span>
           <ChevronRight className="w-5 h-5 text-gray-400 mt-1" />
         </div>
       </div>
@@ -128,15 +160,43 @@ function PostCard({ post }: { post: (typeof POSTS)[0] }) {
 export default function BoardPage() {
   const [activeCategory, setActiveCategory] = useState("전체");
   const [searchQuery, setSearchQuery] = useState("");
-  const filtered = POSTS.filter((p) => {
-    const matchCategory =
-      activeCategory === "전체" || p.category === activeCategory;
-    const matchSearch =
-      searchQuery === "" ||
-      p.title.includes(searchQuery) ||
-      p.desc.includes(searchQuery);
-    return matchCategory && matchSearch;
-  }).sort((a, b) => a.id - b.id);
+  const [posts, setPosts] = useState<Post[]>(POSTS as unknown as Post[]);
+  // 실제 데이터로 교체 시 아래 useState로 변경 위는 더미 데이터 표시용
+  // const [posts, setPosts] = useState<Post[]>([]);
+
+  useEffect(() => {
+    listOpenRequests().then((result) => {
+      // data.length > 0 조건: DB에 데이터 없으면 더미 유지
+      // 실데이터만 쓰려면 if ("data" in result) 로 변경 (빈 배열도 통과시켜 더미 덮어씀)
+      if ("data" in result && result.data && result.data.length > 0) {
+        setPosts(
+          result.data.map((r) => ({
+            id: r.id,
+            category: REQUEST_TYPE_MAP[r.request_type] ?? r.request_type,
+            title: r.title,
+            desc: r.content ?? "",
+            location: r.location,
+            period: formatPeriod(r.start_datetime, r.end_datetime),
+            price: r.budget
+              ? r.budget.toLocaleString("ko-KR") + "원"
+              : "협의 가능",
+            createdAt: formatRelativeTime(r.created_at),
+          })),
+        );
+      }
+    });
+  }, []);
+
+  const filtered = posts
+    .filter((p) => {
+      const matchCategory =
+        activeCategory === "전체" || p.category === activeCategory;
+      const matchSearch =
+        searchQuery === "" ||
+        p.title.includes(searchQuery) ||
+        p.desc.includes(searchQuery);
+      return matchCategory && matchSearch;
+    });
 
   return (
     <div className="min-h-screen flex flex-col">
