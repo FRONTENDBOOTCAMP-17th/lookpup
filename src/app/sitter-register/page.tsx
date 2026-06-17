@@ -13,9 +13,9 @@ const SERVICES = [
 ];
 
 const ANIMALS = [
-  { id: "small", label: "소형견 (7kg 이하)" },
-  { id: "medium", label: "중형견 (7-15kg)" },
-  { id: "large", label: "대형견 (15kg 이상)" },
+  { id: "small_dog", label: "소형견 (7kg 이하)" },
+  { id: "medium_dog", label: "중형견 (7-15kg)" },
+  { id: "large_dog", label: "대형견 (15kg 이상)" },
   { id: "cat", label: "고양이" },
 ];
 

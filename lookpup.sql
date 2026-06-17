@@ -45,6 +45,10 @@ Table sitters {
   base_price int [note: "CHECK (base_price >= 0)"]
   status text [not null, default: "pending", note: "pending / approved / rejected"]
   rating numeric [default: 0, note: "DB 트리거 제거 -> 리뷰 CUD API 성공 시 백엔드 로직에서 AVG() 계산 후 실시간 UPDATE"]
+  request_type text[] [not null, default: `'{}'`, note: "제공 서비스 배열: visit(방문돌봄) / foster(위탁돌봄) / walk(산책) / hotel(펫호텔)"]
+  certificate_urls text[] [not null, default: `'{}'`, note: "자격증 파일 URL 배열"]
+  available_animals text[] [not null, default: `'{}'`, note: "돌봄 가능 동물 배열: small_dog / medium_dog / large_dog / cat"]
+  activity_photo_urls text[] [not null, default: `'{}'`, note: "활동 사진 URL 배열"]
   created_at timestamptz [default: `now()` ]
   updated_at timestamptz [default: `now()` ]
 }
