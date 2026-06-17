@@ -13,11 +13,12 @@ declare global {
 export interface MapMarker {
   lat: number;
   lng: number;
-  id: number;
+  id: string | number;
   name?: string;
   district?: string;
   neighborhood?: string;
   distanceKm?: number;
+  certified?: boolean;
 }
 
 interface KakaoMapProps {
@@ -25,8 +26,8 @@ interface KakaoMapProps {
   center?: { lat: number; lng: number };
   level?: number;
   className?: string;
-  selectedMarkerId?: number | null;
-  onMarkerClick?: (id: number) => void;
+  selectedMarkerId?: string | number | null;
+  onMarkerClick?: (id: string | number) => void;
   basePosition?: { lat: number; lng: number };
 }
 
