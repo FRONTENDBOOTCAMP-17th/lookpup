@@ -24,20 +24,6 @@ import { useChatRooms } from "@/hooks/chat/useChatRooms";
 import { useRequest } from "@/hooks/chat/useRequest";
 import { useChatMessages } from "@/hooks/chat/useChatMessages";
 
-// 더미더미더미데이터
-const DUMMY_POSTS = [
-  {
-    id: "post-1",
-    title: "포메라니안 쿠키 산책 도우미 구합니다",
-    status: "모집중",
-  },
-  {
-    id: "post-2",
-    title: "말티즈 몽이 주말 방문 돌봄 부탁드려요",
-    status: "모집중",
-  },
-];
-
 export default function ChatPage() {
   const router = useRouter();
   const [editMode, setEditMode] = useState(false);
@@ -54,7 +40,7 @@ export default function ChatPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const { rooms, applicants, loading, error, deleteRoom, deleteApplicant } =
+  const { rooms, applicants, posts, loading, error, deleteRoom, deleteApplicant } =
     useChatRooms();
   const {
     rejectedIds,
@@ -274,7 +260,7 @@ export default function ChatPage() {
 
               {activeTab === "applicants" && (
                 <>
-                  {DUMMY_POSTS.map((post) => (
+                  {posts.map((post) => (
                     <ApplicantPostGroup
                       key={post.id}
                       post={post}
@@ -558,7 +544,7 @@ export default function ChatPage() {
           {/* 지원 목록 */}
           {activeTab === "applicants" && (
             <ScrollArea className="flex-1 overflow-hidden">
-              {DUMMY_POSTS.map((post) => (
+              {posts.map((post) => (
                 <ApplicantPostGroup
                   key={post.id}
                   post={post}

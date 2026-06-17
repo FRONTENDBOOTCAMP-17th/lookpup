@@ -29,13 +29,14 @@ export async function GET() {
   let roomsQuery = db
     .from("chat_rooms")
     .select(
-      `id, room_type, owner_id, sitter_id, reservation_id,
+      `id, room_type, owner_id, sitter_id, reservation_id, request_id,
        last_message, last_message_at,
        owner:users!owner_id(full_name, profile_image),
        sitter:sitters!sitter_id(
          user_id,
          sitter_user:users(full_name, profile_image)
-       )`,
+       ),
+       request:requests!request_id(title, status)`,
     )
     .order("last_message_at", { ascending: false, nullsFirst: false });
 
@@ -78,6 +79,7 @@ export async function GET() {
     const sitter = room.sitter as unknown as {
       sitter_user: { full_name: string; profile_image: string | null };
     };
+    const request = room.request as unknown as { title: string; status: string } | null;
 
     return {
       id: room.id,
@@ -92,6 +94,9 @@ export async function GET() {
         : (owner?.profile_image ?? null),
       unread_count: unreadCounts[room.id] ?? 0,
       reservation_id: room.reservation_id,
+      request_id: room.request_id ?? null,
+      request_title: request?.title ?? null,
+      request_status: request?.status ?? null,
       last_message: room.last_message ?? null,
       last_message_at: room.last_message_at ?? null,
     };
