@@ -68,7 +68,7 @@ export default function ChatPage() {
   const activeRoomId =
     activeTab === "one_on_one" ? selectedRoomId : selectedApplicantId;
 
-  const { messages, addMessage } = useChatMessages(activeRoomId, userId);
+  const { messages, addMessage, broadcastMessage } = useChatMessages(activeRoomId, userId);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -84,7 +84,10 @@ export default function ChatPage() {
         setSendError(result.error.message);
         return;
       }
-      if (result.data) addMessage(result.data);
+      if (result.data) {
+        addMessage(result.data);
+        broadcastMessage(result.data);
+      }
       setInput("");
     } finally {
       setSending(false);

@@ -4,12 +4,13 @@
  * 1. REST API
  *    reverse()로 오래된 메시지부터 표시.
  *
- * 2. Realtime - postgres changes
- *    신규 메세지가 DB에 저장되면 supabase가 현 메시지 끝에 보여줌.
+ * 2. Realtime - broadcast
+ *    메시지 전송 시 채널로 broadcast하고, 상대방은 broadcast 구독으로 수신.
  *    채팅방이 바뀌거나 컴포넌트가 사라지면 해당 구독을 해제함.
  */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/utils/supabase/client";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import type { Message } from "@/components/common/chat/chat_components";
 
 function formatTime(iso: string): string {
@@ -31,8 +32,9 @@ export function useChatMessages(
   userId: string | null,
 ) {
   const [messages, setMessages] = useState<Message[]>([]);
+  const channelRef = useRef<RealtimeChannel | null>(null);
 
-  // 기존 메세지 로드
+  // 기존 메시지 로드
   useEffect(() => {
     if (!activeRoomId || !userId) return;
 
@@ -53,38 +55,33 @@ export function useChatMessages(
       .catch((err: Error) => console.error(err.message));
   }, [activeRoomId, userId]);
 
-  // Realtime
+  // Realtime broadcast 구독
   useEffect(() => {
     if (!activeRoomId || !userId) return;
 
     const supabase = createClient();
     const channel = supabase
       .channel(`room-${activeRoomId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-          filter: `room_id=eq.${activeRoomId}`,
-        },
-        (payload) => {
-          const m = payload.new as MessageApiItem;
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: m.id,
-              from: m.sender_id === userId ? "me" : "other",
-              text: m.content,
-              time: formatTime(m.created_at),
-            },
-          ]);
-        },
-      )
+      .on("broadcast", { event: "new_message" }, ({ payload }) => {
+        const m = payload as MessageApiItem;
+        if (m.sender_id === userId) return;
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: m.id,
+            from: "other",
+            text: m.content,
+            time: formatTime(m.created_at),
+          },
+        ]);
+      })
       .subscribe();
+
+    channelRef.current = channel;
 
     return () => {
       supabase.removeChannel(channel);
+      channelRef.current = null;
     };
   }, [activeRoomId, userId]);
 
@@ -100,5 +97,13 @@ export function useChatMessages(
     ]);
   }
 
-  return { messages, addMessage };
+  function broadcastMessage(m: MessageApiItem) {
+    channelRef.current?.send({
+      type: "broadcast",
+      event: "new_message",
+      payload: m,
+    });
+  }
+
+  return { messages, addMessage, broadcastMessage };
 }
