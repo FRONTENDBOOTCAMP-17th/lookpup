@@ -483,6 +483,7 @@ export function ChatInput({
           type="text"
           value={input}
           onChange={(e) => onChange(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && onSend?.()}
           placeholder="메시지를 입력하세요"
           className="flex-1 h-14 px-5 py-4 bg-orange-50 rounded-2xl text-base text-stone-900 placeholder-stone-900/50 outline-none"
         />

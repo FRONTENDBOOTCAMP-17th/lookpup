@@ -41,8 +41,15 @@ export default function ChatPage() {
   const mobileMessagesEndRef = useRef<HTMLDivElement>(null);
   const desktopMessagesEndRef = useRef<HTMLDivElement>(null);
 
-  const { rooms, applicants, posts, loading, error, deleteRoom, deleteApplicant } =
-    useChatRooms();
+  const {
+    rooms,
+    applicants,
+    posts,
+    loading,
+    error,
+    deleteRoom,
+    deleteApplicant,
+  } = useChatRooms();
   const {
     rejectedIds,
     confirmedId,
@@ -55,7 +62,10 @@ export default function ChatPage() {
   const activeRoomId =
     activeTab === "one_on_one" ? selectedRoomId : selectedApplicantId;
 
-  const { messages, addMessage, broadcastMessage } = useChatMessages(activeRoomId, userId);
+  const { messages, addMessage, broadcastMessage } = useChatMessages(
+    activeRoomId,
+    userId,
+  );
 
   useEffect(() => {
     mobileMessagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -463,6 +473,7 @@ export default function ChatPage() {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSend()}
                 placeholder="메시지를 입력하세요"
                 className="flex-1 h-11 px-4 bg-orange-50 rounded-2xl text-sm text-stone-900 placeholder-stone-900/50 outline-none"
               />
@@ -580,7 +591,7 @@ export default function ChatPage() {
               <p className="text-stone-400 text-sm">{error}</p>
             </div>
           ) : (activeTab === "one_on_one" && rooms.length === 0) ||
-          (activeTab === "applicants" && applicants.length === 0) ? (
+            (activeTab === "applicants" && applicants.length === 0) ? (
             <div className="flex-1 flex items-center justify-center">
               <p className="text-stone-400 text-sm">
                 새로운 채팅이 존재하지 않습니다
