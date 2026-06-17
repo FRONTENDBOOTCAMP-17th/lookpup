@@ -28,3 +28,10 @@
 
 - `npx tsc --noEmit`: `src/app/myprofile/page.tsx:272` `createClient` 미정의(import 누락) — 학생 버그.
 - `.next/types/validator.ts`의 `src/app/pay/...` 에러 2건은 stale 캐시(실 경로는 `payment/`).
+
+## 7차 추가 (2026-06-17)
+- L8 /chat: 비로그인 렌더 200, "채팅 목록을 불러오지 못했습니다" graceful 안내(크래시 없음).
+- L9 /petsitters 지도(모바일): 목록·필터·정렬 OK, 지도 영역 빈화면(카카오 도메인 리뷰포트 미등록 한계, 코드버그 단정 안함).
+- L5 /auth/login: 과거 500 → 200 회복.
+- 실시간 채팅 메시지 중복([필수])은 코드확인(addMessage+realtime 양쪽 push, id가드 없음). 2계정 OAuth+Realtime 필요해 E2E 미확정.
+- tsc 0(6차 빌드 [필수] 닫힘).
