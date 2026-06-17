@@ -2,61 +2,60 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createServiceClient } from "@/utils/supabase/service";
 
+// 조회만 API 라우트. 생성/수정/삭제는 팀 컨벤션(API_USAGE.md)대로 Server Action(actions/requests.ts).
+// RLS SELECT 정책이 없어 anon 조회가 빈 결과 → service client로 우회.
+
+// GET /api/requests
+//   ?status=open  → 공개 목록 (board/page) — 로그인 불필요
+//   ?mine=true    → 내 구인글 (myprofile/posts) — 로그인 필요, 지원/예약 조인 포함
+
 export async function GET(request: NextRequest) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json(
-      { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } },
-      { status: 401 },
-    );
-  }
-
   const { searchParams } = new URL(request.url);
+  const mine = searchParams.get("mine") === "true";
   const status = searchParams.get("status");
   const requestType = searchParams.get("request_type");
-  const ownerId = searchParams.get("owner_id");
-  const cursor = searchParams.get("cursor");
-  const limit = parseInt(searchParams.get("limit") ?? "20");
-
-  if (ownerId && ownerId !== user.id) {
-    return NextResponse.json(
-      { error: { code: "FORBIDDEN", message: "본인 구인글만 조회할 수 있습니다." } },
-      { status: 403 },
-    );
-  }
 
   const db = createServiceClient();
 
-  let cursorCreatedAt: string | null = null;
-  if (cursor) {
-    const { data: cursorItem } = await db
+  if (mine) {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } },
+        { status: 401 },
+      );
+    }
+
+    // request_pets 테이블이 없어 pets!pet_id 단일 FK로 조인
+    const { data, error } = await db
       .from("requests")
-      .select("created_at")
-      .eq("id", cursor)
-      .single();
-    cursorCreatedAt = cursorItem?.created_at ?? null;
+      .select(
+        `*, pets!pet_id(name, animal_type), applications(status, sitters(users!user_id(full_name))), reservations(status)`,
+      )
+      .eq("owner_id", user.id)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      return NextResponse.json(
+        { error: { code: "INTERNAL_ERROR", message: error.message } },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json({ data });
   }
 
   let query = db
     .from("requests")
-    .select(
-      `id, owner_id, title, content, request_type,
-       start_datetime, end_datetime, budget, location, status, created_at,
-       users!inner(full_name),
-       request_pets(pet_id)`,
-    )
-    .order("created_at", { ascending: false })
-    .limit(limit + 1);
+    .select("*")
+    .order("created_at", { ascending: false });
 
   if (status) query = query.eq("status", status);
   if (requestType) query = query.eq("request_type", requestType);
-  if (ownerId) query = query.eq("owner_id", ownerId);
-  if (cursorCreatedAt) query = query.lt("created_at", cursorCreatedAt);
 
   const { data, error } = await query;
 
@@ -67,21 +66,5 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const hasMore = data.length > limit;
-  const items = hasMore ? data.slice(0, limit) : data;
-  const nextCursor = hasMore ? items[items.length - 1].id : null;
-
-  const requests = items.map((item) => {
-    const { users, request_pets, ...rest } = item as typeof item & {
-      users: { full_name: string };
-      request_pets: { pet_id: string }[];
-    };
-    return {
-      ...rest,
-      owner_full_name: users.full_name,
-      pet_ids: (request_pets ?? []).map((rp) => rp.pet_id),
-    };
-  });
-
-  return NextResponse.json({ data: { requests, next_cursor: nextCursor } });
+  return NextResponse.json({ data });
 }

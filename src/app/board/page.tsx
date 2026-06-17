@@ -7,7 +7,6 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import SearchFilterBar from "@/components/common/SearchFilterBar";
 import Pill from "@/components/ui/Pill";
-import { listOpenRequests } from "@/app/actions/requests";
 
 const CATEGORIES = ["전체", "방문돌봄", "위탁돌봄", "산책", "펫호텔", "픽업"];
 
@@ -30,6 +29,19 @@ type Post = {
   period: string;
   price: string;
   createdAt: string;
+};
+
+// GET /api/requests?status=open 응답 행 (필요한 필드만)
+type RequestRow = {
+  id: string;
+  request_type: string;
+  title: string;
+  content: string | null;
+  location: string;
+  start_datetime: string;
+  end_datetime: string;
+  budget: number;
+  created_at: string;
 };
 
 function formatPeriod(start: string, end: string) {
@@ -165,38 +177,38 @@ export default function BoardPage() {
   // const [posts, setPosts] = useState<Post[]>([]);
 
   useEffect(() => {
-    listOpenRequests().then((result) => {
-      // data.length > 0 조건: DB에 데이터 없으면 더미 유지
-      // 실데이터만 쓰려면 if ("data" in result) 로 변경 (빈 배열도 통과시켜 더미 덮어씀)
-      if ("data" in result && result.data && result.data.length > 0) {
-        setPosts(
-          result.data.map((r) => ({
-            id: r.id,
-            category: REQUEST_TYPE_MAP[r.request_type] ?? r.request_type,
-            title: r.title,
-            desc: r.content ?? "",
-            location: r.location,
-            period: formatPeriod(r.start_datetime, r.end_datetime),
-            price: r.budget
-              ? r.budget.toLocaleString("ko-KR") + "원"
-              : "협의 가능",
-            createdAt: formatRelativeTime(r.created_at),
-          })),
-        );
-      }
-    });
+    fetch("/api/requests?status=open")
+      .then((res) => res.json())
+      .then((result) => {
+        // data.length > 0 조건: DB에 데이터 없으면 더미 유지
+        if ("data" in result && result.data && result.data.length > 0) {
+          setPosts(
+            result.data.map((r: RequestRow) => ({
+              id: r.id,
+              category: REQUEST_TYPE_MAP[r.request_type] ?? r.request_type,
+              title: r.title,
+              desc: r.content ?? "",
+              location: r.location,
+              period: formatPeriod(r.start_datetime, r.end_datetime),
+              price: r.budget
+                ? r.budget.toLocaleString("ko-KR") + "원"
+                : "협의 가능",
+              createdAt: formatRelativeTime(r.created_at),
+            })),
+          );
+        }
+      });
   }, []);
 
-  const filtered = posts
-    .filter((p) => {
-      const matchCategory =
-        activeCategory === "전체" || p.category === activeCategory;
-      const matchSearch =
-        searchQuery === "" ||
-        p.title.includes(searchQuery) ||
-        p.desc.includes(searchQuery);
-      return matchCategory && matchSearch;
-    });
+  const filtered = posts.filter((p) => {
+    const matchCategory =
+      activeCategory === "전체" || p.category === activeCategory;
+    const matchSearch =
+      searchQuery === "" ||
+      p.title.includes(searchQuery) ||
+      p.desc.includes(searchQuery);
+    return matchCategory && matchSearch;
+  });
 
   return (
     <div className="min-h-screen flex flex-col">

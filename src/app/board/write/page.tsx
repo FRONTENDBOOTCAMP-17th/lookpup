@@ -23,32 +23,15 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import RangePicker from "@/components/ui/RangePicker";
 import SimpleTimePicker from "@/components/ui/SimpleTimePicker";
-import { createClient } from "@/utils/supabase/client";
 import { createRequest } from "@/app/actions/requests";
 
 const STEPS = ["서비스 선택", "날짜·장소", "반려동물", "상세 내용"];
 
 const SERVICE_TYPES = [
   { label: "방문 돌봄", icon: Home, value: "care" },
-  // ⚠️ "위탁 돌봄"(foster) / "기타"(other) 임시 비활성화 (2026-06-16)
-  //
-  // 이유: DB requests.request_type이 walk/care/hotel/pickup 4개만 허용할 가능성이 높음.
-  //       (actions/requests.ts의 RequestInput.request_type 타입도 이 4개로 제한되어 있음)
-  //       foster/other 선택 시 저장이 실패하므로, 활성화 전까지 버튼 자체를 노출하지 않음.
-  //
-  // ✅ 활성화하려면 (Supabase 권한이 있는 팀장에게 요청 필요):
-  //   1) 실제 제약 확인 — Supabase SQL Editor에서:
-  //        select conname, pg_get_constraintdef(oid)
-  //        from pg_constraint
-  //        where conrelid = 'requests'::regclass and contype = 'c';
-  //      → 아무것도 안 나오면 제약 없음(바로 4번으로). request_type = ANY(...) 가 나오면 2번.
-  //   2) 제약이 있으면 교체 (conname은 1번 결과값으로):
-  //        alter table requests drop constraint requests_request_type_check;
-  //        alter table requests add constraint requests_request_type_check
-  //          check (request_type in ('walk','care','hotel','pickup','foster','other'));
-  //   3) actions/requests.ts의 request_type 타입에 "foster" | "other" 추가
-  //   4) 아래 두 줄(foster/other)과 상단 import의 Heart, MoreHorizontal 주석 해제
-  //
+  // foster/other는 기획 미확정으로 버튼 비활성화 상태.
+  // (request_type은 제약 없는 text 컬럼이라 저장 자체는 가능)
+  // 활성화 시 아래 foster/other 줄과 상단 import의 Heart, MoreHorizontal 주석 해제.
   // { label: "위탁 돌봄", icon: Heart, value: "foster" },
   { label: "산책", icon: PawPrint, value: "walk" },
   { label: "펫 호텔", icon: Moon, value: "hotel" },
@@ -96,6 +79,15 @@ type Pet = {
   emoji: string;
 };
 
+// GET /api/pets 응답 행 (필요한 필드만)
+type PetRow = {
+  id: string;
+  name: string;
+  animal_type: string;
+  age: number | null;
+  weight: number | null;
+};
+
 const ANIMAL_TYPE_MAP: Record<string, { label: string; emoji: string }> = {
   dog: { label: "강아지", emoji: "🐶" },
   cat: { label: "고양이", emoji: "🐱" },
@@ -117,7 +109,6 @@ type FormState = {
   conditions: string[];
 };
 
-
 export default function BoardWritePage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
@@ -126,29 +117,24 @@ export default function BoardWritePage() {
   const [pets, setPets] = useState<Pet[]>([]);
 
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) return;
-      supabase
-        .from("pets")
-        .select("id, name, animal_type, age, weight")
-        .eq("owner_id", user.id)
-        .is("deleted_at", null)
-        .then(({ data }) => {
-          if (data && data.length > 0) {
-            setPets(
-              data.map((p) => ({
-                id: p.id,
-                name: p.name,
-                type: ANIMAL_TYPE_MAP[p.animal_type]?.label ?? p.animal_type,
-                age: p.age,
-                weight: p.weight,
-                emoji: ANIMAL_TYPE_MAP[p.animal_type]?.emoji ?? "🐾",
-              })),
-            );
-          }
-        });
-    });
+    // 펫 목록 조회 (RLS 우회 → GET /api/pets)
+    fetch("/api/pets")
+      .then((res) => res.json())
+      .then((result) => {
+        const data = "data" in result ? result.data : null;
+        if (data && data.length > 0) {
+          setPets(
+            data.map((p: PetRow) => ({
+              id: p.id,
+              name: p.name,
+              type: ANIMAL_TYPE_MAP[p.animal_type]?.label ?? p.animal_type,
+              age: p.age,
+              weight: p.weight,
+              emoji: ANIMAL_TYPE_MAP[p.animal_type]?.emoji ?? "🐾",
+            })),
+          );
+        }
+      });
   }, []);
   const [form, setForm] = useState<FormState>({
     service_type: "",
@@ -198,7 +184,9 @@ export default function BoardWritePage() {
       const [h, m] = form.start_time.split(":").map(Number);
       startDatetime.setHours(h, m, 0, 0);
     }
-    const endDatetime = form.endDate ? new Date(form.endDate) : new Date(form.startDate);
+    const endDatetime = form.endDate
+      ? new Date(form.endDate)
+      : new Date(form.startDate);
     if (form.end_time) {
       const [h, m] = form.end_time.split(":").map(Number);
       endDatetime.setHours(h, m, 0, 0);
@@ -414,7 +402,9 @@ export default function BoardWritePage() {
                   {/* 커스텀 RangePicker */}
                   <div className="mt-5 p-3 sm:p-5 bg-[#fff8f3] rounded-2xl border border-[#ffe9d6]">
                     <RangePicker
-                      value={{ from: form.startDate, to: form.endDate } as DateRange}
+                      value={
+                        { from: form.startDate, to: form.endDate } as DateRange
+                      }
                       onChange={(range) =>
                         setForm((prev) => ({
                           ...prev,
@@ -539,7 +529,7 @@ export default function BoardWritePage() {
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {/* 더미 사용 시: DUMMY_PETS.map */}
-                {pets.map((pet) => {
+                  {pets.map((pet) => {
                     const isSelected = form.selected_pets.includes(pet.id);
                     return (
                       <button

@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import Header from "@/components/layout/Header";
 import { CustomModal } from "@/components/common/CustomModal";
-import { deleteRequest, updateRequest, getMyRequests } from "@/app/actions/requests";
+import { deleteRequest, updateRequest } from "@/app/actions/requests";
 
 const REQUEST_TYPE_MAP: Record<string, string> = {
   care: "방문돌봄",
@@ -34,7 +34,9 @@ function formatPeriod(start: string, end: string) {
 }
 
 function formatRelativeTime(dateStr: string) {
-  const diffH = Math.floor((Date.now() - new Date(dateStr).getTime()) / 3600000);
+  const diffH = Math.floor(
+    (Date.now() - new Date(dateStr).getTime()) / 3600000,
+  );
   if (diffH < 1) return "방금 전";
   if (diffH < 24) return `${diffH}시간 전`;
   return `${Math.floor(diffH / 24)}일 전`;
@@ -70,7 +72,7 @@ function toPost(r: RequestRow): Post {
     petName: pet ? `${pet.name} (${pet.animal_type})` : "(반려동물 없음)",
     serviceType: REQUEST_TYPE_MAP[r.request_type] ?? r.request_type,
     date: formatPeriod(r.start_datetime, r.end_datetime),
-    time: "(시간 정보 없음)", // DB에 time 필드 없음, 더미 유지
+    time: "(시간 정보 없음)", // DB에 time 컬럼 없음 — 더미 표시
     location: r.location,
     price: r.budget,
     createdAt: formatRelativeTime(r.created_at),
@@ -84,7 +86,13 @@ function toPost(r: RequestRow): Post {
 // 실제 in-progress 데이터는 reservations.status === 'in_progress'인 matched 구인글에서 옴
 // 현재는 matched를 기본 "예약완료"로 표시하고, 진행중 구분은 추후 구현
 type PostStatus = "open" | "matched" | "in-progress" | "completed" | "canceled";
-type TabId = "all" | "open" | "matched" | "in-progress" | "completed" | "canceled";
+type TabId =
+  | "all"
+  | "open"
+  | "matched"
+  | "in-progress"
+  | "completed"
+  | "canceled";
 type SortType = "latest" | "status";
 
 interface Post {
@@ -378,24 +386,27 @@ export default function PostsManagePage() {
   }, []);
 
   useEffect(() => {
-    getMyRequests().then((result) => {
-      if ("data" in result && result.data) {
-        setPosts((result.data as unknown as RequestRow[]).map(toPost));
-      }
-    });
+    fetch("/api/requests?mine=true")
+      .then((res) => res.json())
+      .then((result) => {
+        if ("data" in result && result.data) {
+          setPosts((result.data as RequestRow[]).map(toPost));
+        }
+      });
   }, []);
 
   const scrollTabs = (dir: "left" | "right") => {
     const el = tabsRef.current;
     if (!el) return;
     const amount = el.clientWidth * 0.7;
-    el.scrollBy({ left: dir === "left" ? -amount : amount, behavior: "smooth" });
+    el.scrollBy({
+      left: dir === "left" ? -amount : amount,
+      behavior: "smooth",
+    });
   };
 
   const filtered =
-    activeTab === "all"
-      ? posts
-      : posts.filter((p) => p.status === activeTab);
+    activeTab === "all" ? posts : posts.filter((p) => p.status === activeTab);
 
   const sorted = [...filtered].sort((a, b) => {
     if (sort === "status") {
@@ -424,7 +435,9 @@ export default function PostsManagePage() {
     const result = await updateRequest(id, { status: "matched" });
     if (!result.error) {
       setPosts((prev) =>
-        prev.map((p) => (p.id === id ? { ...p, status: "matched" as PostStatus } : p)),
+        prev.map((p) =>
+          p.id === id ? { ...p, status: "matched" as PostStatus } : p,
+        ),
       );
     }
   };
