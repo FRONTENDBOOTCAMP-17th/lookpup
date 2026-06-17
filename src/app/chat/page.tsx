@@ -38,7 +38,8 @@ export default function ChatPage() {
   const [sendError, setSendError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const mobileMessagesEndRef = useRef<HTMLDivElement>(null);
+  const desktopMessagesEndRef = useRef<HTMLDivElement>(null);
 
   const { rooms, applicants, posts, loading, error, deleteRoom, deleteApplicant } =
     useChatRooms();
@@ -57,7 +58,8 @@ export default function ChatPage() {
   const { messages, addMessage, broadcastMessage } = useChatMessages(activeRoomId, userId);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    mobileMessagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    desktopMessagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   async function handleSend() {
@@ -399,7 +401,7 @@ export default function ChatPage() {
                       </span>
                     </div>
                   )}
-                <div ref={messagesEndRef} />
+                <div ref={mobileMessagesEndRef} />
               </div>
             </ScrollArea>
 
@@ -657,7 +659,7 @@ export default function ChatPage() {
                         </span>
                       </div>
                     )}
-                  <div ref={messagesEndRef} />
+                  <div ref={desktopMessagesEndRef} />
                 </div>
               </ScrollArea>
 
