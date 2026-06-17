@@ -125,22 +125,21 @@ export default function PetsitterRegisterPage() {
 
                 <div className="mt-6">
                   <label className={labelCls}>프로필 사진</label>
-                  <button className="mt-3 w-24 h-24 bg-[#fff8f3] rounded-full border border-[#ffe9d6] flex items-center justify-center hover:bg-orange-100 transition-colors">
+                  <label className="mt-3 w-24 h-24 bg-[#fff8f3] rounded-full border border-[#ffe9d6] flex items-center justify-center hover:bg-orange-100 transition-colors cursor-pointer">
                     <Camera className="w-7 h-7 text-gray-500" strokeWidth={2} />
-                  </button>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        // 업로드 처리
+                      }}
+                    />
+                  </label>
                 </div>
 
-                <div className="mt-6 grid grid-cols-1 xs:grid-cols-2 gap-4">
-                  <div>
-                    <label className={`${labelCls} mb-2`}>이름 *</label>
-                    <input
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="실명을 입력하세요"
-                      className="w-full h-12 px-4 py-3 bg-white rounded-xl border border-[#ffe9d6] text-base font-normal text-stone-900 placeholder:text-gray-400 focus:outline-none focus:border-[#e8742a] transition-all"
-                    />
-                  </div>
+                <div className="mt-6 grid grid-cols-1 gap-4">
                   <div>
                     <label className={`${labelCls} mb-2`}>활동 지역 *</label>
                     <select
@@ -259,12 +258,22 @@ export default function PetsitterRegisterPage() {
                   선택사항이지만 신뢰도를 높일 수 있습니다
                 </p>
 
-                <button className="mt-6 w-full h-28 rounded-2xl outline-2 outline-orange-100 flex flex-col items-center justify-center gap-2 hover:bg-orange-50 transition-colors">
+                <label className="mt-6 w-full h-28 rounded-2xl outline-2 outline-orange-100 flex flex-col items-center justify-center gap-2 hover:bg-orange-50 transition-colors cursor-pointer">
                   <Camera className="w-8 h-8 text-gray-500" strokeWidth={2} />
                   <span className="text-gray-500 text-sm font-normal leading-5">
                     자격증 파일 추가
                   </span>
-                </button>
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files ?? []);
+                      // 업로드 처리
+                    }}
+                  />
+                </label>
 
                 <div className="pt-6">
                   <label className={`${labelCls} mb-3`}>돌봄 가능 동물</label>

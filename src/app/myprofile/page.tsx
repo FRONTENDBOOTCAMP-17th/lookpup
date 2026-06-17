@@ -260,6 +260,7 @@ function SitterActions() {
 export default function MyProfilePage() {
   const router = useRouter();
   const { user, isLoading } = useUserStore();
+  const isSitter = user?.role === "both" || user?.role === "admin";
 
   useEffect(() => {
     if (!isLoading && !user?.isVerified) {
@@ -302,19 +303,21 @@ export default function MyProfilePage() {
             )}
           </div>
         </div>
-        <div className="flex bg-white/20 backdrop-blur-sm rounded-full p-1">
-          {(["owner", "sitter"] as const).map((type) => (
-            <button
-              key={type}
-              onClick={() => setUserType(type)}
-              className={`flex-1 py-2.5 rounded-full text-sm font-semibold transition-all ${
-                userType === type ? "bg-white text-orange-500" : "text-white"
-              }`}
-            >
-              {type === "owner" ? "보호자" : "펫시터"}
-            </button>
-          ))}
-        </div>
+        {isSitter && (
+          <div className="flex bg-white/20 backdrop-blur-sm rounded-full p-1">
+            {(["owner", "sitter"] as const).map((type) => (
+              <button
+                key={type}
+                onClick={() => setUserType(type)}
+                className={`flex-1 py-2.5 rounded-full text-sm font-semibold transition-all ${
+                  userType === type ? "bg-white text-orange-500" : "text-white"
+                }`}
+              >
+                {type === "owner" ? "보호자" : "펫시터"}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* 데스크탑 레이아웃 */}
@@ -338,24 +341,26 @@ export default function MyProfilePage() {
                 </div>
 
                 {/* 역할 토글 */}
-                <div className="flex bg-orange-50 rounded-full p-1 mb-4">
-                  {(["owner", "sitter"] as const).map((type) => (
-                    <button
-                      key={type}
-                      onClick={() => {
-                        setUserType(type);
-                        setSelectedMenu("profile");
-                      }}
-                      className={`flex-1 py-2 rounded-full text-sm transition-all ${
-                        userType === type
-                          ? "bg-orange-500 text-white"
-                          : "text-gray-500"
-                      }`}
-                    >
-                      {type === "owner" ? "보호자" : "펫시터"}
-                    </button>
-                  ))}
-                </div>
+                {isSitter && (
+                  <div className="flex bg-orange-50 rounded-full p-1 mb-4">
+                    {(["owner", "sitter"] as const).map((type) => (
+                      <button
+                        key={type}
+                        onClick={() => {
+                          setUserType(type);
+                          setSelectedMenu("profile");
+                        }}
+                        className={`flex-1 py-2 rounded-full text-sm transition-all ${
+                          userType === type
+                            ? "bg-orange-500 text-white"
+                            : "text-gray-500"
+                        }`}
+                      >
+                        {type === "owner" ? "보호자" : "펫시터"}
+                      </button>
+                    ))}
+                  </div>
+                )}
 
                 {/* 펫시터 사이드바 통계 */}
                 {userType === "sitter" && (

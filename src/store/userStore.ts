@@ -6,6 +6,7 @@ interface UserProfile {
   fullName: string;
   phoneNumber: string;
   isVerified: boolean;
+  role: "owner" | "both" | "admin";
 }
 
 interface UserState {
