@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   ChevronLeft,
@@ -16,70 +16,120 @@ import {
 } from "lucide-react";
 import Header from "@/components/layout/Header";
 import { CustomModal } from "@/components/common/CustomModal";
+import { updatePet, deletePet } from "@/app/actions/pets";
 
-// 더미데이터
+type AnimalType = "dog" | "cat" | "other";
+type Gender = "MALE" | "FEMALE" | "MALE_NEUTERED" | "FEMALE_NEUTERED";
 
 interface Pet {
   id: string;
   name: string;
-  animal_type: "dog" | "cat" | "other";
-  breed: string;
-  age: number;
-  weight: number;
-  gender: "수컷" | "암컷";
-  caution: string;
-  emoji: string;
-  bgFrom: string;
-  bgTo: string;
+  animal_type: AnimalType;
+  breed: string | null;
+  age: number | null;
+  weight: number | null;
+  gender: Gender;
+  caution: string | null;
+  image_url: string | null;
 }
 
-const ANIMAL_TYPE_LABEL: Record<"dog" | "cat" | "other", string> = {
+// GET /api/pets 응답 행
+type PetRow = {
+  id: string;
+  name: string;
+  animal_type: string;
+  breed: string | null;
+  age: number | null;
+  gender: string;
+  weight: number | null;
+  image_url: string | null;
+  caution: string | null;
+};
+
+function toPet(r: PetRow): Pet {
+  return {
+    id: r.id,
+    name: r.name,
+    animal_type: (["dog", "cat"].includes(r.animal_type) ? r.animal_type : "other") as AnimalType,
+    breed: r.breed,
+    age: r.age,
+    weight: r.weight,
+    gender: (["MALE", "FEMALE", "MALE_NEUTERED", "FEMALE_NEUTERED"].includes(r.gender)
+      ? r.gender
+      : "MALE") as Gender,
+    caution: r.caution,
+    image_url: r.image_url,
+  };
+}
+
+const ANIMAL_TYPE_LABEL: Record<AnimalType, string> = {
   dog: "강아지",
   cat: "고양이",
   other: "기타",
 };
 
-const INITIAL_PETS: Pet[] = [
+const ANIMAL_VISUAL: Record<AnimalType, { emoji: string; bgFrom: string; bgTo: string }> = {
+  dog: { emoji: "🐶", bgFrom: "#FDE8C4", bgTo: "#FAD7A0" },
+  cat: { emoji: "🐱", bgFrom: "#D6EAF8", bgTo: "#AED6F1" },
+  other: { emoji: "🐾", bgFrom: "#D5F5E3", bgTo: "#A9DFBF" },
+};
+
+// 실데이터 없을 때(비로그인 또는 등록 전) 보여줄 더미. id가 dummy- 접두사라 실제 DB row와 안 겹침.
+const DUMMY_PETS: Pet[] = [
   {
-    id: "p1",
+    id: "dummy-1",
     name: "몽이",
     animal_type: "dog",
     breed: "골든 리트리버",
     age: 2,
     weight: 15.2,
-    gender: "수컷",
+    gender: "MALE",
     caution: "사람을 좋아하고 활발해요!",
-    emoji: "🐕",
-    bgFrom: "#FDE8C4",
-    bgTo: "#FAD7A0",
+    image_url: null,
   },
   {
-    id: "p2",
+    id: "dummy-2",
     name: "나비",
     animal_type: "cat",
     breed: "코리안 숏헤어",
     age: 5,
     weight: 3.8,
-    gender: "암컷",
+    gender: "FEMALE",
     caution: "조용하고 독립적이에요.",
-    emoji: "🐱",
-    bgFrom: "#D6EAF8",
-    bgTo: "#AED6F1",
+    image_url: null,
   },
   {
-    id: "p3",
+    id: "dummy-3",
     name: "코코",
     animal_type: "dog",
     breed: "말티즈",
     age: 4,
     weight: 3.2,
-    gender: "수컷",
+    gender: "MALE_NEUTERED",
     caution: "분리불안이 있어요. 주의해주세요.",
-    emoji: "🐶",
-    bgFrom: "#D5F5E3",
-    bgTo: "#A9DFBF",
+    image_url: null,
   },
 ];
+
+const GENDER_LABEL: Record<Gender, string> = {
+  MALE: "수컷",
+  FEMALE: "암컷",
+  MALE_NEUTERED: "수컷(중성화)",
+  FEMALE_NEUTERED: "암컷(중성화)",
+};
+
+function isNeutered(gender: Gender) {
+  return gender === "MALE_NEUTERED" || gender === "FEMALE_NEUTERED";
+}
+
+function genderSex(gender: Gender): "MALE" | "FEMALE" {
+  return gender === "MALE" || gender === "MALE_NEUTERED" ? "MALE" : "FEMALE";
+}
+
+function combineGender(sex: "MALE" | "FEMALE", neutered: boolean): Gender {
+  if (sex === "MALE") return neutered ? "MALE_NEUTERED" : "MALE";
+  return neutered ? "FEMALE_NEUTERED" : "FEMALE";
+}
 
 // 컴포넌트
 
@@ -139,14 +189,14 @@ function DeleteModal({
             <div
               className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0"
               style={{
-                background: `linear-gradient(135deg, ${pet.bgFrom}, ${pet.bgTo})`,
+                background: `linear-gradient(135deg, ${ANIMAL_VISUAL[pet.animal_type].bgFrom}, ${ANIMAL_VISUAL[pet.animal_type].bgTo})`,
               }}
             >
-              {pet.emoji}
+              {ANIMAL_VISUAL[pet.animal_type].emoji}
             </div>
             <div className="text-left">
               <p className="font-semibold text-[#281A0E]">{pet.name}</p>
-              <p className="text-sm text-[#6B7280]">{pet.breed}</p>
+              <p className="text-sm text-[#6B7280]">{pet.breed ?? "품종 미입력"}</p>
             </div>
           </div>
 
@@ -334,11 +384,44 @@ function EditModal({
   onClose: () => void;
   onSave: (updated: Pet) => void;
 }) {
-  const [form, setForm] = useState({ ...pet });
+  const [name, setName] = useState(pet.name);
+  const [breed, setBreed] = useState(pet.breed ?? "");
+  const [age, setAge] = useState(pet.age != null ? String(pet.age) : "");
+  const [weight, setWeight] = useState(pet.weight != null ? String(pet.weight) : "");
+  const [sex, setSex] = useState<"MALE" | "FEMALE">(genderSex(pet.gender));
+  const [neutered, setNeutered] = useState(isNeutered(pet.gender));
+  const [caution, setCaution] = useState(pet.caution ?? "");
+  const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const visual = ANIMAL_VISUAL[pet.animal_type];
 
-  const update = <K extends keyof Pet>(k: K, v: Pet[K]) =>
-    setForm((prev) => ({ ...prev, [k]: v }));
+  const handleSave = async () => {
+    setSaving(true);
+    const result = await updatePet(pet.id, {
+      name: name.trim(),
+      breed: breed.trim() || null,
+      age: age ? parseInt(age) : 0,
+      weight: weight ? parseFloat(weight) : 0,
+      gender: combineGender(sex, neutered),
+      caution: caution.trim() || null,
+    });
+    setSaving(false);
+
+    if (result.error) {
+      alert(result.error.message);
+      return;
+    }
+
+    onSave({
+      ...pet,
+      name: name.trim(),
+      breed: breed.trim() || null,
+      age: age ? parseInt(age) : 0,
+      weight: weight ? parseFloat(weight) : 0,
+      gender: combineGender(sex, neutered),
+      caution: caution.trim() || null,
+    });
+  };
 
   return (
     <Backdrop>
@@ -371,10 +454,10 @@ function EditModal({
               <div
                 className="w-25 h-25 rounded-full flex items-center justify-center text-5xl"
                 style={{
-                  background: `linear-gradient(135deg, ${form.bgFrom}, ${form.bgTo})`,
+                  background: `linear-gradient(135deg, ${visual.bgFrom}, ${visual.bgTo})`,
                 }}
               >
-                {form.emoji}
+                {visual.emoji}
               </div>
               <button
                 onClick={() => fileRef.current?.click()}
@@ -395,8 +478,8 @@ function EditModal({
             {/* 이름 */}
             <FormField label="이름">
               <input
-                value={form.name}
-                onChange={(e) => update("name", e.target.value)}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 className="w-full h-11 px-4 border border-[#FFE9D6] rounded-xl text-[#281A0E] focus:outline-none focus:border-[#E8742A] transition-colors"
               />
             </FormField>
@@ -404,8 +487,8 @@ function EditModal({
             {/* 품종 */}
             <FormField label="품종" helper="예: 말티즈, 푸들, 코리안 숏헤어">
               <input
-                value={form.breed}
-                onChange={(e) => update("breed", e.target.value)}
+                value={breed}
+                onChange={(e) => setBreed(e.target.value)}
                 placeholder="품종을 직접 입력해주세요"
                 className="w-full h-11 px-4 border border-[#FFE9D6] rounded-xl text-[#281A0E] placeholder-[#6B7280] focus:outline-none focus:border-[#E8742A] transition-colors"
               />
@@ -417,8 +500,8 @@ function EditModal({
                 <div className="flex items-center gap-2">
                   <input
                     type="number"
-                    value={form.age}
-                    onChange={(e) => update("age", Number(e.target.value))}
+                    value={age}
+                    onChange={(e) => setAge(e.target.value)}
                     className="flex-1 min-w-0 h-11 px-4 border border-[#FFE9D6] rounded-xl text-[#281A0E] focus:outline-none focus:border-[#E8742A] transition-colors"
                   />
                   <span className="shrink-0 text-sm text-[#6B7280]">살</span>
@@ -429,8 +512,8 @@ function EditModal({
                   <input
                     type="number"
                     step="0.1"
-                    value={form.weight}
-                    onChange={(e) => update("weight", Number(e.target.value))}
+                    value={weight}
+                    onChange={(e) => setWeight(e.target.value)}
                     className="flex-1 min-w-0 h-11 px-4 border border-[#FFE9D6] rounded-xl text-[#281A0E] focus:outline-none focus:border-[#E8742A] transition-colors"
                   />
                   <span className="shrink-0 text-sm text-[#6B7280]">kg</span>
@@ -441,27 +524,41 @@ function EditModal({
             {/* 성별 */}
             <FormField label="성별">
               <div className="flex gap-3">
-                {(["수컷", "암컷"] as const).map((g) => (
+                {(["MALE", "FEMALE"] as const).map((g) => (
                   <button
                     key={g}
-                    onClick={() => update("gender", g)}
+                    onClick={() => setSex(g)}
                     className={`flex-1 h-11 rounded-xl border-2 text-sm font-medium transition-all ${
-                      form.gender === g
+                      sex === g
                         ? "border-[#E8742A] bg-[#FFF8F3] text-[#E8742A]"
                         : "border-[#FFE9D6] text-[#6B7280]"
                     }`}
                   >
-                    {g}
+                    {g === "MALE" ? "수컷" : "암컷"}
                   </button>
                 ))}
               </div>
+              <button
+                type="button"
+                onClick={() => setNeutered((prev) => !prev)}
+                className="mt-2 flex items-center gap-2 text-sm text-[#6B7280]"
+              >
+                <span
+                  className={`size-4 rounded-sm border flex items-center justify-center ${
+                    neutered ? "bg-[#E8742A] border-[#E8742A]" : "border-[#D1D5DB]"
+                  }`}
+                >
+                  {neutered && <Check size={11} className="text-white" />}
+                </span>
+                중성화 했어요
+              </button>
             </FormField>
 
             {/* 주의사항 */}
             <FormField label="주의사항">
               <textarea
-                value={form.caution}
-                onChange={(e) => update("caution", e.target.value)}
+                value={caution}
+                onChange={(e) => setCaution(e.target.value)}
                 placeholder="돌봄 시 주의사항을 자유롭게 작성해주세요"
                 className="w-full px-4 py-3 border border-[#FFE9D6] rounded-xl text-[#281A0E] placeholder-[#6B7280] focus:outline-none focus:border-[#E8742A] transition-colors resize-none"
                 style={{ minHeight: 100 }}
@@ -479,10 +576,11 @@ function EditModal({
             취소
           </button>
           <button
-            onClick={() => onSave(form)}
-            className="flex-2 h-12 rounded-xl bg-[#E8742A] text-white font-semibold hover:bg-[#D4621A] transition-colors"
+            onClick={handleSave}
+            disabled={saving}
+            className="flex-2 h-12 rounded-xl bg-[#E8742A] text-white font-semibold hover:bg-[#D4621A] disabled:opacity-60 transition-colors"
           >
-            저장하기
+            {saving ? "저장 중..." : "저장하기"}
           </button>
         </div>
       </div>
@@ -541,11 +639,20 @@ function PetCard({
       {/* 사진 영역 */}
       <div
         className="relative h-45 flex items-center justify-center"
-        style={{
-          background: `linear-gradient(135deg, ${pet.bgFrom}, ${pet.bgTo})`,
-        }}
+        style={
+          pet.image_url
+            ? undefined
+            : {
+                background: `linear-gradient(135deg, ${ANIMAL_VISUAL[pet.animal_type].bgFrom}, ${ANIMAL_VISUAL[pet.animal_type].bgTo})`,
+              }
+        }
       >
-        <span className="text-6xl leading-none">{pet.emoji}</span>
+        {pet.image_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={pet.image_url} alt={pet.name} className="w-full h-full object-cover" />
+        ) : (
+          <span className="text-6xl leading-none">{ANIMAL_VISUAL[pet.animal_type].emoji}</span>
+        )}
         <div className="absolute top-3 left-3 bg-white/90 px-2.5 py-1 rounded-full border border-[#FFE9D6]">
           <span className="text-xs font-semibold text-[#E8742A]">
             {ANIMAL_TYPE_LABEL[pet.animal_type]}
@@ -567,9 +674,9 @@ function PetCard({
       {/* 정보 */}
       <div className="p-5">
         <h3 className="font-bold text-[#281A0E] mb-0.5">{pet.name}</h3>
-        <p className="text-sm text-[#6B7280] mb-1">{pet.breed}</p>
+        <p className="text-sm text-[#6B7280] mb-1">{pet.breed ?? "품종 미입력"}</p>
         <p className="text-sm text-[#6B7280]">
-          {pet.age}살 · {pet.weight}kg · {pet.gender}
+          {pet.age ?? "-"}살 · {pet.weight ?? "-"}kg · {GENDER_LABEL[pet.gender]}
         </p>
 
         {!isSelectionMode && (
@@ -629,12 +736,21 @@ function PetCardMobile({
     >
       <div className="relative shrink-0">
         <div
-          className="w-24 h-24 rounded-xl flex items-center justify-center text-4xl"
-          style={{
-            background: `linear-gradient(135deg, ${pet.bgFrom}, ${pet.bgTo})`,
-          }}
+          className="w-24 h-24 rounded-xl overflow-hidden flex items-center justify-center text-4xl"
+          style={
+            pet.image_url
+              ? undefined
+              : {
+                  background: `linear-gradient(135deg, ${ANIMAL_VISUAL[pet.animal_type].bgFrom}, ${ANIMAL_VISUAL[pet.animal_type].bgTo})`,
+                }
+          }
         >
-          {pet.emoji}
+          {pet.image_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={pet.image_url} alt={pet.name} className="w-full h-full object-cover" />
+          ) : (
+            ANIMAL_VISUAL[pet.animal_type].emoji
+          )}
         </div>
         {isSelectionMode && (
           <div
@@ -655,9 +771,9 @@ function PetCardMobile({
             {ANIMAL_TYPE_LABEL[pet.animal_type]}
           </span>
         </div>
-        <p className="text-sm text-[#6B7280]">{pet.breed}</p>
+        <p className="text-sm text-[#6B7280]">{pet.breed ?? "품종 미입력"}</p>
         <p className="text-xs text-[#6B7280] mt-0.5">
-          {pet.age}살 · {pet.weight}kg
+          {pet.age ?? "-"}살 · {pet.weight ?? "-"}kg
         </p>
         {!isSelectionMode && (
           <div className="flex gap-2 mt-3">
@@ -715,11 +831,22 @@ type ModalType = "delete" | "bulk-delete" | "success" | "edit" | "guide" | null;
 
 export default function MyPetsPage() {
   const router = useRouter();
-  const [pets, setPets] = useState<Pet[]>(INITIAL_PETS);
+  const [pets, setPets] = useState<Pet[]>(DUMMY_PETS);
   const [modal, setModal] = useState<ModalType>(null);
   const [targetPet, setTargetPet] = useState<Pet | null>(null);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch("/api/pets")
+      .then((res) => res.json())
+      .then((result) => {
+        // data.length > 0 조건: 비로그인/등록 전이면 더미 유지 (board 목록과 동일한 패턴)
+        if ("data" in result && result.data && result.data.length > 0) {
+          setPets((result.data as PetRow[]).map(toPet));
+        }
+      });
+  }, []);
 
   const openDelete = (pet: Pet) => {
     setTargetPet(pet);
@@ -746,17 +873,30 @@ export default function MyPetsPage() {
     );
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!targetPet) return;
+    const result = await deletePet(targetPet.id);
+    if (result.error) {
+      alert(result.error.message);
+      return;
+    }
     setPets((prev) => prev.filter((p) => p.id !== targetPet.id));
     setModal(null);
   };
 
-  const handleBulkDelete = () => {
-    setPets((prev) => prev.filter((p) => !selectedIds.includes(p.id)));
+  const handleBulkDelete = async () => {
+    const results = await Promise.all(selectedIds.map((id) => deletePet(id)));
+    const failedIds = selectedIds.filter((_, i) => results[i].error);
+    const failedMessages = results.filter((r) => r.error).map((r) => r.error!.message);
+
+    setPets((prev) => prev.filter((p) => !selectedIds.includes(p.id) || failedIds.includes(p.id)));
     setSelectedIds([]);
     setIsSelectionMode(false);
     setModal(null);
+
+    if (failedMessages.length > 0) {
+      alert(`일부 삭제에 실패했습니다.\n${failedMessages.join("\n")}`);
+    }
   };
 
   const handleSaveEdit = (updated: Pet) => {

@@ -4,7 +4,8 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Camera } from "lucide-react";
 import Header from "@/components/layout/Header";
-import { createPet } from "@/app/actions/pets";
+import { createPet, uploadPetPhoto } from "@/app/actions/pets";
+import { CustomModal } from "@/components/common/CustomModal";
 
 const COMMON_NOTES = ["알러지 있음", "약 복용 중", "사람 경계", "다른 동물 경계", "분리불안"];
 
@@ -19,7 +20,10 @@ export default function PetRegisterPage() {
   const [neutered, setNeutered] = useState(false);
   const [notes, setNotes] = useState("");
   const [selectedNotes, setSelectedNotes] = useState<string[]>([]);
-  const [photos, setPhotos] = useState<{ url: string; blob: string }[]>([]);
+  const [photos, setPhotos] = useState<{ url: string; blob: string; file: File }[]>([]);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handlePhotoAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -28,7 +32,7 @@ export default function PetRegisterPage() {
     const remaining = 5 - photos.length;
     const newEntries = Array.from(files).slice(0, remaining).map((file) => {
       const url = URL.createObjectURL(file);
-      return { url, blob: url };
+      return { url, blob: url, file };
     });
     setPhotos((prev) => [...prev, ...newEntries]);
     e.target.value = "";
@@ -55,9 +59,9 @@ export default function PetRegisterPage() {
   };
 
   const handleSubmit = async () => {
-    if (!petType) { alert("동물 종류를 선택해주세요."); return; }
-    if (!name.trim()) { alert("이름을 입력해주세요."); return; }
-    if (!gender) { alert("성별을 선택해주세요."); return; }
+    if (!petType) { setErrorMessage("동물 종류를 선택해주세요."); return; }
+    if (!name.trim()) { setErrorMessage("이름을 입력해주세요."); return; }
+    if (!gender) { setErrorMessage("성별을 선택해주세요."); return; }
 
     // 화면은 성별(male/female) + 중성화(boolean)로 따로 받지만,
     // DB는 MALE / FEMALE / MALE_NEUTERED / FEMALE_NEUTERED 한 값으로 받음 → 조합
@@ -66,6 +70,22 @@ export default function PetRegisterPage() {
         ? neutered ? "MALE_NEUTERED" : "MALE"
         : neutered ? "FEMALE_NEUTERED" : "FEMALE";
 
+    setSubmitting(true);
+
+    // pets.image_url은 컬럼이 1개라 첫 번째 사진만 업로드해서 사용
+    let imageUrl: string | null = null;
+    if (photos[0]) {
+      const formData = new FormData();
+      formData.append("file", photos[0].file);
+      const uploadResult = await uploadPetPhoto(formData);
+      if (uploadResult.error) {
+        setSubmitting(false);
+        setErrorMessage(uploadResult.error.message);
+        return;
+      }
+      imageUrl = uploadResult.data.url;
+    }
+
     const result = await createPet({
       name: name.trim(),
       animal_type: petType,
@@ -73,17 +93,18 @@ export default function PetRegisterPage() {
       age: age ? parseInt(age) : 0,
       gender: genderValue,
       weight: weight ? parseFloat(weight) : 0,
-      image_url: null, // 사진은 blob URL이라 미저장 — Supabase Storage 업로드는 별도 작업
+      image_url: imageUrl,
       caution: notes.trim() || null,
     });
 
+    setSubmitting(false);
+
     if (result.error) {
-      alert(result.error.message);
+      setErrorMessage(result.error.message);
       return;
     }
 
-    alert("반려동물이 등록되었습니다!");
-    router.back();
+    setShowSuccessModal(true);
   };
 
   const inputCls = "w-full h-12 px-4 py-3 bg-white rounded-xl border border-[#ffe9d6] text-base font-normal text-[#281a0e] placeholder:text-gray-400 focus:outline-none focus:border-[#e8742a] transition-all";
@@ -313,14 +334,34 @@ export default function PetRegisterPage() {
               </button>
               <button
                 onClick={handleSubmit}
-                className="flex-1 h-12 px-6 bg-[#e8742a] rounded-xl flex justify-center items-center hover:bg-[#d4621a] transition-colors"
+                disabled={submitting}
+                className="flex-1 h-12 px-6 bg-[#e8742a] rounded-xl flex justify-center items-center hover:bg-[#d4621a] disabled:opacity-60 transition-colors"
               >
-                <span className="text-white text-base font-semibold leading-6">등록하기</span>
+                <span className="text-white text-base font-semibold leading-6">
+                  {submitting ? "등록 중..." : "등록하기"}
+                </span>
               </button>
             </div>
           </div>
         </div>
       </main>
+
+      <CustomModal
+        open={showSuccessModal}
+        preset="success"
+        title="등록이 완료되었어요"
+        description="이제 돌봄 요청 시 선택할 수 있습니다."
+        onClose={() => router.back()}
+        onConfirm={() => router.back()}
+      />
+
+      <CustomModal
+        open={errorMessage !== null}
+        preset="error"
+        description={errorMessage ?? undefined}
+        onClose={() => setErrorMessage(null)}
+        onConfirm={() => setErrorMessage(null)}
+      />
     </div>
   );
 }

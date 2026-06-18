@@ -33,6 +33,14 @@ function formatPeriod(start: string, end: string) {
   return `${s.getMonth() + 1}월 ${s.getDate()}일 - ${e.getMonth() + 1}월 ${e.getDate()}일`;
 }
 
+function formatTimeRange(start: string, end: string) {
+  const s = new Date(start);
+  const e = new Date(end);
+  const fmt = (d: Date) =>
+    `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  return `${fmt(s)} – ${fmt(e)}`;
+}
+
 function formatRelativeTime(dateStr: string) {
   const diffH = Math.floor(
     (Date.now() - new Date(dateStr).getTime()) / 3600000,
@@ -72,7 +80,7 @@ function toPost(r: RequestRow): Post {
     petName: pet ? `${pet.name} (${pet.animal_type})` : "(반려동물 없음)",
     serviceType: REQUEST_TYPE_MAP[r.request_type] ?? r.request_type,
     date: formatPeriod(r.start_datetime, r.end_datetime),
-    time: "(시간 정보 없음)", // DB에 time 컬럼 없음 — 더미 표시
+    time: formatTimeRange(r.start_datetime, r.end_datetime),
     location: r.location,
     price: r.budget,
     createdAt: formatRelativeTime(r.created_at),
@@ -220,7 +228,7 @@ const TABS: { id: TabId; label: string }[] = [
 ];
 
 function formatPrice(price: number) {
-  return price.toLocaleString("ko-KR") + "원";
+  return price ? price.toLocaleString("ko-KR") + "원" : "협의 가능";
 }
 
 function countByStatus(posts: Post[], status: PostStatus) {

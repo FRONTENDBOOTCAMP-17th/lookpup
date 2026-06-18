@@ -62,7 +62,7 @@ export default function Header() {
       <div ref={mobileMenuRef} className="w-full">
         {/* Desktop / Tablet Header */}
         <div className="hidden md:flex h-16 w-full justify-center">
-          <div className="w-full max-w-[1280px] px-10 flex items-center justify-between gap-6">
+          <div className="relative w-full max-w-[1280px] px-10 flex items-center justify-between gap-6">
             {/* 로고 */}
             <Link href="/" className="shrink-0" aria-label="봐주개 홈으로 이동">
               <Image
@@ -75,8 +75,8 @@ export default function Header() {
               />
             </Link>
 
-            {/* 네비게이션 */}
-            <nav className="flex flex-1 items-center justify-center gap-8">
+            {/* 네비게이션 — 좌/우 영역 너비가 바뀌어도(로그인 상태 로딩 등) 흔들리지 않도록 화면 중앙에 절대 위치 고정 */}
+            <nav className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-8">
               {NAV_ITEMS.map(({ href, label }) => {
                 const isActive = isActivePath(href);
 
