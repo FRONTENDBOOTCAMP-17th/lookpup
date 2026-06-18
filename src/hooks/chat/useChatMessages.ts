@@ -4,12 +4,13 @@
  * 1. REST API (cursor 기반 페이지네이션)
  *    최신 50건 로드, 스크롤 최상단 도달 시 loadMore()로 이전 메시지 prepend.
  *
- * 2. Realtime - postgres_changes
- *    신규 메시지가 DB에 저장되면 목록 끝에 추가.
- *    채팅방이 바뀌거나 컴포넌트가 사라지면 구독 해제.
+ * 2. Realtime - broadcast
+ *    메시지 전송 시 채널로 broadcast하고, 상대방은 broadcast 구독으로 수신.
+ *    채팅방이 바뀌거나 컴포넌트가 사라지면 해당 구독을 해제함.
  */
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/utils/supabase/client";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import type { Message } from "@/components/common/chat/chat_components";
 
 function formatTime(iso: string): string {
@@ -43,8 +44,7 @@ export function useChatMessages(
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-  // 내가 보낸 메시지 ID를 추적해 postgres_changes 중복 방지
-  const sentMessageIds = useRef<Set<string>>(new Set());
+  const channelRef = useRef<RealtimeChannel | null>(null);
 
   // 방이 바뀌면 상태 초기화 후 최신 메시지 로드
   useEffect(() => {
@@ -53,7 +53,6 @@ export function useChatMessages(
     setMessages([]);
     setNextCursor(null);
     setHasMore(false);
-    sentMessageIds.current = new Set();
 
     const controller = new AbortController();
 
@@ -80,38 +79,38 @@ export function useChatMessages(
     return () => controller.abort();
   }, [activeRoomId, userId]);
 
-  // Realtime
+  // Realtime broadcast 구독
   useEffect(() => {
     if (!activeRoomId || !userId) return;
 
     const supabase = createClient();
     const channel = supabase
       .channel(`room-${activeRoomId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-          filter: `room_id=eq.${activeRoomId}`,
-        },
-        (payload) => {
-          const m = payload.new as MessageApiItem;
-          // addMessage()로 이미 추가한 자신의 메시지는 건너뜀
-          if (sentMessageIds.current.has(m.id)) return;
-          setMessages((prev) => [...prev, toMessage(m, userId)]);
-        },
-      )
+      .on("broadcast", { event: "new_message" }, ({ payload }) => {
+        const m = payload as MessageApiItem;
+        if (m.sender_id === userId) return;
+        setMessages((prev) => [...prev, toMessage(m, userId)]);
+      })
       .subscribe();
+
+    channelRef.current = channel;
 
     return () => {
       supabase.removeChannel(channel);
+      channelRef.current = null;
     };
   }, [activeRoomId, userId]);
 
   function addMessage(m: MessageApiItem) {
-    sentMessageIds.current.add(m.id);
     setMessages((prev) => [...prev, toMessage(m, userId ?? "")]);
+  }
+
+  function broadcastMessage(m: MessageApiItem) {
+    channelRef.current?.send({
+      type: "broadcast",
+      event: "new_message",
+      payload: m,
+    });
   }
 
   async function loadMore() {
@@ -137,5 +136,5 @@ export function useChatMessages(
     }
   }
 
-  return { messages, addMessage, loadMore, hasMore, loadingMore };
+  return { messages, addMessage, broadcastMessage, loadMore, hasMore, loadingMore };
 }

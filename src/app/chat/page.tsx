@@ -19,7 +19,7 @@ import {
 } from "@/components/common/chat/chat_components";
 import { CustomModalPayment } from "@/components/common/CustomModalPayment";
 import CareRecordModal from "@/components/common/chat/CareRecordModal";
-import { sendMessage } from "@/app/actions/chat";
+import { sendMessage, markRoomRead } from "@/app/actions/chat";
 import { updateApplicationByRoom } from "@/app/actions/applications";
 import { useChatRooms } from "@/hooks/chat/useChatRooms";
 import { useRequest } from "@/hooks/chat/useRequest";
@@ -47,8 +47,11 @@ export default function ChatPage() {
   const [applicationActionError, setApplicationActionError] = useState<string | null>(null);
   const [actioningId, setActioningId] = useState<string | null>(null);
 
-  const { rooms, applicants, posts, loading, error, deleteRoom, deleteApplicant } =
-    useChatRooms();
+  const activeRoomId =
+    activeTab === "one_on_one" ? selectedRoomId : selectedApplicantId;
+
+  const { rooms, applicants, posts, loading, error, deleteRoom, deleteApplicant, markRoomAsRead } =
+    useChatRooms(activeRoomId);
   const {
     rejectedIds,
     confirmedId,
@@ -94,10 +97,14 @@ export default function ChatPage() {
     }
   }
 
-  const activeRoomId =
-    activeTab === "one_on_one" ? selectedRoomId : selectedApplicantId;
+  const { messages, addMessage, broadcastMessage, loadMore, hasMore, loadingMore } = useChatMessages(activeRoomId, userId);
 
-  const { messages, addMessage, loadMore, hasMore, loadingMore } = useChatMessages(activeRoomId, userId);
+  // 방에 입장할 때: 로컬 unread 0으로 + DB도 읽음 처리
+  useEffect(() => {
+    if (!activeRoomId) return;
+    markRoomAsRead(activeRoomId);
+    markRoomRead(activeRoomId);
+  }, [activeRoomId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useLayoutEffect(() => {
     if (isLoadMoreRef.current) {
@@ -141,7 +148,10 @@ export default function ChatPage() {
         setSendError(result.error.message);
         return;
       }
-      if (result.data) addMessage(result.data);
+      if (result.data) {
+        addMessage(result.data);
+        broadcastMessage(result.data);
+      }
       setInput("");
     } finally {
       setSending(false);
