@@ -4,7 +4,7 @@ import { test, expect, Page } from "@playwright/test";
 // 로그인은 OAuth(카카오/구글)만 있어 자동화 불가 → 공개 페이지 위주로 렌더만 확인.
 // 주의: networkidle 금지(realtime/websocket으로 hang) → domcontentloaded + waitForTimeout.
 
-const IMG = "../images/2026-06-17";
+const IMG = "../images/2026-06-18";
 
 async function visit(page: Page, path: string) {
   const res = await page.goto(path, { waitUntil: "domcontentloaded" });
@@ -103,4 +103,43 @@ test("L9 펫시터 지도 — 마커/오버레이 (mobile)", async ({ page }) =>
   await shot(page, "L9-petsitters-map-mobile");
   // 콘솔 에러(지도 SDK 도메인 등) 수집
   console.log(`L9 status=${s}`);
+});
+
+/* ===== 8차 신규 — 구인게시판 CRUD(BestSeal) + 채팅 broadcast(영은) ===== */
+
+// 구인글 상세 조회 API(신규). 빈/조회 응답 형태 확인.
+test("L10 /api/requests GET — 구인글 목록 API", async ({ request }) => {
+  const res = await request.get("/api/requests");
+  console.log(`[L10] /api/requests -> ${res.status()} body=${(await res.text()).slice(0, 200)}`);
+  expect(res.status()).toBeLessThan(500);
+});
+
+// 구인 게시판 글쓰기 페이지(비로그인 렌더 — 가드 여부 화면으로 확인)
+test("L11 /board/write — 글쓰기 페이지", async ({ page }) => {
+  const s = await visit(page, "/board/write");
+  await shot(page, "L11-board-write");
+  console.log(`[L11] /board/write status=${s} finalUrl=${page.url()}`);
+});
+
+// 구인 게시판 목록 → 첫 글 상세로 이동(신규 라우트 흐름)
+test("L12 /board → 상세 이동", async ({ page }) => {
+  await visit(page, "/board");
+  const card = page.locator('a[href*="/board/"]').first();
+  if (await card.count()) {
+    const href = await card.getAttribute("href");
+    if (href) {
+      await visit(page, href);
+      await shot(page, "L12-board-detail");
+      console.log(`[L12] board detail = ${page.url()}`);
+    }
+  } else {
+    await shot(page, "L12-board-empty");
+  }
+});
+
+// 채팅 broadcast 전환(7차 [필수] 중복) — 비로그인 graceful 확인(2계정 Realtime은 자동화 제외)
+test("L13 /chat — broadcast 방식 렌더", async ({ page }) => {
+  const s = await visit(page, "/chat");
+  await shot(page, "L13-chat-broadcast");
+  console.log(`[L13] /chat status=${s}`);
 });
