@@ -12,6 +12,7 @@ import SearchFilterBar from "@/components/common/SearchFilterBar";
 import { calculateDistanceKm, formatDistance } from "@/utils/distance";
 import { searchPlaceToCoord, coordToRegion } from "@/utils/kakaoGeocode";
 import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/client";
 
 const FILTERS = ["전체", "방문돌봄", "위탁돌봄", "산책"] as const;
 type Filter = (typeof FILTERS)[number];
@@ -125,7 +126,8 @@ export default function PetsittersPage() {
   const [basePosition, setBasePosition] = useState(DEFAULT_CENTER);
   const [baseLabel, setBaseLabel] = useState("강남역");
   const [locationLoading, setLocationLoading] = useState(false);
-  const [showLocationModal, setShowLocationModal] = useState(true);
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
@@ -176,6 +178,62 @@ export default function PetsittersPage() {
     fetchSitters();
   }, []);
 
+  // 위치 동의 여부 확인
+  useEffect(() => {
+    const browserClient = createClient();
+
+    async function checkLocationConsent() {
+      const { data: { user } } = await browserClient.auth.getUser();
+
+      if (!user) {
+        // 비로그인: localStorage 기반으로 체크
+        const localConsent = localStorage.getItem("location_consent");
+        if (localConsent !== "true") {
+          setShowLocationModal(true);
+        } else {
+          requestLocationSilently();
+        }
+        return;
+      }
+
+      setCurrentUserId(user.id);
+
+      const { data } = await browserClient
+        .from("users")
+        .select("location_consent")
+        .eq("id", user.id)
+        .single();
+
+      if (data?.location_consent) {
+        requestLocationSilently();
+      } else {
+        setShowLocationModal(true);
+      }
+    }
+
+    checkLocationConsent();
+  }, []);
+
+  function requestLocationSilently() {
+    if (!navigator.geolocation) return;
+    setLocationLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords }) => {
+        const pos = { lat: coords.latitude, lng: coords.longitude };
+        setBasePosition(pos);
+        setBaseLabel("현재 위치");
+        const region = await coordToRegion(pos.lat, pos.lng);
+        if (region) {
+          setBaseLabel(`현재 위치 (${region.dong || region.sigungu})`);
+        }
+        setLocationLoading(false);
+      },
+      () => {
+        setLocationLoading(false);
+      },
+    );
+  }
+
   // 카드 스크롤 동기화
   useEffect(() => {
     if (selectedSitterId === null) return;
@@ -213,24 +271,21 @@ export default function PetsittersPage() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  function requestLocation() {
-    setLocationLoading(true);
+  async function requestLocation() {
     setShowLocationModal(false);
-    navigator.geolocation.getCurrentPosition(
-      async ({ coords }) => {
-        const pos = { lat: coords.latitude, lng: coords.longitude };
-        setBasePosition(pos);
-        setBaseLabel("현재 위치");
-        const region = await coordToRegion(pos.lat, pos.lng);
-        if (region) {
-          setBaseLabel(`현재 위치 (${region.dong || region.sigungu})`);
-        }
-        setLocationLoading(false);
-      },
-      () => {
-        setLocationLoading(false);
-      },
-    );
+
+    // 동의 저장
+    const browserClient = createClient();
+    if (currentUserId) {
+      await browserClient
+        .from("users")
+        .update({ location_consent: true })
+        .eq("id", currentUserId);
+    } else {
+      localStorage.setItem("location_consent", "true");
+    }
+
+    requestLocationSilently();
   }
 
   const sittersWithDistance = sitters.map((sitter) => ({
