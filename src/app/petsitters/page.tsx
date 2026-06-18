@@ -126,6 +126,7 @@ export default function PetsittersPage() {
   const [basePosition, setBasePosition] = useState(DEFAULT_CENTER);
   const [baseLabel, setBaseLabel] = useState("강남역");
   const [locationLoading, setLocationLoading] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
@@ -214,9 +215,23 @@ export default function PetsittersPage() {
     checkLocationConsent();
   }, []);
 
-  function requestLocationSilently() {
-    if (!navigator.geolocation) return;
+  async function requestLocationSilently() {
+    if (!navigator.geolocation) {
+      setLocationError("이 브라우저는 위치 서비스를 지원하지 않아요.");
+      return;
+    }
+
+    // 브라우저 권한 상태 사전 확인
+    if (navigator.permissions) {
+      const status = await navigator.permissions.query({ name: "geolocation" });
+      if (status.state === "denied") {
+        setLocationError("브라우저 위치 권한이 차단되어 있어요. 브라우저 설정에서 위치 권한을 허용해 주세요.");
+        return;
+      }
+    }
+
     setLocationLoading(true);
+    setLocationError(null);
     navigator.geolocation.getCurrentPosition(
       async ({ coords }) => {
         const pos = { lat: coords.latitude, lng: coords.longitude };
@@ -228,9 +243,15 @@ export default function PetsittersPage() {
         }
         setLocationLoading(false);
       },
-      () => {
+      (err) => {
         setLocationLoading(false);
+        if (err.code === err.PERMISSION_DENIED) {
+          setLocationError("브라우저 위치 권한이 차단되어 있어요. 브라우저 설정에서 위치 권한을 허용해 주세요.");
+        } else {
+          setLocationError("위치를 가져올 수 없어요. 강남역 기준으로 표시됩니다.");
+        }
       },
+      { timeout: 10000 },
     );
   }
 
@@ -361,6 +382,11 @@ export default function PetsittersPage() {
             {locationLoading && (
               <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 bg-white px-4 py-2 rounded-full shadow text-sm text-orange-500 font-medium">
                 위치 확인 중...
+              </div>
+            )}
+            {locationError && (
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 bg-white px-4 py-2 rounded-full shadow text-sm text-red-500 font-medium whitespace-nowrap max-w-[90vw] text-center">
+                {locationError}
               </div>
             )}
             <KakaoMap
