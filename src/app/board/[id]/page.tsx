@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { getRequestDetail } from "@/app/actions/requests";
 import {
   MapPin,
   Calendar,
@@ -173,11 +172,13 @@ export default function BoardDetailPage() {
   const [post, setPost] = useState<RequestDetail | null>(null);
 
   useEffect(() => {
-    getRequestDetail(id).then((result) => {
-      if ("data" in result && result.data) {
-        setPost(result.data as unknown as RequestDetail);
-      }
-    });
+    fetch(`/api/requests/${id}`)
+      .then((res) => res.json())
+      .then((result) => {
+        if ("data" in result && result.data) {
+          setPost(result.data as unknown as RequestDetail);
+        }
+      });
   }, [id]);
 
   return (

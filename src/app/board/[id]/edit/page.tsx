@@ -20,7 +20,7 @@ import Footer from "@/components/layout/Footer";
 import RangePicker from "@/components/ui/RangePicker";
 import SimpleTimePicker from "@/components/ui/SimpleTimePicker";
 import { createClient } from "@/utils/supabase/client";
-import { updateRequest, getRequestDetail } from "@/app/actions/requests";
+import { updateRequest } from "@/app/actions/requests";
 
 const SERVICE_TYPES = [
   { label: "방문 돌봄", icon: Home, value: "care" },
@@ -46,6 +46,15 @@ type Pet = {
   age: number | null;
   weight: number | null;
   emoji: string;
+};
+
+// GET /api/pets 응답 행 (필요한 필드만)
+type PetRow = {
+  id: string;
+  name: string;
+  animal_type: string;
+  age: number | null;
+  weight: number | null;
 };
 
 type FormState = {
@@ -89,7 +98,9 @@ export default function BoardEditPage() {
       if (!user) return;
 
       // 기존 구인글 데이터 조회 (pre-fill용)
-      const result = await getRequestDetail(id);
+      const result = await fetch(`/api/requests/${id}`).then((res) =>
+        res.json(),
+      );
 
       if ("data" in result && result.data) {
         const data = result.data;
@@ -114,16 +125,13 @@ export default function BoardEditPage() {
         });
       }
 
-      // 반려동물 목록 조회
-      const { data: petData } = await supabase
-        .from("pets")
-        .select("id, name, animal_type, age, weight")
-        .eq("owner_id", user.id)
-        .is("deleted_at", null);
+      // 펫 목록 조회 (RLS 우회 → GET /api/pets)
+      const petResult = await fetch("/api/pets").then((res) => res.json());
+      const petData = "data" in petResult ? petResult.data : null;
 
       if (petData && petData.length > 0) {
         setPets(
-          petData.map((p) => ({
+          petData.map((p: PetRow) => ({
             id: p.id,
             name: p.name,
             type: ANIMAL_TYPE_MAP[p.animal_type]?.label ?? p.animal_type,
