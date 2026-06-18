@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import Header from "@/components/layout/Header";
@@ -12,249 +12,227 @@ import Pill from "@/components/ui/Pill";
 import { MapPin, ChevronLeft } from "lucide-react";
 import StarRow from "@/components/ui/StarRow";
 import StatGrid from "@/components/ui/StatGrid";
+import { supabase } from "@/lib/supabase";
 
-// 더미더미더미
-const SITTER = {
-  id: "dummy-uuid",
-  user_id: "dummy-uuid",
-  full_name: "김민지",
-  profile_image: null as string | null,
-  title: null as string | null,
-  introduction:
-    "안녕하세요! 5년 경력의 반려동물 전문 펫시터 김민지입니다.\n\n강아지와 고양이 모두 사랑하며, 각각의 성격과 특성을 이해하고 맞춤 케어를 제공합니다. 반려동물 행동교정사 자격증을 보유하고 있으며, 응급처치 교육도 이수했습니다.",
-  career: "5년",
-  available_area: "서울 마포구",
-  latitude: 37.5548,
-  longitude: 126.9236,
-  base_price: 30000,
-  rating: 4.9,
-  status: "approved" as "pending" | "approved" | "rejected",
-  is_verified: true,
-  services: ["방문돌봄", "위탁돌봄", "산책"],
-  review_count: 47,
-  // 이쪽은 확인해볼 것
-  completedCount: "230+",
-  pets: ["강아지 소형", "강아지 중형", "고양이"],
-  ratingBreakdown: { 5: 40, 4: 5, 3: 1, 2: 1, 1: 0 } as Record<number, number>,
+const SERVICE_TYPE_LABEL: Record<string, string> = {
+  walk:   "산책",
+  care:   "방문돌봄",
+  hotel:  "위탁돌봄",
+  pickup: "픽업",
 };
 
-const SERVICES_PRICE = [
-  {
-    service: "방문돌봄 (1일)",
-    price: "30,000원",
-    desc: "하루 2-3회 방문하여 식사, 산책, 놀이 제공",
-  },
-  {
-    service: "위탁돌봄 (1일)",
-    price: "35,000원",
-    desc: "펫시터 집에서 24시간 케어",
-  },
-  { service: "산책 (1시간)", price: "15,000원", desc: "1시간 산책 서비스" },
-];
+const SERVICE_TYPE_UNIT: Record<string, string> = {
+  walk:   "1시간",
+  care:   "1일",
+  hotel:  "1일",
+  pickup: "1회",
+};
 
-const REVIEWS = [
-  {
-    name: "박서현",
-    initial: "박",
-    date: "2024.05.20",
-    content:
-      "우리 아이를 정말 잘 돌봐주셨어요! 사진도 자주 보내주시고 꼼꼼하게 케어해주셔서 안심하고 맡길 수 있었습니다.",
-  },
-  {
-    name: "이준호",
-    initial: "이",
-    date: "2024.05.19",
-    content: "친절하고 전문적인 케어 감사합니다. 강아지가 무척 좋아했어요.",
-  },
-  {
-    name: "최예진",
-    initial: "최",
-    date: "2024.05.18",
-    content: "꼼꼼한 일지 덕분에 여행 내내 안심했어요. 재방문 의사 있습니다.",
-  },
-  {
-    name: "정민수",
-    initial: "정",
-    date: "2024.05.17",
-    content: "응급 상황에도 침착하게 대응해주셔서 믿음이 가요.",
-  },
-  {
-    name: "강소연",
-    initial: "강",
-    date: "2024.05.16",
-    content: "산책 중에도 사진 보내주시고 정말 성실하세요!",
-  },
-];
+interface ServiceRow {
+  service_type: string;
+  title: string | null;
+  description: string | null;
+  price: number;
+  animal_type: string | null;
+}
 
-const STATS = [
-  { label: "경력", value: SITTER.career },
-  { label: "완료", value: SITTER.completedCount },
-];
+interface SitterDetail {
+  id: string;
+  full_name: string | null;
+  profile_image: string | null;
+  is_verified: boolean;
+  introduction: string | null;
+  career: string | null;
+  available_area: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  base_price: number | null;
+  rating: number;
+  services: ServiceRow[];
+}
 
 const TABS = ["소개", "서비스", "후기", "위치"] as const;
 type Tab = (typeof TABS)[number];
 
+const DEFAULT_LAT = 37.4979;
+const DEFAULT_LNG = 127.0276;
 
 export default function PetsitterProfilePage() {
   const params = useParams();
   const sitterId = params.id as string;
+
+  const [sitter, setSitter] = useState<SitterDetail | null>(null);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>("소개");
 
-  const renderTabContent = () => (
-    <>
-      {/* 소개 탭 */}
-      {activeTab === "소개" && (
-        <div className="flex flex-col gap-4">
-          <div className="bg-white rounded-2xl shadow-[0px_2px_12px_rgba(232,116,42,0.10)] border border-orange-100 p-6">
-            <h3 className="font-bold text-stone-900 mb-4">소개</h3>
-            <p className="text-gray-500 text-sm leading-relaxed whitespace-pre-line">
-              {SITTER.introduction}
-            </p>
-          </div>
+  useEffect(() => {
+    async function fetchDetail() {
+      setLoading(true);
+      const { data, error } = await supabase.rpc("get_petsitter_detail", {
+        p_sitter_id: sitterId,
+      });
+      if (!error && data) {
+        setSitter(data as SitterDetail);
+      }
+      setLoading(false);
+    }
+    fetchDetail();
+  }, [sitterId]);
 
-          <div className="bg-white rounded-2xl shadow-[0px_2px_12px_rgba(232,116,42,0.10)] border border-orange-100 p-6">
-            <h3 className="font-bold text-stone-900 mb-4">돌봄 가능</h3>
-            <div className="flex gap-2 flex-wrap">
-              {SITTER.pets.map((pet) => (
-                <Pill key={pet}>{pet}</Pill>
-              ))}
-            </div>
-          </div>
+  // 서비스 목록에서 표시용 레이블 도출
+  const serviceLabels = sitter
+    ? [...new Set(sitter.services.map((sv) => SERVICE_TYPE_LABEL[sv.service_type] ?? sv.service_type))]
+    : [];
 
-          <div className="bg-white rounded-2xl shadow-[0px_2px_12px_rgba(232,116,42,0.10)] border border-orange-100 p-6">
-            <h3 className="font-bold text-stone-900 mb-4">사진</h3>
-            <div className="grid grid-cols-3 gap-3">
-              {Array.from({ length: 6 }).map((_, idx) => (
-                <div
-                  key={idx}
-                  className="aspect-square rounded-lg bg-linear-to-br from-gray-100 to-gray-200"
-                />
-              ))}
-            </div>
-          </div>
+  // 활동 지역 텍스트
+  const areaText = sitter?.available_area ?? "-";
+
+  // 통계
+  const stats = [
+    { label: "경력", value: sitter?.career ?? "-" },
+    { label: "완료", value: "-" },
+  ];
+
+  // 지도 좌표
+  const lat = sitter?.latitude ?? DEFAULT_LAT;
+  const lng = sitter?.longitude ?? DEFAULT_LNG;
+
+  const renderTabContent = () => {
+    if (loading) {
+      return (
+        <div className="flex items-center justify-center py-20 text-gray-400 text-sm">
+          불러오는 중...
         </div>
-      )}
-
-      {/* 서비스 탭 */}
-      {activeTab === "서비스" && (
-        <div className="bg-white rounded-2xl shadow-[0px_2px_12px_rgba(232,116,42,0.10)] border border-orange-100 p-6">
-          <h3 className="font-bold text-stone-900 mb-4">제공 서비스 및 가격</h3>
-          <div className="flex flex-col gap-3">
-            {SERVICES_PRICE.map((item, idx) => (
-              <div
-                key={idx}
-                className="bg-orange-50 rounded-xl p-4 flex items-start justify-between gap-4"
-              >
-                <div className="flex-1">
-                  <span className="text-sm font-semibold text-stone-900">
-                    {item.service}
-                  </span>
-                  <p className="text-xs text-gray-500 mt-1">{item.desc}</p>
-                </div>
-                <span className="text-base font-bold text-orange-500 shrink-0">
-                  {item.price}
-                </span>
-              </div>
-            ))}
-          </div>
+      );
+    }
+    if (!sitter) {
+      return (
+        <div className="flex items-center justify-center py-20 text-gray-400 text-sm">
+          펫시터 정보를 찾을 수 없습니다.
         </div>
-      )}
+      );
+    }
 
-      {/* 후기 탭 */}
-      {activeTab === "후기" && (
-        <div className="flex flex-col gap-4">
-          <div className="bg-white rounded-2xl shadow-[0px_2px_12px_rgba(232,116,42,0.10)] border border-orange-100 p-6">
-            <div className="flex items-center gap-8">
-              <div className="text-center">
-                <p className="text-5xl font-bold text-orange-500 mb-1">
-                  {SITTER.rating.toFixed(1)}
-                </p>
-                <div className="flex items-center gap-0.5 justify-center mb-1">
-                  <StarRow size={14} />
-                </div>
-                <p className="text-xs text-gray-400">
-                  {SITTER.review_count}개 리뷰
-                </p>
-              </div>
-              <div className="flex-1 flex flex-col gap-2">
-                {[5, 4, 3, 2, 1].map((rating) => (
-                  <div key={rating} className="flex items-center gap-3">
-                    <span className="text-xs text-gray-500 w-6">
-                      {rating}점
-                    </span>
-                    <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-amber-400 rounded-full"
-                        style={{
-                          // 전체 리뷰 수 대비 해당 별점 비율
-                          width: `${Math.round((SITTER.ratingBreakdown[rating] / SITTER.review_count) * 100)}%`,
-                        }}
-                      />
-                    </div>
-                    <span className="text-xs text-gray-400 w-4 text-right">
-                      {SITTER.ratingBreakdown[rating]}
-                    </span>
-                  </div>
+    return (
+      <>
+        {/* 소개 탭 */}
+        {activeTab === "소개" && (
+          <div className="flex flex-col gap-4">
+            <div className="bg-white rounded-2xl shadow-[0px_2px_12px_rgba(232,116,42,0.10)] border border-orange-100 p-6">
+              <h3 className="font-bold text-stone-900 mb-4">소개</h3>
+              <p className="text-gray-500 text-sm leading-relaxed whitespace-pre-line">
+                {sitter.introduction ?? "소개글이 없습니다."}
+              </p>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-[0px_2px_12px_rgba(232,116,42,0.10)] border border-orange-100 p-6">
+              <h3 className="font-bold text-stone-900 mb-4">사진</h3>
+              <div className="grid grid-cols-3 gap-3">
+                {Array.from({ length: 6 }).map((_, idx) => (
+                  <div
+                    key={idx}
+                    className="aspect-square rounded-lg bg-linear-to-br from-gray-100 to-gray-200"
+                  />
                 ))}
               </div>
             </div>
           </div>
+        )}
 
-          {REVIEWS.map((review, idx) => (
-            <div
-              key={idx}
-              className="bg-white rounded-2xl shadow-[0px_2px_12px_rgba(232,116,42,0.10)] border border-orange-100 p-6"
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <Avatar initial={review.initial} size="md" variant="orange" />
-                  <div>
-                    <p className="text-sm font-medium text-stone-900">
-                      {review.name}
-                    </p>
-                    <div className="flex items-center gap-0.5 mt-0.5">
-                      <StarRow size={11} />
+        {/* 서비스 탭 */}
+        {activeTab === "서비스" && (
+          <div className="bg-white rounded-2xl shadow-[0px_2px_12px_rgba(232,116,42,0.10)] border border-orange-100 p-6">
+            <h3 className="font-bold text-stone-900 mb-4">제공 서비스 및 가격</h3>
+            {sitter.services.length === 0 ? (
+              <p className="text-gray-400 text-sm">등록된 서비스가 없습니다.</p>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {sitter.services.map((sv, idx) => {
+                  const label = SERVICE_TYPE_LABEL[sv.service_type] ?? sv.service_type;
+                  const unit = SERVICE_TYPE_UNIT[sv.service_type] ?? "1회";
+                  return (
+                    <div
+                      key={idx}
+                      className="bg-orange-50 rounded-xl p-4 flex items-start justify-between gap-4"
+                    >
+                      <div className="flex-1">
+                        <span className="text-sm font-semibold text-stone-900">
+                          {sv.title ?? `${label} (${unit})`}
+                        </span>
+                        {sv.description && (
+                          <p className="text-xs text-gray-500 mt-1">{sv.description}</p>
+                        )}
+                      </div>
+                      <span className="text-base font-bold text-orange-500 shrink-0">
+                        {sv.price.toLocaleString()}원~
+                      </span>
                     </div>
-                  </div>
-                </div>
-                <span className="text-xs text-gray-400">{review.date}</span>
+                  );
+                })}
               </div>
-              <p className="text-sm text-gray-500 leading-relaxed">
-                {review.content}
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* 위치 탭 */}
-      {activeTab === "위치" && (
-        <div className="bg-white rounded-2xl shadow-[0px_2px_12px_rgba(232,116,42,0.10)] border border-orange-100 p-5">
-          <h3 className="text-stone-900 text-lg font-semibold mb-4">
-            활동 지역
-          </h3>
-          <div className="h-100 rounded-xl overflow-hidden">
-            <KakaoMap
-              markers={[
-                {
-                  lat: SITTER.latitude,
-                  lng: SITTER.longitude,
-                  id: 1,
-                  certified: SITTER.is_verified,
-                },
-              ]}
-              center={{ lat: SITTER.latitude, lng: SITTER.longitude }}
-              level={5}
-            />
+            )}
           </div>
-          <p className="mt-4 text-gray-500 text-sm flex items-center gap-1">
-            <MapPin size={14} className="text-orange-500 shrink-0" />
-            서비스 반경: 마포구 전체 및 인근 지역
-          </p>
-        </div>
-      )}
-    </>
-  );
+        )}
+
+        {/* 후기 탭 */}
+        {activeTab === "후기" && (
+          <div className="flex flex-col gap-4">
+            <div className="bg-white rounded-2xl shadow-[0px_2px_12px_rgba(232,116,42,0.10)] border border-orange-100 p-6">
+              <div className="flex items-center gap-8">
+                <div className="text-center">
+                  <p className="text-5xl font-bold text-orange-500 mb-1">
+                    {Number(sitter.rating).toFixed(1)}
+                  </p>
+                  <div className="flex items-center gap-0.5 justify-center mb-1">
+                    <StarRow size={14} />
+                  </div>
+                  <p className="text-xs text-gray-400">0개 리뷰</p>
+                </div>
+                <div className="flex-1 flex flex-col gap-2">
+                  {[5, 4, 3, 2, 1].map((r) => (
+                    <div key={r} className="flex items-center gap-3">
+                      <span className="text-xs text-gray-500 w-6">{r}점</span>
+                      <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-amber-400 rounded-full" style={{ width: "0%" }} />
+                      </div>
+                      <span className="text-xs text-gray-400 w-4 text-right">0</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-center py-10 text-gray-400 text-sm">
+              아직 후기가 없습니다.
+            </div>
+          </div>
+        )}
+
+        {/* 위치 탭 */}
+        {activeTab === "위치" && (
+          <div className="bg-white rounded-2xl shadow-[0px_2px_12px_rgba(232,116,42,0.10)] border border-orange-100 p-5">
+            <h3 className="text-stone-900 text-lg font-semibold mb-4">
+              활동 지역
+            </h3>
+            <div className="h-100 rounded-xl overflow-hidden">
+              <KakaoMap
+                markers={[{ lat, lng, id: sitter.id }]}
+                center={{ lat, lng }}
+                level={5}
+              />
+            </div>
+            <p className="mt-4 text-gray-500 text-sm flex items-center gap-1">
+              <MapPin size={14} className="text-orange-500 shrink-0" />
+              {areaText}
+            </p>
+          </div>
+        )}
+      </>
+    );
+  };
+
+  const name = sitter?.full_name ?? "펫시터";
+  const initial = name.charAt(0);
+  const rating = Number(sitter?.rating ?? 0);
 
   return (
     <>
@@ -279,11 +257,7 @@ export default function PetsitterProfilePage() {
                   aria-label="펫시터 목록으로 돌아가기"
                   className="absolute top-4 left-4 w-9 h-9 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm"
                 >
-                  <ChevronLeft
-                    size={20}
-                    className="text-stone-900"
-                    aria-hidden="true"
-                  />
+                  <ChevronLeft size={20} className="text-stone-900" aria-hidden="true" />
                 </Link>
                 <div
                   className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/30 to-transparent"
@@ -291,10 +265,8 @@ export default function PetsitterProfilePage() {
                 />
                 <div className="absolute bottom-4 left-4">
                   <div className="flex items-center gap-2 mb-0.5">
-                    <h2 className="text-xl font-bold text-white">
-                      {SITTER.full_name}
-                    </h2>
-                    {SITTER.is_verified && (
+                    <h2 className="text-xl font-bold text-white">{name}</h2>
+                    {sitter?.is_verified && (
                       <span className="px-1.5 py-0.5 bg-orange-500 text-white text-[10px] font-medium rounded">
                         인증
                       </span>
@@ -302,7 +274,7 @@ export default function PetsitterProfilePage() {
                   </div>
                   <div className="flex items-center gap-1 text-white/80">
                     <MapPin size={11} aria-hidden="true" />
-                    <span className="text-sm">{SITTER.available_area}</span>
+                    <span className="text-sm">{areaText}</span>
                   </div>
                 </div>
               </div>
@@ -312,10 +284,8 @@ export default function PetsitterProfilePage() {
                 <div className="w-full aspect-square rounded-xl bg-linear-to-br from-gray-100 to-gray-200 mb-4" />
 
                 <div className="flex items-center justify-center gap-2 mb-2">
-                  <span className="text-stone-900 text-2xl font-bold">
-                    {SITTER.full_name}
-                  </span>
-                  {SITTER.is_verified && (
+                  <span className="text-stone-900 text-2xl font-bold">{name}</span>
+                  {sitter?.is_verified && (
                     <span className="px-2 py-1 bg-orange-500 rounded-md text-white text-xs font-medium">
                       인증
                     </span>
@@ -324,26 +294,24 @@ export default function PetsitterProfilePage() {
 
                 <div className="flex items-center justify-center gap-1 text-gray-500 mb-3">
                   <MapPin size={14} />
-                  <span className="text-sm">{SITTER.available_area}</span>
+                  <span className="text-sm">{areaText}</span>
                 </div>
 
                 <div className="flex items-center justify-center gap-1 mb-4">
                   <StarRow size={18} />
                   <span className="text-stone-900 text-lg font-bold ml-1">
-                    {SITTER.rating.toFixed(1)}
+                    {rating.toFixed(1)}
                   </span>
-                  <span className="text-gray-500 text-sm">
-                    ({SITTER.review_count})
-                  </span>
+                  <span className="text-gray-500 text-sm">(0)</span>
                 </div>
 
                 <div className="flex gap-2 flex-wrap justify-center mb-6">
-                  {SITTER.services.map((s) => (
+                  {serviceLabels.map((s) => (
                     <Pill key={s}>{s}</Pill>
                   ))}
                 </div>
 
-                <StatGrid stats={STATS} className="w-full mb-6" />
+                <StatGrid stats={stats} className="w-full mb-6" />
 
                 <Link
                   href={`/petsitters/${sitterId}/book`}
@@ -354,28 +322,26 @@ export default function PetsitterProfilePage() {
               </div>
             </div>
 
-            {/* 오른쪽: 모바일 통계 + 공유 탭 영역 */}
+            {/* 오른쪽: 모바일 통계 + 탭 영역 */}
             <div className="flex-1 min-w-0">
               {/* 모바일 전용: 별점 / 서비스 태그 / 통계 */}
               <div className="md:hidden bg-white">
                 <div className="px-5 py-3 flex items-center gap-1.5">
                   <StarRow size={13} />
                   <span className="text-sm font-bold text-stone-900">
-                    {SITTER.rating.toFixed(1)}
+                    {rating.toFixed(1)}
                   </span>
-                  <span className="text-xs text-gray-400">
-                    ({SITTER.review_count})
-                  </span>
+                  <span className="text-xs text-gray-400">(0)</span>
                 </div>
                 <div className="flex flex-wrap gap-1.5 px-5 pb-3">
-                  {SITTER.services.map((s) => (
+                  {serviceLabels.map((s) => (
                     <Pill key={s}>{s}</Pill>
                   ))}
                 </div>
-                <StatGrid stats={STATS} className="px-5 pb-5" />
+                <StatGrid stats={stats} className="px-5 pb-5" />
               </div>
 
-              {/* 탭 바 (모바일/데스크톱 공유) */}
+              {/* 탭 바 */}
               <div className="bg-white md:bg-transparent border-b border-orange-100 px-5 md:px-0 sticky top-0 md:static z-10">
                 <div className="flex gap-6 md:gap-8">
                   {TABS.map((tab) => (
@@ -397,7 +363,7 @@ export default function PetsitterProfilePage() {
                 </div>
               </div>
 
-              {/* 탭 콘텐츠 — 단일 렌더 */}
+              {/* 탭 콘텐츠 */}
               <div className="px-5 md:px-0 py-5 pb-24 md:pb-0">
                 {renderTabContent()}
               </div>

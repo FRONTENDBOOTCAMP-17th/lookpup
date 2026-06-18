@@ -12,6 +12,7 @@ import SearchFilterBar from "@/components/common/SearchFilterBar";
 import { calculateDistanceKm, formatDistance } from "@/utils/distance";
 import { searchPlaceToCoord, coordToRegion } from "@/utils/kakaoGeocode";
 import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/client";
 
 const FILTERS = ["전체", "방문돌봄", "위탁돌봄", "산책"] as const;
 type Filter = (typeof FILTERS)[number];
@@ -125,7 +126,9 @@ export default function PetsittersPage() {
   const [basePosition, setBasePosition] = useState(DEFAULT_CENTER);
   const [baseLabel, setBaseLabel] = useState("강남역");
   const [locationLoading, setLocationLoading] = useState(false);
-  const [showLocationModal, setShowLocationModal] = useState(true);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
@@ -176,6 +179,82 @@ export default function PetsittersPage() {
     fetchSitters();
   }, []);
 
+  // 위치 동의 여부 확인
+  useEffect(() => {
+    const browserClient = createClient();
+
+    async function checkLocationConsent() {
+      const { data: { user } } = await browserClient.auth.getUser();
+
+      if (!user) {
+        // 비로그인: localStorage 기반으로 체크
+        const localConsent = localStorage.getItem("location_consent");
+        if (localConsent !== "true") {
+          setShowLocationModal(true);
+        } else {
+          requestLocationSilently();
+        }
+        return;
+      }
+
+      setCurrentUserId(user.id);
+
+      const { data } = await browserClient
+        .from("users")
+        .select("location_consent")
+        .eq("id", user.id)
+        .single();
+
+      if (data?.location_consent) {
+        requestLocationSilently();
+      } else {
+        setShowLocationModal(true);
+      }
+    }
+
+    checkLocationConsent();
+  }, []);
+
+  async function requestLocationSilently() {
+    if (!navigator.geolocation) {
+      setLocationError("이 브라우저는 위치 서비스를 지원하지 않아요.");
+      return;
+    }
+
+    // 브라우저 권한 상태 사전 확인
+    if (navigator.permissions) {
+      const status = await navigator.permissions.query({ name: "geolocation" });
+      if (status.state === "denied") {
+        setLocationError("브라우저 위치 권한이 차단되어 있어요. 브라우저 설정에서 위치 권한을 허용해 주세요.");
+        return;
+      }
+    }
+
+    setLocationLoading(true);
+    setLocationError(null);
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords }) => {
+        const pos = { lat: coords.latitude, lng: coords.longitude };
+        setBasePosition(pos);
+        setBaseLabel("현재 위치");
+        const region = await coordToRegion(pos.lat, pos.lng);
+        if (region) {
+          setBaseLabel(`현재 위치 (${region.dong || region.sigungu})`);
+        }
+        setLocationLoading(false);
+      },
+      (err) => {
+        setLocationLoading(false);
+        if (err.code === err.PERMISSION_DENIED) {
+          setLocationError("브라우저 위치 권한이 차단되어 있어요. 브라우저 설정에서 위치 권한을 허용해 주세요.");
+        } else {
+          setLocationError("위치를 가져올 수 없어요. 강남역 기준으로 표시됩니다.");
+        }
+      },
+      { timeout: 10000 },
+    );
+  }
+
   // 카드 스크롤 동기화
   useEffect(() => {
     if (selectedSitterId === null) return;
@@ -213,24 +292,21 @@ export default function PetsittersPage() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  function requestLocation() {
-    setLocationLoading(true);
+  async function requestLocation() {
     setShowLocationModal(false);
-    navigator.geolocation.getCurrentPosition(
-      async ({ coords }) => {
-        const pos = { lat: coords.latitude, lng: coords.longitude };
-        setBasePosition(pos);
-        setBaseLabel("현재 위치");
-        const region = await coordToRegion(pos.lat, pos.lng);
-        if (region) {
-          setBaseLabel(`현재 위치 (${region.dong || region.sigungu})`);
-        }
-        setLocationLoading(false);
-      },
-      () => {
-        setLocationLoading(false);
-      },
-    );
+
+    // 동의 저장
+    const browserClient = createClient();
+    if (currentUserId) {
+      await browserClient
+        .from("users")
+        .update({ location_consent: true })
+        .eq("id", currentUserId);
+    } else {
+      localStorage.setItem("location_consent", "true");
+    }
+
+    requestLocationSilently();
   }
 
   const sittersWithDistance = sitters.map((sitter) => ({
@@ -299,13 +375,18 @@ export default function PetsittersPage() {
         </div>
       )}
 
-      <main className="flex-1 bg-orange-50 overflow-x-hidden md:overflow-hidden">
-        <div className="flex flex-col md:flex-row md:h-[calc(100vh-64px)]">
+      <main className="bg-orange-50 overflow-hidden h-[calc(100vh-64px)]">
+        <div className="flex flex-col md:flex-row h-full">
           {/* 지도 영역 */}
           <div className="h-[40vh] md:h-full md:flex-1 relative overflow-hidden">
             {locationLoading && (
               <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 bg-white px-4 py-2 rounded-full shadow text-sm text-orange-500 font-medium">
                 위치 확인 중...
+              </div>
+            )}
+            {locationError && (
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 bg-white px-4 py-2 rounded-full shadow text-sm text-red-500 font-medium whitespace-nowrap max-w-[90vw] text-center">
+                {locationError}
               </div>
             )}
             <KakaoMap
@@ -329,7 +410,7 @@ export default function PetsittersPage() {
           </div>
 
           {/* 리스트 패널 */}
-          <div className="w-full md:w-153.5 bg-white flex flex-col md:overflow-hidden">
+          <div className="flex-1 md:flex-none w-full md:w-153.5 bg-white flex flex-col overflow-hidden">
             <div className="p-4 md:p-6 border-b border-orange-100 shrink-0">
               <SearchFilterBar
                 placeholder="지역, 동 이름, 펫시터 검색"
