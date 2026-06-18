@@ -9,11 +9,11 @@ import {
   Plus,
   Check,
   Home,
-  // Heart,  // ← foster 비활성화로 미사용 (SERVICE_TYPES 주석 참고)
+  Heart,
   PawPrint,
   Moon,
   Car,
-  // MoreHorizontal,  // ← other 비활성화로 미사용 (SERVICE_TYPES 주석 참고)
+  MoreHorizontal,
   Save,
   Send,
   MapPin,
@@ -29,14 +29,11 @@ const STEPS = ["서비스 선택", "날짜·장소", "반려동물", "상세 내
 
 const SERVICE_TYPES = [
   { label: "방문 돌봄", icon: Home, value: "care" },
-  // foster/other는 기획 미확정으로 버튼 비활성화 상태.
-  // (request_type은 제약 없는 text 컬럼이라 저장 자체는 가능)
-  // 활성화 시 아래 foster/other 줄과 상단 import의 Heart, MoreHorizontal 주석 해제.
-  // { label: "위탁 돌봄", icon: Heart, value: "foster" },
+  { label: "위탁 돌봄", icon: Heart, value: "foster" },
   { label: "산책", icon: PawPrint, value: "walk" },
   { label: "펫 호텔", icon: Moon, value: "hotel" },
   { label: "픽업 서비스", icon: Car, value: "pickup" },
-  // { label: "기타", icon: MoreHorizontal, value: "other" },
+  { label: "기타", icon: MoreHorizontal, value: "other" },
 ];
 
 const BUDGET_PRESETS = [10000, 20000, 30000, 50000];
@@ -77,6 +74,7 @@ type Pet = {
   age: number | null;
   weight: number | null;
   emoji: string;
+  image_url: string | null;
 };
 
 // GET /api/pets 응답 행 (필요한 필드만)
@@ -86,6 +84,7 @@ type PetRow = {
   animal_type: string;
   age: number | null;
   weight: number | null;
+  image_url: string | null;
 };
 
 const ANIMAL_TYPE_MAP: Record<string, { label: string; emoji: string }> = {
@@ -131,6 +130,7 @@ export default function BoardWritePage() {
               age: p.age,
               weight: p.weight,
               emoji: ANIMAL_TYPE_MAP[p.animal_type]?.emoji ?? "🐾",
+              image_url: p.image_url,
             })),
           );
         }
@@ -381,7 +381,11 @@ export default function BoardWritePage() {
                       onClick={() =>
                         setForm((prev) => ({ ...prev, budget: "" }))
                       }
-                      className="h-8.5 px-4 rounded-full border bg-[#fff8f3] text-[#281a0e] border-[#ffe9d6] text-sm hover:border-[#e8742a]/50 transition-colors"
+                      className={`h-8.5 px-4 rounded-full border text-sm transition-colors ${
+                        form.budget === ""
+                          ? "bg-[#e8742a] text-white border-[#e8742a]"
+                          : "bg-[#fff8f3] text-[#281a0e] border-[#ffe9d6] hover:border-[#e8742a]/50"
+                      }`}
                     >
                       협의 가능
                     </button>
@@ -547,11 +551,20 @@ export default function BoardWritePage() {
                             <Check className="w-3 h-3 text-white" />
                           </div>
                         )}
-                        <div className="relative bg-[#fff8f3] py-7 flex items-center justify-center">
-                          <span className="absolute top-2 left-2 px-2 py-0.5 bg-white border border-[#ffe9d6] rounded-full text-xs font-medium text-[#e8742a]">
+                        <div className="relative bg-[#fff8f3] h-30 flex items-center justify-center">
+                          <span className="absolute top-2 left-2 px-2 py-0.5 bg-white border border-[#ffe9d6] rounded-full text-xs font-medium text-[#e8742a] z-10">
                             {pet.type}
                           </span>
-                          <span className="text-5xl">{pet.emoji}</span>
+                          {pet.image_url ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={pet.image_url}
+                              alt={pet.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-5xl">{pet.emoji}</span>
+                          )}
                         </div>
                         <div className="py-3 text-center">
                           <div className="text-[#281a0e] text-base font-bold">

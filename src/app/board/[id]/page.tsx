@@ -252,7 +252,11 @@ export default function BoardDetailPage() {
                       <div>
                         <p className="text-gray-500 text-xs">급여</p>
                         <p className="text-orange-500 text-base font-medium">
-                          {post ? `${post.budget.toLocaleString()}원` : POST.price}
+                          {post
+                            ? post.budget
+                              ? `${post.budget.toLocaleString()}원`
+                              : "협의 가능"
+                            : POST.price}
                         </p>
                         <p className="text-gray-500 text-xs">
                           {POST.priceNote}

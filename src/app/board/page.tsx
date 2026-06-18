@@ -2,13 +2,16 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { MapPin, Calendar, DollarSign, ChevronRight } from "lucide-react";
+import { MapPin, Calendar, DollarSign, ChevronRight, ChevronLeft } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import SearchFilterBar from "@/components/common/SearchFilterBar";
 import Pill from "@/components/ui/Pill";
 
 const CATEGORIES = ["전체", "방문돌봄", "위탁돌봄", "산책", "펫호텔", "픽업"];
+
+const ITEMS_PER_PAGE = 5;
+const PAGE_WINDOW_SIZE = 5;
 
 const SORT_OPTIONS = ["최신순"] as const;
 
@@ -172,6 +175,7 @@ function PostCard({ post }: { post: Post }) {
 export default function BoardPage() {
   const [activeCategory, setActiveCategory] = useState("전체");
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const [posts, setPosts] = useState<Post[]>(POSTS as unknown as Post[]);
   // 실제 데이터로 교체 시 아래 useState로 변경 위는 더미 데이터 표시용
   // const [posts, setPosts] = useState<Post[]>([]);
@@ -200,6 +204,10 @@ export default function BoardPage() {
       });
   }, []);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeCategory, searchQuery]);
+
   const filtered = posts.filter((p) => {
     const matchCategory =
       activeCategory === "전체" || p.category === activeCategory;
@@ -209,6 +217,21 @@ export default function BoardPage() {
       p.desc.includes(searchQuery);
     return matchCategory && matchSearch;
   });
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginated = filtered.slice(
+    (safePage - 1) * ITEMS_PER_PAGE,
+    safePage * ITEMS_PER_PAGE,
+  );
+
+  let windowStart = Math.max(1, safePage - Math.floor(PAGE_WINDOW_SIZE / 2));
+  const windowEnd = Math.min(totalPages, windowStart + PAGE_WINDOW_SIZE - 1);
+  windowStart = Math.max(1, windowEnd - PAGE_WINDOW_SIZE + 1);
+  const pageNumbers = Array.from(
+    { length: windowEnd - windowStart + 1 },
+    (_, i) => windowStart + i,
+  );
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -254,8 +277,8 @@ export default function BoardPage() {
 
           {/* 게시글 목록 */}
           <div className="flex flex-col gap-3">
-            {filtered.length > 0 ? (
-              filtered.map((post) => <PostCard key={post.id} post={post} />)
+            {paginated.length > 0 ? (
+              paginated.map((post) => <PostCard key={post.id} post={post} />)
             ) : (
               <div className="py-20 text-center text-gray-400 text-base bg-white rounded-2xl border border-orange-100">
                 검색 결과가 없습니다.
@@ -264,20 +287,41 @@ export default function BoardPage() {
           </div>
 
           {/* 페이지네이션 */}
-          <div className="flex justify-center gap-2 mt-8">
-            {[1, 2, 3, 4, 5].map((n) => (
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-2 mt-8">
               <button
-                key={n}
-                className={`w-10 h-10 rounded-lg text-base font-medium transition-colors ${
-                  n === 1
-                    ? "bg-orange-500 text-white"
-                    : "bg-white text-gray-500 hover:bg-orange-50"
-                }`}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={safePage === 1}
+                aria-label="이전 페이지"
+                className="w-10 h-10 rounded-lg bg-white text-gray-500 hover:bg-orange-50 disabled:opacity-40 disabled:hover:bg-white transition-colors flex items-center justify-center"
               >
-                {n}
+                <ChevronLeft className="w-4 h-4" />
               </button>
-            ))}
-          </div>
+
+              {pageNumbers.map((n) => (
+                <button
+                  key={n}
+                  onClick={() => setCurrentPage(n)}
+                  className={`w-10 h-10 rounded-lg text-base font-medium transition-colors ${
+                    n === safePage
+                      ? "bg-orange-500 text-white"
+                      : "bg-white text-gray-500 hover:bg-orange-50"
+                  }`}
+                >
+                  {n}
+                </button>
+              ))}
+
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={safePage === totalPages}
+                aria-label="다음 페이지"
+                className="w-10 h-10 rounded-lg bg-white text-gray-500 hover:bg-orange-50 disabled:opacity-40 disabled:hover:bg-white transition-colors flex items-center justify-center"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </div>
       </main>
 

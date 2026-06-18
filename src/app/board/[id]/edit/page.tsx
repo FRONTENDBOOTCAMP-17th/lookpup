@@ -46,6 +46,7 @@ type Pet = {
   age: number | null;
   weight: number | null;
   emoji: string;
+  image_url: string | null;
 };
 
 // GET /api/pets 응답 행 (필요한 필드만)
@@ -55,6 +56,7 @@ type PetRow = {
   animal_type: string;
   age: number | null;
   weight: number | null;
+  image_url: string | null;
 };
 
 type FormState = {
@@ -138,6 +140,7 @@ export default function BoardEditPage() {
             age: p.age,
             weight: p.weight,
             emoji: ANIMAL_TYPE_MAP[p.animal_type]?.emoji ?? "🐾",
+            image_url: p.image_url,
           })),
         );
       }
@@ -422,11 +425,20 @@ export default function BoardEditPage() {
                           <Check className="w-3 h-3 text-white" />
                         </div>
                       )}
-                      <div className="relative bg-[#fff8f3] py-7 flex items-center justify-center">
-                        <span className="absolute top-2 left-2 px-2 py-0.5 bg-white border border-[#ffe9d6] rounded-full text-xs font-medium text-[#e8742a]">
+                      <div className="relative bg-[#fff8f3] h-30 flex items-center justify-center">
+                        <span className="absolute top-2 left-2 px-2 py-0.5 bg-white border border-[#ffe9d6] rounded-full text-xs font-medium text-[#e8742a] z-10">
                           {pet.type}
                         </span>
-                        <span className="text-5xl">{pet.emoji}</span>
+                        {pet.image_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={pet.image_url}
+                            alt={pet.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-5xl">{pet.emoji}</span>
+                        )}
                       </div>
                       <div className="py-3 text-center">
                         <div className="text-[#281a0e] text-base font-bold">
