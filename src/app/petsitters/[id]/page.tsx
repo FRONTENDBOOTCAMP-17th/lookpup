@@ -15,16 +15,16 @@ import StatGrid from "@/components/ui/StatGrid";
 import { supabase } from "@/lib/supabase";
 
 const SERVICE_TYPE_LABEL: Record<string, string> = {
-  walk:   "산책",
-  care:   "방문돌봄",
-  hotel:  "위탁돌봄",
+  walk: "산책",
+  care: "방문돌봄",
+  hotel: "위탁돌봄",
   pickup: "픽업",
 };
 
 const SERVICE_TYPE_UNIT: Record<string, string> = {
-  walk:   "1시간",
-  care:   "1일",
-  hotel:  "1일",
+  walk: "1시간",
+  care: "1일",
+  hotel: "1일",
   pickup: "1회",
 };
 
@@ -81,15 +81,21 @@ export default function PetsitterProfilePage() {
 
   // 서비스 목록에서 표시용 레이블 도출
   const serviceLabels = sitter
-    ? [...new Set(sitter.services.map((sv) => SERVICE_TYPE_LABEL[sv.service_type] ?? sv.service_type))]
+    ? [
+        ...new Set(
+          sitter.services.map(
+            (sv) => SERVICE_TYPE_LABEL[sv.service_type] ?? sv.service_type,
+          ),
+        ),
+      ]
     : [];
 
   // 활동 지역 텍스트
   const areaText = sitter?.available_area ?? "-";
 
-  // 통계
+  // 통계 (경력 원문은 소개 탭에 표시하고, 여기서는 유무만 표시 / 회의해보고 입력란에 숫자로 입력받고 아래에 상세 적기 이런거로 넣어야할듯)
   const stats = [
-    { label: "경력", value: sitter?.career ?? "-" },
+    { label: "경력", value: sitter?.career ? "경력 있음" : "-" },
     { label: "완료", value: "-" },
   ];
 
@@ -126,6 +132,13 @@ export default function PetsitterProfilePage() {
             </div>
 
             <div className="bg-white rounded-2xl shadow-[0px_2px_12px_rgba(232,116,42,0.10)] border border-orange-100 p-6">
+              <h3 className="font-bold text-stone-900 mb-4">경력</h3>
+              <p className="text-gray-500 text-sm leading-relaxed whitespace-pre-line">
+                {sitter.career ?? "등록된 경력 정보가 없습니다."}
+              </p>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-[0px_2px_12px_rgba(232,116,42,0.10)] border border-orange-100 p-6">
               <h3 className="font-bold text-stone-900 mb-4">사진</h3>
               <div className="grid grid-cols-3 gap-3">
                 {Array.from({ length: 6 }).map((_, idx) => (
@@ -142,13 +155,16 @@ export default function PetsitterProfilePage() {
         {/* 서비스 탭 */}
         {activeTab === "서비스" && (
           <div className="bg-white rounded-2xl shadow-[0px_2px_12px_rgba(232,116,42,0.10)] border border-orange-100 p-6">
-            <h3 className="font-bold text-stone-900 mb-4">제공 서비스 및 가격</h3>
+            <h3 className="font-bold text-stone-900 mb-4">
+              제공 서비스 및 가격
+            </h3>
             {sitter.services.length === 0 ? (
               <p className="text-gray-400 text-sm">등록된 서비스가 없습니다.</p>
             ) : (
               <div className="flex flex-col gap-3">
                 {sitter.services.map((sv, idx) => {
-                  const label = SERVICE_TYPE_LABEL[sv.service_type] ?? sv.service_type;
+                  const label =
+                    SERVICE_TYPE_LABEL[sv.service_type] ?? sv.service_type;
                   const unit = SERVICE_TYPE_UNIT[sv.service_type] ?? "1회";
                   return (
                     <div
@@ -160,7 +176,9 @@ export default function PetsitterProfilePage() {
                           {sv.title ?? `${label} (${unit})`}
                         </span>
                         {sv.description && (
-                          <p className="text-xs text-gray-500 mt-1">{sv.description}</p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {sv.description}
+                          </p>
                         )}
                       </div>
                       <span className="text-base font-bold text-orange-500 shrink-0">
@@ -193,9 +211,14 @@ export default function PetsitterProfilePage() {
                     <div key={r} className="flex items-center gap-3">
                       <span className="text-xs text-gray-500 w-6">{r}점</span>
                       <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-amber-400 rounded-full" style={{ width: "0%" }} />
+                        <div
+                          className="h-full bg-amber-400 rounded-full"
+                          style={{ width: "0%" }}
+                        />
                       </div>
-                      <span className="text-xs text-gray-400 w-4 text-right">0</span>
+                      <span className="text-xs text-gray-400 w-4 text-right">
+                        0
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -257,7 +280,11 @@ export default function PetsitterProfilePage() {
                   aria-label="펫시터 목록으로 돌아가기"
                   className="absolute top-4 left-4 w-9 h-9 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm"
                 >
-                  <ChevronLeft size={20} className="text-stone-900" aria-hidden="true" />
+                  <ChevronLeft
+                    size={20}
+                    className="text-stone-900"
+                    aria-hidden="true"
+                  />
                 </Link>
                 <div
                   className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/30 to-transparent"
@@ -284,7 +311,9 @@ export default function PetsitterProfilePage() {
                 <div className="w-full aspect-square rounded-xl bg-linear-to-br from-gray-100 to-gray-200 mb-4" />
 
                 <div className="flex items-center justify-center gap-2 mb-2">
-                  <span className="text-stone-900 text-2xl font-bold">{name}</span>
+                  <span className="text-stone-900 text-2xl font-bold">
+                    {name}
+                  </span>
                   {sitter?.is_verified && (
                     <span className="px-2 py-1 bg-orange-500 rounded-md text-white text-xs font-medium">
                       인증
