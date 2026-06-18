@@ -299,8 +299,8 @@ export default function PetsittersPage() {
         </div>
       )}
 
-      <main className="flex-1 bg-orange-50 overflow-x-hidden md:overflow-hidden">
-        <div className="flex flex-col md:flex-row md:h-[calc(100vh-64px)]">
+      <main className="bg-orange-50 overflow-hidden h-[calc(100vh-64px)]">
+        <div className="flex flex-col md:flex-row h-full">
           {/* 지도 영역 */}
           <div className="h-[40vh] md:h-full md:flex-1 relative overflow-hidden">
             {locationLoading && (
@@ -329,7 +329,7 @@ export default function PetsittersPage() {
           </div>
 
           {/* 리스트 패널 */}
-          <div className="w-full md:w-153.5 bg-white flex flex-col md:overflow-hidden">
+          <div className="flex-1 md:flex-none w-full md:w-153.5 bg-white flex flex-col overflow-hidden">
             <div className="p-4 md:p-6 border-b border-orange-100 shrink-0">
               <SearchFilterBar
                 placeholder="지역, 동 이름, 펫시터 검색"
