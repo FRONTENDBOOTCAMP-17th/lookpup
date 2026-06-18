@@ -8,6 +8,7 @@
  */
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import type {
   ChatRoom,
   Applicant,
@@ -47,21 +48,24 @@ export function useChatRooms(activeRoomId: string | null) {
   const [error, setError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
 
-  // subscription callback 안에서 항상 최신값을 읽기 위한 refs
   const activeRoomIdRef = useRef(activeRoomId);
+  activeRoomIdRef.current = activeRoomId;
+
   const userIdRef = useRef(userId);
+  userIdRef.current = userId;
+
   const myRoomIdsRef = useRef(new Set<string>());
 
-  useEffect(() => { activeRoomIdRef.current = activeRoomId; }, [activeRoomId]);
-  useEffect(() => { userIdRef.current = userId; }, [userId]);
+  const broadcastChannelsRef = useRef<RealtimeChannel[]>([]);
+  const broadcastSupabaseRef = useRef<ReturnType<typeof createClient> | null>(
+    null,
+  );
+  const subscribedRoomIdsRef = useRef(new Set<string>());
 
-  // rooms/applicants가 바뀔 때마다 내 방 목록 ref를 최신화
-  useEffect(() => {
-    myRoomIdsRef.current = new Set([
-      ...rooms.map((r) => r.id),
-      ...applicants.map((a) => a.id),
-    ]);
-  }, [rooms, applicants]);
+  myRoomIdsRef.current = new Set([
+    ...rooms.map((r) => r.id),
+    ...applicants.map((a) => a.id),
+  ]);
 
   // 현재 로그인한 유저 ID 가져오기
   useEffect(() => {
@@ -70,7 +74,6 @@ export function useChatRooms(activeRoomId: string | null) {
       .then(({ data }) => setUserId(data.user?.id ?? null));
   }, []);
 
-  // 채팅방 목록 최초 로드
   useEffect(() => {
     fetch("/api/chat/rooms")
       .then((res) => {
@@ -122,9 +125,6 @@ export function useChatRooms(activeRoomId: string | null) {
       .finally(() => setLoading(false));
   }, []);
 
-  // 비활성 방의 새 메시지를 postgres_changes로 감지 → unread 카운트 증가
-  // broadcast와 달리 DB INSERT 이벤트이므로 오프라인 중에도 DB에 쌓이며,
-  // 내가 접속하면 subscription이 살아나 이후 메시지부터 감지함
   useEffect(() => {
     if (!userId) return;
 
@@ -135,14 +135,16 @@ export function useChatRooms(activeRoomId: string | null) {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "messages" },
         (payload) => {
-          const { room_id, sender_id } = payload.new as {
+          const { room_id, sender_id, content, created_at } = payload.new as {
             room_id: string;
             sender_id: string;
+            content: string;
+            created_at: string;
           };
-          if (sender_id === userIdRef.current) return; // 내가 보낸 메시지 무시
-          if (!myRoomIdsRef.current.has(room_id)) return; // 내 방이 아니면 무시
-          if (room_id === activeRoomIdRef.current) return; // 지금 보고 있는 방이면 무시
-          incrementUnread(room_id);
+
+          if (sender_id !== userIdRef.current) return;
+          if (!myRoomIdsRef.current.has(room_id)) return;
+          updateRoomPreview(room_id, content, created_at);
         },
       )
       .subscribe();
@@ -150,7 +152,70 @@ export function useChatRooms(activeRoomId: string | null) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [userId]); // userId가 생기면 구독 시작, refs로 최신값 참조하므로 재구독 불필요
+  }, [userId]);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    const allIds = [...rooms.map((r) => r.id), ...applicants.map((a) => a.id)];
+    const newIds = allIds.filter((id) => !subscribedRoomIdsRef.current.has(id));
+    if (newIds.length === 0) return;
+
+    if (!broadcastSupabaseRef.current) {
+      broadcastSupabaseRef.current = createClient();
+    }
+    const supabase = broadcastSupabaseRef.current;
+
+    newIds.forEach((roomId) => {
+      subscribedRoomIdsRef.current.add(roomId);
+      const ch = supabase
+        .channel(`room-${roomId}`)
+        .on("broadcast", { event: "new_message" }, ({ payload }) => {
+          const m = payload as {
+            sender_id: string;
+            content: string;
+            created_at: string;
+          };
+          updateRoomPreview(roomId, m.content, m.created_at);
+
+          if (
+            m.sender_id !== userIdRef.current &&
+            roomId !== activeRoomIdRef.current
+          ) {
+            incrementUnread(roomId);
+          }
+        })
+        .subscribe();
+      broadcastChannelsRef.current.push(ch);
+    });
+  }, [rooms, applicants, userId]);
+
+  useEffect(() => {
+    return () => {
+      const supabase = broadcastSupabaseRef.current;
+      if (supabase) {
+        broadcastChannelsRef.current.forEach((ch) =>
+          supabase.removeChannel(ch),
+        );
+      }
+    };
+  }, []);
+
+  function updateRoomPreview(
+    roomId: string,
+    content: string,
+    createdAt: string,
+  ) {
+    const time = formatTime(createdAt);
+    setRooms((prev) =>
+      prev.map((r) =>
+        r.id === roomId ? { ...r, lastMessage: content, time } : r,
+      ),
+    );
+    setApplicants((prev) =>
+      prev.map((a) => (a.id === roomId ? { ...a, preview: content } : a)),
+    );
+  }
 
   function incrementUnread(roomId: string) {
     setRooms((prev) =>
@@ -187,5 +252,6 @@ export function useChatRooms(activeRoomId: string | null) {
     deleteRoom,
     deleteApplicant,
     markRoomAsRead,
+    updatePreview: updateRoomPreview,
   };
 }

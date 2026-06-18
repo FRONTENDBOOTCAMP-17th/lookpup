@@ -50,7 +50,7 @@ export default function ChatPage() {
   const activeRoomId =
     activeTab === "one_on_one" ? selectedRoomId : selectedApplicantId;
 
-  const { rooms, applicants, posts, loading, error, deleteRoom, deleteApplicant, markRoomAsRead } =
+  const { rooms, applicants, posts, loading, error, deleteRoom, deleteApplicant, markRoomAsRead, updatePreview } =
     useChatRooms(activeRoomId);
   const {
     rejectedIds,
@@ -151,6 +151,8 @@ export default function ChatPage() {
       if (result.data) {
         addMessage(result.data);
         broadcastMessage(result.data);
+        // broadcast는 self=false라 내 구독에 안 옴 → 직접 미리보기 갱신
+        updatePreview(activeRoomId, result.data.content, result.data.created_at);
       }
       setInput("");
     } finally {
