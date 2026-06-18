@@ -55,7 +55,9 @@ export function useChatMessages(
     setHasMore(false);
     sentMessageIds.current = new Set();
 
-    fetch(`/api/chat/rooms/${activeRoomId}/messages`)
+    const controller = new AbortController();
+
+    fetch(`/api/chat/rooms/${activeRoomId}/messages`, { signal: controller.signal })
       .then((res) => {
         if (!res.ok) throw new Error("메시지를 불러오지 못했습니다");
         return res.json();
@@ -71,7 +73,11 @@ export function useChatMessages(
           setHasMore(data.next_cursor !== null);
         },
       )
-      .catch((err: Error) => console.error(err.message));
+      .catch((err: Error) => {
+        if (err.name !== "AbortError") console.error(err.message);
+      });
+
+    return () => controller.abort();
   }, [activeRoomId, userId]);
 
   // Realtime
