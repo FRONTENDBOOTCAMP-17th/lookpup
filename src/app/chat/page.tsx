@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { Search, ChevronLeft, MoreVertical, Send, Plus } from "lucide-react";
@@ -40,6 +40,9 @@ export default function ChatPage() {
   const [sending, setSending] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const mobileScrollRef = useRef<HTMLDivElement>(null);
+  const isLoadMoreRef = useRef(false);
+  const scrollAnchorRef = useRef<number | null>(null);
 
   const [applicationActionError, setApplicationActionError] = useState<string | null>(null);
   const [actioningId, setActioningId] = useState<string | null>(null);
@@ -96,9 +99,37 @@ export default function ChatPage() {
 
   const { messages, addMessage, loadMore, hasMore, loadingMore } = useChatMessages(activeRoomId, userId);
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  useLayoutEffect(() => {
+    if (isLoadMoreRef.current) {
+      isLoadMoreRef.current = false;
+      const mobileEl = mobileScrollRef.current;
+      if (scrollAnchorRef.current !== null && mobileEl) {
+        mobileEl.scrollTop += mobileEl.scrollHeight - scrollAnchorRef.current;
+        scrollAnchorRef.current = null;
+      }
+      return;
+    }
+    const mobileEl = mobileScrollRef.current;
+    if (mobileEl && mobileEl.offsetParent !== null) {
+      mobileEl.scrollTop = mobileEl.scrollHeight;
+      return;
+    }
+    const viewport = messagesEndRef.current?.closest(
+      "[data-radix-scroll-area-viewport]",
+    ) as HTMLElement | null;
+    if (viewport) {
+      viewport.scrollTop = viewport.scrollHeight;
+    }
   }, [messages]);
+
+  function handleLoadMore() {
+    const mobileEl = mobileScrollRef.current;
+    if (mobileEl && mobileEl.offsetParent !== null) {
+      scrollAnchorRef.current = mobileEl.scrollHeight;
+    }
+    isLoadMoreRef.current = true;
+    loadMore();
+  }
 
   async function handleSend() {
     if (!input.trim() || !activeRoomId || sending) return;
@@ -412,7 +443,7 @@ export default function ChatPage() {
             </div>
 
             {/* 메시지 영역 */}
-            <ScrollArea className="flex-1 min-h-0">
+            <div ref={mobileScrollRef} className="flex-1 min-h-0 overflow-y-auto">
               <div
                 className="px-4 py-4 flex flex-col gap-4"
                 onClick={() => {
@@ -422,7 +453,7 @@ export default function ChatPage() {
                 {hasMore && (
                   <div className="flex justify-center py-2">
                     <button
-                      onClick={loadMore}
+                      onClick={handleLoadMore}
                       disabled={loadingMore}
                       className="text-sm text-orange-500 disabled:text-stone-400"
                     >
@@ -447,9 +478,8 @@ export default function ChatPage() {
                       </span>
                     </div>
                   )}
-                <div ref={messagesEndRef} />
               </div>
-            </ScrollArea>
+            </div>
 
             {/* 지원자 거절/확정 버튼 */}
             {showApplicantActions && (
@@ -696,7 +726,7 @@ export default function ChatPage() {
                   {hasMore && (
                     <div className="flex justify-center py-2">
                       <button
-                        onClick={loadMore}
+                        onClick={handleLoadMore}
                         disabled={loadingMore}
                         className="text-sm text-orange-500 disabled:text-stone-400"
                       >
