@@ -197,9 +197,14 @@ export async function updateApplication(
       .eq("request_id", requestRow.id);
 
     if (requestPets && requestPets.length > 0) {
-      await db.from("reservation_items").insert(
-        requestPets.map(({ pet_id }) => ({ reservation_id: reservation.id, pet_id })),
-      );
+      await db
+        .from("reservation_items")
+        .insert(
+          requestPets.map(({ pet_id }) => ({
+            reservation_id: reservation.id,
+            pet_id,
+          })),
+        );
     }
 
     const { data: existingRoom } = await db
@@ -237,4 +242,43 @@ export async function updateApplication(
   }
 
   return { data };
+}
+
+export async function updateApplicationByRoom(
+  roomId: string,
+  status: "selected" | "rejected",
+) {
+  const user = await getAuthUser();
+  if (!user) {
+    return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
+  }
+
+  const db = createServiceClient();
+
+  const { data: room } = await db
+    .from("chat_rooms")
+    .select("request_id, sitter_id")
+    .eq("id", roomId)
+    .single();
+
+  if (!room?.request_id) {
+    return {
+      error: { code: "NOT_FOUND", message: "채팅방을 찾을 수 없습니다." },
+    };
+  }
+
+  const { data: application } = await db
+    .from("applications")
+    .select("id")
+    .eq("request_id", room.request_id)
+    .eq("sitter_id", room.sitter_id)
+    .maybeSingle();
+
+  if (!application) {
+    return {
+      error: { code: "NOT_FOUND", message: "지원 정보를 찾을 수 없습니다." },
+    };
+  }
+
+  return updateApplication(application.id, { status });
 }

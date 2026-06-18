@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { Search, ChevronLeft, MoreVertical, Send, Plus } from "lucide-react";
@@ -19,7 +19,8 @@ import {
 } from "@/components/common/chat/chat_components";
 import { CustomModalPayment } from "@/components/common/CustomModalPayment";
 import CareRecordModal from "@/components/common/chat/CareRecordModal";
-import { sendMessage } from "@/app/actions/chat";
+import { sendMessage, markRoomRead } from "@/app/actions/chat";
+import { updateApplicationByRoom } from "@/app/actions/applications";
 import { useChatRooms } from "@/hooks/chat/useChatRooms";
 import { useRequest } from "@/hooks/chat/useRequest";
 import { useChatMessages } from "@/hooks/chat/useChatMessages";
@@ -38,18 +39,19 @@ export default function ChatPage() {
   const [sendError, setSendError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const mobileMessagesEndRef = useRef<HTMLDivElement>(null);
-  const desktopMessagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const mobileScrollRef = useRef<HTMLDivElement>(null);
+  const isLoadMoreRef = useRef(false);
+  const scrollAnchorRef = useRef<number | null>(null);
 
-  const {
-    rooms,
-    applicants,
-    posts,
-    loading,
-    error,
-    deleteRoom,
-    deleteApplicant,
-  } = useChatRooms();
+  const [applicationActionError, setApplicationActionError] = useState<string | null>(null);
+  const [actioningId, setActioningId] = useState<string | null>(null);
+
+  const activeRoomId =
+    activeTab === "one_on_one" ? selectedRoomId : selectedApplicantId;
+
+  const { rooms, applicants, posts, loading, error, deleteRoom, deleteApplicant, markRoomAsRead, updatePreview } =
+    useChatRooms(activeRoomId);
   const {
     rejectedIds,
     confirmedId,
@@ -59,18 +61,82 @@ export default function ChatPage() {
     getApplicantBadge,
   } = useRequest(applicants);
 
-  const activeRoomId =
-    activeTab === "one_on_one" ? selectedRoomId : selectedApplicantId;
+  async function handleRejectApplicant(id: string) {
+    if (actioningId) return;
+    setActioningId(id);
+    setApplicationActionError(null);
+    try {
+      const result = await updateApplicationByRoom(id, "rejected");
+      if (result.error) {
+        setApplicationActionError(result.error.message);
+        return;
+      }
+      rejectApplicant(id);
+    } catch {
+      setApplicationActionError("오류가 발생했습니다. 다시 시도해주세요.");
+    } finally {
+      setActioningId(null);
+    }
+  }
 
-  const { messages, addMessage, broadcastMessage } = useChatMessages(
-    activeRoomId,
-    userId,
-  );
+  async function handleConfirmApplicant(id: string) {
+    if (actioningId) return;
+    setActioningId(id);
+    setApplicationActionError(null);
+    try {
+      const result = await updateApplicationByRoom(id, "selected");
+      if (result.error) {
+        setApplicationActionError(result.error.message);
+        return;
+      }
+      confirmApplicant(id);
+    } catch {
+      setApplicationActionError("오류가 발생했습니다. 다시 시도해주세요.");
+    } finally {
+      setActioningId(null);
+    }
+  }
 
+  const { messages, addMessage, broadcastMessage, loadMore, hasMore, loadingMore } = useChatMessages(activeRoomId, userId);
+
+  // 방에 입장할 때: 로컬 unread 0으로 + DB도 읽음 처리
   useEffect(() => {
-    mobileMessagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    desktopMessagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (!activeRoomId) return;
+    markRoomAsRead(activeRoomId);
+    markRoomRead(activeRoomId);
+  }, [activeRoomId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useLayoutEffect(() => {
+    if (isLoadMoreRef.current) {
+      isLoadMoreRef.current = false;
+      const mobileEl = mobileScrollRef.current;
+      if (scrollAnchorRef.current !== null && mobileEl) {
+        mobileEl.scrollTop += mobileEl.scrollHeight - scrollAnchorRef.current;
+        scrollAnchorRef.current = null;
+      }
+      return;
+    }
+    const mobileEl = mobileScrollRef.current;
+    if (mobileEl && mobileEl.offsetParent !== null) {
+      mobileEl.scrollTop = mobileEl.scrollHeight;
+      return;
+    }
+    const viewport = messagesEndRef.current?.closest(
+      "[data-radix-scroll-area-viewport]",
+    ) as HTMLElement | null;
+    if (viewport) {
+      viewport.scrollTop = viewport.scrollHeight;
+    }
   }, [messages]);
+
+  function handleLoadMore() {
+    const mobileEl = mobileScrollRef.current;
+    if (mobileEl && mobileEl.offsetParent !== null) {
+      scrollAnchorRef.current = mobileEl.scrollHeight;
+    }
+    isLoadMoreRef.current = true;
+    loadMore();
+  }
 
   async function handleSend() {
     if (!input.trim() || !activeRoomId || sending) return;
@@ -85,6 +151,8 @@ export default function ChatPage() {
       if (result.data) {
         addMessage(result.data);
         broadcastMessage(result.data);
+        // broadcast는 self=false라 내 구독에 안 옴 → 직접 미리보기 갱신
+        updatePreview(activeRoomId, result.data.content, result.data.created_at);
       }
       setInput("");
     } finally {
@@ -286,8 +354,8 @@ export default function ChatPage() {
                       editMode={editMode}
                       onToggle={() => togglePostCollapse(post.id)}
                       onDelete={handleDeleteApplicant}
-                      onReject={rejectApplicant}
-                      onConfirm={confirmApplicant}
+                      onReject={handleRejectApplicant}
+                      onConfirm={handleConfirmApplicant}
                       onSelect={(id) => {
                         setSelectedApplicantId(id);
                         setMobileChatView("room");
@@ -387,13 +455,24 @@ export default function ChatPage() {
             </div>
 
             {/* 메시지 영역 */}
-            <ScrollArea className="flex-1 min-h-0">
+            <div ref={mobileScrollRef} className="flex-1 min-h-0 overflow-y-auto">
               <div
                 className="px-4 py-4 flex flex-col gap-4"
                 onClick={() => {
                   if (plusMenuOpen) setPlusMenuOpen(false);
                 }}
               >
+                {hasMore && (
+                  <div className="flex justify-center py-2">
+                    <button
+                      onClick={handleLoadMore}
+                      disabled={loadingMore}
+                      className="text-sm text-orange-500 disabled:text-stone-400"
+                    >
+                      {loadingMore ? "불러오는 중..." : "이전 메시지 더 보기"}
+                    </button>
+                  </div>
+                )}
                 {messages.map((msg) => (
                   <MessageBubble
                     key={msg.id}
@@ -411,25 +490,31 @@ export default function ChatPage() {
                       </span>
                     </div>
                   )}
-                <div ref={mobileMessagesEndRef} />
               </div>
-            </ScrollArea>
+            </div>
 
             {/* 지원자 거절/확정 버튼 */}
             {showApplicantActions && (
-              <div className="px-4 py-2.5 bg-white border-t border-orange-100 flex gap-2 shrink-0">
-                <button
-                  onClick={() => rejectApplicant(selectedApplicantId!)}
-                  className="flex-1 py-2 text-sm text-gray-500 border border-stone-200 rounded-xl hover:bg-stone-50 transition-colors"
-                >
-                  거절
-                </button>
-                <button
-                  onClick={() => confirmApplicant(selectedApplicantId!)}
-                  className="flex-1 py-2 text-sm text-white bg-orange-500 rounded-xl hover:bg-orange-600 transition-colors font-medium"
-                >
-                  선택 확정
-                </button>
+              <div className="px-4 py-2.5 bg-white border-t border-orange-100 flex flex-col gap-1 shrink-0">
+                {applicationActionError && (
+                  <p className="text-xs text-red-500 px-1">{applicationActionError}</p>
+                )}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleRejectApplicant(selectedApplicantId!)}
+                    disabled={!!actioningId}
+                    className="flex-1 py-2 text-sm text-gray-500 border border-stone-200 rounded-xl hover:bg-stone-50 transition-colors disabled:opacity-50"
+                  >
+                    거절
+                  </button>
+                  <button
+                    onClick={() => handleConfirmApplicant(selectedApplicantId!)}
+                    disabled={!!actioningId}
+                    className="flex-1 py-2 text-sm text-white bg-orange-500 rounded-xl hover:bg-orange-600 transition-colors font-medium disabled:opacity-50"
+                  >
+                    선택 확정
+                  </button>
+                </div>
               </div>
             )}
 
@@ -569,8 +654,8 @@ export default function ChatPage() {
                   editMode={editMode}
                   onToggle={() => togglePostCollapse(post.id)}
                   onDelete={handleDeleteApplicant}
-                  onReject={rejectApplicant}
-                  onConfirm={confirmApplicant}
+                  onReject={handleRejectApplicant}
+                  onConfirm={handleConfirmApplicant}
                   onSelect={setSelectedApplicantId}
                   onAvatarClick={openApplicantProfile}
                   getApplicantBadge={getApplicantBadge}
@@ -591,7 +676,7 @@ export default function ChatPage() {
               <p className="text-stone-400 text-sm">{error}</p>
             </div>
           ) : (activeTab === "one_on_one" && rooms.length === 0) ||
-            (activeTab === "applicants" && applicants.length === 0) ? (
+          (activeTab === "applicants" && applicants.length === 0) ? (
             <div className="flex-1 flex items-center justify-center">
               <p className="text-stone-400 text-sm">
                 새로운 채팅이 존재하지 않습니다
@@ -650,6 +735,17 @@ export default function ChatPage() {
                     if (plusMenuOpen) setPlusMenuOpen(false);
                   }}
                 >
+                  {hasMore && (
+                    <div className="flex justify-center py-2">
+                      <button
+                        onClick={handleLoadMore}
+                        disabled={loadingMore}
+                        className="text-sm text-orange-500 disabled:text-stone-400"
+                      >
+                        {loadingMore ? "불러오는 중..." : "이전 메시지 더 보기"}
+                      </button>
+                    </div>
+                  )}
                   {messages.map((msg) => (
                     <MessageBubble
                       key={msg.id}
@@ -670,7 +766,7 @@ export default function ChatPage() {
                         </span>
                       </div>
                     )}
-                  <div ref={desktopMessagesEndRef} />
+                  <div ref={messagesEndRef} />
                 </div>
               </ScrollArea>
 

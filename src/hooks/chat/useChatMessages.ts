@@ -1,8 +1,8 @@
 /**
  * 메시지 목록 관리.
  *
- * 1. REST API
- *    reverse()로 오래된 메시지부터 표시.
+ * 1. REST API (cursor 기반 페이지네이션)
+ *    최신 50건 로드, 스크롤 최상단 도달 시 loadMore()로 이전 메시지 prepend.
  *
  * 2. Realtime - broadcast
  *    메시지 전송 시 채널로 broadcast하고, 상대방은 broadcast 구독으로 수신.
@@ -20,11 +20,20 @@ function formatTime(iso: string): string {
   });
 }
 
-interface MessageApiItem {
+export interface MessageApiItem {
   id: string;
   sender_id: string;
   content: string;
   created_at: string;
+}
+
+function toMessage(m: MessageApiItem, userId: string): Message {
+  return {
+    id: m.id,
+    from: m.sender_id === userId ? "me" : "other",
+    text: m.content,
+    time: formatTime(m.created_at),
+  };
 }
 
 export function useChatMessages(
@@ -32,27 +41,42 @@ export function useChatMessages(
   userId: string | null,
 ) {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const channelRef = useRef<RealtimeChannel | null>(null);
 
-  // 기존 메시지 로드
+  // 방이 바뀌면 상태 초기화 후 최신 메시지 로드
   useEffect(() => {
     if (!activeRoomId || !userId) return;
 
-    fetch(`/api/chat/rooms/${activeRoomId}/messages`)
+    setMessages([]);
+    setNextCursor(null);
+    setHasMore(false);
+
+    const controller = new AbortController();
+
+    fetch(`/api/chat/rooms/${activeRoomId}/messages`, { signal: controller.signal })
       .then((res) => {
         if (!res.ok) throw new Error("메시지를 불러오지 못했습니다");
         return res.json();
       })
-      .then(({ data }: { data: { messages: MessageApiItem[] } }) => {
-        const mapped: Message[] = data.messages.reverse().map((m) => ({
-          id: m.id,
-          from: m.sender_id === userId ? "me" : "other",
-          text: m.content,
-          time: formatTime(m.created_at),
-        }));
-        setMessages(mapped);
-      })
-      .catch((err: Error) => console.error(err.message));
+      .then(
+        ({
+          data,
+        }: {
+          data: { messages: MessageApiItem[]; next_cursor: string | null };
+        }) => {
+          setMessages(data.messages.reverse().map((m) => toMessage(m, userId)));
+          setNextCursor(data.next_cursor);
+          setHasMore(data.next_cursor !== null);
+        },
+      )
+      .catch((err: Error) => {
+        if (err.name !== "AbortError") console.error(err.message);
+      });
+
+    return () => controller.abort();
   }, [activeRoomId, userId]);
 
   // Realtime broadcast 구독
@@ -65,15 +89,7 @@ export function useChatMessages(
       .on("broadcast", { event: "new_message" }, ({ payload }) => {
         const m = payload as MessageApiItem;
         if (m.sender_id === userId) return;
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: m.id,
-            from: "other",
-            text: m.content,
-            time: formatTime(m.created_at),
-          },
-        ]);
+        setMessages((prev) => [...prev, toMessage(m, userId)]);
       })
       .subscribe();
 
@@ -86,15 +102,7 @@ export function useChatMessages(
   }, [activeRoomId, userId]);
 
   function addMessage(m: MessageApiItem) {
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: m.id,
-        from: m.sender_id === userId ? "me" : "other",
-        text: m.content,
-        time: formatTime(m.created_at),
-      },
-    ]);
+    setMessages((prev) => [...prev, toMessage(m, userId ?? "")]);
   }
 
   function broadcastMessage(m: MessageApiItem) {
@@ -105,5 +113,28 @@ export function useChatMessages(
     });
   }
 
-  return { messages, addMessage, broadcastMessage };
+  async function loadMore() {
+    if (!nextCursor || !activeRoomId || !userId || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const res = await fetch(
+        `/api/chat/rooms/${activeRoomId}/messages?cursor=${nextCursor}`,
+      );
+      if (!res.ok) return;
+      const {
+        data,
+      }: {
+        data: { messages: MessageApiItem[]; next_cursor: string | null };
+      } = await res.json();
+
+      const older = data.messages.reverse().map((m) => toMessage(m, userId));
+      setMessages((prev) => [...older, ...prev]);
+      setNextCursor(data.next_cursor);
+      setHasMore(data.next_cursor !== null);
+    } finally {
+      setLoadingMore(false);
+    }
+  }
+
+  return { messages, addMessage, broadcastMessage, loadMore, hasMore, loadingMore };
 }
