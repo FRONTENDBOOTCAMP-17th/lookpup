@@ -20,6 +20,7 @@ import {
 import { CustomModalPayment } from "@/components/common/CustomModalPayment";
 import CareRecordModal from "@/components/common/chat/CareRecordModal";
 import { sendMessage } from "@/app/actions/chat";
+import { updateApplicationByRoom } from "@/app/actions/applications";
 import { useChatRooms } from "@/hooks/chat/useChatRooms";
 import { useRequest } from "@/hooks/chat/useRequest";
 import { useChatMessages } from "@/hooks/chat/useChatMessages";
@@ -38,18 +39,13 @@ export default function ChatPage() {
   const [sendError, setSendError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const mobileMessagesEndRef = useRef<HTMLDivElement>(null);
-  const desktopMessagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const {
-    rooms,
-    applicants,
-    posts,
-    loading,
-    error,
-    deleteRoom,
-    deleteApplicant,
-  } = useChatRooms();
+  const [applicationActionError, setApplicationActionError] = useState<string | null>(null);
+  const [actioningId, setActioningId] = useState<string | null>(null);
+
+  const { rooms, applicants, posts, loading, error, deleteRoom, deleteApplicant } =
+    useChatRooms();
   const {
     rejectedIds,
     confirmedId,
@@ -59,17 +55,45 @@ export default function ChatPage() {
     getApplicantBadge,
   } = useRequest(applicants);
 
+  async function handleRejectApplicant(id: string) {
+    if (actioningId) return;
+    setActioningId(id);
+    setApplicationActionError(null);
+    try {
+      const result = await updateApplicationByRoom(id, "rejected");
+      if (result.error) {
+        setApplicationActionError(result.error.message);
+        return;
+      }
+      rejectApplicant(id);
+    } finally {
+      setActioningId(null);
+    }
+  }
+
+  async function handleConfirmApplicant(id: string) {
+    if (actioningId) return;
+    setActioningId(id);
+    setApplicationActionError(null);
+    try {
+      const result = await updateApplicationByRoom(id, "selected");
+      if (result.error) {
+        setApplicationActionError(result.error.message);
+        return;
+      }
+      confirmApplicant(id);
+    } finally {
+      setActioningId(null);
+    }
+  }
+
   const activeRoomId =
     activeTab === "one_on_one" ? selectedRoomId : selectedApplicantId;
 
-  const { messages, addMessage, broadcastMessage } = useChatMessages(
-    activeRoomId,
-    userId,
-  );
+  const { messages, addMessage, loadMore, hasMore, loadingMore } = useChatMessages(activeRoomId, userId);
 
   useEffect(() => {
-    mobileMessagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    desktopMessagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   async function handleSend() {
@@ -82,10 +106,7 @@ export default function ChatPage() {
         setSendError(result.error.message);
         return;
       }
-      if (result.data) {
-        addMessage(result.data);
-        broadcastMessage(result.data);
-      }
+      if (result.data) addMessage(result.data);
       setInput("");
     } finally {
       setSending(false);
@@ -286,8 +307,8 @@ export default function ChatPage() {
                       editMode={editMode}
                       onToggle={() => togglePostCollapse(post.id)}
                       onDelete={handleDeleteApplicant}
-                      onReject={rejectApplicant}
-                      onConfirm={confirmApplicant}
+                      onReject={handleRejectApplicant}
+                      onConfirm={handleConfirmApplicant}
                       onSelect={(id) => {
                         setSelectedApplicantId(id);
                         setMobileChatView("room");
@@ -394,6 +415,17 @@ export default function ChatPage() {
                   if (plusMenuOpen) setPlusMenuOpen(false);
                 }}
               >
+                {hasMore && (
+                  <div className="flex justify-center py-2">
+                    <button
+                      onClick={loadMore}
+                      disabled={loadingMore}
+                      className="text-sm text-orange-500 disabled:text-stone-400"
+                    >
+                      {loadingMore ? "불러오는 중..." : "이전 메시지 더 보기"}
+                    </button>
+                  </div>
+                )}
                 {messages.map((msg) => (
                   <MessageBubble
                     key={msg.id}
@@ -411,25 +443,32 @@ export default function ChatPage() {
                       </span>
                     </div>
                   )}
-                <div ref={mobileMessagesEndRef} />
+                <div ref={messagesEndRef} />
               </div>
             </ScrollArea>
 
             {/* 지원자 거절/확정 버튼 */}
             {showApplicantActions && (
-              <div className="px-4 py-2.5 bg-white border-t border-orange-100 flex gap-2 shrink-0">
-                <button
-                  onClick={() => rejectApplicant(selectedApplicantId!)}
-                  className="flex-1 py-2 text-sm text-gray-500 border border-stone-200 rounded-xl hover:bg-stone-50 transition-colors"
-                >
-                  거절
-                </button>
-                <button
-                  onClick={() => confirmApplicant(selectedApplicantId!)}
-                  className="flex-1 py-2 text-sm text-white bg-orange-500 rounded-xl hover:bg-orange-600 transition-colors font-medium"
-                >
-                  선택 확정
-                </button>
+              <div className="px-4 py-2.5 bg-white border-t border-orange-100 flex flex-col gap-1 shrink-0">
+                {applicationActionError && (
+                  <p className="text-xs text-red-500 px-1">{applicationActionError}</p>
+                )}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleRejectApplicant(selectedApplicantId!)}
+                    disabled={!!actioningId}
+                    className="flex-1 py-2 text-sm text-gray-500 border border-stone-200 rounded-xl hover:bg-stone-50 transition-colors disabled:opacity-50"
+                  >
+                    거절
+                  </button>
+                  <button
+                    onClick={() => handleConfirmApplicant(selectedApplicantId!)}
+                    disabled={!!actioningId}
+                    className="flex-1 py-2 text-sm text-white bg-orange-500 rounded-xl hover:bg-orange-600 transition-colors font-medium disabled:opacity-50"
+                  >
+                    선택 확정
+                  </button>
+                </div>
               </div>
             )}
 
@@ -473,7 +512,6 @@ export default function ChatPage() {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSend()}
                 placeholder="메시지를 입력하세요"
                 className="flex-1 h-11 px-4 bg-orange-50 rounded-2xl text-sm text-stone-900 placeholder-stone-900/50 outline-none"
               />
@@ -569,8 +607,8 @@ export default function ChatPage() {
                   editMode={editMode}
                   onToggle={() => togglePostCollapse(post.id)}
                   onDelete={handleDeleteApplicant}
-                  onReject={rejectApplicant}
-                  onConfirm={confirmApplicant}
+                  onReject={handleRejectApplicant}
+                  onConfirm={handleConfirmApplicant}
                   onSelect={setSelectedApplicantId}
                   onAvatarClick={openApplicantProfile}
                   getApplicantBadge={getApplicantBadge}
@@ -591,7 +629,7 @@ export default function ChatPage() {
               <p className="text-stone-400 text-sm">{error}</p>
             </div>
           ) : (activeTab === "one_on_one" && rooms.length === 0) ||
-            (activeTab === "applicants" && applicants.length === 0) ? (
+          (activeTab === "applicants" && applicants.length === 0) ? (
             <div className="flex-1 flex items-center justify-center">
               <p className="text-stone-400 text-sm">
                 새로운 채팅이 존재하지 않습니다
@@ -650,6 +688,17 @@ export default function ChatPage() {
                     if (plusMenuOpen) setPlusMenuOpen(false);
                   }}
                 >
+                  {hasMore && (
+                    <div className="flex justify-center py-2">
+                      <button
+                        onClick={loadMore}
+                        disabled={loadingMore}
+                        className="text-sm text-orange-500 disabled:text-stone-400"
+                      >
+                        {loadingMore ? "불러오는 중..." : "이전 메시지 더 보기"}
+                      </button>
+                    </div>
+                  )}
                   {messages.map((msg) => (
                     <MessageBubble
                       key={msg.id}
@@ -670,7 +719,7 @@ export default function ChatPage() {
                         </span>
                       </div>
                     )}
-                  <div ref={desktopMessagesEndRef} />
+                  <div ref={messagesEndRef} />
                 </div>
               </ScrollArea>
 

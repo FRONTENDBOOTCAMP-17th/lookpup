@@ -1,7 +1,7 @@
 /**
  * 채팅 목록 전체 관리.
  * direct와 request 두 타입을 room_type으로 분리하고 각각 저장함!
- * rooms : 1:1 채팅 / applicants : 지원 목록 채팅 + posts : 구인글 목록
+ * rooms : 1:1 채팅 / applicants : 지원 목록 채팅
  *
  * 방 삭제하는 것 나중에 추가해야 함...확인할 것.
  * 지금의 deleteRoom / deleteApplicant는 클라이언트 목록에서만 제거함.
@@ -65,7 +65,6 @@ export function useChatRooms() {
               unread: r.unread_count ?? 0,
             })),
         );
-
         const requestRooms = data.filter((r) => r.room_type === "request");
 
         setApplicants(
@@ -80,7 +79,6 @@ export function useChatRooms() {
           })),
         );
 
-        // request_id 기준으로 중복 없이 구인글 목록 생성
         const seen = new Set<string>();
         const derivedPosts: Post[] = [];
         for (const r of requestRooms) {
