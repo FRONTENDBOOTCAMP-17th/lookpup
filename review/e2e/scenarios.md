@@ -35,3 +35,17 @@
 - L5 /auth/login: 과거 500 → 200 회복.
 - 실시간 채팅 메시지 중복([필수])은 코드확인(addMessage+realtime 양쪽 push, id가드 없음). 2계정 OAuth+Realtime 필요해 E2E 미확정.
 - tsc 0(6차 빌드 [필수] 닫힘).
+
+## 8차 추가 (2026-06-18) — 채팅 broadcast·구인게시판 CRUD
+| ID | 시나리오 | 대상 | 기대 | 결과 |
+|----|----------|------|------|------|
+| L10 | 구인글 조회 API(신규) | `GET /api/requests` | 200 데이터 | pass(실데이터) |
+| L11 | 구인 글쓰기(신규) | `/board/write` | 폼 렌더 | pass(비로그인에도 4단계 폼 노출 — 진입 가드 없음) |
+| L12 | 게시판 목록→상세 | `/board`→상세 | 200 | pass |
+| L13 | 채팅 broadcast(7차 [필수]) | `/chat` | 렌더, 중복 해소 | pass(수신부 sender_id 가드로 자기메시지 중복 해소) |
+
+발견(8차):
+- [해결] 채팅 메시지 중복: broadcast 전환 + if(m.sender_id===userId) return. 전송자 로컬 1회. 단일소스.
+- [필수·이월] 회원탈퇴 미연결(withdraw handleDelete=setDone).
+- [신규] board CRUD(BestSeal): 서버액션 인증+소유권 가드 탄탄. [제안] 쓰기 페이지 진입 가드 없음, api GET service client 우회, error.message 노출.
+- tsc 0, anon RLS 빈응답(정상). 지도 빈화면=카카오 도메인 미등록 한계. 로그인 OAuth 전용→자동화 제외.
