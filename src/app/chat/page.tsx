@@ -66,6 +66,8 @@ export default function ChatPage() {
         return;
       }
       rejectApplicant(id);
+    } catch {
+      setApplicationActionError("오류가 발생했습니다. 다시 시도해주세요.");
     } finally {
       setActioningId(null);
     }
@@ -82,6 +84,8 @@ export default function ChatPage() {
         return;
       }
       confirmApplicant(id);
+    } catch {
+      setApplicationActionError("오류가 발생했습니다. 다시 시도해주세요.");
     } finally {
       setActioningId(null);
     }
