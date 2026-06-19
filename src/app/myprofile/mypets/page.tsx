@@ -50,11 +50,15 @@ function toPet(r: PetRow): Pet {
   return {
     id: r.id,
     name: r.name,
-    animal_type: (["dog", "cat"].includes(r.animal_type) ? r.animal_type : "other") as AnimalType,
+    animal_type: (["dog", "cat"].includes(r.animal_type)
+      ? r.animal_type
+      : "other") as AnimalType,
     breed: r.breed,
     age: r.age,
     weight: r.weight,
-    gender: (["MALE", "FEMALE", "MALE_NEUTERED", "FEMALE_NEUTERED"].includes(r.gender)
+    gender: (["MALE", "FEMALE", "MALE_NEUTERED", "FEMALE_NEUTERED"].includes(
+      r.gender,
+    )
       ? r.gender
       : "MALE") as Gender,
     caution: r.caution,
@@ -68,7 +72,10 @@ const ANIMAL_TYPE_LABEL: Record<AnimalType, string> = {
   other: "기타",
 };
 
-const ANIMAL_VISUAL: Record<AnimalType, { emoji: string; bgFrom: string; bgTo: string }> = {
+const ANIMAL_VISUAL: Record<
+  AnimalType,
+  { emoji: string; bgFrom: string; bgTo: string }
+> = {
   dog: { emoji: "🐶", bgFrom: "#FDE8C4", bgTo: "#FAD7A0" },
   cat: { emoji: "🐱", bgFrom: "#D6EAF8", bgTo: "#AED6F1" },
   other: { emoji: "🐾", bgFrom: "#D5F5E3", bgTo: "#A9DFBF" },
@@ -196,7 +203,9 @@ function DeleteModal({
             </div>
             <div className="text-left">
               <p className="font-semibold text-[#281A0E]">{pet.name}</p>
-              <p className="text-sm text-[#6B7280]">{pet.breed ?? "품종 미입력"}</p>
+              <p className="text-sm text-[#6B7280]">
+                {pet.breed ?? "품종 미입력"}
+              </p>
             </div>
           </div>
 
@@ -250,9 +259,7 @@ function BulkDeleteModal({
               🐾
             </div>
             <div className="text-left">
-              <p className="font-semibold text-[#281A0E]">
-                {count}마리 선택됨
-              </p>
+              <p className="font-semibold text-[#281A0E]">{count}마리 선택됨</p>
               <p className="text-sm text-[#6B7280]">
                 선택된 반려동물이 모두 삭제됩니다
               </p>
@@ -387,7 +394,9 @@ function EditModal({
   const [name, setName] = useState(pet.name);
   const [breed, setBreed] = useState(pet.breed ?? "");
   const [age, setAge] = useState(pet.age != null ? String(pet.age) : "");
-  const [weight, setWeight] = useState(pet.weight != null ? String(pet.weight) : "");
+  const [weight, setWeight] = useState(
+    pet.weight != null ? String(pet.weight) : "",
+  );
   const [sex, setSex] = useState<"MALE" | "FEMALE">(genderSex(pet.gender));
   const [neutered, setNeutered] = useState(isNeutered(pet.gender));
   const [caution, setCaution] = useState(pet.caution ?? "");
@@ -545,7 +554,9 @@ function EditModal({
               >
                 <span
                   className={`size-4 rounded-sm border flex items-center justify-center ${
-                    neutered ? "bg-[#E8742A] border-[#E8742A]" : "border-[#D1D5DB]"
+                    neutered
+                      ? "bg-[#E8742A] border-[#E8742A]"
+                      : "border-[#D1D5DB]"
                   }`}
                 >
                   {neutered && <Check size={11} className="text-white" />}
@@ -649,9 +660,15 @@ function PetCard({
       >
         {pet.image_url ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={pet.image_url} alt={pet.name} className="w-full h-full object-cover" />
+          <img
+            src={pet.image_url}
+            alt={pet.name}
+            className="w-full h-full object-cover"
+          />
         ) : (
-          <span className="text-6xl leading-none">{ANIMAL_VISUAL[pet.animal_type].emoji}</span>
+          <span className="text-6xl leading-none">
+            {ANIMAL_VISUAL[pet.animal_type].emoji}
+          </span>
         )}
         <div className="absolute top-3 left-3 bg-white/90 px-2.5 py-1 rounded-full border border-[#FFE9D6]">
           <span className="text-xs font-semibold text-[#E8742A]">
@@ -674,9 +691,12 @@ function PetCard({
       {/* 정보 */}
       <div className="p-5">
         <h3 className="font-bold text-[#281A0E] mb-0.5">{pet.name}</h3>
-        <p className="text-sm text-[#6B7280] mb-1">{pet.breed ?? "품종 미입력"}</p>
+        <p className="text-sm text-[#6B7280] mb-1">
+          {pet.breed ?? "품종 미입력"}
+        </p>
         <p className="text-sm text-[#6B7280]">
-          {pet.age ?? "-"}살 · {pet.weight ?? "-"}kg · {GENDER_LABEL[pet.gender]}
+          {pet.age ?? "-"}살 · {pet.weight ?? "-"}kg ·{" "}
+          {GENDER_LABEL[pet.gender]}
         </p>
 
         {!isSelectionMode && (
@@ -747,7 +767,11 @@ function PetCardMobile({
         >
           {pet.image_url ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={pet.image_url} alt={pet.name} className="w-full h-full object-cover" />
+            <img
+              src={pet.image_url}
+              alt={pet.name}
+              className="w-full h-full object-cover"
+            />
           ) : (
             ANIMAL_VISUAL[pet.animal_type].emoji
           )}
@@ -764,19 +788,21 @@ function PetCardMobile({
           </div>
         )}
       </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-0.5">
-          <span className="font-bold text-[#281A0E]">{pet.name}</span>
-          <span className="text-xs px-2 py-0.5 bg-[#FFF8F3] border border-[#FFE9D6] rounded-full text-[#E8742A]">
-            {ANIMAL_TYPE_LABEL[pet.animal_type]}
-          </span>
+      <div className="flex-1 min-w-0 flex items-center gap-2">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-0.5">
+            <span className="font-bold text-[#281A0E]">{pet.name}</span>
+            <span className="text-xs px-2 py-0.5 bg-[#FFF8F3] border border-[#FFE9D6] rounded-full text-[#E8742A]">
+              {ANIMAL_TYPE_LABEL[pet.animal_type]}
+            </span>
+          </div>
+          <p className="text-sm text-[#6B7280]">{pet.breed ?? "품종 미입력"}</p>
+          <p className="text-xs text-[#6B7280] mt-0.5">
+            {pet.age ?? "-"}살 · {pet.weight ?? "-"}kg
+          </p>
         </div>
-        <p className="text-sm text-[#6B7280]">{pet.breed ?? "품종 미입력"}</p>
-        <p className="text-xs text-[#6B7280] mt-0.5">
-          {pet.age ?? "-"}살 · {pet.weight ?? "-"}kg
-        </p>
         {!isSelectionMode && (
-          <div className="flex gap-2 mt-3">
+          <div className="flex flex-col gap-1.5 shrink-0">
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -887,9 +913,15 @@ export default function MyPetsPage() {
   const handleBulkDelete = async () => {
     const results = await Promise.all(selectedIds.map((id) => deletePet(id)));
     const failedIds = selectedIds.filter((_, i) => results[i].error);
-    const failedMessages = results.filter((r) => r.error).map((r) => r.error!.message);
+    const failedMessages = results
+      .filter((r) => r.error)
+      .map((r) => r.error!.message);
 
-    setPets((prev) => prev.filter((p) => !selectedIds.includes(p.id) || failedIds.includes(p.id)));
+    setPets((prev) =>
+      prev.filter(
+        (p) => !selectedIds.includes(p.id) || failedIds.includes(p.id),
+      ),
+    );
     setSelectedIds([]);
     setIsSelectionMode(false);
     setModal(null);
@@ -1044,7 +1076,6 @@ export default function MyPetsPage() {
 
       {/* 모바일 콘텐츠 */}
       <div className="md:hidden px-4 pt-4 pb-28">
-
         {pets.length === 0 ? (
           <EmptyState onAdd={handleAddPet} />
         ) : (
