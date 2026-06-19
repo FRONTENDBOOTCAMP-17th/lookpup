@@ -802,6 +802,34 @@ function PetCardMobile({
   );
 }
 
+function AddPetCard({ onAdd }: { onAdd: () => void }) {
+  return (
+    <button
+      onClick={onAdd}
+      className="flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-[#FFD4B0] bg-[#FFFAF6] hover:border-[#E8742A] hover:bg-[#FFF4EC] transition-all min-h-[220px] cursor-pointer group"
+    >
+      <div className="w-14 h-14 rounded-full bg-[#FFF0E8] group-hover:bg-[#FFE0C8] flex items-center justify-center transition-colors">
+        <Plus size={28} className="text-[#E8742A]" />
+      </div>
+      <span className="text-sm font-semibold text-[#E8742A]">반려동물 추가</span>
+    </button>
+  );
+}
+
+function AddPetCardMobile({ onAdd }: { onAdd: () => void }) {
+  return (
+    <button
+      onClick={onAdd}
+      className="w-full flex items-center gap-4 rounded-2xl border-2 border-dashed border-[#FFD4B0] bg-[#FFFAF6] hover:border-[#E8742A] hover:bg-[#FFF4EC] transition-all p-4 cursor-pointer group"
+    >
+      <div className="w-24 h-24 rounded-xl bg-[#FFF0E8] group-hover:bg-[#FFE0C8] flex items-center justify-center shrink-0 transition-colors">
+        <Plus size={28} className="text-[#E8742A]" />
+      </div>
+      <span className="text-sm font-semibold text-[#E8742A]">반려동물 추가하기</span>
+    </button>
+  );
+}
+
 function EmptyState({ onAdd }: { onAdd: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -831,7 +859,7 @@ type ModalType = "delete" | "bulk-delete" | "success" | "edit" | "guide" | null;
 
 export default function MyPetsPage() {
   const router = useRouter();
-  const [pets, setPets] = useState<Pet[]>(DUMMY_PETS);
+  const [pets, setPets] = useState<Pet[] | null>(null);
   const [modal, setModal] = useState<ModalType>(null);
   const [targetPet, setTargetPet] = useState<Pet | null>(null);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -839,11 +867,19 @@ export default function MyPetsPage() {
 
   useEffect(() => {
     fetch("/api/pets")
-      .then((res) => res.json())
+      .then((res) => {
+        if (res.status === 401) {
+          setPets(DUMMY_PETS);
+          return null;
+        }
+        return res.json();
+      })
       .then((result) => {
-        // data.length > 0 조건: 비로그인/등록 전이면 더미 유지 (board 목록과 동일한 패턴)
-        if ("data" in result && result.data && result.data.length > 0) {
+        if (!result) return;
+        if ("data" in result && Array.isArray(result.data)) {
           setPets((result.data as PetRow[]).map(toPet));
+        } else {
+          setPets(DUMMY_PETS);
         }
       });
   }, []);
@@ -943,7 +979,7 @@ export default function MyPetsPage() {
               <span className="flex-1 font-semibold text-[#281A0E]">
                 내 반려동물
               </span>
-              {pets.length > 0 && (
+              {pets !== null && pets.length > 0 && (
                 <button
                   onClick={enterSelectionMode}
                   className="h-9 px-3 rounded-xl border border-[#FFE9D6] text-[#6B7280] text-sm font-medium"
@@ -951,12 +987,6 @@ export default function MyPetsPage() {
                   선택
                 </button>
               )}
-              <button
-                onClick={handleAddPet}
-                className="h-9 px-4 rounded-xl bg-orange-500 text-white text-sm font-semibold flex items-center gap-1 hover:bg-orange-600 transition-colors"
-              >
-                <Plus size={15} /> 추가
-              </button>
             </>
           )}
         </div>
@@ -1004,7 +1034,7 @@ export default function MyPetsPage() {
               </>
             ) : (
               <>
-                {pets.length > 0 && (
+                {pets !== null && pets.length > 0 && (
                   <button
                     onClick={enterSelectionMode}
                     className="h-11 px-5 rounded-xl border border-[#FFE9D6] text-[#6B7280] font-medium hover:border-[#E8742A]/50 hover:text-[#E8742A] transition-colors text-sm"
@@ -1012,18 +1042,12 @@ export default function MyPetsPage() {
                     반려동물 선택
                   </button>
                 )}
-                <button
-                  onClick={handleAddPet}
-                  className="h-11 px-5 rounded-xl bg-orange-500 text-white font-semibold hover:bg-orange-600 transition-colors flex items-center gap-2 text-sm"
-                >
-                  <Plus size={16} /> 반려동물 추가
-                </button>
               </>
             )}
           </div>
         </div>
 
-        {pets.length === 0 ? (
+        {pets === null ? null : pets.length === 0 ? (
           <EmptyState onAdd={handleAddPet} />
         ) : (
           <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
@@ -1038,6 +1062,7 @@ export default function MyPetsPage() {
                 onSelect={() => toggleSelection(pet.id)}
               />
             ))}
+            {!isSelectionMode && <AddPetCard onAdd={handleAddPet} />}
           </div>
         )}
       </div>
@@ -1045,7 +1070,7 @@ export default function MyPetsPage() {
       {/* 모바일 콘텐츠 */}
       <div className="md:hidden px-4 pt-4 pb-28">
 
-        {pets.length === 0 ? (
+        {pets === null ? null : pets.length === 0 ? (
           <EmptyState onAdd={handleAddPet} />
         ) : (
           <div className="flex flex-col gap-3">
@@ -1060,19 +1085,11 @@ export default function MyPetsPage() {
                 onSelect={() => toggleSelection(pet.id)}
               />
             ))}
+            {!isSelectionMode && <AddPetCardMobile onAdd={handleAddPet} />}
           </div>
         )}
       </div>
 
-      {/* 모바일 추가 버튼 */}
-      {!isSelectionMode && (
-        <button
-          onClick={handleAddPet}
-          className="md:hidden fixed bottom-22 right-5 w-14 h-14 bg-orange-500 rounded-full flex items-center justify-center shadow-[0_4px_16px_rgba(249,115,22,0.4)] hover:bg-orange-600 transition-colors z-30"
-        >
-          <Plus size={24} className="text-white" />
-        </button>
-      )}
 
       {/* 모달 */}
       {modal === "delete" && targetPet && (
