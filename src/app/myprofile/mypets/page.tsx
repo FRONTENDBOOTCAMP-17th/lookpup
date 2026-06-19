@@ -81,43 +81,6 @@ const ANIMAL_VISUAL: Record<
   other: { emoji: "🐾", bgFrom: "#D5F5E3", bgTo: "#A9DFBF" },
 };
 
-// 실데이터 없을 때(비로그인 또는 등록 전) 보여줄 더미. id가 dummy- 접두사라 실제 DB row와 안 겹침.
-const DUMMY_PETS: Pet[] = [
-  {
-    id: "dummy-1",
-    name: "몽이",
-    animal_type: "dog",
-    breed: "골든 리트리버",
-    age: 2,
-    weight: 15.2,
-    gender: "MALE",
-    caution: "사람을 좋아하고 활발해요!",
-    image_url: null,
-  },
-  {
-    id: "dummy-2",
-    name: "나비",
-    animal_type: "cat",
-    breed: "코리안 숏헤어",
-    age: 5,
-    weight: 3.8,
-    gender: "FEMALE",
-    caution: "조용하고 독립적이에요.",
-    image_url: null,
-  },
-  {
-    id: "dummy-3",
-    name: "코코",
-    animal_type: "dog",
-    breed: "말티즈",
-    age: 4,
-    weight: 3.2,
-    gender: "MALE_NEUTERED",
-    caution: "분리불안이 있어요. 주의해주세요.",
-    image_url: null,
-  },
-];
-
 const GENDER_LABEL: Record<Gender, string> = {
   MALE: "수컷",
   FEMALE: "암컷",
@@ -857,7 +820,7 @@ type ModalType = "delete" | "bulk-delete" | "success" | "edit" | "guide" | null;
 
 export default function MyPetsPage() {
   const router = useRouter();
-  const [pets, setPets] = useState<Pet[]>(DUMMY_PETS);
+  const [pets, setPets] = useState<Pet[] | null>(null);
   const [modal, setModal] = useState<ModalType>(null);
   const [targetPet, setTargetPet] = useState<Pet | null>(null);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -865,11 +828,19 @@ export default function MyPetsPage() {
 
   useEffect(() => {
     fetch("/api/pets")
-      .then((res) => res.json())
+      .then((res) => {
+        if (res.status === 401) {
+          setPets([]);
+          return null;
+        }
+        return res.json();
+      })
       .then((result) => {
-        // data.length > 0 조건: 비로그인/등록 전이면 더미 유지 (board 목록과 동일한 패턴)
-        if ("data" in result && result.data && result.data.length > 0) {
+        if (!result) return;
+        if ("data" in result && Array.isArray(result.data)) {
           setPets((result.data as PetRow[]).map(toPet));
+        } else {
+          setPets([]);
         }
       });
   }, []);
@@ -975,7 +946,7 @@ export default function MyPetsPage() {
               <span className="flex-1 font-semibold text-[#281A0E]">
                 내 반려동물
               </span>
-              {pets.length > 0 && (
+              {pets !== null && pets.length > 0 && (
                 <button
                   onClick={enterSelectionMode}
                   className="h-9 px-3 rounded-xl border border-[#FFE9D6] text-[#6B7280] text-sm font-medium"
@@ -1036,7 +1007,7 @@ export default function MyPetsPage() {
               </>
             ) : (
               <>
-                {pets.length > 0 && (
+                {pets !== null && pets.length > 0 && (
                   <button
                     onClick={enterSelectionMode}
                     className="h-11 px-5 rounded-xl border border-[#FFE9D6] text-[#6B7280] font-medium hover:border-[#E8742A]/50 hover:text-[#E8742A] transition-colors text-sm"
@@ -1055,7 +1026,7 @@ export default function MyPetsPage() {
           </div>
         </div>
 
-        {pets.length === 0 ? (
+        {pets === null ? null : pets.length === 0 ? (
           <EmptyState onAdd={handleAddPet} />
         ) : (
           <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
@@ -1076,7 +1047,7 @@ export default function MyPetsPage() {
 
       {/* 모바일 콘텐츠 */}
       <div className="md:hidden px-4 pt-4 pb-28">
-        {pets.length === 0 ? (
+        {pets === null ? null : pets.length === 0 ? (
           <EmptyState onAdd={handleAddPet} />
         ) : (
           <div className="flex flex-col gap-3">
