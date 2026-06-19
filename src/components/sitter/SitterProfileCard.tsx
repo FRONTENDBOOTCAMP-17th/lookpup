@@ -1,10 +1,12 @@
 import { MapPin, Star } from "lucide-react";
 import Avatar from "@/components/ui/Avatar";
 import Pill from "@/components/ui/Pill";
+import { useUserStore } from "@/store/userStore";
 
 export interface SitterProfile {
   name: string;
   initial: string;
+  src?: string | null;
   verified: boolean;
   location: string;
   rating: number;
@@ -15,28 +17,47 @@ export interface SitterProfile {
 }
 
 interface Props {
-  profile: SitterProfile;
+  profile?: SitterProfile;
   className?: string;
 }
 
-/**
- * 펫시터 요약 카드.
- * 채팅·프리뷰 등 여러 곳에서 재사용.
- * 프로필 보기 / 수정하기 / 삭제 버튼, 응답률은 포함하지 않음.
- */
-export default function SitterProfileCard({ profile: p, className = "" }: Props) {
+export default function SitterProfileCard({ profile, className = "" }: Props) {
+  const { user, sitter } = useUserStore();
+  console.log(sitter);
+  const p: SitterProfile | null =
+    profile ??
+    (user && sitter
+      ? {
+          name: user.fullName,
+          initial: user.fullName.charAt(0),
+          src: user.profileImage,
+          verified: user.isVerified,
+          location: sitter.availableArea,
+          rating: sitter.rating,
+          reviewCount: sitter.reviewCount,
+          services: sitter.services,
+          career: sitter.career ?? "-",
+          completedCount: `${sitter.reviewCount}건`,
+        }
+      : null);
+
+  if (!p) return null;
+
   return (
     <div
       className={`bg-white border border-orange-100 rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.08)] overflow-hidden ${className}`}
     >
-      {/* 상단 그라디언트 바 */}
       <div className="h-2 bg-gradient-to-r from-orange-500 to-orange-300" />
 
       <div className="p-5 space-y-4">
-        {/* 프로필 헤더 */}
         <div className="flex gap-4">
           <div className="relative shrink-0">
-            <Avatar initial={p.initial} size="lg" variant="orange" />
+            <Avatar
+              initial={p.initial}
+              src={p.src}
+              size="lg"
+              variant="orange"
+            />
           </div>
 
           <div className="flex-1 min-w-0">
@@ -54,20 +75,22 @@ export default function SitterProfileCard({ profile: p, className = "" }: Props)
             </div>
             <div className="flex items-center gap-1">
               <Star size={12} className="fill-amber-400 text-amber-400" />
-              <span className="text-sm font-bold text-stone-900">{p.rating}</span>
-              <span className="text-xs text-gray-400">({p.reviewCount}개 리뷰)</span>
+              <span className="text-sm font-bold text-stone-900">
+                {p.rating}
+              </span>
+              <span className="text-xs text-gray-400">
+                ({p.reviewCount}개 리뷰)
+              </span>
             </div>
           </div>
         </div>
 
-        {/* 서비스 태그 */}
         <div className="flex gap-2 flex-wrap">
           {p.services.map((s) => (
             <Pill key={s}>{s}</Pill>
           ))}
         </div>
 
-        {/* 경력 / 완료 건수 */}
         <div className="grid grid-cols-2 gap-2">
           {[
             { label: "경력", value: p.career },

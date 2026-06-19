@@ -47,23 +47,7 @@ const DUMMY_SITTER_MAIN_STATS = [
   { label: "이번 달 수익", value: "850,000원" },
 ];
 
-const DUMMY_SITTER_SIDEBAR_STATS = {
-  rating: 4.9,
-  completedCount: "230건",
-  monthlyEarnings: "850,000원",
-};
 
-const DUMMY_SITTER_PROFILE = {
-  name: "김민지",
-  initial: "김",
-  verified: true,
-  location: "서울 마포구",
-  rating: 4.9,
-  reviewCount: 47,
-  services: ["방문돌봄", "위탁돌봄", "산책"],
-  career: "5년",
-  completedCount: "230건",
-};
 
 const OWNER_MENU: MenuItem[] = [
   {
@@ -259,9 +243,9 @@ function SitterActions() {
 
 export default function MyProfilePage() {
   const router = useRouter();
-  const { user, isLoading } = useUserStore();
+  const { user, sitter, isLoading } = useUserStore();
   const isSitter = user?.role === "both" || user?.role === "admin";
-  console.log(user);
+
   useEffect(() => {
     if (!isLoading && !user?.isVerified) {
       router.replace("/auth/verification");
@@ -291,7 +275,10 @@ export default function MyProfilePage() {
       {/* 모바일 프로필 */}
       <div className="md:hidden bg-linear-to-br from-orange-500 to-orange-300 rounded-b-3xl px-5 pt-8 pb-8 shrink-0">
         <div className="flex items-center gap-4 mb-6">
-          <AvatarMobile initial={user?.fullName?.charAt(0) ?? "?"} src={user?.profileImage} />
+          <AvatarMobile
+            initial={user?.fullName?.charAt(0) ?? "?"}
+            src={user?.profileImage}
+          />
           <div className="flex-1">
             <h3 className="text-white font-semibold text-lg mb-1">
               {user?.fullName ?? ""}
@@ -374,14 +361,14 @@ export default function MyProfilePage() {
                           className="fill-amber-400 text-amber-400"
                         />
                         <span className="text-sm font-bold text-stone-900">
-                          {DUMMY_SITTER_SIDEBAR_STATS.rating}
+                          {sitter?.rating.toFixed(1) ?? "-"}
                         </span>
                       </div>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-gray-500">완료 건수</span>
                       <span className="text-sm font-bold text-stone-900">
-                        {DUMMY_SITTER_SIDEBAR_STATS.completedCount}
+                        {sitter ? `${sitter.reviewCount}건` : "-"}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
@@ -389,7 +376,7 @@ export default function MyProfilePage() {
                         이번 달 수익
                       </span>
                       <span className="text-sm font-bold text-orange-500">
-                        {DUMMY_SITTER_SIDEBAR_STATS.monthlyEarnings}
+                        -
                       </span>
                     </div>
                   </div>
@@ -453,7 +440,7 @@ export default function MyProfilePage() {
                           공개 중인 프로필
                         </span>
                       </div>
-                      <SitterProfileCard profile={DUMMY_SITTER_PROFILE} />
+                      <SitterProfileCard  />
                       <SitterActions />
                     </div>
                   )}
@@ -517,7 +504,7 @@ export default function MyProfilePage() {
         {/* 펫시터 프로필 카드 (예약 관리 위) */}
         {userType === "sitter" && (
           <div className="mb-4">
-            <SitterProfileCard profile={DUMMY_SITTER_PROFILE} />
+            <SitterProfileCard  />
             <SitterActions />
           </div>
         )}

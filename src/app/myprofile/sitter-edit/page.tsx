@@ -7,6 +7,9 @@ import Header from "@/components/layout/Header";
 import Avatar from "@/components/ui/Avatar";
 import StatGrid from "@/components/ui/StatGrid";
 import { createClient } from "@/utils/supabase/client";
+import { useUserStore } from "@/store/userStore";
+import { updateSitterProfile, getMySitterProfile } from "@/app/actions/sitters";
+import { uploadToCloudinary } from "@/utils/cloudinary";
 
 const SERVICE_OPTIONS = ["방문돌봄", "위탁돌봄", "산책", "목욕", "훈련"];
 
@@ -17,6 +20,20 @@ const PET_OPTIONS = [
   "고양이",
   "기타 소동물",
 ];
+
+const ANIMAL_TO_LABEL: Record<string, string> = {
+  small_dog: "강아지 소형 (7kg 미만)",
+  medium_dog: "강아지 중형 (7–25kg)",
+  large_dog: "강아지 대형 (25kg 이상)",
+  cat: "고양이",
+};
+
+const LABEL_TO_ANIMAL: Record<string, string> = {
+  "강아지 소형 (7kg 미만)": "small_dog",
+  "강아지 중형 (7–25kg)": "medium_dog",
+  "강아지 대형 (25kg 이상)": "large_dog",
+  "고양이": "cat",
+};
 
 // 서비스명 → 기본 단위 매핑
 const SERVICE_DEFAULT_UNIT: Record<string, string> = {
@@ -135,83 +152,65 @@ function ServiceRow({
 
 export default function SitterEditPage() {
   const router = useRouter();
+  const { user, sitter, setSitter } = useUserStore();
   const profileFileRef = useRef<HTMLInputElement>(null);
   const photoFileRef = useRef<HTMLInputElement>(null);
   const photoSlotIndex = useRef(-1);
-  // 저장 API 구현 시 사용할 sitter DB ID
   const sitterIdRef = useRef<string | null>(null);
 
   const [form, setForm] = useState(EMPTY_FORM);
   const [activeTab, setActiveTab] = useState<Tab>("소개");
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const nextId = useRef(100);
+  const photoFilesRef = useRef<(File | null)[]>([null, null, null, null, null, null]);
+  const deletedServiceIdsRef = useRef<string[]>([]);
 
   useEffect(() => {
-    async function load() {
-      const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+    if (!user || !sitter) return;
 
-      if (!user) {
+    sitterIdRef.current = sitter.id;
+
+    const photoSlots: (string | null)[] = [null, null, null, null, null, null];
+    sitter.activityPhotoUrls.forEach((url, i) => {
+      if (i < 6) photoSlots[i] = url;
+    });
+
+    const baseValues = {
+      fullName: user.fullName,
+      availableArea: sitter.availableArea,
+      bio: sitter.introduction ?? "",
+      career: sitter.career ?? "",
+      completedCount: sitter.reviewCount,
+      pets: sitter.availableAnimals.map((a) => ANIMAL_TO_LABEL[a] ?? a),
+      photos: photoSlots,
+    };
+
+    const supabase = createClient();
+    supabase
+      .from("services")
+      .select("id, title, price, description")
+      .eq("sitter_id", sitter.id)
+      .then(({ data }) => {
+        type DbService = { id: string; title: string; price: number; description: string | null };
+        const dbServices: ServiceItem[] = ((data as DbService[]) ?? []).map((s, idx) => ({
+          id: idx + 1,
+          dbId: s.id,
+          name: s.title,
+          unit: SERVICE_DEFAULT_UNIT[s.title] ?? "1회",
+          price: String(s.price),
+          desc: s.description ?? "",
+        }));
+        nextId.current = dbServices.length + 100;
+        setForm((f) => ({
+          ...f,
+          ...baseValues,
+          services: dbServices.map((s) => s.name),
+          serviceList: dbServices,
+        }));
         setLoading(false);
-        return;
-      }
-
-      const [{ data: userData }, { data: sitter }] = await Promise.all([
-        supabase.from("users").select("full_name").eq("id", user.id).single(),
-        supabase
-          .from("sitters")
-          .select("*, services(*)")
-          .eq("user_id", user.id)
-          .maybeSingle(),
-      ]);
-
-      if (!sitter) {
-        setLoading(false);
-        return;
-      }
-
-      sitterIdRef.current = sitter.id;
-
-      type DbService = {
-        id: string;
-        title: string;
-        price: number;
-        description: string | null;
-      };
-
-      const dbServices: ServiceItem[] = (
-        (sitter.services as DbService[]) ?? []
-      ).map((s, idx) => ({
-        id: idx + 1,
-        dbId: s.id,
-        name: s.title,
-        unit: SERVICE_DEFAULT_UNIT[s.title] ?? "1회",
-        price: String(s.price),
-        desc: s.description ?? "",
-      }));
-
-      nextId.current = dbServices.length + 100;
-
-      setForm({
-        fullName: userData?.full_name ?? "",
-        availableArea: sitter.available_area ?? "",
-        bio: sitter.introduction ?? "",
-        career: sitter.career ?? "",
-        completedCount: 0,
-        services: dbServices.map((s) => s.name),
-        pets: [],
-        serviceList: dbServices,
-        radius: "3",
-        photos: [null, null, null, null, null, null],
       });
-
-      setLoading(false);
-    }
-
-    load();
-  }, []);
+  }, [user, sitter]);
 
   // services 토글 시 serviceList도 함께 동기화
   const toggleService = (s: string) =>
@@ -263,6 +262,9 @@ export default function SitterEditPage() {
   const removeServiceItem = (id: number) =>
     setForm((f) => {
       const target = f.serviceList.find((s) => s.id === id);
+      if (target?.dbId) {
+        deletedServiceIdsRef.current = [...deletedServiceIdsRef.current, target.dbId];
+      }
       return {
         ...f,
         serviceList: f.serviceList.filter((s) => s.id !== id),
@@ -293,6 +295,7 @@ export default function SitterEditPage() {
     if (!file) return;
     const url = URL.createObjectURL(file);
     const idx = photoSlotIndex.current;
+    photoFilesRef.current[idx] = file;
     setForm((f) => {
       const photos = [...f.photos];
       photos[idx] = url;
@@ -301,7 +304,8 @@ export default function SitterEditPage() {
     e.target.value = "";
   };
 
-  const removePhoto = (idx: number) =>
+  const removePhoto = (idx: number) => {
+    photoFilesRef.current[idx] = null;
     setForm((f) => {
       const photos = [...f.photos];
       const current = photos[idx];
@@ -309,6 +313,55 @@ export default function SitterEditPage() {
       photos[idx] = null;
       return { ...f, photos };
     });
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+
+    // 새로 추가된 사진은 Cloudinary에 업로드, 기존 URL은 그대로 유지
+    const finalPhotoUrls: string[] = [];
+    for (let i = 0; i < form.photos.length; i++) {
+      const photo = form.photos[i];
+      const file = photoFilesRef.current[i];
+      if (!photo) continue;
+      if (file) {
+        const url = await uploadToCloudinary(file, "sitters/activity-photos");
+        finalPhotoUrls.push(url);
+      } else {
+        finalPhotoUrls.push(photo);
+      }
+    }
+
+    const result = await updateSitterProfile({
+      availableArea: form.availableArea,
+      introduction: form.bio,
+      career: form.career,
+      availableAnimals: form.pets.map((p) => LABEL_TO_ANIMAL[p] ?? p),
+      activityPhotoUrls: finalPhotoUrls,
+      services: form.serviceList.map((s) => ({
+        id: s.dbId,
+        title: s.name,
+        price: Number(s.price) || 0,
+        description: s.desc,
+      })),
+      deletedServiceIds: deletedServiceIdsRef.current,
+    });
+
+    if ("error" in result) {
+      setSaving(false);
+      alert(result.error?.message ?? "저장 중 오류가 발생했습니다.");
+      return;
+    }
+
+    // store 갱신 후 이동
+    const refreshed = await getMySitterProfile();
+    if ("data" in refreshed && refreshed.data) {
+      setSitter(refreshed.data);
+    }
+
+    setSaving(false);
+    router.push("/myprofile/sitter-profile");
+  };
 
   const stats = [
     { label: "경력", value: form.career || "-" },
@@ -561,10 +614,8 @@ export default function SitterEditPage() {
           <div className="absolute bottom-4 left-4 right-16">
             <input
               value={form.fullName}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, fullName: e.target.value }))
-              }
-              className="text-xl font-bold text-white bg-transparent border-b border-white/40 outline-none w-full mb-1 placeholder:text-white/60"
+              disabled
+              className="text-xl font-bold text-white bg-transparent border-b border-white/20 outline-none w-full mb-1 opacity-80 cursor-not-allowed"
               placeholder="이름"
             />
             <div className="flex items-center gap-1 text-white/80">
@@ -658,14 +709,12 @@ export default function SitterEditPage() {
                 </button>
               </div>
 
-              {/* 이름 편집 */}
+              {/* 이름 (수정 불가) */}
               <input
                 value={form.fullName}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, fullName: e.target.value }))
-                }
+                disabled
                 placeholder="이름"
-                className="text-2xl font-bold text-stone-900 text-center border-b-2 border-orange-100 focus:border-orange-400 outline-none bg-transparent w-full mb-2 pb-1 transition-colors"
+                className="text-2xl font-bold text-stone-900 text-center border-b-2 border-orange-100 outline-none bg-transparent w-full mb-2 pb-1 opacity-60 cursor-not-allowed"
               />
 
               {/* 위치 편집 */}
@@ -768,10 +817,11 @@ export default function SitterEditPage() {
           </button>
           <button
             type="button"
-            onClick={() => router.push("/myprofile")}
-            className="flex-1 md:flex-none md:w-44 h-12 bg-orange-500 rounded-[10px] text-base font-semibold text-white hover:bg-orange-600 transition-colors"
+            onClick={handleSave}
+            disabled={saving}
+            className="flex-1 md:flex-none md:w-44 h-12 bg-orange-500 rounded-[10px] text-base font-semibold text-white hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            수정 완료
+            {saving ? "저장 중..." : "수정 완료"}
           </button>
         </div>
       </div>
