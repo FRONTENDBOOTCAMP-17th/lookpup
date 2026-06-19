@@ -49,3 +49,18 @@
 - [필수·이월] 회원탈퇴 미연결(withdraw handleDelete=setDone).
 - [신규] board CRUD(BestSeal): 서버액션 인증+소유권 가드 탄탄. [제안] 쓰기 페이지 진입 가드 없음, api GET service client 우회, error.message 노출.
 - tsc 0, anon RLS 빈응답(정상). 지도 빈화면=카카오 도메인 미등록 한계. 로그인 OAuth 전용→자동화 제외.
+
+## 9차 추가 (2026-06-19) — Cloudinary 업로드·상세 소개 탭 (포트 3401)
+| ID | 시나리오 | 대상 | 기대 | 결과 |
+|----|----------|------|------|------|
+| L14 | 펫시터 등록 폼(신규 Cloudinary) | `/sitter-register` (desktop+mobile) | 폼 렌더, file input | pass(200, fileInput=1, 비로그인 노출·가드 없음). 실업로드는 OAuth 로그인 필요라 미실측 |
+| L15 | 펫시터 상세 소개 탭(리팩터 ee4bb80) | `/petsitters`→상세 | 탭·실데이터 렌더 | pass(소개/서비스/후기/위치 탭, 실데이터) |
+
+발견(9차):
+- [필수·이월 6차~] 회원탈퇴 미연결(withdraw handleDelete=setShowModal(false);setDone(true)). 4회 연속 이월.
+- [필수] Cloudinary 서명 sha256(upload.ts:9) — Cloudinary 기본 sha1. 계정 설정 안 맞으면 Invalid Signature. 실업로드 확인 필요.
+- [제안] sitter-register handleSubmit: 검증 전 업로드 → 고아 이미지. 폼 500/서버 1000 글자수 불일치.
+- [제안] /board/write·edit 진입 가드 여전히 없음(8차 이월). edit는 if(!user) return으로 빈폼.
+- [제안] 채팅 unread=postgres_changes + 본문=broadcast 두 경로(0sliverchoi). baaef16: conflict 중 broadcast 회귀했다 복원(머지 위생 신호).
+- 관리자 라우트/대시보드 없음(role:admin 스키마만). 월요일 관리자 흐름 없음.
+- tsc 0(7차부터 3회 연속). anon RLS 재검증은 리뷰 샌드박스 외부망 차단으로 8차 결과 갈음.

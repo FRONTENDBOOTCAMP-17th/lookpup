@@ -215,6 +215,8 @@ const result = await createRequest({
   location: "서울 마포구",
   latitude: 37.5665,
   longitude: 126.9780,
+  // require_badge(인증 펫시터) / prefer_female(여성 선호) / require_certificate(자격증 보유) / no_smoker(흡연자 제외)
+  sitter_conditions: ["require_badge", "no_smoker"],
 });
 
 // pet_ids를 전달하면 기존 반려동물 목록을 교체
@@ -230,6 +232,7 @@ await deleteRequest("request-uuid"); // status === 'open'일 때만 가능
   id: "...",
   title: "...",
   pet_ids: ["pet-uuid-1", "pet-uuid-2"],
+  view_count: 0,  // 조회수 (기본값 0)
   ...
 }
 ```

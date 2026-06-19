@@ -120,77 +120,6 @@ interface Post {
   sitterName?: string;
 }
 
-const DUMMY_POSTS: Post[] = [
-  {
-    id: "1",
-    title: "말티즈 몽이 주말 방문 돌봄 부탁드려요",
-    status: "open",
-    petName: "몽이 (말티즈)",
-    serviceType: "방문돌봄",
-    date: "2026년 6월 14일 (토)",
-    time: "10:00 – 14:00",
-    location: "마포구 상수동",
-    price: 40000,
-    createdAt: "2026.06.08",
-    createdAtRaw: "2026-06-08",
-    applicantCount: 3,
-  },
-  {
-    id: "2",
-    title: "포메라니안 쿠키 산책 도우미 구합니다",
-    status: "matched",
-    petName: "쿠키 (포메라니안)",
-    serviceType: "산책",
-    date: "2026년 6월 12일 (목)",
-    time: "09:00 – 10:00",
-    location: "서대문구 연희동",
-    price: 20000,
-    createdAt: "2026.06.06",
-    createdAtRaw: "2026-06-06",
-    sitterName: "박지수",
-  },
-  {
-    id: "3",
-    title: "골든리트리버 해피 호텔 숙박 부탁해요",
-    status: "in-progress",
-    petName: "해피 (골든리트리버)",
-    serviceType: "펫호텔",
-    date: "2026년 6월 10일 (화) – 6월 13일 (금)",
-    time: "종일",
-    location: "용산구 이태원동",
-    price: 120000,
-    createdAt: "2026.06.03",
-    createdAtRaw: "2026-06-03",
-    sitterName: "이서연",
-  },
-  {
-    id: "4",
-    title: "비숑 눈송이 주간 방문 돌봄 맡겨요",
-    status: "completed",
-    petName: "눈송이 (비숑프리제)",
-    serviceType: "방문돌봄",
-    date: "2026년 5월 20일 (화)",
-    time: "11:00 – 15:00",
-    location: "강남구 역삼동",
-    price: 45000,
-    createdAt: "2026.05.15",
-    createdAtRaw: "2026-05-15",
-    sitterName: "최민정",
-  },
-  {
-    id: "5",
-    title: "푸들 코코 산책 구인",
-    status: "canceled",
-    petName: "코코 (토이푸들)",
-    serviceType: "산책",
-    date: "2026년 5월 10일 (금)",
-    time: "08:00 – 09:00",
-    location: "성동구 성수동",
-    price: 18000,
-    createdAt: "2026.05.07",
-    createdAtRaw: "2026-05-07",
-  },
-];
 
 const STATUS_CONFIG: Record<
   PostStatus,
@@ -374,7 +303,8 @@ function PostCard({
 
 export default function PostsManagePage() {
   const router = useRouter();
-  const [posts, setPosts] = useState<Post[]>(DUMMY_POSTS);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [postsLoading, setPostsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabId>("all");
   const [sort, setSort] = useState<SortType>("latest");
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
@@ -407,7 +337,8 @@ export default function PostsManagePage() {
         if ("data" in result && result.data) {
           setPosts((result.data as RequestRow[]).map(toPost));
         }
-      });
+      })
+      .finally(() => setPostsLoading(false));
   }, []);
 
   const scrollTabs = (dir: "left" | "right") => {
@@ -574,7 +505,9 @@ export default function PostsManagePage() {
 
         {/* 게시글 목록 */}
         <div className="flex flex-col gap-3">
-          {sorted.length === 0 ? (
+          {postsLoading ? (
+            <div className="py-20 text-center text-gray-400 text-sm">불러오는 중...</div>
+          ) : sorted.length === 0 ? (
             <div className="py-20 text-center text-gray-400 text-sm">
               게시글이 없습니다.
             </div>

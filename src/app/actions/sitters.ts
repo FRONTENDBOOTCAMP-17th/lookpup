@@ -207,3 +207,123 @@ export async function updateSitter(id: string, input: Partial<Omit<SitterInput, 
 
   return { data };
 }
+
+export async function getMySitterProfile() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
+  }
+
+  const db = createServiceClient();
+
+  const { data, error } = await db
+    .from("sitters")
+    .select("id, available_area, career, introduction, rating, latitude, longitude, request_type, available_animals, activity_photo_urls, services(service_type, is_active)")
+    .eq("user_id", user.id)
+    .single();
+
+  if (error || !data) {
+    return { error: { code: "NOT_FOUND", message: "시터 프로필이 없습니다." } };
+  }
+
+  const { count: reviewCount } = await db
+    .from("reviews")
+    .select("id", { count: "exact", head: true })
+    .eq("sitter_id", data.id);
+
+  return {
+    data: {
+      id: data.id,
+      availableArea: data.available_area ?? "",
+      career: data.career ?? null,
+      introduction: data.introduction ?? null,
+      rating: data.rating ?? 0,
+      services: (data.services as { service_type: string; is_active: boolean }[])
+        .filter((s) => s.is_active)
+        .map((s) => s.service_type),
+      reviewCount: reviewCount ?? 0,
+      requestType: (data.request_type as string[]) ?? [],
+      availableAnimals: (data.available_animals as string[]) ?? [],
+      activityPhotoUrls: (data.activity_photo_urls as string[]) ?? [],
+      latitude: data.latitude ?? null,
+      longitude: data.longitude ?? null,
+    },
+  };
+}
+
+interface UpdateSitterProfileInput {
+  availableArea: string;
+  introduction: string;
+  career: string;
+  availableAnimals: string[];
+  activityPhotoUrls: string[];
+  services: {
+    id?: string;
+    title: string;
+    price: number;
+    description: string;
+  }[];
+  deletedServiceIds: string[];
+}
+
+export async function updateSitterProfile(input: UpdateSitterProfileInput) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
+  }
+
+  const db = createServiceClient();
+
+  const { data: sitter, error: sitterFetchError } = await db
+    .from("sitters")
+    .select("id")
+    .eq("user_id", user.id)
+    .single();
+
+  if (sitterFetchError || !sitter) {
+    return { error: { code: "NOT_FOUND", message: "시터 프로필을 찾을 수 없습니다." } };
+  }
+
+  const { error: updateError } = await db
+    .from("sitters")
+    .update({
+      available_area: input.availableArea,
+      introduction: input.introduction,
+      career: input.career,
+      available_animals: input.availableAnimals,
+      activity_photo_urls: input.activityPhotoUrls,
+    })
+    .eq("id", sitter.id);
+
+  if (updateError) {
+    return { error: { code: "INTERNAL_ERROR", message: updateError.message } };
+  }
+
+  if (input.deletedServiceIds.length > 0) {
+    await db.from("services").delete().in("id", input.deletedServiceIds);
+  }
+
+  for (const service of input.services) {
+    if (service.id) {
+      await db.from("services").update({
+        title: service.title,
+        price: service.price,
+        description: service.description,
+      }).eq("id", service.id);
+    } else {
+      await db.from("services").insert({
+        sitter_id: sitter.id,
+        title: service.title,
+        price: service.price,
+        description: service.description,
+        is_active: true,
+      });
+    }
+  }
+
+  return { data: { updated: true } };
+}

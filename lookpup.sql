@@ -12,6 +12,7 @@ Table users {
   profile_image text [note: "프로필 이미지"]
   role text [not null, default: "owner", note: "owner / both / admin"]
   
+  delete_reason text [note: "탈퇴 사유"]
   deleted_at timestamptz [note: "탈퇴 일시 (소프트 삭제)"]
   created_at timestamptz [default: `now()` ]
   updated_at timestamptz [default: `now()` ]
@@ -84,6 +85,8 @@ Table requests {
   latitude numeric
   longitude numeric
   status text [not null, default: "open", note: "open / matched / completed / canceled"] // 오타 수정
+  sitter_conditions text[] [not null, default: `'{}'`, note: "펫시터 조건 배열: require_badge(인증 펫시터) / prefer_female(여성 선호) / require_certificate(자격증 보유) / no_smoker(흡연자 제외)"]
+  view_count int [not null, default: 0, note: "조회수"]
   created_at timestamptz [default: `now()` ]
   updated_at timestamptz [default: `now()` ]
 

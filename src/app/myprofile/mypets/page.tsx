@@ -50,11 +50,15 @@ function toPet(r: PetRow): Pet {
   return {
     id: r.id,
     name: r.name,
-    animal_type: (["dog", "cat"].includes(r.animal_type) ? r.animal_type : "other") as AnimalType,
+    animal_type: (["dog", "cat"].includes(r.animal_type)
+      ? r.animal_type
+      : "other") as AnimalType,
     breed: r.breed,
     age: r.age,
     weight: r.weight,
-    gender: (["MALE", "FEMALE", "MALE_NEUTERED", "FEMALE_NEUTERED"].includes(r.gender)
+    gender: (["MALE", "FEMALE", "MALE_NEUTERED", "FEMALE_NEUTERED"].includes(
+      r.gender,
+    )
       ? r.gender
       : "MALE") as Gender,
     caution: r.caution,
@@ -68,48 +72,14 @@ const ANIMAL_TYPE_LABEL: Record<AnimalType, string> = {
   other: "기타",
 };
 
-const ANIMAL_VISUAL: Record<AnimalType, { emoji: string; bgFrom: string; bgTo: string }> = {
+const ANIMAL_VISUAL: Record<
+  AnimalType,
+  { emoji: string; bgFrom: string; bgTo: string }
+> = {
   dog: { emoji: "🐶", bgFrom: "#FDE8C4", bgTo: "#FAD7A0" },
   cat: { emoji: "🐱", bgFrom: "#D6EAF8", bgTo: "#AED6F1" },
   other: { emoji: "🐾", bgFrom: "#D5F5E3", bgTo: "#A9DFBF" },
 };
-
-// 실데이터 없을 때(비로그인 또는 등록 전) 보여줄 더미. id가 dummy- 접두사라 실제 DB row와 안 겹침.
-const DUMMY_PETS: Pet[] = [
-  {
-    id: "dummy-1",
-    name: "몽이",
-    animal_type: "dog",
-    breed: "골든 리트리버",
-    age: 2,
-    weight: 15.2,
-    gender: "MALE",
-    caution: "사람을 좋아하고 활발해요!",
-    image_url: null,
-  },
-  {
-    id: "dummy-2",
-    name: "나비",
-    animal_type: "cat",
-    breed: "코리안 숏헤어",
-    age: 5,
-    weight: 3.8,
-    gender: "FEMALE",
-    caution: "조용하고 독립적이에요.",
-    image_url: null,
-  },
-  {
-    id: "dummy-3",
-    name: "코코",
-    animal_type: "dog",
-    breed: "말티즈",
-    age: 4,
-    weight: 3.2,
-    gender: "MALE_NEUTERED",
-    caution: "분리불안이 있어요. 주의해주세요.",
-    image_url: null,
-  },
-];
 
 const GENDER_LABEL: Record<Gender, string> = {
   MALE: "수컷",
@@ -196,7 +166,9 @@ function DeleteModal({
             </div>
             <div className="text-left">
               <p className="font-semibold text-[#281A0E]">{pet.name}</p>
-              <p className="text-sm text-[#6B7280]">{pet.breed ?? "품종 미입력"}</p>
+              <p className="text-sm text-[#6B7280]">
+                {pet.breed ?? "품종 미입력"}
+              </p>
             </div>
           </div>
 
@@ -250,9 +222,7 @@ function BulkDeleteModal({
               🐾
             </div>
             <div className="text-left">
-              <p className="font-semibold text-[#281A0E]">
-                {count}마리 선택됨
-              </p>
+              <p className="font-semibold text-[#281A0E]">{count}마리 선택됨</p>
               <p className="text-sm text-[#6B7280]">
                 선택된 반려동물이 모두 삭제됩니다
               </p>
@@ -387,7 +357,9 @@ function EditModal({
   const [name, setName] = useState(pet.name);
   const [breed, setBreed] = useState(pet.breed ?? "");
   const [age, setAge] = useState(pet.age != null ? String(pet.age) : "");
-  const [weight, setWeight] = useState(pet.weight != null ? String(pet.weight) : "");
+  const [weight, setWeight] = useState(
+    pet.weight != null ? String(pet.weight) : "",
+  );
   const [sex, setSex] = useState<"MALE" | "FEMALE">(genderSex(pet.gender));
   const [neutered, setNeutered] = useState(isNeutered(pet.gender));
   const [caution, setCaution] = useState(pet.caution ?? "");
@@ -545,7 +517,9 @@ function EditModal({
               >
                 <span
                   className={`size-4 rounded-sm border flex items-center justify-center ${
-                    neutered ? "bg-[#E8742A] border-[#E8742A]" : "border-[#D1D5DB]"
+                    neutered
+                      ? "bg-[#E8742A] border-[#E8742A]"
+                      : "border-[#D1D5DB]"
                   }`}
                 >
                   {neutered && <Check size={11} className="text-white" />}
@@ -649,9 +623,15 @@ function PetCard({
       >
         {pet.image_url ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={pet.image_url} alt={pet.name} className="w-full h-full object-cover" />
+          <img
+            src={pet.image_url}
+            alt={pet.name}
+            className="w-full h-full object-cover"
+          />
         ) : (
-          <span className="text-6xl leading-none">{ANIMAL_VISUAL[pet.animal_type].emoji}</span>
+          <span className="text-6xl leading-none">
+            {ANIMAL_VISUAL[pet.animal_type].emoji}
+          </span>
         )}
         <div className="absolute top-3 left-3 bg-white/90 px-2.5 py-1 rounded-full border border-[#FFE9D6]">
           <span className="text-xs font-semibold text-[#E8742A]">
@@ -674,9 +654,12 @@ function PetCard({
       {/* 정보 */}
       <div className="p-5">
         <h3 className="font-bold text-[#281A0E] mb-0.5">{pet.name}</h3>
-        <p className="text-sm text-[#6B7280] mb-1">{pet.breed ?? "품종 미입력"}</p>
+        <p className="text-sm text-[#6B7280] mb-1">
+          {pet.breed ?? "품종 미입력"}
+        </p>
         <p className="text-sm text-[#6B7280]">
-          {pet.age ?? "-"}살 · {pet.weight ?? "-"}kg · {GENDER_LABEL[pet.gender]}
+          {pet.age ?? "-"}살 · {pet.weight ?? "-"}kg ·{" "}
+          {GENDER_LABEL[pet.gender]}
         </p>
 
         {!isSelectionMode && (
@@ -747,7 +730,11 @@ function PetCardMobile({
         >
           {pet.image_url ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={pet.image_url} alt={pet.name} className="w-full h-full object-cover" />
+            <img
+              src={pet.image_url}
+              alt={pet.name}
+              className="w-full h-full object-cover"
+            />
           ) : (
             ANIMAL_VISUAL[pet.animal_type].emoji
           )}
@@ -764,19 +751,21 @@ function PetCardMobile({
           </div>
         )}
       </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-0.5">
-          <span className="font-bold text-[#281A0E]">{pet.name}</span>
-          <span className="text-xs px-2 py-0.5 bg-[#FFF8F3] border border-[#FFE9D6] rounded-full text-[#E8742A]">
-            {ANIMAL_TYPE_LABEL[pet.animal_type]}
-          </span>
+      <div className="flex-1 min-w-0 flex items-center gap-2">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-0.5">
+            <span className="font-bold text-[#281A0E]">{pet.name}</span>
+            <span className="text-xs px-2 py-0.5 bg-[#FFF8F3] border border-[#FFE9D6] rounded-full text-[#E8742A]">
+              {ANIMAL_TYPE_LABEL[pet.animal_type]}
+            </span>
+          </div>
+          <p className="text-sm text-[#6B7280]">{pet.breed ?? "품종 미입력"}</p>
+          <p className="text-xs text-[#6B7280] mt-0.5">
+            {pet.age ?? "-"}살 · {pet.weight ?? "-"}kg
+          </p>
         </div>
-        <p className="text-sm text-[#6B7280]">{pet.breed ?? "품종 미입력"}</p>
-        <p className="text-xs text-[#6B7280] mt-0.5">
-          {pet.age ?? "-"}살 · {pet.weight ?? "-"}kg
-        </p>
         {!isSelectionMode && (
-          <div className="flex gap-2 mt-3">
+          <div className="flex flex-col gap-1.5 shrink-0">
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -831,7 +820,7 @@ type ModalType = "delete" | "bulk-delete" | "success" | "edit" | "guide" | null;
 
 export default function MyPetsPage() {
   const router = useRouter();
-  const [pets, setPets] = useState<Pet[]>(DUMMY_PETS);
+  const [pets, setPets] = useState<Pet[] | null>(null);
   const [modal, setModal] = useState<ModalType>(null);
   const [targetPet, setTargetPet] = useState<Pet | null>(null);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -839,11 +828,19 @@ export default function MyPetsPage() {
 
   useEffect(() => {
     fetch("/api/pets")
-      .then((res) => res.json())
+      .then((res) => {
+        if (res.status === 401) {
+          setPets([]);
+          return null;
+        }
+        return res.json();
+      })
       .then((result) => {
-        // data.length > 0 조건: 비로그인/등록 전이면 더미 유지 (board 목록과 동일한 패턴)
-        if ("data" in result && result.data && result.data.length > 0) {
+        if (!result) return;
+        if ("data" in result && Array.isArray(result.data)) {
           setPets((result.data as PetRow[]).map(toPet));
+        } else {
+          setPets([]);
         }
       });
   }, []);
@@ -887,9 +884,15 @@ export default function MyPetsPage() {
   const handleBulkDelete = async () => {
     const results = await Promise.all(selectedIds.map((id) => deletePet(id)));
     const failedIds = selectedIds.filter((_, i) => results[i].error);
-    const failedMessages = results.filter((r) => r.error).map((r) => r.error!.message);
+    const failedMessages = results
+      .filter((r) => r.error)
+      .map((r) => r.error!.message);
 
-    setPets((prev) => prev.filter((p) => !selectedIds.includes(p.id) || failedIds.includes(p.id)));
+    setPets((prev) =>
+      prev.filter(
+        (p) => !selectedIds.includes(p.id) || failedIds.includes(p.id),
+      ),
+    );
     setSelectedIds([]);
     setIsSelectionMode(false);
     setModal(null);
@@ -943,7 +946,7 @@ export default function MyPetsPage() {
               <span className="flex-1 font-semibold text-[#281A0E]">
                 내 반려동물
               </span>
-              {pets.length > 0 && (
+              {pets !== null && pets.length > 0 && (
                 <button
                   onClick={enterSelectionMode}
                   className="h-9 px-3 rounded-xl border border-[#FFE9D6] text-[#6B7280] text-sm font-medium"
@@ -1004,7 +1007,7 @@ export default function MyPetsPage() {
               </>
             ) : (
               <>
-                {pets.length > 0 && (
+                {pets !== null && pets.length > 0 && (
                   <button
                     onClick={enterSelectionMode}
                     className="h-11 px-5 rounded-xl border border-[#FFE9D6] text-[#6B7280] font-medium hover:border-[#E8742A]/50 hover:text-[#E8742A] transition-colors text-sm"
@@ -1023,7 +1026,7 @@ export default function MyPetsPage() {
           </div>
         </div>
 
-        {pets.length === 0 ? (
+        {pets === null ? null : pets.length === 0 ? (
           <EmptyState onAdd={handleAddPet} />
         ) : (
           <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
@@ -1044,8 +1047,7 @@ export default function MyPetsPage() {
 
       {/* 모바일 콘텐츠 */}
       <div className="md:hidden px-4 pt-4 pb-28">
-
-        {pets.length === 0 ? (
+        {pets === null ? null : pets.length === 0 ? (
           <EmptyState onAdd={handleAddPet} />
         ) : (
           <div className="flex flex-col gap-3">
