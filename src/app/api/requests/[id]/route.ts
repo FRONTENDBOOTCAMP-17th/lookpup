@@ -15,7 +15,7 @@ export async function GET(
   const { data, error } = await db
     .from("requests")
     .select(
-      `*, users!owner_id(full_name, profile_image, is_verified), pets!pet_id(*), applications(*, sitters(id, users!user_id(full_name, profile_image)))`,
+      `*, users!owner_id(full_name, profile_image, is_verified, created_at), pets!pet_id(*), applications(*, sitters(id, users!user_id(full_name, profile_image)))`,
     )
     .eq("id", id)
     .single();

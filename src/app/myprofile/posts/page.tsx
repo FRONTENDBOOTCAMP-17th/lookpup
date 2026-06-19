@@ -84,6 +84,7 @@ function toPost(r: RequestRow): Post {
     location: r.location,
     price: r.budget,
     createdAt: formatRelativeTime(r.created_at),
+    createdAtRaw: r.created_at,
     applicantCount: r.status === "open" ? r.applications.length : undefined,
     sitterName: selected?.sitters?.users?.full_name ?? undefined,
   };
@@ -114,6 +115,7 @@ interface Post {
   location: string;
   price: number;
   createdAt: string;
+  createdAtRaw: string;
   applicantCount?: number;
   sitterName?: string;
 }
@@ -130,6 +132,7 @@ const DUMMY_POSTS: Post[] = [
     location: "마포구 상수동",
     price: 40000,
     createdAt: "2026.06.08",
+    createdAtRaw: "2026-06-08",
     applicantCount: 3,
   },
   {
@@ -143,6 +146,7 @@ const DUMMY_POSTS: Post[] = [
     location: "서대문구 연희동",
     price: 20000,
     createdAt: "2026.06.06",
+    createdAtRaw: "2026-06-06",
     sitterName: "박지수",
   },
   {
@@ -156,6 +160,7 @@ const DUMMY_POSTS: Post[] = [
     location: "용산구 이태원동",
     price: 120000,
     createdAt: "2026.06.03",
+    createdAtRaw: "2026-06-03",
     sitterName: "이서연",
   },
   {
@@ -169,6 +174,7 @@ const DUMMY_POSTS: Post[] = [
     location: "강남구 역삼동",
     price: 45000,
     createdAt: "2026.05.15",
+    createdAtRaw: "2026-05-15",
     sitterName: "최민정",
   },
   {
@@ -182,6 +188,7 @@ const DUMMY_POSTS: Post[] = [
     location: "성동구 성수동",
     price: 18000,
     createdAt: "2026.05.07",
+    createdAtRaw: "2026-05-07",
   },
 ];
 
@@ -427,7 +434,9 @@ export default function PostsManagePage() {
       ];
       return order.indexOf(a.status) - order.indexOf(b.status);
     }
-    return b.createdAt.localeCompare(a.createdAt);
+    return (
+      new Date(b.createdAtRaw).getTime() - new Date(a.createdAtRaw).getTime()
+    );
   });
 
   const confirmDelete = async () => {
