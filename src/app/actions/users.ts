@@ -30,7 +30,41 @@ export async function updateProfile(profileImage: string | null) {
   return { data };
 }
 
-export async function deleteUser() {
+export async function restoreUser() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
+  }
+
+  const db = createServiceClient();
+
+  const { data: userRow } = await db
+    .from("users")
+    .select("id, deleted_at")
+    .eq("id", user.id)
+    .single();
+
+  if (!userRow?.deleted_at) {
+    return { error: { code: "BAD_REQUEST", message: "탈퇴된 계정이 아닙니다." } };
+  }
+
+  const { error } = await db
+    .from("users")
+    .update({ deleted_at: null, delete_reason: null, is_verified: false })
+    .eq("id", user.id);
+
+  if (error) {
+    return { error: { code: "INTERNAL_ERROR", message: error.message } };
+  }
+
+  return { data: { restored: true } };
+}
+
+export async function deleteUser(reason?: string) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -62,7 +96,7 @@ export async function deleteUser() {
 
   const { error } = await db
     .from("users")
-    .update({ deleted_at: now })
+    .update({ deleted_at: now, delete_reason: reason ?? null, phone_number: null })
     .eq("id", user.id)
     .is("deleted_at", null);
 

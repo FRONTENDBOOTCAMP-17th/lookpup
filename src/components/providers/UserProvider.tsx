@@ -1,11 +1,20 @@
 "use client";
 
 import { useEffect } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { useUserStore } from "@/store/userStore";
 
 export default function UserProvider({ children }: { children: React.ReactNode }) {
-  const { setUser, clearUser } = useUserStore();
+  const router = useRouter();
+  const pathname = usePathname();
+  const { setUser, clearUser, setDeletedAccount, isDeletedAccount } = useUserStore();
+
+  useEffect(() => {
+    if (isDeletedAccount && pathname !== "/auth/restore") {
+      router.replace("/auth/restore");
+    }
+  }, [isDeletedAccount, pathname, router]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -13,22 +22,28 @@ export default function UserProvider({ children }: { children: React.ReactNode }
     const loadUser = async (userId: string) => {
       const { data } = await supabase
         .from("users")
-        .select("id, email, full_name, phone_number, is_verified, role")
+        .select("id, email, full_name, phone_number, is_verified, role, deleted_at")
         .eq("id", userId)
         .single();
 
-      if (data) {
-        setUser({
-          id: data.id,
-          email: data.email ?? "",
-          fullName: data.full_name ?? "",
-          phoneNumber: data.phone_number ?? "",
-          isVerified: data.is_verified ?? false,
-          role: data.role ?? "owner",
-        });
-      } else {
+      if (!data) {
         clearUser();
+        return;
       }
+
+      if (data.deleted_at) {
+        setDeletedAccount();
+        return;
+      }
+
+      setUser({
+        id: data.id,
+        email: data.email ?? "",
+        fullName: data.full_name ?? "",
+        phoneNumber: data.phone_number ?? "",
+        isVerified: data.is_verified ?? false,
+        role: data.role ?? "owner",
+      });
     };
 
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -45,7 +60,7 @@ export default function UserProvider({ children }: { children: React.ReactNode }
     });
 
     return () => subscription.unsubscribe();
-  }, [setUser, clearUser]);
+  }, [setUser, clearUser, setDeletedAccount]);
 
   return <>{children}</>;
 }
