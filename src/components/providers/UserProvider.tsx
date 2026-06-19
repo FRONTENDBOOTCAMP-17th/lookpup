@@ -22,7 +22,7 @@ export default function UserProvider({ children }: { children: React.ReactNode }
     const loadUser = async (userId: string) => {
       const { data } = await supabase
         .from("users")
-        .select("id, email, full_name, phone_number, is_verified, role, deleted_at")
+        .select("id, email, full_name, phone_number, profile_image, is_verified, role, deleted_at")
         .eq("id", userId)
         .single();
 
@@ -41,6 +41,7 @@ export default function UserProvider({ children }: { children: React.ReactNode }
         email: data.email ?? "",
         fullName: data.full_name ?? "",
         phoneNumber: data.phone_number ?? "",
+        profileImage: data.profile_image ?? null,
         isVerified: data.is_verified ?? false,
         role: data.role ?? "owner",
       });

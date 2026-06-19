@@ -261,7 +261,7 @@ export default function MyProfilePage() {
   const router = useRouter();
   const { user, isLoading } = useUserStore();
   const isSitter = user?.role === "both" || user?.role === "admin";
-
+  console.log(user);
   useEffect(() => {
     if (!isLoading && !user?.isVerified) {
       router.replace("/auth/verification");
@@ -291,7 +291,7 @@ export default function MyProfilePage() {
       {/* 모바일 프로필 */}
       <div className="md:hidden bg-linear-to-br from-orange-500 to-orange-300 rounded-b-3xl px-5 pt-8 pb-8 shrink-0">
         <div className="flex items-center gap-4 mb-6">
-          <AvatarMobile initial={user?.fullName?.charAt(0) ?? "?"} />
+          <AvatarMobile initial={user?.fullName?.charAt(0) ?? "?"} src={user?.profileImage} />
           <div className="flex-1">
             <h3 className="text-white font-semibold text-lg mb-1">
               {user?.fullName ?? ""}
@@ -331,6 +331,7 @@ export default function MyProfilePage() {
                 <div className="text-center pb-5 mb-4 border-b border-orange-100">
                   <Avatar
                     initial={user?.fullName?.charAt(0) ?? "?"}
+                    src={user?.profileImage}
                     size="xl"
                     className="mx-auto mb-3"
                   />
