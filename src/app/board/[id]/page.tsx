@@ -9,7 +9,6 @@ import {
   Clock,
   DollarSign,
   Send,
-  Star,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -17,6 +16,8 @@ import Avatar from "@/components/ui/Avatar";
 import SectionCard from "@/components/common/SectionCard";
 import { CustomModal } from "@/components/common/CustomModal";
 import BackButton from "@/components/common/BackButton";
+import KakaoMap from "@/components/KakaoMap";
+import { splitConditions } from "@/utils/boardConditions";
 
 const STATUS_MAP: Record<string, string> = {
   open: "모집중",
@@ -33,17 +34,29 @@ type Application = {
   status: string;
   sitters: { id: string; users: { full_name: string } | null } | null;
 };
+type OtherPost = {
+  id: string;
+  title: string;
+  location: string;
+  budget: number;
+  status: string;
+  created_at: string;
+};
+
 type RequestDetail = {
   id: string;
+  owner_id: string;
   title: string;
   content: string | null;
   start_datetime: string;
   end_datetime: string;
   budget: number;
   location: string;
+  latitude: number | null;
+  longitude: number | null;
   status: string;
   created_at: string;
-  users: { full_name: string; profile_image: string | null; is_verified: boolean } | null;
+  users: { full_name: string; profile_image: string | null; is_verified: boolean; created_at: string } | null;
   pets: Pet | null;
   applications: Application[];
 };
@@ -51,7 +64,34 @@ type RequestDetail = {
 function formatPeriod(start: string, end: string) {
   const s = new Date(start);
   const e = new Date(end);
-  return `${s.getMonth() + 1}월 ${s.getDate()}일 - ${e.getMonth() + 1}월 ${e.getDate()}일`;
+  const sStr = `${s.getMonth() + 1}월 ${s.getDate()}일`;
+  const sameDay =
+    s.getFullYear() === e.getFullYear() &&
+    s.getMonth() === e.getMonth() &&
+    s.getDate() === e.getDate();
+  if (sameDay) return `${sStr} (당일)`;
+  return `${sStr} - ${e.getMonth() + 1}월 ${e.getDate()}일`;
+}
+
+function formatClock(d: Date) {
+  const h = d.getHours();
+  const m = d.getMinutes();
+  const ampm = h < 12 ? "오전" : "오후";
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${ampm} ${h12}:${String(m).padStart(2, "0")}`;
+}
+
+// 입력한 시간만 표시. 입력창은 분 단위라 사용자 입력 시간은 초=0,
+// 미입력 시 저장 마커는 초=30 → 초로 미입력 여부를 구분.
+function formatTimeRange(start: string, end: string) {
+  const s = new Date(start);
+  const e = new Date(end);
+  const startSet = s.getSeconds() !== 30;
+  const endSet = e.getSeconds() !== 30;
+  if (startSet && endSet) return `${formatClock(s)} - ${formatClock(e)}`;
+  if (startSet) return formatClock(s);
+  if (endSet) return formatClock(e);
+  return "시간 협의";
 }
 
 function formatRelativeTime(dateStr: string) {
@@ -59,6 +99,24 @@ function formatRelativeTime(dateStr: string) {
   if (diffH < 1) return "방금 전";
   if (diffH < 24) return `${diffH}시간 전`;
   return `${Math.floor(diffH / 24)}일 전`;
+}
+
+// 주소를 자치구(구) 단위까지만 표시 (동/상세주소 제거). 구가 없으면 시/군까지.
+function toDistrict(location: string): string {
+  const parts = location.trim().split(/\s+/);
+  let guIdx = -1;
+  for (let i = 0; i < parts.length; i++) {
+    if (/구$/.test(parts[i])) guIdx = i;
+  }
+  if (guIdx >= 0) return parts.slice(0, guIdx + 1).join(" ");
+  const siGunIdx = parts.findIndex((p, i) => i > 0 && /[시군]$/.test(p));
+  if (siGunIdx >= 0) return parts.slice(0, siGunIdx + 1).join(" ");
+  return parts.slice(0, 2).join(" ");
+}
+
+function formatJoinDate(dateStr: string) {
+  const d = new Date(dateStr);
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
 }
 
 // 더미 데이터 : 뭘눌러도 이것만 나와요 우하하~~~
@@ -170,6 +228,7 @@ export default function BoardDetailPage() {
   const [comment, setComment] = useState("");
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [post, setPost] = useState<RequestDetail | null>(null);
+  const [otherPosts, setOtherPosts] = useState<OtherPost[] | null>(null);
 
   useEffect(() => {
     fetch(`/api/requests/${id}`)
@@ -180,6 +239,25 @@ export default function BoardDetailPage() {
         }
       });
   }, [id]);
+
+  useEffect(() => {
+    if (!post?.owner_id) return;
+    fetch(`/api/requests?owner_id=${post.owner_id}`)
+      .then((res) => res.json())
+      .then((result) => {
+        if ("data" in result && result.data) {
+          setOtherPosts(
+            (result.data as OtherPost[])
+              .filter((p) => p.id !== post.id)
+              .slice(0, 3),
+          );
+        }
+      });
+  }, [post?.owner_id, post?.id]);
+
+  // content에 함께 저장된 펫시터 조건을 본문/조건으로 분리
+  const parsed = post ? splitConditions(post.content ?? "") : null;
+  const conditionsText = parsed?.conditions.trim() ?? "";
 
   return (
     <>
@@ -195,9 +273,26 @@ export default function BoardDetailPage() {
 
               {/* 게시글 헤더 카드 */}
               <SectionCard className="overflow-hidden p-0 gap-0">
-                {/* 썸네일 */}
-                <div className="h-64 bg-linear-to-br from-orange-50 to-orange-100 flex items-center justify-center">
-                  <span className="text-7xl opacity-30">🐾</span>
+                {/* 위치 지도 */}
+                <div className="h-64 bg-orange-50">
+                  {post?.latitude && post?.longitude ? (
+                    <KakaoMap
+                      markers={[
+                        {
+                          id: post.id,
+                          lat: post.latitude,
+                          lng: post.longitude,
+                          name: post.title,
+                        },
+                      ]}
+                      center={{ lat: post.latitude, lng: post.longitude }}
+                      level={5}
+                    />
+                  ) : (
+                    <div className="h-full flex items-center justify-center">
+                      <span className="text-7xl opacity-30">🐾</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="p-6 flex flex-col gap-4">
@@ -243,7 +338,12 @@ export default function BoardDetailPage() {
                       <div>
                         <p className="text-gray-500 text-xs">시간</p>
                         <p className="text-stone-900 text-base font-medium">
-                          {POST.time}
+                          {post
+                            ? formatTimeRange(
+                                post.start_datetime,
+                                post.end_datetime,
+                              )
+                            : POST.time}
                         </p>
                       </div>
                     </div>
@@ -282,22 +382,33 @@ export default function BoardDetailPage() {
               <SectionCard>
                 <h2 className="text-stone-900 text-xl font-bold">상세 내용</h2>
                 <p className="text-stone-900 text-base leading-7 whitespace-pre-line">
-                  {post?.content ?? POST.description}
+                  {parsed ? parsed.content : POST.description}
                 </p>
               </SectionCard>
 
-              {/* 요구사항 */}
-              <SectionCard>
-                <h2 className="text-stone-900 text-xl font-bold">요구사항</h2>
-                <ul className="flex flex-col gap-3">
-                  {POST.requirements.map((req) => (
-                    <li key={req} className="flex items-start gap-3">
-                      <span className="w-1.5 h-1.5 bg-orange-500 rounded-full mt-2.5 shrink-0" />
-                      <span className="text-stone-900 text-base">{req}</span>
-                    </li>
-                  ))}
-                </ul>
-              </SectionCard>
+              {/* 펫시터 조건 — 실데이터(content에서 분리)가 있으면 표시, 없으면 더미 fallback */}
+              {conditionsText ? (
+                <SectionCard>
+                  <h2 className="text-stone-900 text-xl font-bold">펫시터 조건</h2>
+                  <p className="text-stone-900 text-base leading-7 whitespace-pre-line">
+                    {conditionsText}
+                  </p>
+                </SectionCard>
+              ) : (
+                !post && (
+                  <SectionCard>
+                    <h2 className="text-stone-900 text-xl font-bold">요구사항</h2>
+                    <ul className="flex flex-col gap-3">
+                      {POST.requirements.map((req) => (
+                        <li key={req} className="flex items-start gap-3">
+                          <span className="w-1.5 h-1.5 bg-orange-500 rounded-full mt-2.5 shrink-0" />
+                          <span className="text-stone-900 text-base">{req}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </SectionCard>
+                )
+              )}
 
               {/* 반려동물 */}
               {post && post.pets && (
@@ -430,24 +541,23 @@ export default function BoardDetailPage() {
                         </span>
                       )}
                     </div>
+                    {/*
+                      작성자 동네: users 테이블에 주소/지역 컬럼이 없어 실연동 불가.
+                      임시로 작성자가 등록한 글의 주소(post.location)를 표시.
+                      → 처음 등록한 글 주소 기준으로 구현해 둠.
+                      추후 users에 region/address 컬럼 추가되면 그 값으로 교체 필요.
+                    */}
                     <div className="flex items-center gap-1 mb-1">
-                      <MapPin className="w-3.5 h-3.5 text-gray-400" />
+                      <MapPin className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                       <span className="text-gray-500 text-sm">
-                        {POST.author.district}
+                        {post?.location
+                          ? toDistrict(post.location)
+                          : POST.author.district}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-1">
-                        <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                        <span className="text-stone-900 text-sm font-bold">
-                          {POST.author.rating}
-                        </span>
-                        <span className="text-gray-500 text-xs">
-                          ({POST.author.reviews})
-                        </span>
-                      </div>
                       <span className="text-gray-500 text-xs">
-                        가입 {POST.author.joinDate}
+                        가입 {post?.users?.created_at ? formatJoinDate(post.users.created_at) : POST.author.joinDate}
                       </span>
                     </div>
                   </div>
@@ -468,40 +578,65 @@ export default function BoardDetailPage() {
                   </Link>
                 </div>
                 <div className="flex flex-col gap-3">
-                  {SIMILAR_POSTS.map((p) => (
-                    <Link key={p.id} href={`/board/${p.id}`}>
-                      <div className="p-3 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors cursor-pointer">
-                        <div className="flex items-start justify-between mb-1">
-                          <p className="text-stone-900 text-sm font-medium flex-1 truncate pr-2">
-                            {p.title}
-                          </p>
-                          <span
-                            className={`shrink-0 px-2 py-0.5 rounded text-[9px] font-medium ${
-                              p.status === "모집중"
-                                ? "bg-emerald-50 text-emerald-500"
-                                : "bg-orange-50 text-orange-500"
-                            }`}
-                          >
-                            {p.status}
-                          </span>
+                  {otherPosts !== null && otherPosts.length === 0 ? (
+                    <p className="text-gray-400 text-sm py-3 text-center">
+                      다른 게시물이 없습니다.
+                    </p>
+                  ) : (
+                    (otherPosts === null
+                      ? SIMILAR_POSTS.map((p) => ({
+                          id: String(p.id),
+                          title: p.title,
+                          district: p.district,
+                          price: p.price,
+                          createdAt: p.createdAt,
+                          status: p.status,
+                        }))
+                      : otherPosts.map((p) => ({
+                          id: p.id,
+                          title: p.title,
+                          district: p.location,
+                          price: p.budget
+                            ? `${p.budget.toLocaleString("ko-KR")}원`
+                            : "협의 가능",
+                          createdAt: formatRelativeTime(p.created_at),
+                          status: STATUS_MAP[p.status] ?? p.status,
+                        }))
+                    ).map((p) => (
+                      <Link key={p.id} href={`/board/${p.id}`}>
+                        <div className="p-3 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors cursor-pointer">
+                          <div className="flex items-start justify-between mb-1">
+                            <p className="text-stone-900 text-sm font-medium flex-1 truncate pr-2">
+                              {p.title}
+                            </p>
+                            <span
+                              className={`shrink-0 px-2 py-0.5 rounded text-[9px] font-medium ${
+                                p.status === "모집중"
+                                  ? "bg-emerald-50 text-emerald-500"
+                                  : "bg-orange-50 text-orange-500"
+                              }`}
+                            >
+                              {p.status}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1 mb-1">
+                            <MapPin className="w-3 h-3 text-gray-400" />
+                            <span className="text-gray-500 text-xs">
+                              {p.district}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-orange-500 text-xs font-semibold">
+                              {p.price}
+                            </span>
+                            <span className="text-gray-500 text-xs">
+                              {p.createdAt}
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1 mb-1">
-                          <MapPin className="w-3 h-3 text-gray-400" />
-                          <span className="text-gray-500 text-xs">
-                            {p.district}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-orange-500 text-xs font-semibold">
-                            {p.price}
-                          </span>
-                          <span className="text-gray-500 text-xs">
-                            {p.createdAt}
-                          </span>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
+                      </Link>
+                    ))
+                  )}
                 </div>
               </SectionCard>
             </div>

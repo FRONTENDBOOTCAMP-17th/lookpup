@@ -84,6 +84,7 @@ function toPost(r: RequestRow): Post {
     location: r.location,
     price: r.budget,
     createdAt: formatRelativeTime(r.created_at),
+    createdAtRaw: r.created_at,
     applicantCount: r.status === "open" ? r.applications.length : undefined,
     sitterName: selected?.sitters?.users?.full_name ?? undefined,
   };
@@ -114,6 +115,7 @@ interface Post {
   location: string;
   price: number;
   createdAt: string;
+  createdAtRaw: string;
   applicantCount?: number;
   sitterName?: string;
 }
@@ -363,7 +365,9 @@ export default function PostsManagePage() {
       ];
       return order.indexOf(a.status) - order.indexOf(b.status);
     }
-    return b.createdAt.localeCompare(a.createdAt);
+    return (
+      new Date(b.createdAtRaw).getTime() - new Date(a.createdAtRaw).getTime()
+    );
   });
 
   const confirmDelete = async () => {

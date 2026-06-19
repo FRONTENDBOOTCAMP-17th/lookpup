@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
   const mine = searchParams.get("mine") === "true";
   const status = searchParams.get("status");
   const requestType = searchParams.get("request_type");
+  const ownerId = searchParams.get("owner_id");
 
   const db = createServiceClient();
 
@@ -56,6 +57,7 @@ export async function GET(request: NextRequest) {
 
   if (status) query = query.eq("status", status);
   if (requestType) query = query.eq("request_type", requestType);
+  if (ownerId) query = query.eq("owner_id", ownerId);
 
   const { data, error } = await query;
 

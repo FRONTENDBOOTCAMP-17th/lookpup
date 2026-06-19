@@ -7,6 +7,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import SearchFilterBar from "@/components/common/SearchFilterBar";
 import Pill from "@/components/ui/Pill";
+import { useUserStore } from "@/store/userStore";
 
 const CATEGORIES = ["전체", "방문돌봄", "위탁돌봄", "산책", "펫호텔", "픽업"];
 
@@ -50,7 +51,13 @@ type RequestRow = {
 function formatPeriod(start: string, end: string) {
   const s = new Date(start);
   const e = new Date(end);
-  return `${s.getMonth() + 1}월 ${s.getDate()}일 - ${e.getMonth() + 1}월 ${e.getDate()}일`;
+  const sStr = `${s.getMonth() + 1}월 ${s.getDate()}일`;
+  const sameDay =
+    s.getFullYear() === e.getFullYear() &&
+    s.getMonth() === e.getMonth() &&
+    s.getDate() === e.getDate();
+  if (sameDay) return `${sStr} (당일)`;
+  return `${sStr} - ${e.getMonth() + 1}월 ${e.getDate()}일`;
 }
 
 function formatRelativeTime(dateStr: string) {
@@ -173,6 +180,7 @@ function PostCard({ post }: { post: Post }) {
 //페이지
 
 export default function BoardPage() {
+  const { isLoggedIn } = useUserStore();
   const [activeCategory, setActiveCategory] = useState("전체");
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -249,7 +257,14 @@ export default function BoardPage() {
             </div>
             <Link
               href="/board/write"
-              className="h-12 px-6 bg-orange-500 hover:bg-orange-600 text-white text-base font-semibold rounded-[10px] flex items-center transition-colors"
+              aria-disabled={!isLoggedIn}
+              tabIndex={isLoggedIn ? undefined : -1}
+              title={isLoggedIn ? undefined : "로그인 후 작성할 수 있어요"}
+              className={`h-12 px-6 bg-orange-500 text-white text-base font-semibold rounded-[10px] flex items-center transition-all ${
+                isLoggedIn
+                  ? "hover:bg-orange-600"
+                  : "opacity-40 pointer-events-none cursor-not-allowed"
+              }`}
             >
               글쓰기
             </Link>

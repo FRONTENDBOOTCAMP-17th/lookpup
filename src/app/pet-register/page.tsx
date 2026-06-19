@@ -28,13 +28,11 @@ export default function PetRegisterPage() {
 
   const handlePhotoAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files) return;
-    const remaining = 5 - photos.length;
-    const newEntries = Array.from(files).slice(0, remaining).map((file) => {
-      const url = URL.createObjectURL(file);
-      return { url, blob: url, file };
-    });
-    setPhotos((prev) => [...prev, ...newEntries]);
+    if (!files || !files[0]) return;
+    photos.forEach((p) => URL.revokeObjectURL(p.blob));
+    const file = files[0];
+    const url = URL.createObjectURL(file);
+    setPhotos([{ url, blob: url, file }]);
     e.target.value = "";
   };
 
@@ -145,7 +143,7 @@ export default function PetRegisterPage() {
                     </button>
                   </div>
                 ))}
-                {photos.length < 5 && (
+                {photos.length < 1 && (
                   <button
                     onClick={() => fileInputRef.current?.click()}
                     style={{ width: "128px", height: "128px", minWidth: "128px" }}
@@ -159,12 +157,10 @@ export default function PetRegisterPage() {
                   ref={fileInputRef}
                   type="file"
                   accept="image/*"
-                  multiple
                   className="hidden"
                   onChange={handlePhotoAdd}
                 />
               </div>
-              <p className="pt-2 text-gray-500 text-xs font-normal leading-4">최대 5장까지 업로드 가능</p>
             </section>
 
             {/* Pet Type */}
