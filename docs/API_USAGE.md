@@ -232,6 +232,7 @@ await deleteRequest("request-uuid"); // status === 'open'일 때만 가능
   id: "...",
   title: "...",
   pet_ids: ["pet-uuid-1", "pet-uuid-2"],
+  view_count: 0,  // 조회수 (기본값 0)
   ...
 }
 ```
