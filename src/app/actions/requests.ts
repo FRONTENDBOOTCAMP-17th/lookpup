@@ -3,17 +3,20 @@
 import { createClient } from "@/utils/supabase/server";
 import { createServiceClient } from "@/utils/supabase/service";
 
+type SitterCondition = "require_badge" | "prefer_female" | "require_certificate" | "no_smoker";
+
 interface RequestInput {
   pet_ids: string[];
   title: string;
   content?: string | null;
-  request_type: "walk" | "care" | "hotel" | "pickup" | "foster" | "other";
+  request_type: "visit" | "foster" | "walk" | "hotel";
   start_datetime: string;
   end_datetime: string;
   budget: number;
   location: string;
   latitude: number;
   longitude: number;
+  sitter_conditions?: SitterCondition[];
 }
 
 async function getAuthUser() {
@@ -59,6 +62,18 @@ export async function createRequest(input: RequestInput) {
   if (input.budget < 0) {
     return {
       error: { code: "VALIDATION_ERROR", message: "예산은 0 이상이어야 합니다." },
+    };
+  }
+
+  const validConditions: SitterCondition[] = [
+    "require_badge",
+    "prefer_female",
+    "require_certificate",
+    "no_smoker",
+  ];
+  if (input.sitter_conditions?.some((c) => !validConditions.includes(c))) {
+    return {
+      error: { code: "VALIDATION_ERROR", message: "유효하지 않은 펫시터 조건입니다." },
     };
   }
 
