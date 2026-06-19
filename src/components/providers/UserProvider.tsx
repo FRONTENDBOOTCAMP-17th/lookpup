@@ -4,11 +4,12 @@ import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { useUserStore } from "@/store/userStore";
+import { getMySitterProfile } from "@/app/actions/sitters";
 
 export default function UserProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { setUser, clearUser, setDeletedAccount, isDeletedAccount } = useUserStore();
+  const { setUser, setSitter, clearUser, setDeletedAccount, isDeletedAccount } = useUserStore();
 
   useEffect(() => {
     if (isDeletedAccount && pathname !== "/auth/restore") {
@@ -45,6 +46,13 @@ export default function UserProvider({ children }: { children: React.ReactNode }
         isVerified: data.is_verified ?? false,
         role: data.role ?? "owner",
       });
+
+      if (data.role === "both" || data.role === "admin") {
+        const result = await getMySitterProfile();
+        if ("data" in result && result.data) {
+          setSitter(result.data);
+        }
+      }
     };
 
     supabase.auth.getUser().then(({ data: { user } }) => {
