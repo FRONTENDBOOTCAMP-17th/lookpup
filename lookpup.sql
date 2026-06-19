@@ -18,7 +18,7 @@ Table users {
 }
 
 Table pets {
-  id uuid [pk, note: "반려동물 ID"]
+  id uuid [pk, default: `gen_random_uuid()`, note: "반려동물 ID"]
   owner_id uuid [not null, ref: > users.id]
   name text [not null]
   animal_type text [not null, note: "dog / cat / other"]
@@ -34,7 +34,7 @@ Table pets {
 }
 
 Table sitters {
-  id uuid [pk, note: "펫시터 ID"]
+  id uuid [pk, default: `gen_random_uuid()`, note: "펫시터 ID"]
   user_id uuid [not null, unique, ref: - users.id]
   title text
   introduction text
@@ -54,7 +54,7 @@ Table sitters {
 }
 
 Table services {
-  id uuid [pk, note: "서비스 ID"]
+  id uuid [pk, default: `gen_random_uuid()`, note: "서비스 ID"]
   sitter_id uuid [not null, ref: > sitters.id]
   title text [not null]
   description text
@@ -71,7 +71,7 @@ Table services {
 }
 
 Table requests {
-  id uuid [pk, note: "구인글 ID"]
+  id uuid [pk, default: `gen_random_uuid()`, note: "구인글 ID"]
   owner_id uuid [not null, ref: > users.id]
   pet_id uuid [ref: > pets.id]
   title text [not null]
@@ -91,7 +91,7 @@ Table requests {
 }
 
 Table applications {
-  id uuid [pk, note: "지원 ID"]
+  id uuid [pk, default: `gen_random_uuid()`, note: "지원 ID"]
   request_id uuid [not null, ref: > requests.id]
   sitter_id uuid [not null, ref: > sitters.id]
   message text
@@ -106,7 +106,7 @@ Table applications {
 }
 
 Table reservations {
-  id uuid [pk, note: "예약 ID"]
+  id uuid [pk, default: `gen_random_uuid()`, note: "예약 ID"]
   owner_id uuid [not null, ref: > users.id]
   sitter_id uuid [not null, ref: > sitters.id]
   service_id uuid [ref: > services.id]
@@ -132,7 +132,7 @@ Table reservations {
 }
 
 Table reservation_items {
-  id uuid [pk, note: "예약 아이템 ID"]
+  id uuid [pk, default: `gen_random_uuid()`, note: "예약 아이템 ID"]
   reservation_id uuid [not null, note: "예약서 ID"]
   pet_id uuid [not null, ref: > pets.id]
 
@@ -168,7 +168,7 @@ Table payments {
 }
 
 Table reviews {
-  id uuid [pk, note: "후기 ID"]
+  id uuid [pk, default: `gen_random_uuid()`, note: "후기 ID"]
   reservation_id uuid [not null, unique, ref: - reservations.id]
   owner_id uuid [not null, ref: > users.id]
   sitter_id uuid [not null, ref: > sitters.id]
@@ -180,7 +180,7 @@ Table reviews {
 }
 
 Table reports {
-  id uuid [pk, note: "신고 ID"]
+  id uuid [pk, default: `gen_random_uuid()`, note: "신고 ID"]
   reporter_id uuid [not null, ref: > users.id]
   target_type text [not null, note: "user / sitter / request / service / reservation / review / message"] 
   target_id uuid [not null]
@@ -197,7 +197,7 @@ Table reports {
 }
 
 Table notifications {
-  id uuid [pk, note: "알림 ID"]
+  id uuid [pk, default: `gen_random_uuid()`, note: "알림 ID"]
   user_id uuid [not null, ref: > users.id]
   type text [not null, note: "유연한 카테고리 확장을 위해 DB 제약 제외 -> 백엔드(TypeScript/Zod) 스키마 단에서 허용값 검증"] 
   title text [not null]
@@ -209,7 +209,7 @@ Table notifications {
 }
 
 Table chat_rooms {
-  id uuid [pk, note: "채팅방 ID"]
+  id uuid [pk, default: `gen_random_uuid()`, note: "채팅방 ID"]
   owner_id uuid [not null, ref: > users.id]
   sitter_id uuid [not null, ref: > sitters.id]
   
@@ -227,7 +227,7 @@ Table chat_rooms {
 }
 
 Table messages {
-  id uuid [pk, note: "메시지 ID"]
+  id uuid [pk, default: `gen_random_uuid()`, note: "메시지 ID"]
   room_id uuid [not null, note: "채팅방 ID"] 
   sender_id uuid [not null, ref: > users.id]
   content text [not null]

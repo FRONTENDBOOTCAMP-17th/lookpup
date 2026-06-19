@@ -10,6 +10,9 @@ interface ServiceInput {
   description?: string | null;
 }
 
+type RequestType = "visit" | "foster" | "walk" | "hotel";
+type AnimalType = "small_dog" | "medium_dog" | "large_dog" | "cat";
+
 interface SitterInput {
   title?: string | null;
   introduction: string;
@@ -18,6 +21,11 @@ interface SitterInput {
   latitude: number;
   longitude: number;
   base_price: number;
+  request_type?: RequestType[];
+  available_animals?: AnimalType[];
+  certificate_urls?: string[];
+  activity_photo_urls?: string[];
+  profile_photo_url?: string;
   services: ServiceInput[];
 }
 
@@ -55,15 +63,32 @@ export async function createSitter(input: SitterInput) {
     };
   }
 
-  if (
-    !input.services ||
-    input.services.some((s) => s.price < 1000)
-  ) {
+  if (input.services && input.services.some((s) => s.price < 1000)) {
     return {
       error: {
         code: "VALIDATION_ERROR",
         message: "서비스 가격은 1000원 이상이어야 합니다.",
       },
+    };
+  }
+
+  const validRequestTypes: RequestType[] = ["visit", "foster", "walk", "hotel"];
+  if (
+    input.request_type &&
+    input.request_type.some((t) => !validRequestTypes.includes(t))
+  ) {
+    return {
+      error: { code: "VALIDATION_ERROR", message: "유효하지 않은 서비스 유형입니다." },
+    };
+  }
+
+  const validAnimalTypes: AnimalType[] = ["small_dog", "medium_dog", "large_dog", "cat"];
+  if (
+    input.available_animals &&
+    input.available_animals.some((a) => !validAnimalTypes.includes(a))
+  ) {
+    return {
+      error: { code: "VALIDATION_ERROR", message: "유효하지 않은 동물 유형입니다." },
     };
   }
 
@@ -99,7 +124,7 @@ export async function createSitter(input: SitterInput) {
     };
   }
 
-  const { services, ...sitterFields } = input;
+  const { services, profile_photo_url, ...sitterFields } = input;
 
   const { data: sitter, error: sitterError } = await db
     .from("sitters")
@@ -121,6 +146,11 @@ export async function createSitter(input: SitterInput) {
       return { error: { code: "INTERNAL_ERROR", message: servicesError.message } };
     }
   }
+
+  // 프로필 사진 및 role 업데이트
+  const userUpdates: Record<string, unknown> = { role: "both" };
+  if (profile_photo_url) userUpdates.profile_image = profile_photo_url;
+  await db.from("users").update(userUpdates).eq("id", user.id);
 
   return { data: sitter };
 }

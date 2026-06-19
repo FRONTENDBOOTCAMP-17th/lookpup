@@ -1,9 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { Camera, Plus, Check, ChevronLeft, ChevronRight } from "lucide-react";
+import { useRouter } from "next/navigation";
+import {
+  Camera,
+  Plus,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  X,
+} from "lucide-react";
 import Header from "@/components/layout/Header";
 import { Progress } from "@/components/ui/progress";
+import { createSitter } from "@/app/actions/sitters";
+import { uploadToCloudinary } from "@/utils/cloudinary";
 
 const SERVICES = [
   { id: "visit", emoji: "🏠", title: "방문돌봄", desc: "보호자님 집에서 돌봄" },
@@ -70,15 +80,32 @@ function CheckboxCard({
 }
 
 export default function PetsitterRegisterPage() {
+  const router = useRouter();
   const [step, setStep] = useState(1);
 
-  const [name, setName] = useState("");
+  // Step 1
+  const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null);
+  const [profilePhotoPreview, setProfilePhotoPreview] = useState<string | null>(
+    null,
+  );
   const [region, setRegion] = useState("");
   const [intro, setIntro] = useState("");
   const [career, setCareer] = useState("");
 
+  // Step 2
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
+
+  // Step 3
   const [selectedAnimals, setSelectedAnimals] = useState<string[]>([]);
+  const [certificateFiles, setCertificateFiles] = useState<File[]>([]);
+  const [activityPhotoFiles, setActivityPhotoFiles] = useState<File[]>([]);
+  const [activityPhotoPreviews, setActivityPhotoPreviews] = useState<string[]>(
+    [],
+  );
+
+  // 제출 상태
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const toggleItem = (
     id: string,
@@ -86,6 +113,99 @@ export default function PetsitterRegisterPage() {
     setList: (v: string[]) => void,
   ) => {
     setList(list.includes(id) ? list.filter((s) => s !== id) : [...list, id]);
+  };
+
+  const handleProfilePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setProfilePhotoFile(file);
+    setProfilePhotoPreview(URL.createObjectURL(file));
+  };
+
+  const handleCertificates = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
+    setCertificateFiles((prev) => [...prev, ...files]);
+    e.target.value = "";
+  };
+
+  const removeCertificate = (index: number) => {
+    setCertificateFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleActivityPhotos = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
+    setActivityPhotoFiles((prev) => [...prev, ...files]);
+    setActivityPhotoPreviews((prev) => [
+      ...prev,
+      ...files.map((f) => URL.createObjectURL(f)),
+    ]);
+    e.target.value = "";
+  };
+
+  const removeActivityPhoto = (index: number) => {
+    setActivityPhotoFiles((prev) => prev.filter((_, i) => i !== index));
+    setActivityPhotoPreviews((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = async () => {
+    setSubmitError(null);
+    setIsSubmitting(true);
+
+    try {
+      // 프로필 사진 업로드
+      let profilePhotoUrl: string | undefined;
+      if (profilePhotoFile) {
+        profilePhotoUrl = await uploadToCloudinary(profilePhotoFile, "sitters/avatars");
+      }
+
+      // 자격증 업로드
+      const certificateUrls = await Promise.all(
+        certificateFiles.map((f) => uploadToCloudinary(f, "sitters/certificates")),
+      );
+
+      // 활동 사진 업로드
+      const activityPhotoUrls = await Promise.all(
+        activityPhotoFiles.map((f) => uploadToCloudinary(f, "sitters/activity-photos")),
+      );
+
+      const result = await createSitter({
+        introduction: intro,
+        career: career || null,
+        available_area: region,
+        latitude: 0,
+        longitude: 0,
+        base_price: 0,
+        request_type: selectedServices as (
+          | "visit"
+          | "foster"
+          | "walk"
+          | "hotel"
+        )[],
+        available_animals: selectedAnimals as (
+          | "small_dog"
+          | "medium_dog"
+          | "large_dog"
+          | "cat"
+        )[],
+        certificate_urls: certificateUrls,
+        activity_photo_urls: activityPhotoUrls,
+        profile_photo_url: profilePhotoUrl,
+        services: [],
+      });
+
+      if ("error" in result) {
+        setSubmitError(result.error?.message ?? "오류가 발생했습니다.");
+        return;
+      }
+
+      router.push("/myprofile");
+    } catch (e) {
+      setSubmitError((e as Error).message ?? "오류가 발생했습니다.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -125,16 +245,24 @@ export default function PetsitterRegisterPage() {
 
                 <div className="mt-6">
                   <label className={labelCls}>프로필 사진</label>
-                  <label className="mt-3 w-24 h-24 bg-[#fff8f3] rounded-full border border-[#ffe9d6] flex items-center justify-center hover:bg-orange-100 transition-colors cursor-pointer">
-                    <Camera className="w-7 h-7 text-gray-500" strokeWidth={2} />
+                  <label className="mt-3 w-24 h-24 bg-[#fff8f3] rounded-full border border-[#ffe9d6] flex items-center justify-center hover:bg-orange-100 transition-colors cursor-pointer overflow-hidden">
+                    {profilePhotoPreview ? (
+                      <img
+                        src={profilePhotoPreview}
+                        alt="프로필 미리보기"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Camera
+                        className="w-7 h-7 text-gray-500"
+                        strokeWidth={2}
+                      />
+                    )}
                     <input
                       type="file"
                       accept="image/*"
                       className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        // 업로드 처리
-                      }}
+                      onChange={handleProfilePhoto}
                     />
                   </label>
                 </div>
@@ -268,12 +396,31 @@ export default function PetsitterRegisterPage() {
                     accept="image/*,.pdf"
                     multiple
                     className="hidden"
-                    onChange={(e) => {
-                      const files = Array.from(e.target.files ?? []);
-                      // 업로드 처리
-                    }}
+                    onChange={handleCertificates}
                   />
                 </label>
+
+                {certificateFiles.length > 0 && (
+                  <ul className="mt-3 flex flex-col gap-2">
+                    {certificateFiles.map((file, i) => (
+                      <li
+                        key={i}
+                        className="flex items-center justify-between px-3 py-2 bg-orange-50 rounded-lg text-sm text-stone-700"
+                      >
+                        <span className="truncate max-w-[80%]">
+                          {file.name}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => removeCertificate(i)}
+                          className="text-gray-400 hover:text-red-400 shrink-0"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
 
                 <div className="pt-6">
                   <label className={`${labelCls} mb-3`}>돌봄 가능 동물</label>
@@ -298,17 +445,45 @@ export default function PetsitterRegisterPage() {
                 <div className="pt-6 pb-6">
                   <label className={`${labelCls} mb-3`}>활동 사진</label>
                   <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                    {[...Array(5)].map((_, i) => (
-                      <div
-                        key={i}
-                        className="w-full aspect-square rounded-xl bg-linear-to-br from-gray-100 to-gray-200"
-                      />
+                    {activityPhotoPreviews.map((src, i) => (
+                      <div key={i} className="relative w-full aspect-square">
+                        <img
+                          src={src}
+                          alt={`활동 사진 ${i + 1}`}
+                          className="w-full h-full object-cover rounded-xl"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeActivityPhoto(i)}
+                          className="absolute top-1 right-1 w-5 h-5 bg-black/50 rounded-full flex items-center justify-center hover:bg-black/70 transition-colors"
+                        >
+                          <X className="w-3 h-3 text-white" />
+                        </button>
+                      </div>
                     ))}
-                    <button className="w-full aspect-square rounded-xl outline-2 outline-orange-100 flex items-center justify-center hover:bg-orange-50 transition-colors">
-                      <Plus className="w-6 h-6 text-gray-500" strokeWidth={2} />
-                    </button>
+                    {activityPhotoPreviews.length < 10 && (
+                      <label className="w-full aspect-square rounded-xl outline-2 outline-orange-100 flex items-center justify-center hover:bg-orange-50 transition-colors cursor-pointer">
+                        <Plus
+                          className="w-6 h-6 text-gray-500"
+                          strokeWidth={2}
+                        />
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          className="hidden"
+                          onChange={handleActivityPhotos}
+                        />
+                      </label>
+                    )}
                   </div>
                 </div>
+                {
+                  //지워야할곳
+                }
+                {submitError && (
+                  <p className="text-sm text-red-500">{submitError}</p>
+                )}
               </div>
             )}
           </div>
@@ -343,10 +518,11 @@ export default function PetsitterRegisterPage() {
           ) : (
             <button
               type="button"
-              onClick={() => console.log("등록 완료")}
-              className="h-11 px-6 rounded-xl bg-[#e8742a] text-white text-[15px] font-semibold flex items-center gap-1.5 hover:opacity-90 transition-opacity"
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              className="h-11 px-6 rounded-xl bg-[#e8742a] text-white text-[15px] font-semibold flex items-center gap-1.5 hover:opacity-90 transition-opacity disabled:opacity-50"
             >
-              등록 완료
+              {isSubmitting ? "등록 중..." : "등록 완료"}
             </button>
           )}
         </div>
