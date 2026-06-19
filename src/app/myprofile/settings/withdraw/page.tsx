@@ -11,6 +11,9 @@ import {
 } from "lucide-react";
 import Header from "@/components/layout/Header";
 import { CustomModal } from "@/components/common/CustomModal";
+import { deleteUser } from "@/app/actions/users";
+import { createClient } from "@/utils/supabase/client";
+import { useUserStore } from "@/store/userStore";
 
 // 탈퇴 사유 목록 (탈퇴 계정 삭제 기능 모달 - deleteAccount / deleteAccountDisabled preset 사용)
 const REASONS = [
@@ -49,8 +52,8 @@ function SuccessScreen({ onGoHome }: { onGoHome: () => void }) {
 
 export default function WithdrawPage() {
   const router = useRouter();
+  const clearUser = useUserStore((s) => s.clearUser);
 
-  // TODO: 실제 진행 중인 예약 여부는 API에서 조회
   const hasActiveBookings = false;
 
   const [selectedReason, setSelectedReason] = useState("");
@@ -58,10 +61,34 @@ export default function WithdrawPage() {
   const [agreed, setAgreed] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [done, setDone] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const canSubmit = agreed && selectedReason !== "";
 
-  const handleDelete = () => {
+  const reasonText =
+    selectedReason === "other"
+      ? otherText || "기타"
+      : REASONS.find((r) => r.id === selectedReason)?.label ?? "";
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    setDeleteError(null);
+
+    const result = await deleteUser(reasonText);
+
+    if ("error" in result) {
+      setIsDeleting(false);
+      setShowModal(false);
+      setDeleteError(result.error?.message ?? "탈퇴 처리 중 오류가 발생했습니다.");
+      return;
+    }
+
+    clearUser();
+    const supabase = createClient();
+    await supabase.auth.signOut();
+
+    setIsDeleting(false);
     setShowModal(false);
     setDone(true);
   };
@@ -252,6 +279,10 @@ export default function WithdrawPage() {
                   </label>
                 </div>
 
+                {deleteError && (
+                  <p className="text-sm text-red-500 text-center">{deleteError}</p>
+                )}
+
                 {/* 하단 버튼 */}
                 <div className="flex gap-3 pb-4">
                   <button
@@ -263,7 +294,7 @@ export default function WithdrawPage() {
                   </button>
                   <button
                     type="button"
-                    disabled={!canSubmit}
+                    disabled={!canSubmit || isDeleting}
                     onClick={() => setShowModal(true)}
                     className="flex-1 h-12 rounded-xl font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-[#EF4444] text-white hover:bg-red-600"
                   >

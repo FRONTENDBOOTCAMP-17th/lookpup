@@ -12,6 +12,7 @@ Table users {
   profile_image text [note: "프로필 이미지"]
   role text [not null, default: "owner", note: "owner / both / admin"]
   
+  delete_reason text [note: "탈퇴 사유"]
   deleted_at timestamptz [note: "탈퇴 일시 (소프트 삭제)"]
   created_at timestamptz [default: `now()` ]
   updated_at timestamptz [default: `now()` ]
