@@ -1,8 +1,10 @@
+import Image from "next/image";
 import { Camera } from "lucide-react";
 import type { ReactNode } from "react";
 
 interface AvatarProps {
   initial: string;
+  src?: string | null;
   size?: "sm" | "md" | "lg" | "xl" | "2xl";
   variant?: "default" | "dark" | "orange" | "blue";
   className?: string;
@@ -25,15 +27,20 @@ const VARIANT: Record<NonNullable<AvatarProps["variant"]>, { container: string; 
 
 interface AvatarMobileProps {
   initial: string;
+  src?: string | null;
   className?: string;
 }
 
-export function AvatarMobile({ initial, className = "" }: AvatarMobileProps) {
+export function AvatarMobile({ initial, src, className = "" }: AvatarMobileProps) {
   return (
     <div
-      className={`w-16 h-16 bg-white/30 rounded-full border-2 border-white flex items-center justify-center shrink-0 ${className}`}
+      className={`relative w-16 h-16 bg-white/30 rounded-full border-2 border-white flex items-center justify-center shrink-0 overflow-hidden ${className}`}
     >
-      <span className="text-white text-2xl font-semibold">{initial}</span>
+      {src ? (
+        <Image src={src} alt={initial} fill className="object-cover" sizes="64px" />
+      ) : (
+        <span className="text-white text-2xl font-semibold">{initial}</span>
+      )}
     </div>
   );
 }
@@ -88,15 +95,20 @@ export function AvatarReport({
 
 export default function Avatar({
   initial,
+  src,
   size = "md",
   variant = "default",
   className = "",
 }: AvatarProps) {
   return (
     <div
-      className={`${SIZE[size]} ${VARIANT[variant].container} rounded-full flex items-center justify-center shrink-0 ${className}`}
+      className={`relative ${SIZE[size]} ${VARIANT[variant].container} rounded-full flex items-center justify-center shrink-0 overflow-hidden ${className}`}
     >
-      <span className={`${VARIANT[variant].text} font-semibold`}>{initial}</span>
+      {src ? (
+        <Image src={src} alt={initial} fill className="object-cover" sizes="128px" />
+      ) : (
+        <span className={`${VARIANT[variant].text} font-semibold`}>{initial}</span>
+      )}
     </div>
   );
 }

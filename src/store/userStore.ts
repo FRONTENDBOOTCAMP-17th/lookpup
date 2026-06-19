@@ -5,6 +5,7 @@ interface UserProfile {
   email: string;
   fullName: string;
   phoneNumber: string;
+  profileImage: string | null;
   isVerified: boolean;
   role: "owner" | "both" | "admin";
 }
