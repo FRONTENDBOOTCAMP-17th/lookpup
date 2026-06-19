@@ -27,5 +27,7 @@ export async function GET(
     );
   }
 
+  // 조회수 증가는 쓰기라 Server Action(incrementViewCount)으로 분리.
+  // GET은 순수 조회만 — edit 등 다른 호출처에서 조회수가 오르는 부수효과 방지.
   return NextResponse.json({ data });
 }
