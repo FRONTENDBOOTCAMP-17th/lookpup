@@ -175,7 +175,7 @@ export default function ReviewsPage() {
         .catch(() => setReceivedReviews([]));
     }
 
-    if (activeTab === "received" && sitterId === null) {
+    if (activeTab === "received" && sitterId === null && receivedReviews === null) {
       setReceivedReviews([]);
     }
   }, [activeTab, writtenReviews, receivedReviews, sitterId]);
@@ -269,7 +269,7 @@ export default function ReviewsPage() {
                 서비스를 이용하고 후기를 남겨보세요
               </p>
               <Link
-                href="/search"
+                href="/petsitters"
                 className="px-6 py-3 bg-[#E8742A] text-white rounded-xl text-sm font-semibold hover:bg-[#D4621A] transition-colors"
               >
                 펫시터 찾기
