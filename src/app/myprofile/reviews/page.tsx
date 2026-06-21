@@ -146,51 +146,78 @@ export default function ReviewsPage() {
   const [receivedReviews, setReceivedReviews] = useState<
     ReceivedReview[] | null
   >(null);
+  const [receivedTotal, setReceivedTotal] = useState(0);
+  const [receivedNextCursor, setReceivedNextCursor] = useState<string | null>(
+    null,
+  );
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   useEffect(() => {
     fetch("/api/users/me")
       .then((r) => r.json())
-      .then((json) => {
-        setSitterId(json.data?.sitter_id ?? null);
-      })
+      .then((json) => setSitterId(json.data?.sitter_id ?? null))
       .catch(() => setSitterId(null));
   }, []);
 
   useEffect(() => {
-    if (activeTab === "written" && writtenReviews === null) {
-      fetch("/api/reviews/myreview")
-        .then((r) => r.json())
-        .then((json) => {
-          setWrittenReviews(json.error ? [] : json.data);
-        })
-        .catch(() => setWrittenReviews([]));
-    }
+    if (activeTab !== "written" || writtenReviews !== null) return;
+    fetch("/api/reviews/myreview")
+      .then((r) => r.json())
+      .then((json) => setWrittenReviews(json.error ? [] : json.data))
+      .catch(() => setWrittenReviews([]));
+  }, [activeTab, writtenReviews]);
 
-    if (activeTab === "received" && receivedReviews === null && sitterId) {
-      fetch(`/api/sitters/${sitterId}/reviews`)
-        .then((r) => r.json())
-        .then((json) => {
-          setReceivedReviews(json.error ? [] : (json.data?.reviews ?? []));
-        })
-        .catch(() => setReceivedReviews([]));
-    }
+  useEffect(() => {
+    if (activeTab !== "received" || receivedReviews !== null) return;
+    if (sitterId === undefined) return;
 
-    if (activeTab === "received" && sitterId === null && receivedReviews === null) {
+    if (sitterId === null) {
       setReceivedReviews([]);
+      return;
     }
-  }, [activeTab, writtenReviews, receivedReviews, sitterId]);
+
+    fetch(`/api/sitters/${sitterId}/reviews`)
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.error) { setReceivedReviews([]); return; }
+        setReceivedReviews(json.data?.reviews ?? []);
+        setReceivedTotal(json.data?.total ?? 0);
+        setReceivedNextCursor(json.data?.next_cursor ?? null);
+      })
+      .catch(() => setReceivedReviews([]));
+  }, [activeTab, receivedReviews, sitterId]);
 
   const handleDeleteWritten = (id: string) => {
     setWrittenReviews((prev) => (prev ? prev.filter((r) => r.id !== id) : []));
   };
 
+  const handleLoadMoreReceived = async () => {
+    if (!sitterId || !receivedNextCursor || isLoadingMore) return;
+    setIsLoadingMore(true);
+    try {
+      const res = await fetch(
+        `/api/sitters/${sitterId}/reviews?cursor=${receivedNextCursor}`,
+      );
+      const json = await res.json();
+      if (!json.error) {
+        setReceivedReviews((prev) => [
+          ...(prev ?? []),
+          ...(json.data?.reviews ?? []),
+        ]);
+        setReceivedNextCursor(json.data?.next_cursor ?? null);
+      }
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
+
   const isLoading =
     activeTab === "written"
       ? writtenReviews === null
-      : receivedReviews === null;
+      : sitterId === undefined || receivedReviews === null;
 
   const writtenCount = writtenReviews?.length ?? 0;
-  const receivedCount = receivedReviews?.length ?? 0;
+  const receivedCount = receivedTotal;
 
   return (
     <div className="min-h-screen bg-[#FFF8F3]">
@@ -304,6 +331,15 @@ export default function ReviewsPage() {
               {receivedReviews.map((review) => (
                 <ReceivedReviewCard key={review.id} review={review} />
               ))}
+              {receivedNextCursor && (
+                <button
+                  onClick={handleLoadMoreReceived}
+                  disabled={isLoadingMore}
+                  className="w-full py-3 rounded-xl border border-[#FFCBA4] text-sm font-medium text-[#E8742A] hover:border-[#E8742A] transition-colors disabled:opacity-50"
+                >
+                  {isLoadingMore ? "불러오는 중..." : "더 보기"}
+                </button>
+              )}
             </div>
           )
         ) : null}
