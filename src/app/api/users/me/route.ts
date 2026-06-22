@@ -42,6 +42,7 @@ export async function GET() {
     data: {
       ...data,
       has_sitter_profile: !!sitterProfile,
+      sitter_id: sitterProfile?.id ?? null,
     },
   });
 }
