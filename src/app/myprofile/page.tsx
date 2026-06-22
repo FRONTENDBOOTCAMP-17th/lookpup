@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUserStore } from "@/store/userStore";
@@ -21,11 +21,20 @@ import {
   User,
   UserX,
   Pencil,
+  MapPin,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Avatar, { AvatarMobile } from "@/components/ui/Avatar";
 import SitterProfileCard from "@/components/sitter/SitterProfileCard";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import { signOut } from "@/app/actions/auth";
+import { coordToRegion } from "@/utils/kakaoGeocode";
+
+const OWNER_LOCATION_STORAGE_KEY = "lookpup_owner_location";
 
 interface MenuItem {
   id: string;
@@ -34,20 +43,6 @@ interface MenuItem {
   link: string;
   color: string;
 }
-
-const DUMMY_OWNER_STATS = [
-  { label: "총 예약", value: "12건" },
-  { label: "완료 서비스", value: "9건" },
-  { label: "찜한 시터", value: "5명" },
-];
-
-const DUMMY_SITTER_MAIN_STATS = [
-  { label: "이번 달 예약", value: "8건" },
-  { label: "완료 건수", value: "230건" },
-  { label: "이번 달 수익", value: "850,000원" },
-];
-
-
 
 const OWNER_MENU: MenuItem[] = [
   {
@@ -220,23 +215,48 @@ function SidebarItem({
   );
 }
 
+function IconHoverAction({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <HoverCard openDelay={150} closeDelay={80}>
+      <HoverCardTrigger asChild>{children}</HoverCardTrigger>
+      <HoverCardContent
+        align="end"
+        sideOffset={8}
+        className="w-auto rounded-lg bg-stone-900 px-2.5 py-1.5 text-xs font-medium text-white"
+      >
+        {label}
+      </HoverCardContent>
+    </HoverCard>
+  );
+}
+
 function SitterActions() {
   return (
-    <div className="flex gap-2 mt-3">
-      <Link
-        href="/myprofile/sitter-profile"
-        className="flex-1 py-2.5 bg-orange-50 border border-orange-100 rounded-xl flex items-center justify-center gap-1.5 text-orange-500 text-xs font-medium hover:bg-orange-100 transition-colors"
-      >
-        <User size={13} />
-        프로필 보기
-      </Link>
-      <Link
-        href="/myprofile/sitter-edit"
-        className="flex-1 py-2.5 bg-orange-500 rounded-xl flex items-center justify-center gap-1.5 text-white text-xs font-medium hover:bg-orange-600 transition-colors"
-      >
-        <Pencil size={13} />
-        수정하기
-      </Link>
+    <div className="flex shrink-0 gap-2">
+      <IconHoverAction label="프로필 보기">
+        <Link
+          href="/myprofile/sitter-profile"
+          aria-label="프로필 보기"
+          className="flex size-9 items-center justify-center rounded-full border border-orange-100 bg-orange-50 text-orange-500 transition-colors hover:bg-orange-100"
+        >
+          <User size={16} />
+        </Link>
+      </IconHoverAction>
+      <IconHoverAction label="수정하기">
+        <Link
+          href="/myprofile/sitter-edit"
+          aria-label="수정하기"
+          className="flex size-9 items-center justify-center rounded-full bg-orange-500 text-white transition-colors hover:bg-orange-600"
+        >
+          <Pencil size={16} />
+        </Link>
+      </IconHoverAction>
     </div>
   );
 }
@@ -254,10 +274,89 @@ export default function MyProfilePage() {
 
   const [userType, setUserType] = useState<"owner" | "sitter">("owner");
   const [selectedMenu, setSelectedMenu] = useState("profile");
+  const [ownerLocation, setOwnerLocation] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return localStorage.getItem(OWNER_LOCATION_STORAGE_KEY) ?? "";
+  });
+  const [isOwnerLocationLoading, setIsOwnerLocationLoading] = useState(false);
+  const [ownerLocationError, setOwnerLocationError] = useState<string | null>(
+    null,
+  );
 
   const menuItems = userType === "owner" ? OWNER_MENU : SITTER_MENU;
-  const statsCards =
-    userType === "owner" ? DUMMY_OWNER_STATS : DUMMY_SITTER_MAIN_STATS;
+  const ownerProfile = user
+    ? {
+        name: user.fullName || "이름 미등록",
+        initial: user.fullName?.charAt(0) || "?",
+        src: user.profileImage,
+        verified: user.isVerified,
+        location: ownerLocation || "위치 미등록",
+      }
+    : undefined;
+
+  const handleUseCurrentOwnerLocation = () => {
+    setOwnerLocationError(null);
+
+    if (!navigator.geolocation) {
+      setOwnerLocationError("이 브라우저에서는 위치 정보를 사용할 수 없어요.");
+      return;
+    }
+
+    setIsOwnerLocationLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords }) => {
+        const region = await coordToRegion(coords.latitude, coords.longitude);
+        if (!region) {
+          setOwnerLocationError("위치를 확인하지 못했어요. 다시 시도해주세요.");
+          setIsOwnerLocationLoading(false);
+          return;
+        }
+
+        const nextLocation = [region.sido, region.sigungu, region.dong]
+          .filter(Boolean)
+          .join(" ");
+        setOwnerLocation(nextLocation);
+        localStorage.setItem(OWNER_LOCATION_STORAGE_KEY, nextLocation);
+        setIsOwnerLocationLoading(false);
+      },
+      () => {
+        setOwnerLocationError("위치 권한을 허용한 뒤 다시 시도해주세요.");
+        setIsOwnerLocationLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+    );
+  };
+
+  const ownerLocationAction = (
+    <div className="relative shrink-0">
+      <IconHoverAction
+        label={
+          isOwnerLocationLoading
+            ? "위치 확인 중..."
+            : ownerLocation
+              ? "현재 위치로 수정하기"
+              : "현재 위치로 등록하기"
+        }
+      >
+        <button
+          type="button"
+          onClick={handleUseCurrentOwnerLocation}
+          disabled={isOwnerLocationLoading}
+          aria-label={
+            ownerLocation ? "현재 위치로 수정하기" : "현재 위치로 등록하기"
+          }
+          className="flex size-9 items-center justify-center rounded-full border border-orange-100 bg-orange-50 text-orange-500 transition-colors hover:bg-orange-100 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <MapPin size={16} />
+        </button>
+      </IconHoverAction>
+      {ownerLocationError && (
+        <p className="absolute right-0 top-11 z-10 w-48 rounded-lg bg-white px-3 py-2 text-xs text-red-500 shadow-sm">
+          {ownerLocationError}
+        </p>
+      )}
+    </div>
+  );
 
   const handleMenuClick = (item: MenuItem) => {
     setSelectedMenu(item.id);
@@ -414,35 +513,16 @@ export default function MyProfilePage() {
                     내 프로필
                   </h2>
 
-                  {/* 통계 카드 */}
-                  <div className="grid grid-cols-3 gap-4">
-                    {statsCards.map((s) => (
-                      <div
-                        key={s.label}
-                        className="bg-white border border-orange-100 rounded-2xl p-5 text-center"
-                      >
-                        <p className="font-bold text-orange-500 text-xl mb-1">
-                          {s.value}
-                        </p>
-                        <p className="text-xs text-gray-500">{s.label}</p>
-                      </div>
-                    ))}
-                  </div>
+                  {userType === "owner" && ownerProfile && (
+                    <SitterProfileCard
+                      profile={ownerProfile}
+                      variant="owner"
+                      action={ownerLocationAction}
+                    />
+                  )}
 
-                  {/* 펫시터 프로필 카드 */}
                   {userType === "sitter" && (
-                    <div>
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-lg text-stone-900">
-                          펫시터 프로필
-                        </h3>
-                        <span className="text-xs text-gray-400">
-                          공개 중인 프로필
-                        </span>
-                      </div>
-                      <SitterProfileCard  />
-                      <SitterActions />
-                    </div>
+                    <SitterProfileCard action={<SitterActions />} />
                   )}
 
                   {/* 빠른 메뉴 */}
@@ -501,12 +581,18 @@ export default function MyProfilePage() {
 
       {/* 모바일 메뉴 */}
       <div className="md:hidden flex-1 overflow-y-auto px-5 py-6">
+        {userType === "owner" && ownerProfile && (
+          <SitterProfileCard
+            profile={ownerProfile}
+            variant="owner"
+            action={ownerLocationAction}
+            className="mb-4"
+          />
+        )}
+
         {/* 펫시터 프로필 카드 (예약 관리 위) */}
         {userType === "sitter" && (
-          <div className="mb-4">
-            <SitterProfileCard  />
-            <SitterActions />
-          </div>
+          <SitterProfileCard action={<SitterActions />} className="mb-4" />
         )}
 
         <div className="space-y-2 mb-5">
