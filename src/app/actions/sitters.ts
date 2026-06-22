@@ -255,6 +255,8 @@ export async function getMySitterProfile() {
 
 interface UpdateSitterProfileInput {
   availableArea: string;
+  latitude?: number | null;
+  longitude?: number | null;
   introduction: string;
   career: string;
   availableAnimals: string[];
@@ -288,15 +290,19 @@ export async function updateSitterProfile(input: UpdateSitterProfileInput) {
     return { error: { code: "NOT_FOUND", message: "시터 프로필을 찾을 수 없습니다." } };
   }
 
+  const updatePayload: Record<string, unknown> = {
+    available_area: input.availableArea,
+    introduction: input.introduction,
+    career: input.career,
+    available_animals: input.availableAnimals,
+    activity_photo_urls: input.activityPhotoUrls,
+  };
+  if (input.latitude != null) updatePayload.latitude = input.latitude;
+  if (input.longitude != null) updatePayload.longitude = input.longitude;
+
   const { error: updateError } = await db
     .from("sitters")
-    .update({
-      available_area: input.availableArea,
-      introduction: input.introduction,
-      career: input.career,
-      available_animals: input.availableAnimals,
-      activity_photo_urls: input.activityPhotoUrls,
-    })
+    .update(updatePayload)
     .eq("id", sitter.id);
 
   if (updateError) {
