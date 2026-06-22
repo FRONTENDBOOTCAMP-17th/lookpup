@@ -20,6 +20,7 @@ import KakaoMap from "@/components/KakaoMap";
 import { splitConditions } from "@/utils/boardConditions";
 import { createComment } from "@/app/actions/comments";
 import { incrementViewCount } from "@/app/actions/requests";
+import { useUserStore } from "@/store/userStore";
 
 const STATUS_MAP: Record<string, string> = {
   open: "모집중",
@@ -160,6 +161,9 @@ const COMMENTS = [
 export default function BoardDetailPage() {
   const { id } = useParams() as { id: string };
   const router = useRouter();
+  const user = useUserStore((state) => state.user);
+  const isLoggedIn = useUserStore((state) => state.isLoggedIn);
+  const currentUserId = user?.id;
   const [comment, setComment] = useState("");
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [post, setPost] = useState<RequestDetail | null>(null);
@@ -262,6 +266,24 @@ export default function BoardDetailPage() {
   const parsed = splitConditions(post.content ?? "");
   const conditionsText = parsed.conditions.trim();
 
+  // 자신이 쓴 글에는 지원하기 버튼을 숨김
+  const isAuthor = !!currentUserId && currentUserId === post.owner_id;
+  const isSitter = user?.role === "both" || user?.role === "admin";
+
+  // 지원하기 클릭 분기:
+  // 비로그인 → 로그인, 펫시터 아님 → 펫시터 등록, 그 외 → 지원 모달
+  const handleApplyClick = () => {
+    if (!isLoggedIn) {
+      router.push("/auth/login");
+      return;
+    }
+    if (!isSitter) {
+      router.push("/sitter-register");
+      return;
+    }
+    setShowApplyModal(true);
+  };
+
   return (
     <>
       <Header />
@@ -359,17 +381,19 @@ export default function BoardDetailPage() {
                         </p>
                       </div>
                     </div>
-                    {/* 지원하기 버튼 */}
-                    <div className="flex gap-3 sm:col-span-2">
-                      {/* 지원하기 기능 모달 */}
-                      <button
-                        onClick={() => setShowApplyModal(true)}
-                        className="flex-1 h-11 flex items-center justify-center gap-2 bg-orange-500 rounded-[10px] text-white text-base font-medium hover:bg-orange-600 transition-colors"
-                      >
-                        <Send className="w-4 h-4" />
-                        지원하기
-                      </button>
-                    </div>
+                    {/* 지원하기 버튼 — 자신이 쓴 글에는 숨김 */}
+                    {!isAuthor && (
+                      <div className="flex gap-3 sm:col-span-2">
+                        {/* 지원하기 기능 모달 */}
+                        <button
+                          onClick={handleApplyClick}
+                          className="flex-1 h-11 flex items-center justify-center gap-2 bg-orange-500 rounded-[10px] text-white text-base font-medium hover:bg-orange-600 transition-colors"
+                        >
+                          <Send className="w-4 h-4" />
+                          지원하기
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </SectionCard>

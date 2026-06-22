@@ -8,8 +8,9 @@ import Footer from "@/components/layout/Footer";
 import SearchFilterBar from "@/components/common/SearchFilterBar";
 import Pill from "@/components/ui/Pill";
 import { useUserStore } from "@/store/userStore";
+import { splitConditions } from "@/utils/boardConditions";
 
-const CATEGORIES = ["전체", "방문돌봄", "위탁돌봄", "산책", "펫호텔", "픽업"];
+const CATEGORIES = ["전체", "방문돌봄", "위탁돌봄", "산책", "펫호텔", "픽업", "기타"];
 
 const ITEMS_PER_PAGE = 5;
 const PAGE_WINDOW_SIZE = 5;
@@ -22,6 +23,7 @@ const REQUEST_TYPE_MAP: Record<string, string> = {
   walk: "산책",
   hotel: "펫호텔",
   pickup: "픽업",
+  other: "기타",
 };
 
 type Post = {
@@ -139,7 +141,7 @@ export default function BoardPage() {
               id: r.id,
               category: REQUEST_TYPE_MAP[r.request_type] ?? r.request_type,
               title: r.title,
-              desc: r.content ?? "",
+              desc: splitConditions(r.content ?? "").content,
               location: r.location,
               period: formatPeriod(r.start_datetime, r.end_datetime),
               price: r.budget

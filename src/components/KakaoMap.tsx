@@ -28,6 +28,8 @@ interface KakaoMapProps {
   className?: string;
   selectedMarkerId?: string | number | null;
   onMarkerClick?: (id: string | number) => void;
+  // 지도 빈 곳 클릭 시 클릭 지점 좌표 전달 (위치 직접 지정용)
+  onMapClick?: (lat: number, lng: number) => void;
   basePosition?: { lat: number; lng: number };
 }
 
@@ -61,6 +63,7 @@ export default function KakaoMap({
   className,
   selectedMarkerId,
   onMarkerClick,
+  onMapClick,
   basePosition,
 }: KakaoMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -69,11 +72,16 @@ export default function KakaoMap({
   const overlayRef = useRef<any>(null);
   const polylineRef = useRef<any>(null);
   const onMarkerClickRef = useRef(onMarkerClick);
+  const onMapClickRef = useRef(onMapClick);
   const basePositionRef = useRef(basePosition);
 
   useEffect(() => {
     onMarkerClickRef.current = onMarkerClick;
   }, [onMarkerClick]);
+
+  useEffect(() => {
+    onMapClickRef.current = onMapClick;
+  }, [onMapClick]);
 
   useEffect(() => {
     basePositionRef.current = basePosition;
@@ -107,16 +115,23 @@ export default function KakaoMap({
       level,
     });
 
-    window.kakao.maps.event.addListener(mapRef.current, "click", () => {
-      if (overlayRef.current) {
-        overlayRef.current.setMap(null);
-        overlayRef.current = null;
-      }
-      if (polylineRef.current) {
-        polylineRef.current.setMap(null);
-        polylineRef.current = null;
-      }
-    });
+    window.kakao.maps.event.addListener(
+      mapRef.current,
+      "click",
+      (mouseEvent: any) => {
+        if (overlayRef.current) {
+          overlayRef.current.setMap(null);
+          overlayRef.current = null;
+        }
+        if (polylineRef.current) {
+          polylineRef.current.setMap(null);
+          polylineRef.current = null;
+        }
+        // 빈 곳 클릭 시 해당 좌표를 콜백으로 전달 (위치 직접 지정)
+        const latlng = mouseEvent.latLng;
+        onMapClickRef.current?.(latlng.getLat(), latlng.getLng());
+      },
+    );
 
     drawMarkers();
   }

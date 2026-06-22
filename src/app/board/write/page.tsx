@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { DateRange } from "react-day-picker";
 import {
@@ -25,7 +25,13 @@ import RangePicker from "@/components/ui/RangePicker";
 import SimpleTimePicker from "@/components/ui/SimpleTimePicker";
 import { createRequest } from "@/app/actions/requests";
 import KakaoMap from "@/components/KakaoMap";
-import { searchAddressToCoord, coordToRegion } from "@/utils/kakaoGeocode";
+import {
+  searchAddressToCoord,
+  coordToRegion,
+  searchAddressList,
+  coordToAddress,
+  type AddressSuggestion,
+} from "@/utils/kakaoGeocode";
 import { mergeConditions } from "@/utils/boardConditions";
 import { useUserStore } from "@/store/userStore";
 
@@ -175,6 +181,61 @@ export default function BoardWritePage() {
   const [addressSearching, setAddressSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
+
+  // 도로명 주소 자동완성 드롭다운
+  const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const suggestTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 입력값 변경 시 디바운스로 후보 조회
+  const handleLocationChange = (value: string) => {
+    setForm((prev) => ({
+      ...prev,
+      location: value,
+      latitude: null,
+      longitude: null,
+    }));
+    setSearchError(null);
+    if (suggestTimer.current) clearTimeout(suggestTimer.current);
+    const query = value.trim();
+    if (query.length < 2) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    suggestTimer.current = setTimeout(async () => {
+      const list = await searchAddressList(query);
+      setSuggestions(list);
+      setShowSuggestions(list.length > 0);
+    }, 300);
+  };
+
+  // 후보 선택 → 주소·좌표 확정
+  const handleSelectSuggestion = (s: AddressSuggestion) => {
+    if (suggestTimer.current) clearTimeout(suggestTimer.current);
+    setForm((prev) => ({
+      ...prev,
+      location: s.addressName,
+      latitude: s.lat,
+      longitude: s.lng,
+    }));
+    setSuggestions([]);
+    setShowSuggestions(false);
+    setSearchError(null);
+    setLocationError(null);
+  };
+
+  // 지도 클릭 → 좌표 확정 후 주소 역지오코딩
+  const handleMapClick = async (lat: number, lng: number) => {
+    setForm((prev) => ({ ...prev, latitude: lat, longitude: lng }));
+    setShowSuggestions(false);
+    setSearchError(null);
+    setLocationError(null);
+    const address = await coordToAddress(lat, lng);
+    if (address) {
+      setForm((prev) => ({ ...prev, location: address }));
+    }
+  };
 
   const canSubmit = () =>
     !!form.service_type &&
@@ -499,9 +560,7 @@ export default function BoardWritePage() {
                   ))}
                   <button
                     type="button"
-                    onClick={() =>
-                      setForm((prev) => ({ ...prev, budget: "" }))
-                    }
+                    onClick={() => setForm((prev) => ({ ...prev, budget: "" }))}
                     className={`h-8.5 px-4 rounded-full border text-sm transition-colors ${
                       form.budget === ""
                         ? "bg-[#e8742a] text-white border-[#e8742a]"
@@ -523,7 +582,9 @@ export default function BoardWritePage() {
               {/* 커스텀 RangePicker */}
               <div className="mt-5 p-3 sm:p-5 bg-[#fff8f3] rounded-2xl border border-[#ffe9d6]">
                 <RangePicker
-                  value={{ from: form.startDate, to: form.endDate } as DateRange}
+                  value={
+                    { from: form.startDate, to: form.endDate } as DateRange
+                  }
                   onChange={(range) =>
                     setForm((prev) => ({
                       ...prev,
@@ -593,21 +654,24 @@ export default function BoardWritePage() {
                 <input
                   type="text"
                   value={form.location}
-                  onChange={(e) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      location: e.target.value,
-                      latitude: null,
-                      longitude: null,
-                    }))
+                  onChange={(e) => handleLocationChange(e.target.value)}
+                  onFocus={() => {
+                    if (suggestions.length > 0) setShowSuggestions(true);
+                  }}
+                  // blur 시 후보 클릭이 먼저 처리되도록 약간 지연
+                  onBlur={() =>
+                    setTimeout(() => setShowSuggestions(false), 150)
                   }
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
+                      setShowSuggestions(false);
                       handleAddressSearch();
+                    } else if (e.key === "Escape") {
+                      setShowSuggestions(false);
                     }
                   }}
-                  placeholder="주소 검색 후 Enter"
+                  placeholder="도로명 주소를 입력하면 추천이 떠요"
                   className="w-full h-12 pl-9 pr-20 bg-white border border-[#ffe9d6] rounded-xl text-[#281a0e] placeholder:text-gray-400 outline-none focus:border-[#e8742a] transition"
                 />
                 <button
@@ -618,10 +682,39 @@ export default function BoardWritePage() {
                 >
                   검색
                 </button>
+
+                {/* 도로명 주소 자동완성 드롭다운 */}
+                {showSuggestions && suggestions.length > 0 && (
+                  <ul className="absolute left-0 right-0 top-[calc(100%+4px)] z-20 max-h-60 overflow-y-auto bg-white border border-[#ffe9d6] rounded-xl shadow-lg py-1">
+                    {suggestions.map((s, i) => (
+                      <li key={`${s.addressName}-${i}`}>
+                        <button
+                          type="button"
+                          // input blur보다 먼저 실행되도록 mousedown 사용
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            handleSelectSuggestion(s);
+                          }}
+                          className="w-full text-left px-4 py-2.5 hover:bg-[#fff8f3] transition-colors"
+                        >
+                          <div className="text-sm text-[#281a0e]">
+                            {s.roadAddress ?? s.addressName}
+                          </div>
+                          {s.jibunAddress &&
+                            s.jibunAddress !== s.roadAddress && (
+                              <div className="text-xs text-gray-400 mt-0.5">
+                                {s.jibunAddress}
+                              </div>
+                            )}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
 
               <p className="text-gray-400 text-xs mt-2">
-                도로명 주소로 검색해주세요.
+                도로명 주소를 입력하거나, 지도를 눌러 위치를 지정하세요.
               </p>
 
               <div className="relative w-full h-56 rounded-xl overflow-hidden border border-[#ffe9d6] mt-3">
@@ -633,6 +726,7 @@ export default function BoardWritePage() {
                             id: "selected-location",
                             lat: form.latitude,
                             lng: form.longitude,
+                            name: form.location || "선택한 위치",
                           },
                         ]
                       : []
@@ -644,6 +738,7 @@ export default function BoardWritePage() {
                   }
                   level={4}
                   className="w-full h-full"
+                  onMapClick={handleMapClick}
                 />
                 {form.latitude === null && (
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -739,9 +834,7 @@ export default function BoardWritePage() {
                   <div className="w-10 h-10 bg-[#fff8f3] rounded-full flex items-center justify-center">
                     <Plus className="w-5 h-5" />
                   </div>
-                  <span className="text-sm font-medium">
-                    새 반려동물 등록
-                  </span>
+                  <span className="text-sm font-medium">새 반려동물 등록</span>
                 </button>
               </div>
             </div>
