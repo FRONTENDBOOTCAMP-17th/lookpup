@@ -55,6 +55,15 @@ export async function createApplication(
     };
   }
 
+  if (requestRow.owner_id === user.id) {
+    return {
+      error: {
+        code: "FORBIDDEN",
+        message: "본인의 구인글에는 지원할 수 없습니다.",
+      },
+    };
+  }
+
   if (requestRow.status !== "open") {
     return {
       error: {
@@ -101,18 +110,12 @@ export async function createApplication(
     .maybeSingle();
 
   if (!existingRoom) {
-    const { error: roomError } = await db.from("chat_rooms").insert({
+    await db.from("chat_rooms").insert({
       room_type: "request",
       owner_id: requestRow.owner_id,
       sitter_id: sitter.id,
       request_id: requestId,
     });
-
-    if (roomError) {
-      return {
-        error: { code: "INTERNAL_ERROR", message: roomError.message },
-      };
-    }
   }
 
   return { data };
