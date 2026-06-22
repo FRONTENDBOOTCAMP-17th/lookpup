@@ -19,6 +19,7 @@ import SitterProfileCard, {
 // 1:1 채팅의 각 목록
 export type ChatRoom = {
   id: string;
+  sitterId: string | null;
   name: string;
   initial: string;
   sub: string;
@@ -30,6 +31,8 @@ export type ChatRoom = {
 // 지원 목록의 각 목록
 export type Applicant = {
   id: string;
+  sitterId: string | null;
+  ownerId: string | null;
   postId: string;
   name: string;
   initial: string;
@@ -120,6 +123,7 @@ type ApplicantCardProps = {
   isRejected: boolean;
   isConfirmed: boolean;
   isSelected: boolean;
+  isOwner: boolean;
   confirmedId: string | null;
   editMode: boolean;
   onDelete: (id: string) => void;
@@ -135,6 +139,7 @@ export function ApplicantCard({
   isRejected,
   isConfirmed,
   isSelected,
+  isOwner,
   confirmedId,
   editMode,
   onDelete,
@@ -200,7 +205,7 @@ export function ApplicantCard({
           <p className="text-xs text-orange-500 font-medium">
             선택 확정된 지원자
           </p>
-        ) : !editMode ? (
+        ) : isOwner && !editMode ? (
           <div className="flex gap-2">
             <button
               onClick={(e) => {
@@ -509,6 +514,7 @@ type ApplicantPostGroupProps = {
   post: Post;
   applicants: Applicant[];
   isCollapsed: boolean;
+  isOwner: boolean;
   selectedApplicantId: string | null;
   rejectedIds: Set<string>;
   confirmedId: string | null;
@@ -526,6 +532,7 @@ export function ApplicantPostGroup({
   post,
   applicants,
   isCollapsed,
+  isOwner,
   selectedApplicantId,
   rejectedIds,
   confirmedId,
@@ -568,6 +575,7 @@ export function ApplicantPostGroup({
             isRejected={rejectedIds.has(applicant.id)}
             isConfirmed={confirmedId === applicant.id}
             isSelected={selectedApplicantId === applicant.id}
+            isOwner={isOwner}
             confirmedId={confirmedId}
             editMode={editMode}
             onDelete={onDelete}

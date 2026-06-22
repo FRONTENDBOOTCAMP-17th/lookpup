@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useRef, useEffect, Suspense } from "react";
+import { uploadToCloudinary } from "@/utils/cloudinary";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ChevronLeft,
   Star,
@@ -13,6 +14,8 @@ import {
 } from "lucide-react";
 import Header from "@/components/layout/Header";
 import { CustomModal } from "@/components/common/CustomModal";
+import { createReview } from "@/app/actions/reviews";
+import Avatar from "@/components/ui/Avatar";
 
 // 상수
 
@@ -39,19 +42,36 @@ const QUICK_TAGS = [
   "반려동물을 좋아해요",
 ];
 
-// 더미 데이터
-
-const MOCK_BOOKING = {
-  sitterName: "박지현",
-  sitterInitial: "박",
-  sitterAvatarColor: "#F5A468",
-  serviceType: "방문돌봄",
-  dateRange: "6월 14일 ~ 6월 16일",
-  petName: "몽이",
-  bookingId: "#BK-20240614",
+const SERVICE_TYPE_LABELS: Record<string, string> = {
+  walk: "산책",
+  care: "방문돌봄",
+  visit: "방문돌봄",
+  hotel: "펫호텔",
+  pickup: "픽업",
+  foster: "위탁돌봄",
 };
 
-// 후기 상태
+// 유틸
+
+function formatDateRange(start: string, end: string): string {
+  const s = new Date(start);
+  const e = new Date(end);
+  const fmt = (d: Date) => `${d.getMonth() + 1}월 ${d.getDate()}일`;
+  return s.toDateString() === e.toDateString()
+    ? fmt(s)
+    : `${fmt(s)} ~ ${fmt(e)}`;
+}
+
+// 타입
+
+interface BookingDisplayInfo {
+  sitterName: string;
+  sitterInitial: string;
+  sitterProfileImage: string | null;
+  serviceType: string | null;
+  dateRange: string;
+  petNames: string[];
+}
 
 interface ReviewState {
   overallRating: number;
@@ -98,8 +118,8 @@ function StarRating({
         >
           <Star
             size={starSize}
-            fill={i <= display ? "#F5A623" : "none"}
-            stroke={i <= display ? "#F5A623" : "#FFE9D6"}
+            fill={i <= display ? "#f97316" : "none"}
+            stroke={i <= display ? "#f97316" : "#ffedd5"}
             strokeWidth={1.5}
           />
         </button>
@@ -123,7 +143,7 @@ function DetailRatingRow({
 }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-sm text-[#281A0E]">{label}</span>
+      <span className="text-sm text-stone-900">{label}</span>
       <StarRating
         value={value}
         onChange={onChange}
@@ -146,7 +166,7 @@ function PhotoUploadSlots({
   slotHeight = 136,
 }: {
   photos: string[];
-  onAdd: (url: string) => void;
+  onAdd: (file: File) => void;
   onRemove: (idx: number) => void;
   maxPhotos?: number;
   columns?: number;
@@ -158,7 +178,7 @@ function PhotoUploadSlots({
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    onAdd(URL.createObjectURL(file));
+    onAdd(file);
     e.target.value = "";
   };
 
@@ -177,12 +197,12 @@ function PhotoUploadSlots({
         style={{ width: slotWidth, height: slotHeight }}
         className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed transition-all ${
           canAdd
-            ? "border-[#FFE9D6] hover:border-[#E8742A]/60 hover:bg-[#FFF8F3] cursor-pointer"
-            : "border-[#FFE9D6] opacity-40 cursor-not-allowed"
+            ? "border-orange-100 hover:border-orange-500/60 hover:bg-orange-50 cursor-pointer"
+            : "border-orange-100 opacity-40 cursor-not-allowed"
         }`}
       >
-        <Camera size={28} className="text-[#E8742A]" />
-        <span className="text-xs text-[#6B7280]">사진 추가</span>
+        <Camera size={28} className="text-orange-500" />
+        <span className="text-xs text-gray-500">사진 추가</span>
       </button>
       <input
         ref={fileRef}
@@ -195,7 +215,7 @@ function PhotoUploadSlots({
       {photos.map((url, idx) => (
         <div
           key={idx}
-          className="relative rounded-xl overflow-hidden border border-[#FFE9D6]"
+          className="relative rounded-xl overflow-hidden border border-orange-100"
           style={{ width: slotWidth, height: slotHeight }}
         >
           <img src={url} alt="" className="w-full h-full object-cover" />
@@ -204,7 +224,7 @@ function PhotoUploadSlots({
             onClick={() => onRemove(idx)}
             className="absolute top-1.5 right-1.5 w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-red-50 transition-colors"
           >
-            <X size={11} className="text-[#281A0E]" />
+            <X size={11} className="text-stone-900" />
           </button>
         </div>
       ))}
@@ -213,7 +233,7 @@ function PhotoUploadSlots({
         <div
           key={`empty-${idx}`}
           style={{ width: slotWidth, height: slotHeight }}
-          className="rounded-xl border-2 border-dashed border-[#FFE9D6] bg-[#FFF8F3]"
+          className="rounded-xl border-2 border-dashed border-orange-100 bg-orange-50"
         />
       ))}
     </div>
@@ -228,7 +248,7 @@ function PhotoUploadHScroll({
   onRemove,
 }: {
   photos: string[];
-  onAdd: (url: string) => void;
+  onAdd: (file: File) => void;
   onRemove: (idx: number) => void;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
@@ -236,7 +256,7 @@ function PhotoUploadHScroll({
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    onAdd(URL.createObjectURL(file));
+    onAdd(file);
     e.target.value = "";
   };
 
@@ -253,46 +273,114 @@ function PhotoUploadHScroll({
         onChange={handleFile}
       />
 
-      {/* 업로드 버튼 */}
       <button
         type="button"
         disabled={!canAdd}
         onClick={() => canAdd && fileRef.current?.click()}
-        className="relative w-[calc((100%-24px)/3)] rounded-xl border-2 border-dashed border-[#FFE9D6] bg-white hover:border-[#E8742A]/60 hover:bg-[#FFF8F3] transition-all overflow-hidden"
+        className="relative w-[calc((100%-24px)/3)] rounded-xl border-2 border-dashed border-orange-100 bg-white hover:border-orange-500/60 hover:bg-orange-50 transition-all overflow-hidden"
       >
         <div className="pb-[100%]" />
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-          <Camera size={24} className="text-[#E8742A]" />
-          <span className="text-xs text-[#6B7280]">사진 추가</span>
+          <Camera size={24} className="text-orange-500" />
+          <span className="text-xs text-gray-500">사진 추가</span>
         </div>
       </button>
 
-      {/* 업로드된 사진 */}
       {photos.map((url, idx) => (
         <div
           key={idx}
-          className="relative w-[calc((100%-24px)/3)] rounded-xl overflow-hidden border border-[#FFE9D6]"
+          className="relative w-[calc((100%-24px)/3)] rounded-xl overflow-hidden border border-orange-100"
         >
           <div className="pb-[100%]" />
-          <img src={url} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          <img
+            src={url}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+          />
           <button
+            type="button"
             onClick={() => onRemove(idx)}
             className="absolute top-1.5 right-1.5 w-5 h-5 bg-white rounded-full flex items-center justify-center shadow z-10"
           >
-            <X size={10} className="text-[#281A0E]" />
+            <X size={10} className="text-stone-900" />
           </button>
         </div>
       ))}
 
-      {/* 빈 슬롯 */}
       {Array.from({ length: emptySlots }).map((_, i) => (
         <div
           key={`e${i}`}
-          className="relative w-[calc((100%-24px)/3)] rounded-xl border-2 border-dashed border-[#FFE9D6] bg-[#FFF8F3]"
+          className="relative w-[calc((100%-24px)/3)] rounded-xl border-2 border-dashed border-orange-100 bg-orange-50"
         >
           <div className="pb-[100%]" />
         </div>
       ))}
+    </div>
+  );
+}
+
+// 예약 요약 카드 — 데스크탑용
+
+function BookingSummaryCard({
+  booking,
+  loading,
+}: {
+  booking: BookingDisplayInfo | null;
+  loading: boolean;
+}) {
+  if (loading) {
+    return (
+      <div className="bg-white border border-orange-100 rounded-2xl p-5 flex items-center gap-5 animate-pulse">
+        <div className="w-14 h-14 rounded-full bg-orange-100 shrink-0" />
+        <div className="flex-1 space-y-2">
+          <div className="h-4 bg-orange-100 rounded w-28" />
+          <div className="h-3 bg-orange-100 rounded w-44" />
+          <div className="h-3 bg-orange-100 rounded w-20" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!booking) return null;
+
+  return (
+    <div className="bg-white border border-orange-100 rounded-2xl p-5 flex items-center gap-5">
+      <div className="relative shrink-0">
+        <Avatar
+          initial={booking.sitterInitial}
+          src={booking.sitterProfileImage}
+          size="lg"
+          variant="dark"
+        />
+        <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center shadow">
+          <BadgeCheck size={12} className="text-white" />
+        </div>
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="font-semibold text-stone-900">
+            {booking.sitterName}
+          </span>
+          <span className="text-sm text-gray-500">펫시터</span>
+        </div>
+        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+          {booking.serviceType && (
+            <span className="text-xs px-2.5 py-0.5 bg-orange-50 border border-orange-100 rounded-full text-orange-500 font-medium">
+              {booking.serviceType}
+            </span>
+          )}
+          <span className="text-sm text-gray-500">{booking.dateRange}</span>
+        </div>
+        {booking.petNames.length > 0 && (
+          <div className="flex items-center gap-1">
+            <PawPrint size={13} className="text-orange-500" />
+            <span className="text-sm text-stone-900 font-medium">
+              {booking.petNames.join(", ")}
+            </span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -306,13 +394,21 @@ function DesktopReviewView({
   onAddPhoto,
   onRemovePhoto,
   onSubmit,
+  onLater,
+  booking,
+  bookingLoading,
+  isSubmitting,
 }: {
   reviewData: ReviewState;
   setReviewData: React.Dispatch<React.SetStateAction<ReviewState>>;
   photos: string[];
-  onAddPhoto: (url: string) => void;
+  onAddPhoto: (file: File) => void;
   onRemovePhoto: (idx: number) => void;
   onSubmit: () => void;
+  onLater: () => void;
+  booking: BookingDisplayInfo | null;
+  bookingLoading: boolean;
+  isSubmitting: boolean;
 }) {
   const toggleTag = (tag: string) => {
     setReviewData((prev) => ({
@@ -330,58 +426,20 @@ function DesktopReviewView({
     }));
   };
 
+  const canSubmit =
+    reviewData.overallRating > 0 &&
+    reviewData.content.length >= 10 &&
+    !isSubmitting;
+
   return (
     <div className="flex flex-col gap-5">
       {/* 예약 요약 카드 */}
-      <div className="bg-white border border-[#FFE9D6] rounded-2xl p-5 flex items-center gap-5">
-        {/* 아바타 및 인증 뱃지 */}
-        <div className="relative shrink-0">
-          <div
-            className="w-14 h-14 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-sm"
-            style={{ background: MOCK_BOOKING.sitterAvatarColor }}
-          >
-            {MOCK_BOOKING.sitterInitial}
-          </div>
-          <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-[#E8742A] rounded-full flex items-center justify-center shadow">
-            <BadgeCheck size={12} className="text-white" />
-          </div>
-        </div>
-
-        {/* 중앙 정보 */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="font-semibold text-[#281A0E]">
-              {MOCK_BOOKING.sitterName}
-            </span>
-            <span className="text-sm text-[#6B7280]">펫시터</span>
-          </div>
-          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-            <span className="text-xs px-2.5 py-0.5 bg-[#FFF8F3] border border-[#FFE9D6] rounded-full text-[#E8742A] font-medium">
-              {MOCK_BOOKING.serviceType}
-            </span>
-            <span className="text-sm text-[#6B7280]">
-              {MOCK_BOOKING.dateRange}
-            </span>
-          </div>
-          <div className="flex items-center gap-1">
-            <PawPrint size={13} className="text-[#E8742A]" />
-            <span className="text-sm text-[#281A0E] font-medium">
-              {MOCK_BOOKING.petName}
-            </span>
-          </div>
-        </div>
-
-        {/* 예약 번호 */}
-        <span className="text-xs text-[#6B7280] shrink-0 self-start pt-1">
-          {MOCK_BOOKING.bookingId}
-        </span>
-      </div>
+      <BookingSummaryCard booking={booking} loading={bookingLoading} />
 
       {/* 별점 섹션 카드 */}
-      <div className="bg-white border border-[#FFE9D6] rounded-2xl p-7">
-        {/* 전반적인 만족도 */}
+      <div className="bg-white border border-orange-100 rounded-2xl p-7">
         <div className="flex flex-col items-center mb-6">
-          <h3 className="font-semibold text-[#281A0E] mb-5 text-center">
+          <h3 className="font-semibold text-stone-900 mb-5 text-center">
             전반적인 만족도
           </h3>
           <StarRating
@@ -392,22 +450,21 @@ function DesktopReviewView({
           />
           <div className="h-7 mt-3 flex items-center justify-center">
             {reviewData.overallRating > 0 && (
-              <span className="text-base font-semibold text-[#E8742A] transition-all">
+              <span className="text-base font-semibold text-orange-500 transition-all">
                 {RATING_LABELS[reviewData.overallRating]}
               </span>
             )}
           </div>
         </div>
 
-        <div className="border-t border-[#FFE9D6] my-2" />
+        <div className="border-t border-orange-100 my-2" />
 
-        {/* 세부 평가 */}
         <div className="pt-5">
           <div className="flex items-center gap-2 mb-4">
-            <span className="text-sm font-medium text-[#6B7280]">
+            <span className="text-sm font-medium text-gray-500">
               세부 평가
             </span>
-            <span className="text-xs px-2 py-0.5 bg-[#FFF8F3] border border-[#FFE9D6] rounded-full text-[#6B7280]">
+            <span className="text-xs px-2 py-0.5 bg-orange-50 border border-orange-100 rounded-full text-gray-500">
               선택
             </span>
           </div>
@@ -426,15 +483,14 @@ function DesktopReviewView({
       </div>
 
       {/* 후기 내용 카드 */}
-      <div className="bg-white border border-[#FFE9D6] rounded-2xl p-7">
-        <h3 className="font-semibold text-[#281A0E] mb-1">후기 내용</h3>
-        <p className="text-sm text-[#6B7280] mb-5">
+      <div className="bg-white border border-orange-100 rounded-2xl p-7">
+        <h3 className="font-semibold text-stone-900 mb-1">후기 내용</h3>
+        <p className="text-sm text-gray-500 mb-5">
           최소 10자 이상 작성해주세요
         </p>
 
-        {/* 빠른 태그 */}
         <div className="mb-5">
-          <p className="text-sm font-medium text-[#281A0E] mb-3">
+          <p className="text-sm font-medium text-stone-900 mb-3">
             이런 점이 좋았어요
           </p>
           <div className="flex flex-wrap gap-2">
@@ -445,8 +501,8 @@ function DesktopReviewView({
                 onClick={() => toggleTag(tag)}
                 className={`px-4 py-2 rounded-full text-sm border transition-all ${
                   reviewData.tags.includes(tag)
-                    ? "bg-[#E8742A] text-white border-[#E8742A]"
-                    : "bg-[#FFF8F3] text-[#6B7280] border-[#FFE9D6] hover:border-[#E8742A]/40"
+                    ? "bg-orange-500 text-white border-orange-500"
+                    : "bg-orange-50 text-gray-500 border-orange-100 hover:border-orange-500/40"
                 }`}
               >
                 {tag}
@@ -455,10 +511,9 @@ function DesktopReviewView({
           </div>
         </div>
 
-        {/* 텍스트 영역 */}
         <div>
           <div className="flex justify-end mb-1">
-            <span className="text-xs text-[#6B7280]">
+            <span className="text-xs text-gray-500">
               {reviewData.content.length} / 1000
             </span>
           </div>
@@ -471,22 +526,21 @@ function DesktopReviewView({
             placeholder={
               "펫시터와의 경험을 자세히 공유해주세요.\n예) 몽이가 낯을 많이 가리는데 잘 적응할 수 있게 도와주셨어요 :)"
             }
-            className="w-full px-4 py-3 border border-[#FFE9D6] rounded-xl text-[#281A0E] placeholder-[#6B7280] focus:outline-none focus:border-[#E8742A] transition-colors resize-none"
+            className="w-full px-4 py-3 border border-orange-100 rounded-xl text-stone-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-colors resize-none"
             style={{ minHeight: 160 }}
           />
         </div>
       </div>
 
       {/* 사진 첨부 카드 */}
-      <div className="bg-white border border-[#FFE9D6] rounded-2xl p-7">
+      <div className="bg-white border border-orange-100 rounded-2xl p-7">
         <div className="flex items-center gap-2 mb-5">
-          <h3 className="font-semibold text-[#281A0E]">사진 첨부</h3>
-          <span className="text-xs px-2 py-0.5 bg-[#FFF8F3] border border-[#FFE9D6] rounded-full text-[#6B7280]">
+          <h3 className="font-semibold text-stone-900">사진 첨부</h3>
+          <span className="text-xs px-2 py-0.5 bg-orange-50 border border-orange-100 rounded-full text-gray-500">
             선택
           </span>
-          <span className="ml-auto text-xs text-[#6B7280]">최대 5장</span>
+          <span className="ml-auto text-xs text-gray-500">최대 5장</span>
         </div>
-
         <PhotoUploadSlots
           photos={photos}
           onAdd={onAddPhoto}
@@ -500,25 +554,26 @@ function DesktopReviewView({
 
       {/* 안내 문구 */}
       <div className="flex items-center justify-center gap-2 py-2">
-        <AlertCircle size={16} className="text-[#F5A623] shrink-0" />
-        <p className="text-sm text-[#6B7280] text-center">
+        <AlertCircle size={16} className="text-orange-400 shrink-0" />
+        <p className="text-sm text-gray-500 text-center">
           후기는 작성 후 수정이 불가합니다. 신중하게 작성해주세요
         </p>
       </div>
 
       {/* 액션 버튼 */}
       <div className="flex flex-col gap-3 pb-4">
-        {/* 후기 등록 기능 모달 */}
         <button
           type="button"
+          disabled={!canSubmit}
           onClick={onSubmit}
-          className="w-full h-14 rounded-xl bg-[#E8742A] text-white font-semibold text-base hover:bg-[#D4621A] transition-colors shadow-sm"
+          className="w-full h-14 rounded-xl bg-orange-500 text-white font-semibold text-base hover:bg-orange-600 transition-colors shadow-sm disabled:bg-orange-100 disabled:text-gray-400 disabled:cursor-not-allowed"
         >
-          후기 등록하기
+          {isSubmitting ? "등록 중..." : "후기 등록하기"}
         </button>
         <button
           type="button"
-          className="w-full h-12 rounded-xl border border-[#FFE9D6] text-[#6B7280] font-medium hover:border-[#E8742A]/50 hover:text-[#E8742A] transition-colors"
+          onClick={onLater}
+          className="w-full h-12 rounded-xl border border-orange-100 text-gray-500 font-medium hover:border-orange-500/50 hover:text-orange-500 transition-colors"
         >
           나중에 작성하기
         </button>
@@ -527,16 +582,20 @@ function DesktopReviewView({
   );
 }
 
-// 모바일 화면 1: 별점 & 태그
+// 모바일 화면
 
 function MobileScreen1({
   reviewData,
   setReviewData,
   onNext,
+  booking,
+  bookingLoading,
 }: {
   reviewData: ReviewState;
   setReviewData: React.Dispatch<React.SetStateAction<ReviewState>>;
   onNext: () => void;
+  booking: BookingDisplayInfo | null;
+  bookingLoading: boolean;
 }) {
   const toggleTag = (tag: string) =>
     setReviewData((prev) => ({
@@ -557,31 +616,41 @@ function MobileScreen1({
   return (
     <div className="flex flex-col gap-4 pb-39">
       {/* 예약 요약 (컴팩트) */}
-      <div className="bg-[#FFF8F3] rounded-xl p-3 flex items-center gap-3 border border-[#FFE9D6]">
-        <div
-          className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0"
-          style={{ background: MOCK_BOOKING.sitterAvatarColor }}
-        >
-          {MOCK_BOOKING.sitterInitial}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 mb-0.5">
-            <span className="text-sm font-semibold text-[#281A0E]">
-              {MOCK_BOOKING.sitterName}
-            </span>
-            <span className="text-xs px-2 py-0.5 bg-white border border-[#FFE9D6] rounded-full text-[#E8742A] font-medium">
-              {MOCK_BOOKING.serviceType}
-            </span>
+      {bookingLoading ? (
+        <div className="bg-orange-50 rounded-xl p-3 flex items-center gap-3 border border-orange-100 animate-pulse">
+          <div className="w-10 h-10 rounded-full bg-orange-100 shrink-0" />
+          <div className="flex-1 space-y-1.5">
+            <div className="h-3.5 bg-orange-100 rounded w-24" />
+            <div className="h-3 bg-orange-100 rounded w-32" />
           </div>
-          <span className="text-xs text-[#6B7280]">
-            {MOCK_BOOKING.dateRange}
-          </span>
         </div>
-      </div>
+      ) : booking ? (
+        <div className="bg-orange-50 rounded-xl p-3 flex items-center gap-3 border border-orange-100">
+          <Avatar
+            initial={booking.sitterInitial}
+            src={booking.sitterProfileImage}
+            size="md"
+            variant="dark"
+          />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span className="text-sm font-semibold text-stone-900">
+                {booking.sitterName}
+              </span>
+              {booking.serviceType && (
+                <span className="text-xs px-2 py-0.5 bg-white border border-orange-100 rounded-full text-orange-500 font-medium">
+                  {booking.serviceType}
+                </span>
+              )}
+            </div>
+            <span className="text-xs text-gray-500">{booking.dateRange}</span>
+          </div>
+        </div>
+      ) : null}
 
       {/* 전반적인 만족도 */}
-      <div className="bg-white border border-[#FFE9D6] rounded-2xl p-6 flex flex-col items-center">
-        <p className="text-sm font-semibold text-[#281A0E] mb-4 text-center">
+      <div className="bg-white border border-orange-100 rounded-2xl p-6 flex flex-col items-center">
+        <p className="text-sm font-semibold text-stone-900 mb-4 text-center">
           전반적인 만족도
         </p>
         <StarRating
@@ -592,7 +661,7 @@ function MobileScreen1({
         />
         <div className="h-6 mt-3 flex items-center">
           {reviewData.overallRating > 0 && (
-            <span className="text-sm font-semibold text-[#E8742A]">
+            <span className="text-sm font-semibold text-orange-500">
               {RATING_LABELS[reviewData.overallRating]}
             </span>
           )}
@@ -600,8 +669,8 @@ function MobileScreen1({
       </div>
 
       {/* 빠른 태그 */}
-      <div className="bg-white border border-[#FFE9D6] rounded-2xl p-5">
-        <p className="text-sm font-semibold text-[#281A0E] mb-3">
+      <div className="bg-white border border-orange-100 rounded-2xl p-5">
+        <p className="text-sm font-semibold text-stone-900 mb-3">
           좋았던 점을 선택해주세요
         </p>
         <div className="flex flex-wrap gap-2">
@@ -612,8 +681,8 @@ function MobileScreen1({
               onClick={() => toggleTag(tag)}
               className={`px-3.5 py-2 rounded-full text-sm border transition-all ${
                 reviewData.tags.includes(tag)
-                  ? "bg-[#E8742A] text-white border-[#E8742A]"
-                  : "bg-[#FFF8F3] text-[#6B7280] border-[#FFE9D6]"
+                  ? "bg-orange-500 text-white border-orange-500"
+                  : "bg-orange-50 text-gray-500 border-orange-100"
               }`}
             >
               {tag}
@@ -623,10 +692,10 @@ function MobileScreen1({
       </div>
 
       {/* 세부 평가 */}
-      <div className="bg-white border border-[#FFE9D6] rounded-2xl p-5">
+      <div className="bg-white border border-orange-100 rounded-2xl p-5">
         <div className="flex items-center gap-2 mb-4">
-          <p className="text-sm font-semibold text-[#281A0E]">세부 평가</p>
-          <span className="text-xs px-2 py-0.5 bg-[#FFF8F3] border border-[#FFE9D6] rounded-full text-[#6B7280]">
+          <p className="text-sm font-semibold text-stone-900">세부 평가</p>
+          <span className="text-xs px-2 py-0.5 bg-orange-50 border border-orange-100 rounded-full text-gray-500">
             선택
           </span>
         </div>
@@ -644,13 +713,13 @@ function MobileScreen1({
       </div>
 
       {/* 하단 고정 버튼 */}
-      <div className="fixed bottom-18 left-0 right-0 bg-white border-t border-[#FFE9D6] px-5 py-4 z-40">
+      <div className="fixed bottom-18 left-0 right-0 bg-white border-t border-orange-100 px-5 py-4 z-40">
         <button
           suppressHydrationWarning
           type="button"
           disabled={!canProceed}
           onClick={onNext}
-          className="w-full h-13 rounded-xl bg-[#E8742A] text-white font-semibold text-base disabled:bg-[#FFE9D6] disabled:text-[#6B7280] transition-colors"
+          className="w-full h-13 rounded-xl bg-orange-500 text-white font-semibold text-base disabled:bg-orange-100 disabled:text-gray-400 transition-colors"
         >
           다음
         </button>
@@ -658,8 +727,6 @@ function MobileScreen1({
     </div>
   );
 }
-
-// 모바일 화면 2: 텍스트 & 사진
 
 function MobileScreen2({
   reviewData,
@@ -669,26 +736,30 @@ function MobileScreen2({
   onRemovePhoto,
   onLater,
   onSubmit,
+  isSubmitting,
 }: {
   reviewData: ReviewState;
   setReviewData: React.Dispatch<React.SetStateAction<ReviewState>>;
   photos: string[];
-  onAddPhoto: (url: string) => void;
+  onAddPhoto: (file: File) => void;
   onRemovePhoto: (idx: number) => void;
   onLater: () => void;
   onSubmit: () => void;
+  isSubmitting: boolean;
 }) {
+  const canSubmit = reviewData.content.length >= 10;
+
   return (
     <div className="flex flex-col gap-4 pb-50">
       {/* 후기 내용 카드 */}
-      <div className="bg-white border border-[#FFE9D6] rounded-2xl p-5">
+      <div className="bg-white border border-orange-100 rounded-2xl p-5">
         <div className="flex items-center justify-between mb-1">
-          <h3 className="font-semibold text-[#281A0E]">후기 내용</h3>
-          <span className="text-xs text-[#6B7280]">
+          <h3 className="font-semibold text-stone-900">후기 내용</h3>
+          <span className="text-xs text-gray-500">
             {reviewData.content.length} / 1000
           </span>
         </div>
-        <p className="text-xs text-[#6B7280] mb-3">
+        <p className="text-xs text-gray-500 mb-3">
           최소 10자 이상 작성해주세요
         </p>
         <textarea
@@ -700,19 +771,19 @@ function MobileScreen2({
           placeholder={
             "펫시터와의 경험을 자세히 공유해주세요.\n예) 몽이가 낯을 많이 가리는데 잘 적응할 수 있게 도와주셨어요 :)"
           }
-          className="w-full px-4 py-3 border border-[#FFE9D6] rounded-xl text-[#281A0E] placeholder-[#6B7280] focus:outline-none focus:border-[#E8742A] transition-colors resize-none"
+          className="w-full px-4 py-3 border border-orange-100 rounded-xl text-stone-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-colors resize-none"
           style={{ minHeight: 180 }}
         />
       </div>
 
       {/* 사진 첨부 */}
-      <div className="bg-white border border-[#FFE9D6] rounded-2xl p-5">
+      <div className="bg-white border border-orange-100 rounded-2xl p-5">
         <div className="flex items-center gap-2 mb-4">
-          <h3 className="font-semibold text-[#281A0E]">사진 첨부</h3>
-          <span className="text-xs px-2 py-0.5 bg-[#FFF8F3] border border-[#FFE9D6] rounded-full text-[#6B7280]">
+          <h3 className="font-semibold text-stone-900">사진 첨부</h3>
+          <span className="text-xs px-2 py-0.5 bg-orange-50 border border-orange-100 rounded-full text-gray-500">
             선택
           </span>
-          <span className="ml-auto text-xs text-[#6B7280]">최대 5장</span>
+          <span className="ml-auto text-xs text-gray-500">최대 5장</span>
         </div>
         <PhotoUploadHScroll
           photos={photos}
@@ -722,24 +793,25 @@ function MobileScreen2({
       </div>
 
       {/* 안내 문구 */}
-      <div className="flex items-center gap-2 bg-[#FFFBF5] border border-[#FFE9D6] rounded-xl px-4 py-3">
-        <AlertCircle size={15} className="text-[#F5A623] shrink-0" />
-        <p className="text-xs text-[#6B7280]">후기는 수정이 불가합니다</p>
+      <div className="flex items-center gap-2 bg-orange-50 border border-orange-100 rounded-xl px-4 py-3">
+        <AlertCircle size={15} className="text-orange-400 shrink-0" />
+        <p className="text-xs text-gray-500">후기는 수정이 불가합니다</p>
       </div>
 
       {/* 하단 고정 버튼 */}
-      <div className="fixed bottom-18 left-0 right-0 bg-white border-t border-[#FFE9D6] px-5 py-4 z-40">
+      <div className="fixed bottom-18 left-0 right-0 bg-white border-t border-orange-100 px-5 py-4 z-40">
         <button
           type="button"
+          disabled={!canSubmit || isSubmitting}
           onClick={onSubmit}
-          className="w-full h-13 rounded-xl bg-[#E8742A] text-white font-semibold text-base mb-3 hover:bg-[#D4621A] transition-colors"
+          className="w-full h-13 rounded-xl bg-orange-500 text-white font-semibold text-base mb-3 hover:bg-orange-600 transition-colors disabled:bg-orange-100 disabled:text-gray-400 disabled:cursor-not-allowed"
         >
-          후기 등록하기
+          {isSubmitting ? "등록 중..." : "후기 등록하기"}
         </button>
         <button
           type="button"
           onClick={onLater}
-          className="w-full text-sm text-[#6B7280] font-medium text-center hover:text-[#E8742A] transition-colors py-1"
+          className="w-full text-sm text-gray-500 font-medium text-center hover:text-orange-500 transition-colors py-1"
         >
           나중에 작성하기
         </button>
@@ -748,13 +820,22 @@ function MobileScreen2({
   );
 }
 
-// 페이지
-
-export default function ReviewWritePage() {
+function ReviewWriteContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const reservationId = searchParams.get("reservation_id");
+
+  const [booking, setBooking] = useState<BookingDisplayInfo | null>(null);
+  const [bookingLoading, setBookingLoading] = useState(true);
+  const [bookingError, setBookingError] = useState<string | null>(null);
+
   const [mobileScreen, setMobileScreen] = useState<1 | 2>(1);
-  const [photos, setPhotos] = useState<string[]>([]);
+  const [photos, setPhotos] = useState<{ file: File; previewUrl: string }[]>([]);
+  const photosRef = useRef(photos);
+  photosRef.current = photos;
   const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [reviewData, setReviewData] = useState<ReviewState>({
     overallRating: 0,
     detailRatings: {},
@@ -762,17 +843,103 @@ export default function ReviewWritePage() {
     content: "",
   });
 
-  const addPhoto = (url: string) =>
-    setPhotos((prev) => (prev.length < 5 ? [...prev, url] : prev));
+  useEffect(() => {
+    return () => {
+      photosRef.current.forEach((p) => URL.revokeObjectURL(p.previewUrl));
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!reservationId) {
+      setBookingError("예약 정보를 찾을 수 없습니다.");
+      setBookingLoading(false);
+      return;
+    }
+
+    fetch(`/api/reservations/${reservationId}`)
+      .then((r) => r.json())
+      .then(({ data, error }) => {
+        if (error) {
+          setBookingError(error.message);
+        } else {
+          const name: string = data.sitter_full_name ?? "알 수 없음";
+          setBooking({
+            sitterName: name,
+            sitterInitial: name[0] ?? "?",
+            sitterProfileImage: data.sitter_profile_image,
+            serviceType: data.service_type
+              ? (SERVICE_TYPE_LABELS[data.service_type] ?? data.service_type)
+              : null,
+            dateRange: formatDateRange(data.start_datetime, data.end_datetime),
+            petNames: (data.pets ?? []).map((p: { name: string }) => p.name),
+          });
+        }
+        setBookingLoading(false);
+      })
+      .catch(() => {
+        setBookingError("예약 정보를 불러오는데 실패했습니다.");
+        setBookingLoading(false);
+      });
+  }, [reservationId]);
+
+  const addPhoto = (file: File) =>
+    setPhotos((prev) =>
+      prev.length < 5
+        ? [...prev, { file, previewUrl: URL.createObjectURL(file) }]
+        : prev,
+    );
   const removePhoto = (idx: number) =>
-    setPhotos((prev) => prev.filter((_, i) => i !== idx));
+    setPhotos((prev) => {
+      URL.revokeObjectURL(prev[idx].previewUrl);
+      return prev.filter((_, i) => i !== idx);
+    });
+
+  const handleSubmit = async () => {
+    if (isSubmitting || !reservationId) return;
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    let image_urls: string[] = [];
+    if (photos.length > 0) {
+      try {
+        image_urls = await Promise.all(
+          photos.map((p) => uploadToCloudinary(p.file, "reviews/photos")),
+        );
+      } catch {
+        setSubmitError("사진 업로드에 실패했습니다.");
+        setIsSubmitting(false);
+        return;
+      }
+    }
+
+    const result = await createReview({
+      reservation_id: reservationId,
+      rating: reviewData.overallRating,
+      content: reviewData.content,
+      image_urls,
+    });
+
+    setIsSubmitting(false);
+
+    if ("error" in result) {
+      setSubmitError(
+        (result.error as { message: string } | undefined)?.message ??
+          "후기 등록에 실패했습니다.",
+      );
+      setShowSubmitModal(false);
+      return;
+    }
+
+    setShowSubmitModal(false);
+    router.back();
+  };
 
   return (
-    <div className="min-h-screen bg-[#FFF8F3]">
+    <div className="min-h-screen bg-orange-50">
       <Header />
 
       {/* 모바일 헤더 */}
-      <div className="md:hidden sticky top-16 z-50 bg-white border-b border-[#FFE9D6]">
+      <div className="md:hidden sticky top-16 z-50 bg-white border-b border-orange-100">
         <div className="h-14 px-5 flex items-center">
           <button
             onClick={() =>
@@ -780,34 +947,44 @@ export default function ReviewWritePage() {
             }
             className="p-1 -ml-1 mr-3"
           >
-            <ChevronLeft size={24} className="text-[#281A0E]" />
+            <ChevronLeft size={24} className="text-stone-900" />
           </button>
-          <span className="flex-1 text-center font-semibold text-[#281A0E] pr-8">
+          <span className="flex-1 text-center font-semibold text-stone-900 pr-8">
             후기 작성
           </span>
           {mobileScreen === 2 && (
-            <span className="absolute right-5 text-xs text-[#6B7280] font-medium">
+            <span className="absolute right-5 text-xs text-gray-500 font-medium">
               2 / 2
             </span>
           )}
         </div>
       </div>
 
+      {(bookingError || submitError) && (
+        <div className="max-w-160 mx-auto px-4 pt-3">
+          <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+            <AlertCircle size={15} className="text-red-500 shrink-0" />
+            <p className="text-sm text-red-600">
+              {submitError ?? bookingError}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* 데스크탑 / 태블릿 콘텐츠 */}
       <div className="hidden md:block w-full max-w-160 mx-auto px-4 pt-12 pb-20">
-        {/* 페이지 타이틀 */}
         <div className="flex items-center gap-4 mb-8">
           <button
             onClick={() => router.back()}
-            className="w-10 h-10 rounded-xl border border-[#FFE9D6] flex items-center justify-center hover:bg-[#FFF8F3] transition-colors shrink-0"
+            className="w-10 h-10 rounded-xl border border-orange-100 flex items-center justify-center hover:bg-orange-50 transition-colors shrink-0"
           >
-            <ChevronLeft size={20} className="text-[#281A0E]" />
+            <ChevronLeft size={20} className="text-stone-900" />
           </button>
           <div>
-            <h2 className="text-2xl font-bold text-[#281A0E] mb-0.5">
+            <h2 className="text-2xl font-bold text-stone-900 mb-0.5">
               후기를 남겨주세요
             </h2>
-            <p className="text-sm text-[#6B7280]">
+            <p className="text-sm text-gray-500">
               솔직한 후기가 더 좋은 돌봄 문화를 만들어요
             </p>
           </div>
@@ -816,68 +993,61 @@ export default function ReviewWritePage() {
         <DesktopReviewView
           reviewData={reviewData}
           setReviewData={setReviewData}
-          photos={photos}
+          photos={photos.map((p) => p.previewUrl)}
           onAddPhoto={addPhoto}
           onRemovePhoto={removePhoto}
+          booking={booking}
+          bookingLoading={bookingLoading}
           onSubmit={() => setShowSubmitModal(true)}
+          onLater={() => router.back()}
+          isSubmitting={isSubmitting}
         />
       </div>
 
-      {/* 모바일 콘텐츠 */}
-      <div className="lg:hidden px-5 pt-4">
-        {/* 모바일 페이지 타이틀 */}
-        <div className="flex items-center gap-3 mb-4">
-          <button
-            type="button"
-            onClick={() => (mobileScreen === 2 ? setMobileScreen(1) : router.back())}
-            className="w-9 h-9 rounded-xl border border-[#FFE9D6] flex items-center justify-center hover:bg-[#FFF8F3] transition-colors shrink-0"
-          >
-            <ChevronLeft size={18} className="text-[#281A0E]" />
-          </button>
-          <div>
-            <h2 className="text-lg font-bold text-[#281A0E] leading-tight">
-              후기를 남겨주세요
-            </h2>
-            <p className="text-xs text-[#6B7280]">
-              솔직한 후기가 더 좋은 돌봄 문화를 만들어요
-            </p>
-          </div>
-        </div>
-
+      <div className="md:hidden px-5 pt-4">
         {mobileScreen === 1 ? (
           <MobileScreen1
             reviewData={reviewData}
             setReviewData={setReviewData}
             onNext={() => setMobileScreen(2)}
+            booking={booking}
+            bookingLoading={bookingLoading}
           />
         ) : (
           <MobileScreen2
             reviewData={reviewData}
             setReviewData={setReviewData}
-            photos={photos}
+            photos={photos.map((p) => p.previewUrl)}
             onAddPhoto={addPhoto}
             onRemovePhoto={removePhoto}
             onLater={() => router.back()}
             onSubmit={() => setShowSubmitModal(true)}
+            isSubmitting={isSubmitting}
           />
         )}
       </div>
 
-      {/* 후기 등록 기능 모달 */}
+      {/* 후기 등록 확인 모달 */}
       <CustomModal
         open={showSubmitModal}
         preset="saveConfirm"
         title="후기를 등록하시겠습니까?"
         description="후기는 작성 후 수정이 불가합니다. 신중하게 확인해주세요."
         cancelText="취소"
-        confirmText="등록하기"
-        onClose={() => setShowSubmitModal(false)}
-        onConfirm={() => {
-          // TODO: 후기 등록 API 연동
-          setShowSubmitModal(false);
-          router.back();
+        confirmText={isSubmitting ? "등록 중..." : "등록하기"}
+        onClose={() => {
+          if (!isSubmitting) setShowSubmitModal(false);
         }}
+        onConfirm={handleSubmit}
       />
     </div>
+  );
+}
+
+export default function ReviewWritePage() {
+  return (
+    <Suspense>
+      <ReviewWriteContent />
+    </Suspense>
   );
 }

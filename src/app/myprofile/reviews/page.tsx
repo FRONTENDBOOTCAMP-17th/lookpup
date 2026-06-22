@@ -45,7 +45,7 @@ function StarRating({ rating }: { rating: number }) {
           className={
             star <= rating
               ? "fill-yellow-400 text-yellow-400"
-              : "text-[#D1D5DB]"
+              : "text-gray-300"
           }
         />
       ))}
@@ -78,7 +78,7 @@ function WrittenReviewCard({
 
   return (
     <>
-      <div className="bg-white border border-[#FFE9D6] rounded-2xl p-6 shadow-[0_2px_12px_rgba(232,116,42,0.06)]">
+      <div className="bg-white border border-orange-100 rounded-2xl p-6 shadow-sm">
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3">
             <Avatar
@@ -86,24 +86,24 @@ function WrittenReviewCard({
               src={review.sitter_profile_image}
             />
             <div>
-              <p className="font-semibold text-[#281A0E]">
+              <p className="font-semibold text-stone-900">
                 {review.sitter_full_name}
               </p>
-              <p className="text-xs text-[#6B7280] mt-0.5">
+              <p className="text-xs text-gray-500 mt-0.5">
                 {new Date(review.created_at).toLocaleDateString("ko-KR")}
               </p>
             </div>
           </div>
           <StarRating rating={review.rating} />
         </div>
-        <p className="text-sm text-[#281A0E] leading-relaxed mb-3">
+        <p className="text-sm text-stone-900 leading-relaxed mb-3">
           {review.content}
         </p>
-        <div className="flex gap-2 pt-4 border-t border-[#FFE9D6]">
+        <div className="flex gap-2 pt-4 border-t border-orange-100">
           <button
             onClick={() => setShowDeleteModal(true)}
             disabled={isDeleting}
-            className="flex-1 h-9 rounded-xl border border-[#FFE9D6] text-sm font-medium text-[#E8742A] hover:border-[#E8742A] transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
+            className="flex-1 h-9 rounded-xl border border-orange-100 text-sm font-medium text-orange-500 hover:border-orange-500 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
           >
             <Trash2 size={13} /> {isDeleting ? "삭제 중..." : "삭제"}
           </button>
@@ -136,7 +136,7 @@ function WrittenReviewCard({
 
 function ReceivedReviewCard({ review }: { review: ReceivedReview }) {
   return (
-    <div className="bg-white border border-[#FFE9D6] rounded-2xl p-6 shadow-[0_2px_12px_rgba(232,116,42,0.06)]">
+    <div className="bg-white border border-orange-100 rounded-2xl p-6 shadow-sm">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
           <Avatar
@@ -144,17 +144,17 @@ function ReceivedReviewCard({ review }: { review: ReceivedReview }) {
             src={review.owner_profile_image}
           />
           <div>
-            <p className="font-semibold text-[#281A0E]">
+            <p className="font-semibold text-stone-900">
               {review.owner_full_name}
             </p>
-            <p className="text-xs text-[#6B7280] mt-0.5">
+            <p className="text-xs text-gray-500 mt-0.5">
               {new Date(review.created_at).toLocaleDateString("ko-KR")}
             </p>
           </div>
         </div>
         <StarRating rating={review.rating} />
       </div>
-      <p className="text-sm text-[#281A0E] leading-relaxed">{review.content}</p>
+      <p className="text-sm text-stone-900 leading-relaxed">{review.content}</p>
     </div>
   );
 }
@@ -216,7 +216,10 @@ export default function ReviewsPage() {
           setWrittenReviews([]);
         }
       });
-    return () => controller.abort();
+    return () => {
+      controller.abort();
+      writtenFetchedRef.current = false;
+    };
   }, [activeTab]);
 
   useEffect(() => {
@@ -249,7 +252,10 @@ export default function ReviewsPage() {
           setReceivedReviews([]);
         }
       });
-    return () => controller.abort();
+    return () => {
+      controller.abort();
+      receivedFetchedRef.current = false;
+    };
   }, [activeTab, sitterId]);
 
   const handleDeleteWritten = (id: string) => {
@@ -291,16 +297,16 @@ export default function ReviewsPage() {
   const receivedCount = receivedTotal;
 
   return (
-    <div className="min-h-screen bg-[#FFF8F3]">
+    <div className="min-h-screen bg-orange-50">
       <Header />
 
       {/* 모바일 헤더 */}
-      <div className="md:hidden sticky top-16 z-50 bg-white border-b border-[#FFE9D6]">
+      <div className="md:hidden sticky top-16 z-50 bg-white border-b border-orange-100">
         <div className="h-14 px-5 flex items-center gap-3">
           <button onClick={() => router.back()} className="p-1 -ml-1">
-            <ChevronLeft size={24} className="text-[#281A0E]" />
+            <ChevronLeft size={24} className="text-stone-900" />
           </button>
-          <span className="flex-1 font-semibold text-[#281A0E]">후기 관리</span>
+          <span className="flex-1 font-semibold text-stone-900">후기 관리</span>
         </div>
       </div>
 
@@ -309,33 +315,33 @@ export default function ReviewsPage() {
         <div className="hidden md:flex items-center gap-4 mb-8">
           <button
             onClick={() => router.back()}
-            className="w-10 h-10 rounded-xl border border-[#FFE9D6] flex items-center justify-center hover:bg-[#FFF8F3] transition-colors shrink-0"
+            className="w-10 h-10 rounded-xl border border-orange-100 flex items-center justify-center hover:bg-orange-50 transition-colors shrink-0"
           >
-            <ChevronLeft size={20} className="text-[#281A0E]" />
+            <ChevronLeft size={20} className="text-stone-900" />
           </button>
           <div>
-            <h2 className="text-2xl font-bold text-[#281A0E]">후기 관리</h2>
-            <p className="text-sm text-[#6B7280] mt-1">
+            <h2 className="text-2xl font-bold text-stone-900">후기 관리</h2>
+            <p className="text-sm text-gray-500 mt-1">
               작성한 후기와 받은 후기를 확인하세요
             </p>
           </div>
         </div>
 
         {/* 탭 */}
-        <div className="flex gap-1 mb-6 bg-white border border-[#FFE9D6] rounded-2xl p-1">
+        <div className="flex gap-1 mb-6 bg-white border border-orange-100 rounded-2xl p-1">
           {TABS.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${
                 activeTab === tab.id
-                  ? "bg-[#E8742A] text-white"
-                  : "text-[#E8742A] hover:text-[#D4621A]"
+                  ? "bg-orange-500 text-white"
+                  : "text-orange-500 hover:text-orange-600"
               }`}
             >
               {tab.label}
               <span
-                className={`ml-1.5 text-xs ${activeTab === tab.id ? "text-white/80" : "text-[#E8742A]/70"}`}
+                className={`ml-1.5 text-xs ${activeTab === tab.id ? "text-white/80" : "text-orange-500/70"}`}
               >
                 {tab.id === "written"
                   ? writtenReviews === null || writtenError
@@ -352,41 +358,41 @@ export default function ReviewsPage() {
         {/* 후기 목록 */}
         {isLoading ? (
           <div className="flex justify-center py-20">
-            <div className="w-8 h-8 border-2 border-[#E8742A] border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : activeTab === "written" ? (
           writtenReviews !== null &&
           (writtenError ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
-              <p className="font-semibold text-[#281A0E] mb-1">
+              <p className="font-semibold text-stone-900 mb-1">
                 오류가 발생했어요
               </p>
-              <p className="text-sm text-[#6B7280] mb-6">{writtenError}</p>
+              <p className="text-sm text-gray-500 mb-6">{writtenError}</p>
               <button
                 onClick={() => {
                   writtenFetchedRef.current = false;
                   setWrittenError(null);
                   setWrittenReviews(null);
                 }}
-                className="px-6 py-3 bg-[#E8742A] text-white rounded-xl text-sm font-semibold hover:bg-[#D4621A] transition-colors"
+                className="px-6 py-3 bg-orange-500 text-white rounded-xl text-sm font-semibold hover:bg-orange-600 transition-colors"
               >
                 다시 시도
               </button>
             </div>
           ) : writtenReviews.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
-              <div className="w-16 h-16 bg-[#FFF0E8] rounded-full flex items-center justify-center mb-4">
-                <Star size={28} className="text-[#FFD4AE]" />
+              <div className="w-16 h-16 bg-orange-50 rounded-full flex items-center justify-center mb-4">
+                <Star size={28} className="text-orange-200" />
               </div>
-              <p className="font-semibold text-[#281A0E] mb-1">
+              <p className="font-semibold text-stone-900 mb-1">
                 작성한 후기가 없어요
               </p>
-              <p className="text-sm text-[#6B7280] mb-6">
+              <p className="text-sm text-gray-500 mb-6">
                 서비스를 이용하고 후기를 남겨보세요
               </p>
               <Link
                 href="/petsitters"
-                className="px-6 py-3 bg-[#E8742A] text-white rounded-xl text-sm font-semibold hover:bg-[#D4621A] transition-colors"
+                className="px-6 py-3 bg-orange-500 text-white rounded-xl text-sm font-semibold hover:bg-orange-600 transition-colors"
               >
                 펫시터 찾기
               </Link>
@@ -406,30 +412,30 @@ export default function ReviewsPage() {
           receivedReviews !== null &&
           (receivedError ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
-              <p className="font-semibold text-[#281A0E] mb-1">
+              <p className="font-semibold text-stone-900 mb-1">
                 오류가 발생했어요
               </p>
-              <p className="text-sm text-[#6B7280] mb-6">{receivedError}</p>
+              <p className="text-sm text-gray-500 mb-6">{receivedError}</p>
               <button
                 onClick={() => {
                   receivedFetchedRef.current = false;
                   setReceivedError(null);
                   setReceivedReviews(null);
                 }}
-                className="px-6 py-3 bg-[#E8742A] text-white rounded-xl text-sm font-semibold hover:bg-[#D4621A] transition-colors"
+                className="px-6 py-3 bg-orange-500 text-white rounded-xl text-sm font-semibold hover:bg-orange-600 transition-colors"
               >
                 다시 시도
               </button>
             </div>
           ) : receivedReviews.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
-              <div className="w-16 h-16 bg-[#FFF0E8] rounded-full flex items-center justify-center mb-4">
-                <Star size={28} className="text-[#FFD4AE]" />
+              <div className="w-16 h-16 bg-orange-50 rounded-full flex items-center justify-center mb-4">
+                <Star size={28} className="text-orange-200" />
               </div>
-              <p className="font-semibold text-[#281A0E] mb-1">
+              <p className="font-semibold text-stone-900 mb-1">
                 받은 후기가 없어요
               </p>
-              <p className="text-sm text-[#6B7280]">
+              <p className="text-sm text-gray-500">
                 펫시터로 활동하면 후기를 받을 수 있어요
               </p>
             </div>
@@ -447,7 +453,7 @@ export default function ReviewsPage() {
                 <button
                   onClick={handleLoadMoreReceived}
                   disabled={isLoadingMore}
-                  className="w-full py-3 rounded-xl border border-[#FFCBA4] text-sm font-medium text-[#E8742A] hover:border-[#E8742A] transition-colors disabled:opacity-50"
+                  className="w-full py-3 rounded-xl border border-orange-200 text-sm font-medium text-orange-500 hover:border-orange-500 transition-colors disabled:opacity-50"
                 >
                   {isLoadingMore ? "불러오는 중..." : "더 보기"}
                 </button>
