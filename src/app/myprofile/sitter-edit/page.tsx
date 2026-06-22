@@ -9,6 +9,7 @@ import StatGrid from "@/components/ui/StatGrid";
 import { useUserStore } from "@/store/userStore";
 import { updateSitterProfile, getMySitterProfile } from "@/app/actions/sitters";
 import { uploadToCloudinary } from "@/utils/cloudinary";
+import { searchAddressToCoord } from "@/utils/kakaoGeocode";
 
 const SERVICE_OPTIONS = ["방문돌봄", "위탁돌봄", "산책", "목욕", "훈련"];
 
@@ -328,8 +329,15 @@ export default function SitterEditPage() {
       }
     }
 
+    // 주소가 변경된 경우 새 좌표로 변환
+    const geocoded = form.availableArea
+      ? await searchAddressToCoord(form.availableArea)
+      : null;
+
     const result = await updateSitterProfile({
       availableArea: form.availableArea,
+      latitude: geocoded?.lat ?? null,
+      longitude: geocoded?.lng ?? null,
       introduction: form.bio,
       career: form.career,
       availableAnimals: form.pets.map((p) => LABEL_TO_ANIMAL[p] ?? p),
