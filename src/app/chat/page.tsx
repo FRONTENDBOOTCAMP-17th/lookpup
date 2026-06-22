@@ -93,7 +93,7 @@ function ChatPageContent({
       }
       rejectApplicant(id);
       const sysResult = await sendSystemMessage(id, "지원이 거절되었습니다.");
-      if (sysResult.data) {
+      if (sysResult.data && id === activeRoomId) {
         addMessage(sysResult.data);
         broadcastMessage(sysResult.data);
       }
@@ -116,7 +116,7 @@ function ChatPageContent({
       }
       confirmApplicant(id);
       const sysResult = await sendSystemMessage(id, "선택 확정되었습니다 🎉");
-      if (sysResult.data) {
+      if (sysResult.data && id === activeRoomId) {
         addMessage(sysResult.data);
         broadcastMessage(sysResult.data);
       }
@@ -140,6 +140,7 @@ function ChatPageContent({
     if (!activeRoomId) return;
     markRoomAsRead(activeRoomId);
     markRoomRead(activeRoomId);
+    setSendError(null);
   }, [activeRoomId]);
 
   useLayoutEffect(() => {
@@ -290,7 +291,8 @@ function ChatPageContent({
   const isRejectedApplicant =
     activeTab === "applicants" &&
     !isOwnerOfSelectedRoom &&
-    messages.some((m) => m.from === "divider" && m.text.includes("거절"));
+    selectedApplicantId !== null &&
+    rejectedIds.has(selectedApplicantId);
 
   return (
     <div className="h-screen overflow-hidden flex flex-col">
