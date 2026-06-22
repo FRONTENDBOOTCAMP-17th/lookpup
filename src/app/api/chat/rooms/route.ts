@@ -42,10 +42,12 @@ export async function GET() {
 
   if (sitterId) {
     roomsQuery = roomsQuery.or(
-      `owner_id.eq.${user.id},sitter_id.eq.${sitterId}`,
+      `and(owner_id.eq.${user.id},owner_left.is.false),and(sitter_id.eq.${sitterId},sitter_left.is.false)`,
     );
   } else {
-    roomsQuery = roomsQuery.eq("owner_id", user.id);
+    roomsQuery = roomsQuery
+      .eq("owner_id", user.id)
+      .eq("owner_left", false);
   }
 
   const { data: rooms, error } = await roomsQuery;

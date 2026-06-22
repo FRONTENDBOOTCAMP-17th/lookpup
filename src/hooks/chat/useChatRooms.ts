@@ -2,9 +2,6 @@
  * 채팅 목록 전체 관리.
  * direct와 request 두 타입을 room_type으로 분리하고 각각 저장함!
  * rooms : 1:1 채팅 / applicants : 지원 목록 채팅
- *
- * 방 삭제하는 것 나중에 추가해야 함...확인할 것.
- * 지금의 deleteRoom / deleteApplicant는 클라이언트 목록에서만 제거함.
  */
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
@@ -249,12 +246,33 @@ export function useChatRooms(activeRoomId: string | null) {
     );
   }, []);
 
-  function deleteRoom(id: string) {
+  async function deleteRoom(id: string): Promise<{ error?: string }> {
+    const res = await fetch(`/api/chat/rooms/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      return { error: body?.error?.message ?? "채팅방 나가기에 실패했습니다." };
+    }
     setRooms((prev) => prev.filter((r) => r.id !== id));
+    return {};
   }
 
-  function deleteApplicant(id: string) {
+  async function deleteApplicant(id: string): Promise<{ error?: string }> {
+    const applicant = applicants.find((a) => a.id === id);
+    const res = await fetch(`/api/chat/rooms/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      return { error: body?.error?.message ?? "채팅방 나가기에 실패했습니다." };
+    }
     setApplicants((prev) => prev.filter((a) => a.id !== id));
+    if (applicant) {
+      const remaining = applicants.filter(
+        (a) => a.id !== id && a.postId === applicant.postId,
+      );
+      if (remaining.length === 0) {
+        setPosts((prev) => prev.filter((p) => p.id !== applicant.postId));
+      }
+    }
+    return {};
   }
 
   return {
