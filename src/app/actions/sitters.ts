@@ -328,3 +328,41 @@ export async function updateSitterProfile(input: UpdateSitterProfileInput) {
 
   return { data: { updated: true } };
 }
+
+export async function getSitterById(id: string) {
+  const db = createServiceClient();
+  const { data: sitter, error } = await db
+    .from("sitters")
+    .select(`
+      id, base_price,
+      users!inner(full_name),
+      services(id, service_type, title, price, is_active)
+    `)
+    .eq("id", id)
+    .single();
+
+  if (error || !sitter) return { error: { code: "NOT_FOUND", message: "펫시터를 찾을 수 없습니다." } };
+
+  const users = sitter.users as unknown as { full_name: string };
+  const services = (sitter.services as { id: string; service_type: string; title: string; price: number; is_active: boolean }[]) ?? [];
+
+  return {
+    data: {
+      full_name: users.full_name,
+      base_price: sitter.base_price as number | null,
+      services,
+    },
+  };
+}
+
+export async function getSitterServices(sitterId: string) {
+  const db = createServiceClient();
+  const { data, error } = await db
+    .from("services")
+    .select("id, title, price, description, is_active")
+    .eq("sitter_id", sitterId)
+    .order("created_at", { ascending: true });
+
+  if (error) return { data: [] };
+  return { data: data ?? [] };
+}

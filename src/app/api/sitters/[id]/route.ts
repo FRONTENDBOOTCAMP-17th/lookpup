@@ -12,8 +12,8 @@ export async function GET(
     .from("sitters")
     .select(
       `id, user_id, title, introduction, career, available_area,
-       latitude, longitude, base_price, rating, status, is_verified,
-       users!inner(full_name, profile_image),
+       latitude, longitude, base_price, rating, status,
+       users!inner(full_name, profile_image, is_verified),
        services(id, service_type, title, price, description, is_active, animal_type)`,
     )
     .eq("id", id)
@@ -31,9 +31,10 @@ export async function GET(
     .select("id", { count: "exact", head: true })
     .eq("sitter_id", id);
 
-  const { full_name, profile_image } = sitter.users as unknown as {
+  const { full_name, profile_image, is_verified } = sitter.users as unknown as {
     full_name: string;
     profile_image: string | null;
+    is_verified: boolean;
   };
 
   return NextResponse.json({
@@ -51,7 +52,7 @@ export async function GET(
       base_price: sitter.base_price,
       rating: sitter.rating,
       status: sitter.status,
-      is_verified: sitter.is_verified,
+      is_verified,
       services: sitter.services,
       review_count: reviewCount ?? 0,
     },
