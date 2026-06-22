@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { createBookingReservation } from "@/app/actions/reservations";
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -100,4 +101,58 @@ export async function GET(request: NextRequest) {
   });
 
   return NextResponse.json({ data: { reservations, next_cursor: nextCursor } });
+}
+
+export async function POST(request: NextRequest) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return NextResponse.json(
+      { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } },
+      { status: 401 },
+    );
+  }
+
+  const body = await request.json().catch(() => null);
+  if (!body) {
+    return NextResponse.json(
+      { error: { code: "VALIDATION_ERROR", message: "요청 본문이 없습니다." } },
+      { status: 400 },
+    );
+  }
+
+  const { sitter_id, service_id, pet_ids, start_datetime, end_datetime, total_price, payment_id, pay_method, memo } = body;
+
+  if (!sitter_id || !service_id || !Array.isArray(pet_ids) || !pet_ids.length || !start_datetime || !end_datetime || !total_price || !payment_id) {
+    return NextResponse.json(
+      { error: { code: "VALIDATION_ERROR", message: "필수 항목이 누락되었습니다." } },
+      { status: 400 },
+    );
+  }
+
+  const result = await createBookingReservation({
+    sitter_id,
+    service_id,
+    pet_ids,
+    start_datetime,
+    end_datetime,
+    total_price,
+    payment_id,
+    pay_method: pay_method ?? "CARD",
+    memo: memo ?? null,
+  });
+
+  if (result.error) {
+    const status =
+      result.error.code === "UNAUTHORIZED" ? 401 :
+      result.error.code === "FORBIDDEN" ? 403 :
+      result.error.code === "VALIDATION_ERROR" ? 400 : 500;
+    return NextResponse.json({ error: result.error }, { status });
+  }
+
+  return NextResponse.json({ data: result.data }, { status: 201 });
 }
