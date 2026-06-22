@@ -7,11 +7,11 @@ import Header from "@/components/layout/Header";
 import Avatar from "@/components/ui/Avatar";
 import StatGrid from "@/components/ui/StatGrid";
 import { useUserStore } from "@/store/userStore";
-import { updateSitterProfile, getMySitterProfile } from "@/app/actions/sitters";
+import { updateSitterProfile, getMySitterProfile, getSitterServices } from "@/app/actions/sitters";
 import { uploadToCloudinary } from "@/utils/cloudinary";
 import { searchAddressToCoord } from "@/utils/kakaoGeocode";
 
-const SERVICE_OPTIONS = ["방문돌봄", "위탁돌봄", "산책", "목욕", "훈련"];
+const SERVICE_OPTIONS = ["방문돌봄", "위탁돌봄", "산책", "호텔"];
 
 const PET_OPTIONS = [
   "강아지 소형 (7kg 미만)",
@@ -32,7 +32,7 @@ const LABEL_TO_ANIMAL: Record<string, string> = {
   "강아지 소형 (7kg 미만)": "small_dog",
   "강아지 중형 (7–25kg)": "medium_dog",
   "강아지 대형 (25kg 이상)": "large_dog",
-  "고양이": "cat",
+  고양이: "cat",
 };
 
 // 서비스명 → 기본 단위 매핑
@@ -163,7 +163,14 @@ export default function SitterEditPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const nextId = useRef(100);
-  const photoFilesRef = useRef<(File | null)[]>([null, null, null, null, null, null]);
+  const photoFilesRef = useRef<(File | null)[]>([
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+  ]);
   const deletedServiceIdsRef = useRef<string[]>([]);
 
   useEffect(() => {
@@ -186,27 +193,24 @@ export default function SitterEditPage() {
       photos: photoSlots,
     };
 
-    fetch(`/api/sitters/${sitter.id}/services`)
-      .then((r) => r.json())
-      .then(({ data }) => {
-        type DbService = { id: string; title: string; price: number; description: string | null };
-        const dbServices: ServiceItem[] = ((data as DbService[]) ?? []).map((s, idx) => ({
-          id: idx + 1,
-          dbId: s.id,
-          name: s.title,
-          unit: SERVICE_DEFAULT_UNIT[s.title] ?? "1회",
-          price: String(s.price),
-          desc: s.description ?? "",
-        }));
-        nextId.current = dbServices.length + 100;
-        setForm((f) => ({
-          ...f,
-          ...baseValues,
-          services: dbServices.map((s) => s.name),
-          serviceList: dbServices,
-        }));
-        setLoading(false);
-      });
+    getSitterServices(sitter.id).then(({ data }) => {
+      const dbServices: ServiceItem[] = data.map((s, idx) => ({
+        id: idx + 1,
+        dbId: s.id,
+        name: s.title,
+        unit: SERVICE_DEFAULT_UNIT[s.title] ?? "1회",
+        price: String(s.price),
+        desc: s.description ?? "",
+      }));
+      nextId.current = dbServices.length + 100;
+      setForm((f) => ({
+        ...f,
+        ...baseValues,
+        services: dbServices.map((s) => s.name),
+        serviceList: dbServices,
+      }));
+      setLoading(false);
+    });
   }, [user, sitter]);
 
   // services 토글 시 serviceList도 함께 동기화
@@ -230,7 +234,7 @@ export default function SitterEditPage() {
             id: nextId.current,
             name: s,
             unit: SERVICE_DEFAULT_UNIT[s] ?? "1회",
-            price: "",
+            price: "1000",
             desc: "",
           },
         ],
@@ -260,7 +264,10 @@ export default function SitterEditPage() {
     setForm((f) => {
       const target = f.serviceList.find((s) => s.id === id);
       if (target?.dbId) {
-        deletedServiceIdsRef.current = [...deletedServiceIdsRef.current, target.dbId];
+        deletedServiceIdsRef.current = [
+          ...deletedServiceIdsRef.current,
+          target.dbId,
+        ];
       }
       return {
         ...f,
@@ -270,17 +277,6 @@ export default function SitterEditPage() {
           : f.services,
       };
     });
-
-  const addServiceItem = () => {
-    nextId.current += 1;
-    setForm((f) => ({
-      ...f,
-      serviceList: [
-        ...f.serviceList,
-        { id: nextId.current, name: "", unit: "1일", price: "", desc: "" },
-      ],
-    }));
-  };
 
   const openPhotoSlot = (idx: number) => {
     photoSlotIndex.current = idx;
@@ -488,9 +484,20 @@ export default function SitterEditPage() {
       {activeTab === "서비스" && (
         <div className="flex flex-col gap-4">
           <div className={CARD}>
-            <h3 className="font-bold text-stone-900 mb-4">
-              제공 서비스 및 가격
-            </h3>
+            <h3 className="font-bold text-stone-900 mb-4">제공 서비스</h3>
+            <div className="flex flex-wrap gap-2">
+              {SERVICE_OPTIONS.map((s) => (
+                <ToggleChip
+                  key={s}
+                  label={s}
+                  selected={form.services.includes(s)}
+                  onToggle={() => toggleService(s)}
+                />
+              ))}
+            </div>
+          </div>
+          <div className={CARD}>
+            <h3 className="font-bold text-stone-900 mb-4">서비스 및 가격</h3>
             <div className="space-y-3">
               {form.serviceList.map((item) => (
                 <ServiceRow
@@ -500,14 +507,6 @@ export default function SitterEditPage() {
                   onRemove={() => removeServiceItem(item.id)}
                 />
               ))}
-              <button
-                type="button"
-                onClick={addServiceItem}
-                className="w-full h-11 flex items-center justify-center gap-2 border border-dashed border-orange-100 rounded-xl text-sm text-gray-500 hover:bg-orange-50 transition-colors"
-              >
-                <Plus size={16} />
-                서비스 추가
-              </button>
             </div>
           </div>
         </div>
@@ -636,18 +635,6 @@ export default function SitterEditPage() {
           </div>
         </div>
 
-        {/* 서비스 유형 선택 */}
-        <div className="flex flex-wrap gap-1.5 px-5 pt-3 pb-3 bg-white">
-          {SERVICE_OPTIONS.map((s) => (
-            <ToggleChip
-              key={s}
-              label={s}
-              selected={form.services.includes(s)}
-              onToggle={() => toggleService(s)}
-            />
-          ))}
-        </div>
-
         {/* 경력 / 완료 */}
         <StatGrid stats={stats} className="px-5 pb-4 bg-white" />
 
@@ -732,23 +719,6 @@ export default function SitterEditPage() {
                   placeholder="활동 지역"
                   className="text-sm text-center border-b border-orange-100 focus:border-orange-400 outline-none bg-transparent flex-1 transition-colors"
                 />
-              </div>
-
-              {/* 서비스 유형 선택 */}
-              <div className="w-full mb-6">
-                <p className="text-xs text-gray-500 mb-2 text-left">
-                  제공 서비스
-                </p>
-                <div className="flex gap-2 flex-wrap">
-                  {SERVICE_OPTIONS.map((s) => (
-                    <ToggleChip
-                      key={s}
-                      label={s}
-                      selected={form.services.includes(s)}
-                      onToggle={() => toggleService(s)}
-                    />
-                  ))}
-                </div>
               </div>
 
               {/* 경력 / 완료 통계 */}

@@ -144,6 +144,22 @@ export async function updatePet(id: string, input: Partial<PetInput>) {
   return { data };
 }
 
+export async function getMyPets() {
+  const user = await getAuthUser();
+  if (!user) return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." }, data: [] };
+
+  const db = createServiceClient();
+  const { data, error } = await db
+    .from("pets")
+    .select("id, name, animal_type, breed, age, weight, image_url")
+    .eq("owner_id", user.id)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
+
+  if (error) return { error: { code: "INTERNAL_ERROR", message: error.message }, data: [] };
+  return { data: data ?? [] };
+}
+
 export async function deletePet(id: string) {
   const user = await getAuthUser();
 

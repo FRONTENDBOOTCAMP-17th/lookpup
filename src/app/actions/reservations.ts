@@ -5,6 +5,7 @@ import { createServiceClient } from "@/utils/supabase/service";
 
 const FEE_RATE = 0.05;
 
+
 interface BookingReservationInput {
   sitter_id: string;
   service_id: string;
@@ -66,10 +67,12 @@ export async function createBookingReservation(input: BookingReservationInput) {
   const platformFee = Math.floor(input.total_price * FEE_RATE);
 
   const { error: paymentError } = await db.from("payments").insert({
+    id: input.payment_id,
     reservation_id: reservation.id,
-    payment_id: input.payment_id,
-    amount: input.total_price,
+    owner_id: user.id,
+    sitter_id: input.sitter_id,
     pay_method: input.pay_method,
+    amount: input.total_price,
     fee_rate: FEE_RATE,
     platform_fee: platformFee,
     settle_amount: input.total_price - platformFee,
@@ -259,4 +262,154 @@ export async function updateReservation(
   }
 
   return { data };
+}
+
+export const STATUS_MAP: Record<string, string> = {
+  pending: "pending",
+  accepted: "confirmed",
+  paid: "confirmed",
+  in_progress: "in-progress",
+  completed: "completed",
+  canceled: "cancelled",
+};
+
+const DAYS = ["일", "월", "화", "수", "목", "금", "토"];
+
+export async function getMyReservations() {
+  const user = await getAuthUser();
+  if (!user) return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." }, data: [] };
+
+  const db = createServiceClient();
+
+  const { data, error } = await db
+    .from("reservations")
+    .select(`
+      id, status, start_datetime, end_datetime, total_price, created_at,
+      services(title),
+      sitters(available_area, rating, users(full_name)),
+      reservation_items(pets(name, breed, animal_type)),
+      reviews(id)
+    `)
+    .eq("owner_id", user.id)
+    .order("created_at", { ascending: false });
+
+  if (error) return { error: { code: "INTERNAL_ERROR", message: error.message }, data: [] };
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+
+  const bookings = (data ?? []).map((r) => {
+    const start = new Date(r.start_datetime);
+    const end = new Date(r.end_datetime);
+    const created = new Date(r.created_at ?? "");
+    const dateStr = `${created.getFullYear()}${pad(created.getMonth() + 1)}${pad(created.getDate())}`;
+
+    type SitterRow = { available_area: string; rating: number; users: { full_name: string } | null } | null;
+    type PetRow = { name: string; breed: string | null; animal_type: string } | null;
+    type ItemRow = { pets: PetRow };
+
+    const sitter = r.sitters as SitterRow;
+    const service = r.services as { title: string } | null;
+    const items = (r.reservation_items as ItemRow[]) ?? [];
+    const firstPet = items[0]?.pets;
+    const reviews = (r.reviews as { id: string }[]) ?? [];
+
+    return {
+      id: r.id,
+      bookingNo: `BK-${dateStr}-${r.id.slice(-3).toUpperCase()}`,
+      serviceType: service?.title ?? "-",
+      status: STATUS_MAP[r.status] ?? "pending",
+      sitterName: sitter?.users?.full_name ?? "-",
+      sitterRating: sitter?.rating ?? 0,
+      date: `${start.getFullYear()}년 ${start.getMonth() + 1}월 ${start.getDate()}일 (${DAYS[start.getDay()]})`,
+      time: `${pad(start.getHours())}:${pad(start.getMinutes())} – ${pad(end.getHours())}:${pad(end.getMinutes())}`,
+      location: sitter?.available_area ?? "-",
+      petName: firstPet?.name ?? "-",
+      petType: firstPet?.breed ?? firstPet?.animal_type ?? "-",
+      price: r.total_price,
+      reviewWritten: reviews.length > 0,
+    };
+  });
+
+  return { data: bookings };
+}
+
+const PET_EMOJI: Record<string, string> = {
+  cat: "🐱",
+  small_dog: "🐶",
+  medium_dog: "🐕",
+  large_dog: "🐕",
+};
+const PET_GRADIENT: Record<string, string> = {
+  cat: "linear-gradient(135deg, #E0F2FE, #BAE6FD)",
+};
+const DEFAULT_GRADIENT = "linear-gradient(135deg, #FFE4C8, #FFB6A3)";
+
+export async function getReservationById(id: string) {
+  const user = await getAuthUser();
+  if (!user) return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
+
+  const db = createServiceClient();
+
+  const { data: r, error } = await db
+    .from("reservations")
+    .select(`
+      id, status, start_datetime, end_datetime, total_price, created_at, sitter_id,
+      services(title),
+      sitters(available_area, rating, users(full_name, is_verified)),
+      reservation_items(pets(name, breed, animal_type, age, weight)),
+      reviews(id)
+    `)
+    .eq("id", id)
+    .eq("owner_id", user.id)
+    .single();
+
+  if (error || !r) return { error: { code: "NOT_FOUND", message: "예약 정보를 찾을 수 없습니다." } };
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const start = new Date(r.start_datetime);
+  const end = new Date(r.end_datetime);
+  const created = new Date(r.created_at ?? "");
+  const dateStr = `${created.getFullYear()}${pad(created.getMonth() + 1)}${pad(created.getDate())}`;
+
+  type SitterRow = { available_area: string; rating: number; users: { full_name: string; is_verified: boolean } | null } | null;
+  type PetRow = { name: string; breed: string | null; animal_type: string; age: number | null; weight: number | null } | null;
+
+  const sitter = r.sitters as SitterRow;
+  const service = r.services as { title: string } | null;
+  const items = (r.reservation_items as { pets: PetRow }[]) ?? [];
+  const firstPet = items[0]?.pets;
+  const reviews = (r.reviews as { id: string }[]) ?? [];
+
+  const { count: reviewCount } = await db
+    .from("reviews")
+    .select("id", { count: "exact", head: true })
+    .eq("sitter_id", (r as { sitter_id: string }).sitter_id);
+
+  return {
+    data: {
+      id: r.id,
+      bookingNo: `BK-${dateStr}-${r.id.slice(-3).toUpperCase()}`,
+      serviceType: service?.title ?? "-",
+      status: STATUS_MAP[r.status] ?? "pending",
+      sitter: {
+        name: sitter?.users?.full_name ?? "-",
+        rating: sitter?.rating ?? 0,
+        reviewCount: reviewCount ?? 0,
+        certified: sitter?.users?.is_verified ?? false,
+      },
+      date: `${start.getFullYear()}년 ${start.getMonth() + 1}월 ${start.getDate()}일 (${DAYS[start.getDay()]})`,
+      time: `${pad(start.getHours())}:${pad(start.getMinutes())} – ${pad(end.getHours())}:${pad(end.getMinutes())}`,
+      location: sitter?.available_area ?? "-",
+      pet: {
+        name: firstPet?.name ?? "-",
+        breed: firstPet?.breed ?? firstPet?.animal_type ?? "-",
+        age: firstPet?.age ?? 0,
+        weight: Number(firstPet?.weight ?? 0),
+        emoji: PET_EMOJI[firstPet?.animal_type ?? ""] ?? "🐾",
+        gradient: PET_GRADIENT[firstPet?.animal_type ?? ""] ?? DEFAULT_GRADIENT,
+      },
+      price: r.total_price,
+      reviewWritten: reviews.length > 0,
+    },
+  };
 }

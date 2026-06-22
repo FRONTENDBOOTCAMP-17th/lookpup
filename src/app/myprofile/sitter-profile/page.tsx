@@ -12,12 +12,7 @@ import { MapPin, ChevronLeft, Eye } from "lucide-react";
 import StarRow from "@/components/ui/StarRow";
 import StatGrid from "@/components/ui/StatGrid";
 import { useUserStore } from "@/store/userStore";
-
-interface ServiceDetail {
-  title: string;
-  price: number;
-  description: string | null;
-}
+import { getSitterServices } from "@/app/actions/sitters";
 
 const REQUEST_TYPE_LABEL: Record<string, string> = {
   visit: "방문돌봄",
@@ -36,6 +31,13 @@ const ANIMAL_LABEL: Record<string, string> = {
 const TABS = ["소개", "서비스", "후기", "위치"] as const;
 type Tab = (typeof TABS)[number];
 
+interface ServiceDetail {
+  title: string;
+  price: number;
+  description: string | null;
+  is_active: boolean;
+}
+
 export default function SitterProfilePreviewPage() {
   const router = useRouter();
   const { user, sitter } = useUserStore();
@@ -44,9 +46,9 @@ export default function SitterProfilePreviewPage() {
 
   useEffect(() => {
     if (!sitter?.id) return;
-    fetch(`/api/sitters/${sitter.id}/services`)
-      .then((r) => r.json())
-      .then(({ data }) => setServiceDetails((data ?? []).filter((s: ServiceDetail & { is_active: boolean }) => s.is_active)));
+    getSitterServices(sitter.id).then(({ data }) =>
+      setServiceDetails(data.filter((s) => s.is_active))
+    );
   }, [sitter?.id]);
 
   if (!user || !sitter) return null;
@@ -199,8 +201,8 @@ export default function SitterProfilePreviewPage() {
         </div>
 
         <div className="flex flex-wrap gap-1.5 px-5 pb-3 bg-white">
-          {sitter.services.map((s, i) => (
-            <Pill key={i}>{s}</Pill>
+          {sitter.services.map((s) => (
+            <Pill key={s}>{s}</Pill>
           ))}
         </div>
 
@@ -281,8 +283,8 @@ export default function SitterProfilePreviewPage() {
               </div>
 
               <div className="flex gap-2 flex-wrap justify-center mb-6">
-                {sitter.services.map((s, i) => (
-                  <Pill key={i}>{s}</Pill>
+                {sitter.services.map((s) => (
+                  <Pill key={s}>{s}</Pill>
                 ))}
               </div>
 

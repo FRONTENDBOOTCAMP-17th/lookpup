@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -15,6 +15,7 @@ import {
 import Header from "@/components/layout/Header";
 import Avatar from "@/components/ui/Avatar";
 import { CustomModal } from "@/components/common/CustomModal";
+import { getMyReservations, updateReservation } from "@/app/actions/reservations";
 
 type BookingStatus =
   | "pending"
@@ -40,96 +41,6 @@ interface Booking {
   reviewWritten?: boolean;
 }
 
-// 더미 데이터
-
-const BOOKINGS: Booking[] = [
-  {
-    id: "1",
-    bookingNo: "BK-20260601-001",
-    serviceType: "방문돌봄",
-    status: "in-progress",
-    sitterName: "이서연",
-    sitterRating: 4.9,
-    date: "2026년 6월 2일 (화)",
-    time: "14:00 – 17:00",
-    location: "마포구 상수동",
-    petName: "몽이",
-    petType: "말티즈",
-    price: 35000,
-  },
-  {
-    id: "2",
-    bookingNo: "BK-20260530-003",
-    serviceType: "산책",
-    status: "confirmed",
-    sitterName: "김민지",
-    sitterRating: 4.8,
-    date: "2026년 6월 10일 (수)",
-    time: "10:00 – 11:00",
-    location: "강남구 역삼동",
-    petName: "콩이",
-    petType: "푸들",
-    price: 25000,
-  },
-  {
-    id: "3",
-    bookingNo: "BK-20260520-008",
-    serviceType: "위탁돌봄",
-    status: "completed",
-    sitterName: "박준호",
-    sitterRating: 5.0,
-    date: "2026년 5월 20일 (수)",
-    time: "09:00 – 18:00",
-    location: "용산구 한남동",
-    petName: "몽이",
-    petType: "말티즈",
-    price: 80000,
-    reviewWritten: false,
-  },
-  {
-    id: "4",
-    bookingNo: "BK-20260510-012",
-    serviceType: "방문돌봄",
-    status: "completed",
-    sitterName: "최예진",
-    sitterRating: 4.7,
-    date: "2026년 5월 10일 (일)",
-    time: "15:00 – 18:00",
-    location: "성동구 성수동",
-    petName: "콩이",
-    petType: "푸들",
-    price: 40000,
-    reviewWritten: true,
-  },
-  {
-    id: "5",
-    bookingNo: "BK-20260505-006",
-    serviceType: "산책",
-    status: "cancelled",
-    sitterName: "정수아",
-    sitterRating: 4.6,
-    date: "2026년 5월 5일 (화)",
-    time: "08:00 – 09:00",
-    location: "송파구 잠실동",
-    petName: "몽이",
-    petType: "말티즈",
-    price: 20000,
-  },
-  {
-    id: "6",
-    bookingNo: "BK-20260428-002",
-    serviceType: "위탁돌봄",
-    status: "pending",
-    sitterName: "강태윤",
-    sitterRating: 4.5,
-    date: "2026년 6월 20일 (토)",
-    time: "10:00 – 19:00",
-    location: "광진구 자양동",
-    petName: "콩이",
-    petType: "푸들",
-    price: 55000,
-  },
-];
 
 // 상태 설정
 
@@ -370,13 +281,24 @@ export default function BookingHistoryPage() {
   const [activeTab, setActiveTab] = useState<TabId>("all");
   const [page, setPage] = useState(1);
   const [cancelingId, setCancelingId] = useState<string | null>(null);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleCancelConfirm = () => {
-    // TODO: 예약 취소 API 연동
+  useEffect(() => {
+    getMyReservations().then(({ data }) => {
+      setBookings((data ?? []) as Booking[]);
+      setLoading(false);
+    });
+  }, []);
+
+  const handleCancelConfirm = async () => {
+    if (!cancelingId) return;
+    await updateReservation(cancelingId, { status: "canceled" });
     setCancelingId(null);
+    getMyReservations().then(({ data }) => setBookings((data ?? []) as Booking[]));
   };
 
-  const filtered = BOOKINGS.filter((b) => {
+  const filtered = bookings.filter((b) => {
     if (activeTab === "all") return true;
     return b.status === activeTab;
   });
@@ -389,11 +311,11 @@ export default function BookingHistoryPage() {
   );
 
   const counts: Record<TabId, number> = {
-    all: BOOKINGS.length,
-    "in-progress": BOOKINGS.filter((b) => b.status === "in-progress").length,
-    confirmed: BOOKINGS.filter((b) => b.status === "confirmed").length,
-    completed: BOOKINGS.filter((b) => b.status === "completed").length,
-    cancelled: BOOKINGS.filter((b) => b.status === "cancelled").length,
+    all: bookings.length,
+    "in-progress": bookings.filter((b) => b.status === "in-progress").length,
+    confirmed: bookings.filter((b) => b.status === "confirmed").length,
+    completed: bookings.filter((b) => b.status === "completed").length,
+    cancelled: bookings.filter((b) => b.status === "cancelled").length,
   };
 
   return (
@@ -455,7 +377,9 @@ export default function BookingHistoryPage() {
         </div>
 
         {/* 카드 목록 */}
-        {paged.length === 0 ? (
+        {loading ? (
+          <div className="flex justify-center py-20 text-sm text-[#6B7280]">불러오는 중...</div>
+        ) : paged.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20">
             <div className="w-16 h-16 bg-white border border-[#FFE9D6] rounded-full flex items-center justify-center mb-4">
               <Calendar size={28} className="text-[#FFD4AE]" />
