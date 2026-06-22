@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef, type ReactNode } from "react";
+import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
 import Link from "next/link";
+import Script from "next/script";
 import { useRouter } from "next/navigation";
 import { useUserStore } from "@/store/userStore";
 import {
@@ -320,6 +321,9 @@ export default function MyProfilePage() {
   const [locationSearching, setLocationSearching] = useState(false);
   const [locationModalError, setLocationModalError] = useState<string | null>(null);
   const suggestTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const miniMapContainerRef = useRef<HTMLDivElement>(null);
+  const miniMapRef = useRef<any>(null);
+  const miniMarkerRef = useRef<any>(null);
 
   const menuItems = userType === "owner" ? OWNER_MENU : SITTER_MENU;
   const ownerProfile = user
@@ -331,6 +335,44 @@ export default function MyProfilePage() {
         location: ownerLocationData?.dong || "위치 미등록",
       }
     : undefined;
+
+  // 미니맵 초기화 / 위치 업데이트
+  const updateMiniMap = useCallback((lat: number, lng: number) => {
+    if (!window.kakao?.maps || !miniMapContainerRef.current) return;
+    const coords = new window.kakao.maps.LatLng(lat, lng);
+
+    if (!miniMapRef.current) {
+      miniMapRef.current = new window.kakao.maps.Map(miniMapContainerRef.current, {
+        center: coords,
+        level: 4,
+      });
+    } else {
+      miniMapRef.current.setCenter(coords);
+    }
+
+    if (miniMarkerRef.current) miniMarkerRef.current.setMap(null);
+    miniMarkerRef.current = new window.kakao.maps.Marker({
+      map: miniMapRef.current,
+      position: coords,
+    });
+  }, []);
+
+  // pendingLocation 바뀌면 미니맵 갱신
+  useEffect(() => {
+    if (!pendingLocation) return;
+    // SDK가 이미 로드된 경우
+    if (window.kakao?.maps) {
+      window.kakao.maps.load(() => updateMiniMap(pendingLocation.lat, pendingLocation.lng));
+    }
+  }, [pendingLocation, updateMiniMap]);
+
+  // 모달 닫힐 때 미니맵 인스턴스 초기화
+  useEffect(() => {
+    if (!showLocationEditModal) {
+      miniMapRef.current = null;
+      miniMarkerRef.current = null;
+    }
+  }, [showLocationEditModal]);
 
   // 주소 검색 입력 → 자동완성 (pendingLocation 초기화)
   const handleLocationInputChange = (value: string) => {
@@ -452,6 +494,13 @@ export default function MyProfilePage() {
     <div className="min-h-screen flex flex-col bg-orange-50">
       <Header />
 
+      {/* 카카오맵 SDK — 주소 검색·역지오코딩·미니맵에 사용 */}
+      <Script
+        src={`//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_KEY}&autoload=false&libraries=services`}
+        strategy="afterInteractive"
+        onLoad={() => window.kakao.maps.load(() => {})}
+      />
+
       {/* 위치 수정 모달 */}
       {showLocationEditModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
@@ -510,18 +559,24 @@ export default function MyProfilePage() {
               )}
             </div>
 
-            {/* 확정된 주소 표시 — 드롭다운 선택 후에만 표시 */}
+            {/* 미니맵 미리보기 — 주소 선택 후 표시 */}
             {pendingLocation ? (
-              <div className="flex items-center gap-2 mb-3 px-3 py-2.5 bg-orange-50 rounded-xl border border-orange-100">
-                <MapPin size={14} className="text-orange-400 shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-stone-900 truncate">{pendingLocation.dong}</p>
-                  <p className="text-xs text-gray-400 truncate">{pendingLocation.address}</p>
+              <div className="mb-3">
+                <div
+                  ref={miniMapContainerRef}
+                  className="w-full h-36 rounded-xl overflow-hidden border border-orange-100"
+                />
+                <div className="flex items-start gap-1.5 mt-1.5 px-1">
+                  <MapPin size={13} className="text-orange-400 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-stone-900">{pendingLocation.dong}</p>
+                    <p className="text-xs text-gray-400">{pendingLocation.address}</p>
+                  </div>
                 </div>
               </div>
             ) : (
               <p className="text-xs text-gray-400 mb-3 px-1">
-                검색 결과 목록에서 주소를 선택하면 좌표가 자동으로 저장돼요.
+                검색 결과 목록에서 주소를 선택하면 지도로 확인할 수 있어요.
               </p>
             )}
 
