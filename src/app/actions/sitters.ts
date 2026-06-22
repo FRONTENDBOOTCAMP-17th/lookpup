@@ -220,7 +220,7 @@ export async function getMySitterProfile() {
 
   const { data, error } = await db
     .from("sitters")
-    .select("id, available_area, career, introduction, rating, latitude, longitude, request_type, available_animals, activity_photo_urls, services(service_type, is_active)")
+    .select("id, available_area, career, introduction, rating, latitude, longitude, request_type, available_animals, activity_photo_urls, services(title, is_active)")
     .eq("user_id", user.id)
     .single();
 
@@ -240,9 +240,9 @@ export async function getMySitterProfile() {
       career: data.career ?? null,
       introduction: data.introduction ?? null,
       rating: data.rating ?? 0,
-      services: (data.services as { service_type: string; is_active: boolean }[])
+      services: (data.services as { title: string; is_active: boolean }[])
         .filter((s) => s.is_active)
-        .map((s) => s.service_type),
+        .map((s) => s.title),
       reviewCount: reviewCount ?? 0,
       requestType: (data.request_type as string[]) ?? [],
       availableAnimals: (data.available_animals as string[]) ?? [],
@@ -317,6 +317,7 @@ export async function updateSitterProfile(input: UpdateSitterProfileInput) {
     } else {
       await db.from("services").insert({
         sitter_id: sitter.id,
+        service_type: service.title,
         title: service.title,
         price: service.price,
         description: service.description,

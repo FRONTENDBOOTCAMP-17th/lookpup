@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Header from "@/components/layout/Header";
@@ -12,6 +12,12 @@ import { MapPin, ChevronLeft, Eye } from "lucide-react";
 import StarRow from "@/components/ui/StarRow";
 import StatGrid from "@/components/ui/StatGrid";
 import { useUserStore } from "@/store/userStore";
+
+interface ServiceDetail {
+  title: string;
+  price: number;
+  description: string | null;
+}
 
 const REQUEST_TYPE_LABEL: Record<string, string> = {
   visit: "방문돌봄",
@@ -34,6 +40,14 @@ export default function SitterProfilePreviewPage() {
   const router = useRouter();
   const { user, sitter } = useUserStore();
   const [activeTab, setActiveTab] = useState<Tab>("소개");
+  const [serviceDetails, setServiceDetails] = useState<ServiceDetail[]>([]);
+
+  useEffect(() => {
+    if (!sitter?.id) return;
+    fetch(`/api/sitters/${sitter.id}/services`)
+      .then((r) => r.json())
+      .then(({ data }) => setServiceDetails((data ?? []).filter((s: ServiceDetail & { is_active: boolean }) => s.is_active)));
+  }, [sitter?.id]);
 
   if (!user || !sitter) return null;
 
@@ -95,11 +109,19 @@ export default function SitterProfilePreviewPage() {
       {activeTab === "서비스" && (
         <div className="bg-white rounded-2xl shadow-[0px_2px_12px_rgba(232,116,42,0.10)] border border-orange-100 p-6">
           <h3 className="font-bold text-stone-900 mb-4">제공 서비스</h3>
-          {sitter.services.length > 0 ? (
+          {serviceDetails.length > 0 ? (
             <div className="flex flex-col gap-3">
-              {sitter.services.map((service, idx) => (
-                <div key={idx} className="bg-orange-50 rounded-xl p-4">
-                  <span className="text-sm font-semibold text-stone-900">{service}</span>
+              {serviceDetails.map((sv, idx) => (
+                <div key={idx} className="bg-orange-50 rounded-xl p-4 flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <span className="text-sm font-semibold text-stone-900">{sv.title}</span>
+                    {sv.description && (
+                      <p className="text-xs text-gray-500 mt-1">{sv.description}</p>
+                    )}
+                  </div>
+                  <span className="text-base font-bold text-orange-500 shrink-0">
+                    {sv.price.toLocaleString()}원~
+                  </span>
                 </div>
               ))}
             </div>
@@ -177,8 +199,8 @@ export default function SitterProfilePreviewPage() {
         </div>
 
         <div className="flex flex-wrap gap-1.5 px-5 pb-3 bg-white">
-          {sitter.services.map((s) => (
-            <Pill key={s}>{s}</Pill>
+          {sitter.services.map((s, i) => (
+            <Pill key={i}>{s}</Pill>
           ))}
         </div>
 
@@ -259,8 +281,8 @@ export default function SitterProfilePreviewPage() {
               </div>
 
               <div className="flex gap-2 flex-wrap justify-center mb-6">
-                {sitter.services.map((s) => (
-                  <Pill key={s}>{s}</Pill>
+                {sitter.services.map((s, i) => (
+                  <Pill key={i}>{s}</Pill>
                 ))}
               </div>
 

@@ -6,14 +6,14 @@ interface BookingState {
   petsitterName: string;
   service: string;
   dateRange: DateRange | undefined;
-  petIds: number[];
+  petIds: string[];
   petNames: string[];
   note: string;
   paymentMethod: "card" | "kakaopay" | "tosspay" | null;
 
   setPetsitter: (id: number, name: string, service: string) => void;
   setDateRange: (range: DateRange | undefined) => void;
-  togglePet: (id: number, name: string) => void;
+  togglePet: (id: string, name: string) => void;
   setNote: (note: string) => void;
   setPaymentMethod: (method: "card" | "kakaopay" | "tosspay") => void;
   reset: () => void;
@@ -24,7 +24,7 @@ const initialState = {
   petsitterName: "",
   service: "",
   dateRange: undefined,
-  petIds: [] as number[],
+  petIds: [] as string[],
   petNames: [] as string[],
   note: "",
   paymentMethod: null,
@@ -35,7 +35,7 @@ export const useBookingStore = create<BookingState>((set, get) => ({
   setPetsitter: (id, name, service) =>
     set({ petsitterId: id, petsitterName: name, service }),
   setDateRange: (range) => set({ dateRange: range }),
-  togglePet: (id, name) => {
+  togglePet: (id: string, name: string) => {
     const { petIds, petNames } = get();
     if (petIds.includes(id)) {
       set({

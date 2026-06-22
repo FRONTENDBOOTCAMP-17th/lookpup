@@ -6,7 +6,6 @@ import { ChevronLeft, Plus, X, Eye, Camera, MapPin, Check } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Avatar from "@/components/ui/Avatar";
 import StatGrid from "@/components/ui/StatGrid";
-import { createClient } from "@/utils/supabase/client";
 import { useUserStore } from "@/store/userStore";
 import { updateSitterProfile, getMySitterProfile } from "@/app/actions/sitters";
 import { uploadToCloudinary } from "@/utils/cloudinary";
@@ -186,11 +185,8 @@ export default function SitterEditPage() {
       photos: photoSlots,
     };
 
-    const supabase = createClient();
-    supabase
-      .from("services")
-      .select("id, title, price, description")
-      .eq("sitter_id", sitter.id)
+    fetch(`/api/sitters/${sitter.id}/services`)
+      .then((r) => r.json())
       .then(({ data }) => {
         type DbService = { id: string; title: string; price: number; description: string | null };
         const dbServices: ServiceItem[] = ((data as DbService[]) ?? []).map((s, idx) => ({
