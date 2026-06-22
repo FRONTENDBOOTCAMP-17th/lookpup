@@ -1,4 +1,5 @@
 import { MapPin, Star } from "lucide-react";
+import type { ReactNode } from "react";
 import Avatar from "@/components/ui/Avatar";
 import Pill from "@/components/ui/Pill";
 import { useUserStore } from "@/store/userStore";
@@ -9,21 +10,26 @@ export interface SitterProfile {
   src?: string | null;
   verified: boolean;
   location: string;
-  rating: number;
-  reviewCount: number;
-  services: string[];
-  career: string;
-  completedCount: string;
+  rating?: number;
+  reviewCount?: number;
+  services?: string[];
+  career?: string;
 }
 
 interface Props {
   profile?: SitterProfile;
   className?: string;
+  variant?: "owner" | "sitter";
+  action?: ReactNode;
 }
 
-export default function SitterProfileCard({ profile, className = "" }: Props) {
+export default function SitterProfileCard({
+  profile,
+  className = "",
+  variant = "sitter",
+  action,
+}: Props) {
   const { user, sitter } = useUserStore();
-  console.log(sitter);
   const p: SitterProfile | null =
     profile ??
     (user && sitter
@@ -32,16 +38,17 @@ export default function SitterProfileCard({ profile, className = "" }: Props) {
           initial: user.fullName.charAt(0),
           src: user.profileImage,
           verified: user.isVerified,
-          location: sitter.availableArea,
+          location: sitter.availableArea || "위치 미등록",
           rating: sitter.rating,
           reviewCount: sitter.reviewCount,
           services: sitter.services,
           career: sitter.career ?? "-",
-          completedCount: `${sitter.reviewCount}건`,
         }
       : null);
 
   if (!p) return null;
+
+  const isSitterCard = variant === "sitter";
 
   return (
     <div
@@ -62,49 +69,43 @@ export default function SitterProfileCard({ profile, className = "" }: Props) {
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-lg font-bold text-stone-900">{p.name}</span>
-              {p.verified && (
-                <span className="px-2 py-0.5 bg-orange-500 rounded text-white text-[10px] font-medium">
-                  인증
+              <span className="text-lg font-bold text-stone-900">
+                {p.name}
+              </span>
+              {isSitterCard ? (
+                <span className="rounded bg-orange-500 px-2 py-0.5 text-[10px] font-medium text-white">
+                  경력 {p.career ?? "-"}
                 </span>
-              )}
+              ) : null}
             </div>
             <div className="flex items-center gap-1 mb-1">
               <MapPin size={12} className="text-gray-400" />
               <span className="text-xs text-gray-500">{p.location}</span>
             </div>
-            <div className="flex items-center gap-1">
-              <Star size={12} className="fill-amber-400 text-amber-400" />
-              <span className="text-sm font-bold text-stone-900">
-                {p.rating}
-              </span>
-              <span className="text-xs text-gray-400">
-                ({p.reviewCount}개 리뷰)
-              </span>
-            </div>
+            {isSitterCard && (
+              <div className="flex items-center gap-1">
+                <Star size={12} className="fill-amber-400 text-amber-400" />
+                <span className="text-sm font-bold text-stone-900">
+                  {p.rating ?? "-"}
+                </span>
+                <span className="text-xs text-gray-400">
+                  ({p.reviewCount ?? 0}개 리뷰)
+                </span>
+              </div>
+            )}
           </div>
+
+          {action}
         </div>
 
-        <div className="flex gap-2 flex-wrap">
-          {p.services.map((s) => (
-            <Pill key={s}>{s}</Pill>
-          ))}
-        </div>
+        {isSitterCard && !!p.services?.length && (
+          <div className="flex gap-2 flex-wrap">
+            {p.services.map((s) => (
+              <Pill key={s}>{s}</Pill>
+            ))}
+          </div>
+        )}
 
-        <div className="grid grid-cols-2 gap-2">
-          {[
-            { label: "경력", value: p.career },
-            { label: "완료 건수", value: p.completedCount },
-          ].map((item) => (
-            <div
-              key={item.label}
-              className="bg-orange-50 rounded-xl px-3 py-2.5 text-center"
-            >
-              <p className="text-sm font-bold text-orange-500">{item.value}</p>
-              <p className="text-xs text-gray-400 mt-0.5">{item.label}</p>
-            </div>
-          ))}
-        </div>
       </div>
     </div>
   );
