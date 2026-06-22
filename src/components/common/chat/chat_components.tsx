@@ -367,11 +367,13 @@ export function MessageBubble({ msg, senderInitial }: MessageBubbleProps) {
 type ApplicantProfilePopupProps = {
   applicant: Applicant;
   onClose: () => void;
+  cardVariant?: "sitter" | "owner";
 };
 
 export function ApplicantProfilePopup({
   applicant,
   onClose,
+  cardVariant = "sitter",
 }: ApplicantProfilePopupProps) {
   const profile: SitterProfile = {
     name: applicant.name,
@@ -382,7 +384,6 @@ export function ApplicantProfilePopup({
     reviewCount: applicant.reviewCount ?? 0,
     services: applicant.services ?? [],
     career: applicant.experience ?? "",
-    completedCount: applicant.completedJobs ?? "",
   };
 
   return (
@@ -397,7 +398,7 @@ export function ApplicantProfilePopup({
         >
           <X size={16} className="text-gray-400" />
         </button>
-        <SitterProfileCard profile={profile} />
+        <SitterProfileCard profile={profile} variant={cardVariant} />
       </div>
     </div>
   );

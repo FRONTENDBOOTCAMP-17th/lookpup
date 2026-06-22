@@ -876,6 +876,7 @@ function ChatPageContent({
         <ApplicantProfilePopup
           applicant={profilePopupApplicant}
           onClose={() => setProfilePopupApplicant(null)}
+          cardVariant={profilePopupApplicant.ownerId === userId ? "sitter" : "owner"}
         />
       )}
 
