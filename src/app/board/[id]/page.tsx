@@ -18,6 +18,8 @@ import { CustomModal } from "@/components/common/CustomModal";
 import BackButton from "@/components/common/BackButton";
 import KakaoMap from "@/components/KakaoMap";
 import { splitConditions } from "@/utils/boardConditions";
+import { createComment } from "@/app/actions/comments";
+import { incrementViewCount } from "@/app/actions/requests";
 
 const STATUS_MAP: Record<string, string> = {
   open: "모집중",
@@ -43,6 +45,13 @@ type OtherPost = {
   created_at: string;
 };
 
+type Comment = {
+  id: string;
+  content: string;
+  created_at: string;
+  users: { full_name: string | null; profile_image: string | null } | null;
+};
+
 type RequestDetail = {
   id: string;
   owner_id: string;
@@ -55,6 +64,7 @@ type RequestDetail = {
   latitude: number | null;
   longitude: number | null;
   status: string;
+  view_count: number;
   created_at: string;
   users: { full_name: string; profile_image: string | null; is_verified: boolean; created_at: string } | null;
   pets: Pet | null;
@@ -119,48 +129,6 @@ function formatJoinDate(dateStr: string) {
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
 }
 
-// 더미 데이터 : 뭘눌러도 이것만 나와요 우하하~~~
-// 실데이터 연결 후에도 fallback으로 사용 중 — post가 null이거나 해당 필드가 DB에 없는 경우 아래 값이 표시됨
-// (예: POST.time, POST.priceNote, POST.requirements, POST.views, POST.author.rating 등)
-
-const POST = {
-  id: 1,
-  category: "산책",
-  status: "모집중",
-  title: "강아지 산책 도우미 구합니다",
-  createdAt: "2일 전",
-  views: 245,
-  applicants: 8,
-  location: "서울 마포구 연남동",
-  period: "2024.06.15 - 장기",
-  time: "매일 오전 8:00-9:00",
-  price: "시간당 20,000원",
-  priceNote: "월 단위 결제",
-  description: `안녕하세요! 저희 집 강아지 두 마리를 함께 산책시켜 주실 분을 찾고 있습니다.
-
-매일 오전 8시-9시 사이에 1시간 정도 산책이 필요한데, 현재 업무 시간 때문에 어려워서 도움을 요청드립니다.
-
-두 마리 모두 순하고 사람을 좋아하며, 다른 강아지들과도 잘 어울립니다. 산책 경험이 있으시고 책임감 있으신 분을 찾습니다.
-
-관심 있으신 분은 연락 주세요. 감사합니다!`,
-  requirements: [
-    "강아지 산책 경험 필수",
-    "매일 오전 8-9시 시간대 가능하신 분",
-    "책임감 있고 성실하신 분",
-    "반려동물에 대한 애정이 있으신 분",
-  ],
-  author: {
-    id: 1,
-    name: "김민수",
-    initial: "김",
-    district: "마포구",
-    rating: 4.8,
-    reviews: 12,
-    joinDate: "2023.03",
-    verified: true,
-  },
-};
-
 const COMMENTS = [
   {
     id: 1,
@@ -188,39 +156,6 @@ const COMMENTS = [
   },
 ];
 
-const SIMILAR_POSTS = [
-  {
-    id: 2,
-    title: "고양이 방문 돌봄 구합니다",
-    district: "마포구",
-    price: "25,000원/시간",
-    createdAt: "1일 전",
-    status: "모집중",
-  },
-  {
-    id: 3,
-    title: "주말 강아지 위탁 돌봄",
-    district: "용산구",
-    price: "50,000원/일",
-    createdAt: "3일 전",
-    status: "모집중",
-  },
-  {
-    id: 4,
-    title: "소형견 산책 파트타임",
-    district: "서대문구",
-    price: "18,000원/시간",
-    createdAt: "5일 전",
-    status: "확정",
-  },
-];
-
-const SAFETY_TIPS = [
-  "플랫폼 내에서 안전하게 결제하세요",
-  "직거래 시 신분증을 확인하세요",
-  "계약서를 작성하는 것을 권장합니다",
-];
-
 // 페이지
 export default function BoardDetailPage() {
   const { id } = useParams() as { id: string };
@@ -228,7 +163,11 @@ export default function BoardDetailPage() {
   const [comment, setComment] = useState("");
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [post, setPost] = useState<RequestDetail | null>(null);
+  const [postLoading, setPostLoading] = useState(true);
   const [otherPosts, setOtherPosts] = useState<OtherPost[] | null>(null);
+  // null = 아직 로드 전/실패(테이블 미생성 등) → 더미 COMMENTS fallback. 배열이면 실데이터.
+  const [comments, setComments] = useState<Comment[] | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     fetch(`/api/requests/${id}`)
@@ -237,8 +176,58 @@ export default function BoardDetailPage() {
         if ("data" in result && result.data) {
           setPost(result.data as unknown as RequestDetail);
         }
+      })
+      .finally(() => setPostLoading(false));
+  }, [id]);
+
+  // 조회수 증가 (상세 진입 시 1회). GET이 아닌 Server Action으로 분리 → edit 로드 등엔 영향 없음.
+  useEffect(() => {
+    incrementViewCount(id);
+  }, [id]);
+
+  useEffect(() => {
+    fetch(`/api/requests/${id}/comments`)
+      .then((res) => res.json())
+      .then((result) => {
+        if ("data" in result && Array.isArray(result.data)) {
+          setComments(result.data as Comment[]);
+        }
+      })
+      .catch(() => {
+        // comments 테이블 미생성 등 실패 시 더미 fallback 유지
       });
   }, [id]);
+
+  const handleSubmitComment = async () => {
+    const trimmed = comment.trim();
+    if (!trimmed || submitting) return;
+    setSubmitting(true);
+    const result = await createComment(id, trimmed);
+    setSubmitting(false);
+    if ("data" in result && result.data) {
+      setComments((prev) => [...(prev ?? []), result.data as Comment]);
+      setComment("");
+    } else if ("error" in result && result.error) {
+      alert(result.error.message);
+    }
+  };
+
+  // 실데이터(comments)가 로드되면 그걸, 아니면 더미 COMMENTS를 표시 형태로 정규화
+  const displayComments = comments
+    ? comments.map((c) => ({
+        id: c.id,
+        name: c.users?.full_name ?? "알 수 없음",
+        initial: c.users?.full_name?.[0] ?? "?",
+        createdAt: formatRelativeTime(c.created_at),
+        content: c.content,
+      }))
+    : COMMENTS.map((c) => ({
+        id: String(c.id),
+        name: c.author,
+        initial: c.initial,
+        createdAt: c.createdAt,
+        content: c.content,
+      }));
 
   useEffect(() => {
     if (!post?.owner_id) return;
@@ -255,9 +244,23 @@ export default function BoardDetailPage() {
       });
   }, [post?.owner_id, post?.id]);
 
+  if (!post) {
+    return (
+      <>
+        <Header />
+        <main className="flex-1 bg-orange-50 min-h-screen">
+          <div className="max-w-7xl mx-auto px-4 md:px-10 py-20 text-center text-gray-400">
+            {postLoading ? "불러오는 중..." : "게시글을 찾을 수 없습니다."}
+          </div>
+        </main>
+        <Footer />
+      </>
+    );
+  }
+
   // content에 함께 저장된 펫시터 조건을 본문/조건으로 분리
-  const parsed = post ? splitConditions(post.content ?? "") : null;
-  const conditionsText = parsed?.conditions.trim() ?? "";
+  const parsed = splitConditions(post.content ?? "");
+  const conditionsText = parsed.conditions.trim();
 
   return (
     <>
@@ -299,18 +302,18 @@ export default function BoardDetailPage() {
                   {/* 상태 + 메타 */}
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="px-3 py-1 bg-emerald-50 text-emerald-500 text-xs font-medium rounded-full">
-                      {post ? STATUS_MAP[post.status] ?? post.status : POST.status}
+                      {STATUS_MAP[post.status] ?? post.status}
                     </span>
                     <div className="flex items-center gap-3 md:gap-4 text-gray-500 text-sm">
-                      <span>{post ? formatRelativeTime(post.created_at) : POST.createdAt}</span>
-                      <span>조회 {POST.views}</span>
-                      <span>지원 {post?.applications.length ?? POST.applicants}명</span>
+                      <span>{formatRelativeTime(post.created_at)}</span>
+                      <span>조회 {post.view_count}</span>
+                      <span>지원 {post.applications.length}명</span>
                     </div>
                   </div>
 
                   {/* 제목 */}
                   <h1 className="text-2xl md:text-3xl font-bold text-stone-900">
-                    {post?.title ?? POST.title}
+                    {post.title}
                   </h1>
 
                   {/* 상세 정보 그리드 */}
@@ -320,7 +323,7 @@ export default function BoardDetailPage() {
                       <div>
                         <p className="text-gray-500 text-xs">위치</p>
                         <p className="text-stone-900 text-base font-medium">
-                          {post?.location ?? POST.location}
+                          {post.location}
                         </p>
                       </div>
                     </div>
@@ -329,7 +332,7 @@ export default function BoardDetailPage() {
                       <div>
                         <p className="text-gray-500 text-xs">기간</p>
                         <p className="text-stone-900 text-base font-medium">
-                          {post ? formatPeriod(post.start_datetime, post.end_datetime) : POST.period}
+                          {formatPeriod(post.start_datetime, post.end_datetime)}
                         </p>
                       </div>
                     </div>
@@ -338,12 +341,10 @@ export default function BoardDetailPage() {
                       <div>
                         <p className="text-gray-500 text-xs">시간</p>
                         <p className="text-stone-900 text-base font-medium">
-                          {post
-                            ? formatTimeRange(
-                                post.start_datetime,
-                                post.end_datetime,
-                              )
-                            : POST.time}
+                          {formatTimeRange(
+                            post.start_datetime,
+                            post.end_datetime,
+                          )}
                         </p>
                       </div>
                     </div>
@@ -352,14 +353,9 @@ export default function BoardDetailPage() {
                       <div>
                         <p className="text-gray-500 text-xs">급여</p>
                         <p className="text-orange-500 text-base font-medium">
-                          {post
-                            ? post.budget
-                              ? `${post.budget.toLocaleString()}원`
-                              : "협의 가능"
-                            : POST.price}
-                        </p>
-                        <p className="text-gray-500 text-xs">
-                          {POST.priceNote}
+                          {post.budget
+                            ? `${post.budget.toLocaleString()}원`
+                            : "협의 가능"}
                         </p>
                       </div>
                     </div>
@@ -382,36 +378,22 @@ export default function BoardDetailPage() {
               <SectionCard>
                 <h2 className="text-stone-900 text-xl font-bold">상세 내용</h2>
                 <p className="text-stone-900 text-base leading-7 whitespace-pre-line">
-                  {parsed ? parsed.content : POST.description}
+                  {parsed.content}
                 </p>
               </SectionCard>
 
-              {/* 펫시터 조건 — 실데이터(content에서 분리)가 있으면 표시, 없으면 더미 fallback */}
-              {conditionsText ? (
+              {/* 펫시터 조건 — 실데이터(content에서 분리)가 있을 때만 표시 */}
+              {conditionsText && (
                 <SectionCard>
                   <h2 className="text-stone-900 text-xl font-bold">펫시터 조건</h2>
                   <p className="text-stone-900 text-base leading-7 whitespace-pre-line">
                     {conditionsText}
                   </p>
                 </SectionCard>
-              ) : (
-                !post && (
-                  <SectionCard>
-                    <h2 className="text-stone-900 text-xl font-bold">요구사항</h2>
-                    <ul className="flex flex-col gap-3">
-                      {POST.requirements.map((req) => (
-                        <li key={req} className="flex items-start gap-3">
-                          <span className="w-1.5 h-1.5 bg-orange-500 rounded-full mt-2.5 shrink-0" />
-                          <span className="text-stone-900 text-base">{req}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </SectionCard>
-                )
               )}
 
               {/* 반려동물 */}
-              {post && post.pets && (
+              {post.pets && (
                 <SectionCard>
                   <h2 className="text-stone-900 text-xl font-bold">반려동물</h2>
                   <div className="flex flex-wrap gap-3">
@@ -461,7 +443,7 @@ export default function BoardDetailPage() {
               {/* 댓글 */}
               <SectionCard>
                 <h2 className="text-stone-900 text-xl font-bold">
-                  댓글 {COMMENTS.length}
+                  댓글 {displayComments.length}
                 </h2>
 
                 {/* 댓글 입력 */}
@@ -477,39 +459,37 @@ export default function BoardDetailPage() {
                     />
                     <div className="flex justify-end">
                       <button
+                        onClick={handleSubmitComment}
                         className={`h-9 px-4 rounded-[10px] text-xs font-semibold transition-colors ${
-                          comment.trim()
+                          comment.trim() && !submitting
                             ? "bg-orange-500 text-white hover:bg-orange-600"
                             : "bg-orange-100 text-gray-300 cursor-not-allowed"
                         }`}
-                        disabled={!comment.trim()}
+                        disabled={!comment.trim() || submitting}
                       >
-                        등록
+                        {submitting ? "등록 중..." : "등록"}
                       </button>
                     </div>
                   </div>
                 </div>
 
-                {/* 댓글 목록 */}
+                {/* 댓글 목록 (평면 댓글 — 답글 기능 없음) */}
                 <div className="flex flex-col gap-6 pt-2">
-                  {COMMENTS.map((c) => (
+                  {displayComments.map((c) => (
                     <div key={c.id} className="flex items-start gap-3">
                       <Avatar initial={c.initial} size="md" variant="orange" />
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-stone-900 text-sm font-semibold">
-                            {c.author}
+                            {c.name}
                           </span>
                           <span className="text-gray-500 text-xs">
                             {c.createdAt}
                           </span>
                         </div>
-                        <p className="text-stone-900 text-sm leading-5 mb-2">
+                        <p className="text-stone-900 text-sm leading-5">
                           {c.content}
                         </p>
-                        <button className="text-orange-500 text-xs font-medium hover:underline">
-                          {c.replyCount > 0 ? `답글 ${c.replyCount}개` : "답글"}
-                        </button>
                       </div>
                     </div>
                   ))}
@@ -526,16 +506,16 @@ export default function BoardDetailPage() {
                 </h3>
                 <div className="flex items-start gap-3">
                   <Avatar
-                    initial={post?.users?.full_name?.[0] ?? POST.author.initial}
+                    initial={post.users?.full_name?.[0] ?? "?"}
                     size="lg"
                     variant="orange"
                   />
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-stone-900 text-base font-semibold">
-                        {post?.users?.full_name ?? POST.author.name}
+                        {post.users?.full_name ?? "알 수 없음"}
                       </span>
-                      {(post?.users?.is_verified ?? POST.author.verified) && (
+                      {post.users?.is_verified && (
                         <span className="px-2 py-0.5 bg-orange-500 rounded text-white text-[9px] font-medium">
                           인증
                         </span>
@@ -550,14 +530,12 @@ export default function BoardDetailPage() {
                     <div className="flex items-center gap-1 mb-1">
                       <MapPin className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                       <span className="text-gray-500 text-sm">
-                        {post?.location
-                          ? toDistrict(post.location)
-                          : POST.author.district}
+                        {toDistrict(post.location)}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-gray-500 text-xs">
-                        가입 {post?.users?.created_at ? formatJoinDate(post.users.created_at) : POST.author.joinDate}
+                        가입 {post.users?.created_at ? formatJoinDate(post.users.created_at) : "-"}
                       </span>
                     </div>
                   </div>
@@ -568,7 +546,7 @@ export default function BoardDetailPage() {
               <SectionCard>
                 <div className="flex items-center justify-between">
                   <h3 className="text-stone-900 text-lg font-bold">
-                    {post?.users?.full_name ?? POST.author.name}님의 다른 게시물
+                    {post.users?.full_name ?? "작성자"}님의 다른 게시물
                   </h3>
                   <Link
                     href="/board"
@@ -578,31 +556,27 @@ export default function BoardDetailPage() {
                   </Link>
                 </div>
                 <div className="flex flex-col gap-3">
-                  {otherPosts !== null && otherPosts.length === 0 ? (
+                  {otherPosts === null ? (
+                    <p className="text-gray-400 text-sm py-3 text-center">
+                      불러오는 중...
+                    </p>
+                  ) : otherPosts.length === 0 ? (
                     <p className="text-gray-400 text-sm py-3 text-center">
                       다른 게시물이 없습니다.
                     </p>
                   ) : (
-                    (otherPosts === null
-                      ? SIMILAR_POSTS.map((p) => ({
-                          id: String(p.id),
-                          title: p.title,
-                          district: p.district,
-                          price: p.price,
-                          createdAt: p.createdAt,
-                          status: p.status,
-                        }))
-                      : otherPosts.map((p) => ({
-                          id: p.id,
-                          title: p.title,
-                          district: p.location,
-                          price: p.budget
-                            ? `${p.budget.toLocaleString("ko-KR")}원`
-                            : "협의 가능",
-                          createdAt: formatRelativeTime(p.created_at),
-                          status: STATUS_MAP[p.status] ?? p.status,
-                        }))
-                    ).map((p) => (
+                    otherPosts
+                      .map((p) => ({
+                        id: p.id,
+                        title: p.title,
+                        district: p.location,
+                        price: p.budget
+                          ? `${p.budget.toLocaleString("ko-KR")}원`
+                          : "협의 가능",
+                        createdAt: formatRelativeTime(p.created_at),
+                        status: STATUS_MAP[p.status] ?? p.status,
+                      }))
+                      .map((p) => (
                       <Link key={p.id} href={`/board/${p.id}`}>
                         <div className="p-3 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors cursor-pointer">
                           <div className="flex items-start justify-between mb-1">

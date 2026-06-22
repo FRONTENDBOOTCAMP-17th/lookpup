@@ -3,13 +3,17 @@
 import { createClient } from "@/utils/supabase/server";
 import { createServiceClient } from "@/utils/supabase/service";
 
-type SitterCondition = "require_badge" | "prefer_female" | "require_certificate" | "no_smoker";
+type SitterCondition =
+  | "require_badge"
+  | "prefer_female"
+  | "require_certificate"
+  | "no_smoker";
 
 interface RequestInput {
   pet_ids: string[];
   title: string;
   content?: string | null;
-  request_type: "visit" | "foster" | "walk" | "hotel";
+  request_type: "walk" | "care" | "hotel" | "pickup" | "foster" | "other";
   start_datetime: string;
   end_datetime: string;
   budget: number;
@@ -29,6 +33,23 @@ async function getAuthUser() {
 
 // 조회(listOpenRequests/getRequestDetail/getMyRequests)는 팀 컨벤션(API_USAGE.md)에 따라
 // API 라우트(GET /api/requests, /api/requests/[id])로 분리됨. 여기엔 쓰기(mutation)만 둔다.
+
+// 조회수 +1. 상세 페이지 진입 시에만 호출 — GET 라우트에 부수효과를 두지 않기 위해 분리.
+// 비로그인도 조회수는 오르므로 인증 불필요.
+export async function incrementViewCount(id: string) {
+  const db = createServiceClient();
+  const { data } = await db
+    .from("requests")
+    .select("view_count")
+    .eq("id", id)
+    .single();
+  if (data) {
+    await db
+      .from("requests")
+      .update({ view_count: (data.view_count ?? 0) + 1 })
+      .eq("id", id);
+  }
+}
 
 export async function createRequest(input: RequestInput) {
   const user = await getAuthUser();
@@ -61,7 +82,10 @@ export async function createRequest(input: RequestInput) {
   }
   if (input.budget < 0) {
     return {
-      error: { code: "VALIDATION_ERROR", message: "예산은 0 이상이어야 합니다." },
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "예산은 0 이상이어야 합니다.",
+      },
     };
   }
 
@@ -73,7 +97,10 @@ export async function createRequest(input: RequestInput) {
   ];
   if (input.sitter_conditions?.some((c) => !validConditions.includes(c))) {
     return {
-      error: { code: "VALIDATION_ERROR", message: "유효하지 않은 펫시터 조건입니다." },
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "유효하지 않은 펫시터 조건입니다.",
+      },
     };
   }
 

@@ -69,64 +69,6 @@ function formatRelativeTime(dateStr: string) {
   return `${Math.floor(diffH / 24)}일 전`;
 }
 
-const POSTS = [
-  {
-    id: 1,
-    category: "방문돌봄",
-    title: "포메라니안 방문돌봄 구합니다",
-    desc: "3살 포메라니안 뭉치의 방문돌봄을 부탁드립니다. 하루 2회 방문 필요합니다.",
-    location: "서울 마포구",
-    period: "6월 15일 - 6월 17일",
-    price: "30,000원/일",
-    createdAt: "2시간 전",
-    views: 45,
-  },
-  {
-    id: 2,
-    category: "위탁돌봄",
-    title: "고양이 위탁돌봄 급구!",
-    desc: "러시안블루 나비 1주일 위탁돌봄 급하게 구합니다. 경험 많으신 분 환영합니다.",
-    location: "서울 강남구",
-    period: "6월 20일 - 6월 27일",
-    price: "40,000원/일",
-    createdAt: "5시간 전",
-    views: 128,
-  },
-  {
-    id: 3,
-    category: "산책",
-    title: "대형견 산책 도와주실 분",
-    desc: "골든 리트리버 산책 도와주실 분을 찾습니다. 주 3회, 1시간씩입니다.",
-    location: "서울 용산구",
-    period: "정기 (월/수/금)",
-    price: "20,000원/회",
-    createdAt: "1일 전",
-    views: 82,
-  },
-  {
-    id: 4,
-    category: "펫호텔",
-    title: "여행 기간 중 펫호텔 추천해주세요",
-    desc: "2주 해외여행 동안 믿고 맡길 수 있는 펫호텔을 찾고 있습니다.",
-    location: "서울 송파구",
-    period: "7월 1일 - 7월 14일",
-    price: "협의 가능",
-    createdAt: "1일 전",
-    views: 156,
-  },
-  {
-    id: 5,
-    category: "방문돌봄",
-    title: "노견 케어 경험 있는 펫시터",
-    desc: "12살 슈나우저 케어 가능한 펫시터를 찾습니다. 약 복용 도움 필요합니다.",
-    location: "서울 성동구",
-    period: "6월 18일 - 6월 21일",
-    price: "50,000원/일",
-    createdAt: "2일 전",
-    views: 67,
-  },
-];
-
 // 게시글 카드
 
 function PostCard({ post }: { post: Post }) {
@@ -184,16 +126,14 @@ export default function BoardPage() {
   const [activeCategory, setActiveCategory] = useState("전체");
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [posts, setPosts] = useState<Post[]>(POSTS as unknown as Post[]);
-  // 실제 데이터로 교체 시 아래 useState로 변경 위는 더미 데이터 표시용
-  // const [posts, setPosts] = useState<Post[]>([]);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [postsLoading, setPostsLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/requests?status=open")
       .then((res) => res.json())
       .then((result) => {
-        // data.length > 0 조건: DB에 데이터 없으면 더미 유지
-        if ("data" in result && result.data && result.data.length > 0) {
+        if ("data" in result && Array.isArray(result.data)) {
           setPosts(
             result.data.map((r: RequestRow) => ({
               id: r.id,
@@ -209,7 +149,8 @@ export default function BoardPage() {
             })),
           );
         }
-      });
+      })
+      .finally(() => setPostsLoading(false));
   }, []);
 
   useEffect(() => {
@@ -292,7 +233,11 @@ export default function BoardPage() {
 
           {/* 게시글 목록 */}
           <div className="flex flex-col gap-3">
-            {paginated.length > 0 ? (
+            {postsLoading ? (
+              <div className="py-20 text-center text-gray-400 text-base bg-white rounded-2xl border border-orange-100">
+                불러오는 중...
+              </div>
+            ) : paginated.length > 0 ? (
               paginated.map((post) => <PostCard key={post.id} post={post} />)
             ) : (
               <div className="py-20 text-center text-gray-400 text-base bg-white rounded-2xl border border-orange-100">

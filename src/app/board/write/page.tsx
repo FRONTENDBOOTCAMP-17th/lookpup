@@ -40,11 +40,6 @@ const SERVICE_TYPES = [
 
 const BUDGET_PRESETS = [10000, 20000, 30000, 50000];
 
-const DUMMY_PETS = [
-  { id: "1", name: "몽이", type: "강아지", age: 3, weight: 5.2, emoji: "🐶" },
-  { id: "2", name: "나비", type: "고양이", age: 5, weight: 3.8, emoji: "🐱" },
-];
-
 const LOCATION_TABS = ["우리 집", "펫시터 집", "직접 입력"];
 
 const TEMPLATES = [
@@ -137,7 +132,6 @@ export default function BoardWritePage() {
   }, [draftKey]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  // 더미 사용 시: useState<Pet[]>(DUMMY_PETS as unknown as Pet[])
   const [pets, setPets] = useState<Pet[]>([]);
 
   useEffect(() => {
@@ -692,7 +686,6 @@ export default function BoardWritePage() {
               </p>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {/* 더미 사용 시: DUMMY_PETS.map */}
                 {pets.map((pet) => {
                   const isSelected = form.selected_pets.includes(pet.id);
                   return (
