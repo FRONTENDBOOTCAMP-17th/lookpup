@@ -434,8 +434,6 @@ export default function BoardDetailPage() {
                         {applyError}
                       </p>
                     )}
-
-                    )}
                   </div>
                 </div>
               </SectionCard>
