@@ -45,7 +45,7 @@ export async function createApplication(
 
   const { data: requestRow } = await db
     .from("requests")
-    .select("id, status")
+    .select("id, status, owner_id")
     .eq("id", requestId)
     .single();
 
@@ -91,6 +91,28 @@ export async function createApplication(
 
   if (error) {
     return { error: { code: "INTERNAL_ERROR", message: error.message } };
+  }
+
+  const { data: existingRoom } = await db
+    .from("chat_rooms")
+    .select("id")
+    .eq("request_id", requestId)
+    .eq("sitter_id", sitter.id)
+    .maybeSingle();
+
+  if (!existingRoom) {
+    const { error: roomError } = await db.from("chat_rooms").insert({
+      room_type: "request",
+      owner_id: requestRow.owner_id,
+      sitter_id: sitter.id,
+      request_id: requestId,
+    });
+
+    if (roomError) {
+      return {
+        error: { code: "INTERNAL_ERROR", message: roomError.message },
+      };
+    }
   }
 
   return { data };
@@ -197,14 +219,12 @@ export async function updateApplication(
       .eq("request_id", requestRow.id);
 
     if (requestPets && requestPets.length > 0) {
-      await db
-        .from("reservation_items")
-        .insert(
-          requestPets.map(({ pet_id }) => ({
-            reservation_id: reservation.id,
-            pet_id,
-          })),
-        );
+      await db.from("reservation_items").insert(
+        requestPets.map(({ pet_id }) => ({
+          reservation_id: reservation.id,
+          pet_id,
+        })),
+      );
     }
 
     const { data: existingRoom } = await db
