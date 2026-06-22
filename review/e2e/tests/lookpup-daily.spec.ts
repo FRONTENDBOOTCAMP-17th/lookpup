@@ -4,7 +4,7 @@ import { test, expect, Page } from "@playwright/test";
 // 로그인은 OAuth(카카오/구글)만 있어 자동화 불가 → 공개 페이지 위주로 렌더만 확인.
 // 주의: networkidle 금지(realtime/websocket으로 hang) → domcontentloaded + waitForTimeout.
 
-const IMG = "../images/2026-06-19";
+const IMG = "../images/2026-06-22";
 
 async function visit(page: Page, path: string) {
   const res = await page.goto(path, { waitUntil: "domcontentloaded" });
