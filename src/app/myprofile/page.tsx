@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, type ReactNode } from "react";
+import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
 import Link from "next/link";
+import Script from "next/script";
 import { useRouter } from "next/navigation";
 import { useUserStore } from "@/store/userStore";
 import {
@@ -22,6 +23,8 @@ import {
   UserX,
   Pencil,
   MapPin,
+  LocateFixed,
+  X,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Avatar, { AvatarMobile } from "@/components/ui/Avatar";
@@ -32,9 +35,35 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { signOut } from "@/app/actions/auth";
-import { coordToRegion } from "@/utils/kakaoGeocode";
+import {
+  coordToRegion,
+  searchAddressList,
+  coordToAddress,
+  type AddressSuggestion,
+} from "@/utils/kakaoGeocode";
 
 const OWNER_LOCATION_STORAGE_KEY = "lookpup_owner_location";
+
+interface OwnerLocationData {
+  address: string;
+  detailAddress: string;
+  lat: number;
+  lng: number;
+  dong: string;
+}
+
+function parseStoredLocation(raw: string | null): OwnerLocationData | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object" && parsed.dong && parsed.lat) {
+      return { detailAddress: "", ...parsed } as OwnerLocationData;
+    }
+  } catch {
+    // 좌표 없는 구 포맷은 무효
+  }
+  return null;
+}
 
 interface MenuItem {
   id: string;
@@ -274,14 +303,27 @@ export default function MyProfilePage() {
 
   const [userType, setUserType] = useState<"owner" | "sitter">("owner");
   const [selectedMenu, setSelectedMenu] = useState("profile");
-  const [ownerLocation, setOwnerLocation] = useState(() => {
-    if (typeof window === "undefined") return "";
-    return localStorage.getItem(OWNER_LOCATION_STORAGE_KEY) ?? "";
-  });
-  const [isOwnerLocationLoading, setIsOwnerLocationLoading] = useState(false);
-  const [ownerLocationError, setOwnerLocationError] = useState<string | null>(
-    null,
-  );
+  const [ownerLocationData, setOwnerLocationData] =
+    useState<OwnerLocationData | null>(() => {
+      if (typeof window === "undefined") return null;
+      return parseStoredLocation(localStorage.getItem(OWNER_LOCATION_STORAGE_KEY));
+    });
+
+  // 위치 수정 모달
+  const [showLocationEditModal, setShowLocationEditModal] = useState(false);
+  const [locationInput, setLocationInput] = useState("");
+  const [detailInput, setDetailInput] = useState("");
+  const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  // pendingLocation: 드롭다운에서 선택된 좌표 확정 주소 (자유 텍스트 저장 불가)
+  const [pendingLocation, setPendingLocation] =
+    useState<Omit<OwnerLocationData, "detailAddress"> | null>(null);
+  const [locationSearching, setLocationSearching] = useState(false);
+  const [locationModalError, setLocationModalError] = useState<string | null>(null);
+  const suggestTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const miniMapContainerRef = useRef<HTMLDivElement>(null);
+  const miniMapRef = useRef<any>(null);
+  const miniMarkerRef = useRef<any>(null);
 
   const menuItems = userType === "owner" ? OWNER_MENU : SITTER_MENU;
   const ownerProfile = user
@@ -290,72 +332,153 @@ export default function MyProfilePage() {
         initial: user.fullName?.charAt(0) || "?",
         src: user.profileImage,
         verified: user.isVerified,
-        location: ownerLocation || "위치 미등록",
+        location: ownerLocationData?.dong || "위치 미등록",
       }
     : undefined;
 
-  const handleUseCurrentOwnerLocation = () => {
-    setOwnerLocationError(null);
+  // 미니맵 초기화 / 위치 업데이트
+  const updateMiniMap = useCallback((lat: number, lng: number) => {
+    if (!window.kakao?.maps || !miniMapContainerRef.current) return;
+    const coords = new window.kakao.maps.LatLng(lat, lng);
 
-    if (!navigator.geolocation) {
-      setOwnerLocationError("이 브라우저에서는 위치 정보를 사용할 수 없어요.");
-      return;
+    if (!miniMapRef.current) {
+      miniMapRef.current = new window.kakao.maps.Map(miniMapContainerRef.current, {
+        center: coords,
+        level: 4,
+      });
+    } else {
+      miniMapRef.current.setCenter(coords);
     }
 
-    setIsOwnerLocationLoading(true);
+    if (miniMarkerRef.current) miniMarkerRef.current.setMap(null);
+    miniMarkerRef.current = new window.kakao.maps.Marker({
+      map: miniMapRef.current,
+      position: coords,
+    });
+  }, []);
+
+  // pendingLocation 바뀌면 미니맵 갱신
+  useEffect(() => {
+    if (!pendingLocation) return;
+    // SDK가 이미 로드된 경우
+    if (window.kakao?.maps) {
+      window.kakao.maps.load(() => updateMiniMap(pendingLocation.lat, pendingLocation.lng));
+    }
+  }, [pendingLocation, updateMiniMap]);
+
+  // 모달 닫힐 때 미니맵 인스턴스 초기화
+  useEffect(() => {
+    if (!showLocationEditModal) {
+      miniMapRef.current = null;
+      miniMarkerRef.current = null;
+    }
+  }, [showLocationEditModal]);
+
+  // 주소 검색 입력 → 자동완성 (pendingLocation 초기화)
+  const handleLocationInputChange = (value: string) => {
+    setLocationInput(value);
+    setPendingLocation(null);
+    setLocationModalError(null);
+    if (suggestTimer.current) clearTimeout(suggestTimer.current);
+    if (value.trim().length < 2) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    suggestTimer.current = setTimeout(async () => {
+      const list = await searchAddressList(value.trim());
+      setSuggestions(list);
+      setShowSuggestions(list.length > 0);
+    }, 300);
+  };
+
+  // 드롭다운 항목 선택 → 좌표 확정 (이 경로만 pendingLocation 설정)
+  const handleSelectSuggestion = async (s: AddressSuggestion) => {
+    if (suggestTimer.current) clearTimeout(suggestTimer.current);
+    setLocationInput(s.addressName);
+    setSuggestions([]);
+    setShowSuggestions(false);
+    setLocationModalError(null);
+    const region = await coordToRegion(s.lat, s.lng);
+    const dong = region
+      ? [region.sido, region.sigungu, region.dong].filter(Boolean).join(" ")
+      : s.addressName;
+    setPendingLocation({ address: s.addressName, lat: s.lat, lng: s.lng, dong });
+  };
+
+  // 현재 위치 사용 (보조) — 주소 변환 실패 시 저장하지 않음
+  const handleUseCurrentLocation = () => {
+    setLocationModalError(null);
+    if (!navigator.geolocation) {
+      setLocationModalError("이 브라우저에서는 위치 정보를 사용할 수 없어요.");
+      return;
+    }
+    setLocationSearching(true);
     navigator.geolocation.getCurrentPosition(
       async ({ coords }) => {
-        const region = await coordToRegion(coords.latitude, coords.longitude);
-        if (!region) {
-          setOwnerLocationError("위치를 확인하지 못했어요. 다시 시도해주세요.");
-          setIsOwnerLocationLoading(false);
+        const { latitude: lat, longitude: lng } = coords;
+        const [region, address] = await Promise.all([
+          coordToRegion(lat, lng),
+          coordToAddress(lat, lng),
+        ]);
+        setLocationSearching(false);
+        if (!region || !address) {
+          setLocationModalError("주소를 확인하지 못했어요. 직접 주소를 검색해주세요.");
           return;
         }
-
-        const nextLocation = [region.sido, region.sigungu, region.dong]
-          .filter(Boolean)
-          .join(" ");
-        setOwnerLocation(nextLocation);
-        localStorage.setItem(OWNER_LOCATION_STORAGE_KEY, nextLocation);
-        setIsOwnerLocationLoading(false);
+        const dong = [region.sido, region.sigungu, region.dong].filter(Boolean).join(" ");
+        setLocationInput(address);
+        setPendingLocation({ address, lat, lng, dong });
       },
       () => {
-        setOwnerLocationError("위치 권한을 허용한 뒤 다시 시도해주세요.");
-        setIsOwnerLocationLoading(false);
+        setLocationSearching(false);
+        setLocationModalError("위치 권한을 허용한 뒤 다시 시도해주세요.");
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
     );
   };
 
+  // 확인 — pendingLocation이 없으면 저장 불가 (자유 텍스트 차단)
+  const handleConfirmLocation = () => {
+    if (!pendingLocation) {
+      setLocationModalError("주소 검색 후 목록에서 주소를 선택해주세요.");
+      return;
+    }
+    const data: OwnerLocationData = { ...pendingLocation, detailAddress: detailInput.trim() };
+    setOwnerLocationData(data);
+    localStorage.setItem(OWNER_LOCATION_STORAGE_KEY, JSON.stringify(data));
+    setShowLocationEditModal(false);
+    setLocationInput("");
+    setDetailInput("");
+    setPendingLocation(null);
+  };
+
+  const handleOpenLocationModal = () => {
+    // 기존 데이터는 참고용으로만 표시 — pendingLocation은 null로 시작해 반드시 재선택 요구
+    setLocationInput(ownerLocationData?.address ?? "");
+    setDetailInput(ownerLocationData?.detailAddress ?? "");
+    setPendingLocation(
+      ownerLocationData
+        ? { address: ownerLocationData.address, lat: ownerLocationData.lat, lng: ownerLocationData.lng, dong: ownerLocationData.dong }
+        : null,
+    );
+    setLocationModalError(null);
+    setSuggestions([]);
+    setShowSuggestions(false);
+    setShowLocationEditModal(true);
+  };
+
   const ownerLocationAction = (
-    <div className="relative shrink-0">
-      <IconHoverAction
-        label={
-          isOwnerLocationLoading
-            ? "위치 확인 중..."
-            : ownerLocation
-              ? "현재 위치로 수정하기"
-              : "현재 위치로 등록하기"
-        }
+    <IconHoverAction label={ownerLocationData ? "위치 수정하기" : "위치 등록하기"}>
+      <button
+        type="button"
+        onClick={handleOpenLocationModal}
+        aria-label={ownerLocationData ? "위치 수정하기" : "위치 등록하기"}
+        className="flex size-9 items-center justify-center rounded-full border border-orange-100 bg-orange-50 text-orange-500 transition-colors hover:bg-orange-100"
       >
-        <button
-          type="button"
-          onClick={handleUseCurrentOwnerLocation}
-          disabled={isOwnerLocationLoading}
-          aria-label={
-            ownerLocation ? "현재 위치로 수정하기" : "현재 위치로 등록하기"
-          }
-          className="flex size-9 items-center justify-center rounded-full border border-orange-100 bg-orange-50 text-orange-500 transition-colors hover:bg-orange-100 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          <MapPin size={16} />
-        </button>
-      </IconHoverAction>
-      {ownerLocationError && (
-        <p className="absolute right-0 top-11 z-10 w-48 rounded-lg bg-white px-3 py-2 text-xs text-red-500 shadow-sm">
-          {ownerLocationError}
-        </p>
-      )}
-    </div>
+        <MapPin size={16} />
+      </button>
+    </IconHoverAction>
   );
 
   const handleMenuClick = (item: MenuItem) => {
@@ -370,6 +493,141 @@ export default function MyProfilePage() {
   return (
     <div className="min-h-screen flex flex-col bg-orange-50">
       <Header />
+
+      {/* 카카오맵 SDK — 주소 검색·역지오코딩·미니맵에 사용 */}
+      <Script
+        src={`//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_KEY}&autoload=false&libraries=services`}
+        strategy="afterInteractive"
+        onLoad={() => window.kakao.maps.load(() => {})}
+      />
+
+      {/* 위치 수정 모달 */}
+      {showLocationEditModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-stone-900 text-lg font-semibold">위치 수정</h2>
+              <button
+                type="button"
+                onClick={() => setShowLocationEditModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* 주소 검색 입력 — 자유 텍스트 저장 불가, 반드시 드롭다운에서 선택 */}
+            <div className="relative mb-3">
+              <MapPin
+                size={15}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+              />
+              <input
+                type="text"
+                value={locationInput}
+                onChange={(e) => handleLocationInputChange(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") setShowSuggestions(false);
+                }}
+                placeholder="도로명 주소 검색 (예: 봉명동 123)"
+                className="w-full h-12 pl-9 pr-4 bg-white border border-orange-200 rounded-xl text-stone-900 placeholder:text-gray-400 outline-none focus:border-orange-400 transition"
+              />
+
+              {/* 자동완성 드롭다운 */}
+              {showSuggestions && suggestions.length > 0 && (
+                <ul className="absolute left-0 right-0 top-[calc(100%+4px)] z-20 max-h-52 overflow-y-auto bg-white border border-orange-100 rounded-xl shadow-lg py-1">
+                  {suggestions.map((s, i) => (
+                    <li key={`${s.addressName}-${i}`}>
+                      <button
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => handleSelectSuggestion(s)}
+                        className="w-full px-4 py-2.5 text-left hover:bg-orange-50 transition-colors"
+                      >
+                        <span className="block text-sm font-medium text-stone-900">
+                          {s.roadAddress ?? s.addressName}
+                        </span>
+                        {s.jibunAddress && s.roadAddress && (
+                          <span className="block text-xs text-gray-400 mt-0.5">
+                            {s.jibunAddress}
+                          </span>
+                        )}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* 미니맵 미리보기 — 주소 선택 후 표시 */}
+            {pendingLocation ? (
+              <div className="mb-3">
+                <div
+                  ref={miniMapContainerRef}
+                  className="w-full h-36 rounded-xl overflow-hidden border border-orange-100"
+                />
+                <div className="flex items-start gap-1.5 mt-1.5 px-1">
+                  <MapPin size={13} className="text-orange-400 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-stone-900">{pendingLocation.dong}</p>
+                    <p className="text-xs text-gray-400">{pendingLocation.address}</p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-gray-400 mb-3 px-1">
+                검색 결과 목록에서 주소를 선택하면 지도로 확인할 수 있어요.
+              </p>
+            )}
+
+            {/* 상세주소 입력 */}
+            <input
+              type="text"
+              value={detailInput}
+              onChange={(e) => setDetailInput(e.target.value)}
+              placeholder="상세주소 (동/호수 등, 선택사항)"
+              className="w-full h-10 px-3 mb-3 bg-white border border-orange-100 rounded-xl text-sm text-stone-900 placeholder:text-gray-400 outline-none focus:border-orange-300 transition"
+            />
+
+            {/* 현재 위치 사용 (보조) */}
+            <button
+              type="button"
+              onClick={handleUseCurrentLocation}
+              disabled={locationSearching}
+              className="flex items-center gap-1.5 text-orange-500 text-sm font-medium mb-3 hover:opacity-80 disabled:opacity-50 transition-opacity"
+            >
+              <LocateFixed size={15} />
+              {locationSearching ? "위치 확인 중..." : "현재 위치 사용"}
+            </button>
+
+            {locationModalError && (
+              <p className="text-xs text-red-500 mb-3">{locationModalError}</p>
+            )}
+
+            <p className="text-xs text-gray-400 mb-4">
+              프로필에는 &quot;동&quot; 단위까지만 표시됩니다. 좌표는 거리 계산에만 사용돼요.
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowLocationEditModal(false)}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-500 text-sm font-medium"
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmLocation}
+                disabled={!pendingLocation}
+                className="flex-1 py-2.5 rounded-xl bg-orange-500 text-white text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+              >
+                확인
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 모바일 프로필 */}
       <div className="md:hidden bg-linear-to-br from-orange-500 to-orange-300 rounded-b-3xl px-5 pt-8 pb-8 shrink-0">
