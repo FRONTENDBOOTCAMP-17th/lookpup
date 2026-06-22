@@ -216,7 +216,10 @@ export default function ReviewsPage() {
           setWrittenReviews([]);
         }
       });
-    return () => controller.abort();
+    return () => {
+      controller.abort();
+      writtenFetchedRef.current = false;
+    };
   }, [activeTab]);
 
   useEffect(() => {
@@ -249,7 +252,10 @@ export default function ReviewsPage() {
           setReceivedReviews([]);
         }
       });
-    return () => controller.abort();
+    return () => {
+      controller.abort();
+      receivedFetchedRef.current = false;
+    };
   }, [activeTab, sitterId]);
 
   const handleDeleteWritten = (id: string) => {
