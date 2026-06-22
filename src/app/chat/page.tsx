@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useLayoutEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useLayoutEffect, useRef, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { Search, ChevronLeft, MoreVertical, Send, Plus } from "lucide-react";
 import Header from "@/components/layout/Header";
@@ -25,12 +25,18 @@ import { useChatRooms } from "@/hooks/chat/useChatRooms";
 import { useRequest } from "@/hooks/chat/useRequest";
 import { useChatMessages } from "@/hooks/chat/useChatMessages";
 
-export default function ChatPage() {
+function ChatPageContent({
+  initialTab,
+}: {
+  initialTab: "one_on_one" | "applicants";
+}) {
   const router = useRouter();
+
   const [editMode, setEditMode] = useState(false);
   const [activeTab, setActiveTab] = useState<"one_on_one" | "applicants">(
-    "one_on_one",
+    initialTab,
   );
+
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [selectedApplicantId, setSelectedApplicantId] = useState<string | null>(
     null,
@@ -44,14 +50,25 @@ export default function ChatPage() {
   const isLoadMoreRef = useRef(false);
   const scrollAnchorRef = useRef<number | null>(null);
 
-  const [applicationActionError, setApplicationActionError] = useState<string | null>(null);
+  const [applicationActionError, setApplicationActionError] = useState<
+    string | null
+  >(null);
   const [actioningId, setActioningId] = useState<string | null>(null);
 
   const activeRoomId =
     activeTab === "one_on_one" ? selectedRoomId : selectedApplicantId;
 
-  const { rooms, applicants, posts, loading, error, deleteRoom, deleteApplicant, markRoomAsRead, updatePreview } =
-    useChatRooms(activeRoomId);
+  const {
+    rooms,
+    applicants,
+    posts,
+    loading,
+    error,
+    deleteRoom,
+    deleteApplicant,
+    markRoomAsRead,
+    updatePreview,
+  } = useChatRooms(activeRoomId);
   const {
     rejectedIds,
     confirmedId,
@@ -97,14 +114,20 @@ export default function ChatPage() {
     }
   }
 
-  const { messages, addMessage, broadcastMessage, loadMore, hasMore, loadingMore } = useChatMessages(activeRoomId, userId);
+  const {
+    messages,
+    addMessage,
+    broadcastMessage,
+    loadMore,
+    hasMore,
+    loadingMore,
+  } = useChatMessages(activeRoomId, userId);
 
-  // 방에 입장할 때: 로컬 unread 0으로 + DB도 읽음 처리
   useEffect(() => {
     if (!activeRoomId) return;
     markRoomAsRead(activeRoomId);
     markRoomRead(activeRoomId);
-  }, [activeRoomId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeRoomId]);
 
   useLayoutEffect(() => {
     if (isLoadMoreRef.current) {
@@ -151,8 +174,12 @@ export default function ChatPage() {
       if (result.data) {
         addMessage(result.data);
         broadcastMessage(result.data);
-        // broadcast는 self=false라 내 구독에 안 옴 → 직접 미리보기 갱신
-        updatePreview(activeRoomId, result.data.content, result.data.created_at);
+
+        updatePreview(
+          activeRoomId,
+          result.data.content,
+          result.data.created_at,
+        );
       }
       setInput("");
     } finally {
@@ -235,9 +262,14 @@ export default function ChatPage() {
       : (selectedApplicant?.initial ?? "");
   const headerBadge = getHeaderBadge();
 
+  const isOwnerOfSelectedRoom =
+    selectedApplicant?.ownerId !== null &&
+    selectedApplicant?.ownerId === userId;
+
   const showApplicantActions =
     activeTab === "applicants" &&
     selectedApplicantId !== null &&
+    isOwnerOfSelectedRoom &&
     !rejectedIds.has(selectedApplicantId) &&
     confirmedId !== selectedApplicantId &&
     confirmedId === null;
@@ -348,6 +380,10 @@ export default function ChatPage() {
                         (a) => a.postId === post.id,
                       )}
                       isCollapsed={collapsedPosts.has(post.id)}
+                      isOwner={
+                        applicants.find((a) => a.postId === post.id)
+                          ?.ownerId === userId
+                      }
                       selectedApplicantId={selectedApplicantId}
                       rejectedIds={rejectedIds}
                       confirmedId={confirmedId}
@@ -409,11 +445,11 @@ export default function ChatPage() {
                     <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-lg border border-orange-100 z-20 overflow-hidden">
                       <button
                         onClick={() => {
-                          const id =
+                          const sitterId =
                             activeTab === "one_on_one"
-                              ? selectedRoomId
-                              : selectedApplicantId;
-                          router.push(`/petsitters/${id}`);
+                              ? selectedRoom?.sitterId
+                              : selectedApplicant?.sitterId;
+                          if (sitterId) router.push(`/petsitters/${sitterId}`);
                           setMobileMenuOpen(false);
                         }}
                         className="w-full px-4 py-3 text-left text-sm text-stone-700 hover:bg-orange-50 transition-colors"
@@ -455,7 +491,10 @@ export default function ChatPage() {
             </div>
 
             {/* 메시지 영역 */}
-            <div ref={mobileScrollRef} className="flex-1 min-h-0 overflow-y-auto">
+            <div
+              ref={mobileScrollRef}
+              className="flex-1 min-h-0 overflow-y-auto"
+            >
               <div
                 className="px-4 py-4 flex flex-col gap-4"
                 onClick={() => {
@@ -497,7 +536,9 @@ export default function ChatPage() {
             {showApplicantActions && (
               <div className="px-4 py-2.5 bg-white border-t border-orange-100 flex flex-col gap-1 shrink-0">
                 {applicationActionError && (
-                  <p className="text-xs text-red-500 px-1">{applicationActionError}</p>
+                  <p className="text-xs text-red-500 px-1">
+                    {applicationActionError}
+                  </p>
                 )}
                 <div className="flex gap-2">
                   <button
@@ -648,6 +689,10 @@ export default function ChatPage() {
                   post={post}
                   applicants={applicants.filter((a) => a.postId === post.id)}
                   isCollapsed={collapsedPosts.has(post.id)}
+                  isOwner={
+                    applicants.find((a) => a.postId === post.id)?.ownerId ===
+                    userId
+                  }
                   selectedApplicantId={selectedApplicantId}
                   rejectedIds={rejectedIds}
                   confirmedId={confirmedId}
@@ -676,7 +721,7 @@ export default function ChatPage() {
               <p className="text-stone-400 text-sm">{error}</p>
             </div>
           ) : (activeTab === "one_on_one" && rooms.length === 0) ||
-          (activeTab === "applicants" && applicants.length === 0) ? (
+            (activeTab === "applicants" && applicants.length === 0) ? (
             <div className="flex-1 flex items-center justify-center">
               <p className="text-stone-400 text-sm">
                 새로운 채팅이 존재하지 않습니다
@@ -710,11 +755,11 @@ export default function ChatPage() {
                 sub={getHeaderSub()}
                 badge={getHeaderBadge()}
                 onGoToProfile={() => {
-                  const id =
+                  const sitterId =
                     activeTab === "one_on_one"
-                      ? selectedRoomId
-                      : selectedApplicantId;
-                  router.push(`/petsitters/${id}`);
+                      ? selectedRoom?.sitterId
+                      : selectedApplicant?.sitterId;
+                  if (sitterId) router.push(`/petsitters/${sitterId}`);
                 }}
                 onLeaveChat={() => {
                   if (activeTab === "one_on_one" && selectedRoomId !== null)
@@ -827,5 +872,26 @@ export default function ChatPage() {
         serviceType="care"
       />
     </div>
+  );
+}
+
+function ChatPageInner() {
+  const searchParams = useSearchParams();
+  const initialTab =
+    searchParams.get("tab") === "applicants" ? "applicants" : "one_on_one";
+  return <ChatPageContent initialTab={initialTab} />;
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex-1 flex items-center justify-center min-h-screen bg-orange-50">
+          <p className="text-stone-400 text-sm">불러오는 중...</p>
+        </div>
+      }
+    >
+      <ChatPageInner />
+    </Suspense>
   );
 }

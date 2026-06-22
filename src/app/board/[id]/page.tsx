@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -26,6 +26,7 @@ import {
   deleteRequest,
 } from "@/app/actions/requests";
 import { useUserStore } from "@/store/userStore";
+import { createApplication } from "@/app/actions/applications";
 
 const STATUS_MAP: Record<string, string> = {
   open: "모집중",
@@ -34,7 +35,12 @@ const STATUS_MAP: Record<string, string> = {
   canceled: "취소",
 };
 
-type Pet = { id: string; name: string; animal_type: string; breed: string | null };
+type Pet = {
+  id: string;
+  name: string;
+  animal_type: string;
+  breed: string | null;
+};
 type Application = {
   id: string;
   message: string | null;
@@ -65,7 +71,12 @@ type RequestDetail = {
   status: string;
   view_count: number;
   created_at: string;
-  users: { full_name: string; profile_image: string | null; is_verified: boolean; created_at: string } | null;
+  users: {
+    full_name: string;
+    profile_image: string | null;
+    is_verified: boolean;
+    created_at: string;
+  } | null;
   pets: Pet | null;
   applications: Application[];
 };
@@ -90,8 +101,6 @@ function formatClock(d: Date) {
   return `${ampm} ${h12}:${String(m).padStart(2, "0")}`;
 }
 
-// 입력한 시간만 표시. 입력창은 분 단위라 사용자 입력 시간은 초=0,
-// 미입력 시 저장 마커는 초=30 → 초로 미입력 여부를 구분.
 function formatTimeRange(start: string, end: string) {
   const s = new Date(start);
   const e = new Date(end);
@@ -104,7 +113,9 @@ function formatTimeRange(start: string, end: string) {
 }
 
 function formatRelativeTime(dateStr: string) {
-  const diffH = Math.floor((Date.now() - new Date(dateStr).getTime()) / 3600000);
+  const diffH = Math.floor(
+    (Date.now() - new Date(dateStr).getTime()) / 3600000,
+  );
   if (diffH < 1) return "방금 전";
   if (diffH < 24) return `${diffH}시간 전`;
   return `${Math.floor(diffH / 24)}일 전`;
@@ -137,6 +148,10 @@ export default function BoardDetailPage() {
   const currentUserId = user?.id;
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [applying, setApplying] = useState(false);
+  const [applyError, setApplyError] = useState<string | null>(null);
+  const applyCancelledRef = useRef(false);
+  const applyInFlightRef = useRef(false);
   const [post, setPost] = useState<RequestDetail | null>(null);
   const [postLoading, setPostLoading] = useState(true);
   const [otherPosts, setOtherPosts] = useState<OtherPost[] | null>(null);
@@ -152,13 +167,40 @@ export default function BoardDetailPage() {
       .finally(() => setPostLoading(false));
   }, [id]);
 
-  // 조회수 증가 (상세 진입 시 1회). GET이 아닌 Server Action으로 분리 → edit 로드 등엔 영향 없음.
   useEffect(() => {
     incrementViewCount(id);
   }, [id]);
 
-  useEffect(() => {
-    if (!post?.owner_id) return;
+    const handleApply = async () => {
+      if (!post?.id || applyInFlightRef.current) return;
+      applyInFlightRef.current = true;
+      setApplying(true);
+      setApplyError(null);
+
+      try {
+        const result = await createApplication(post.id, {});
+
+        if (result.error) {
+          setApplyError(result.error.message);
+          setShowApplyModal(false);
+          return;
+        }
+
+        if (!applyCancelledRef.current) {
+          setShowApplyModal(false);
+          router.push("/chat?tab=applicants");
+        }
+      } catch {
+        setApplyError("일시적인 오류가 발생했습니다. 다시 시도해 주세요.");
+        setShowApplyModal(false);
+      } finally {
+        applyInFlightRef.current = false;
+        setApplying(false);
+      }
+    };
+
+    useEffect(() => {
+      if (!post?.owner_id) return;
     fetch(`/api/requests?owner_id=${post.owner_id}`)
       .then((res) => res.json())
       .then((result) => {
@@ -205,8 +247,10 @@ export default function BoardDetailPage() {
       router.push("/sitter-register");
       return;
     }
-    setShowApplyModal(true);
-  };
+  applyCancelledRef.current = false;
+  setApplyError(null);
+  setShowApplyModal(true);
+};
 
   // 모집마감: 상태를 matched로 변경 후 로컬 post 반영
   const handleClose = async () => {
@@ -340,6 +384,11 @@ export default function BoardDetailPage() {
                         </button>
                       </div>
                     )}
+                    {applyError && (
+                      <p className="sm:col-span-2 text-sm text-red-500 text-center">
+                        {applyError}
+                      </p>
+                    )}
                   </div>
                 </div>
               </SectionCard>
@@ -355,7 +404,9 @@ export default function BoardDetailPage() {
               {/* 펫시터 조건 — 실데이터(content에서 분리)가 있을 때만 표시 */}
               {conditionsText && (
                 <SectionCard>
-                  <h2 className="text-stone-900 text-xl font-bold">펫시터 조건</h2>
+                  <h2 className="text-stone-900 text-xl font-bold">
+                    펫시터 조건
+                  </h2>
                   <p className="text-stone-900 text-base leading-7 whitespace-pre-line">
                     {conditionsText}
                   </p>
@@ -368,8 +419,12 @@ export default function BoardDetailPage() {
                   <h2 className="text-stone-900 text-xl font-bold">반려동물</h2>
                   <div className="flex flex-wrap gap-3">
                     <div className="flex items-center gap-2 px-4 py-2.5 bg-orange-50 rounded-lg">
-                      <span className="text-sm font-semibold text-stone-900">{post.pets.name}</span>
-                      <span className="text-xs text-gray-500">{post.pets.breed ?? post.pets.animal_type}</span>
+                      <span className="text-sm font-semibold text-stone-900">
+                        {post.pets.name}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {post.pets.breed ?? post.pets.animal_type}
+                      </span>
                     </div>
                   </div>
                 </SectionCard>
@@ -382,12 +437,21 @@ export default function BoardDetailPage() {
                     지원자 {post.applications.length}명
                   </h2>
                   {post.applications.length === 0 ? (
-                    <p className="text-gray-500 text-sm">아직 지원자가 없습니다.</p>
+                    <p className="text-gray-500 text-sm">
+                      아직 지원자가 없습니다.
+                    </p>
                   ) : (
                     <div className="flex flex-col gap-4">
                       {post.applications.map((app) => (
-                        <div key={app.id} className="flex items-start gap-3 p-4 bg-orange-50 rounded-lg">
-                          <Avatar initial={app.sitters?.users?.full_name?.[0] ?? "?"} size="md" variant="orange" />
+                        <div
+                          key={app.id}
+                          className="flex items-start gap-3 p-4 bg-orange-50 rounded-lg"
+                        >
+                          <Avatar
+                            initial={app.sitters?.users?.full_name?.[0] ?? "?"}
+                            size="md"
+                            variant="orange"
+                          />
                           <div className="flex-1">
                             <div className="flex items-center justify-between mb-1">
                               <span className="text-stone-900 text-sm font-semibold">
@@ -400,7 +464,9 @@ export default function BoardDetailPage() {
                               )}
                             </div>
                             {app.message && (
-                              <p className="text-stone-900 text-sm leading-5">{app.message}</p>
+                              <p className="text-stone-900 text-sm leading-5">
+                                {app.message}
+                              </p>
                             )}
                           </div>
                         </div>
@@ -477,7 +543,10 @@ export default function BoardDetailPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-gray-500 text-xs">
-                        가입 {post.users?.created_at ? formatJoinDate(post.users.created_at) : "-"}
+                        가입{" "}
+                        {post.users?.created_at
+                          ? formatJoinDate(post.users.created_at)
+                          : "-"}
                       </span>
                     </div>
                   </div>
@@ -519,39 +588,39 @@ export default function BoardDetailPage() {
                         status: STATUS_MAP[p.status] ?? p.status,
                       }))
                       .map((p) => (
-                      <Link key={p.id} href={`/board/${p.id}`}>
-                        <div className="p-3 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors cursor-pointer">
-                          <div className="flex items-start justify-between mb-1">
-                            <p className="text-stone-900 text-sm font-medium flex-1 truncate pr-2">
-                              {p.title}
-                            </p>
-                            <span
-                              className={`shrink-0 px-2 py-0.5 rounded text-[9px] font-medium ${
-                                p.status === "모집중"
-                                  ? "bg-emerald-50 text-emerald-500"
-                                  : "bg-orange-50 text-orange-500"
-                              }`}
-                            >
-                              {p.status}
-                            </span>
+                        <Link key={p.id} href={`/board/${p.id}`}>
+                          <div className="p-3 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors cursor-pointer">
+                            <div className="flex items-start justify-between mb-1">
+                              <p className="text-stone-900 text-sm font-medium flex-1 truncate pr-2">
+                                {p.title}
+                              </p>
+                              <span
+                                className={`shrink-0 px-2 py-0.5 rounded text-[9px] font-medium ${
+                                  p.status === "모집중"
+                                    ? "bg-emerald-50 text-emerald-500"
+                                    : "bg-orange-50 text-orange-500"
+                                }`}
+                              >
+                                {p.status}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1 mb-1">
+                              <MapPin className="w-3 h-3 text-gray-400" />
+                              <span className="text-gray-500 text-xs">
+                                {p.district}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-orange-500 text-xs font-semibold">
+                                {p.price}
+                              </span>
+                              <span className="text-gray-500 text-xs">
+                                {p.createdAt}
+                              </span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1 mb-1">
-                            <MapPin className="w-3 h-3 text-gray-400" />
-                            <span className="text-gray-500 text-xs">
-                              {p.district}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-orange-500 text-xs font-semibold">
-                              {p.price}
-                            </span>
-                            <span className="text-gray-500 text-xs">
-                              {p.createdAt}
-                            </span>
-                          </div>
-                        </div>
-                      </Link>
-                    ))
+                        </Link>
+                      ))
                   )}
                 </div>
               </SectionCard>
@@ -569,12 +638,14 @@ export default function BoardDetailPage() {
         title="지원하시겠습니까?"
         description="지원 후 채팅으로 보호자와 상담을 진행하세요."
         cancelText="취소"
-        confirmText="지원하기"
-        onClose={() => setShowApplyModal(false)}
-        onConfirm={() => {
+        confirmText={applying ? "지원 중..." : "지원하기"}
+        closeOnOverlay={!applying}
+        closeOnEsc={!applying}
+        onClose={() => {
+          applyCancelledRef.current = true;
           setShowApplyModal(false);
-          router.push("/chat");
         }}
+        onConfirm={handleApply}
       />
 
       {/* 삭제 확인 모달 */}

@@ -33,6 +33,7 @@ export async function createReview(input: {
   reservation_id: string;
   rating: number;
   content: string;
+  image_urls?: string[];
 }) {
   const user = await getAuthUser();
   if (!user) {
@@ -93,6 +94,7 @@ export async function createReview(input: {
       sitter_id: reservation.sitter_id,
       rating: input.rating,
       content: input.content,
+      image_urls: input.image_urls ?? [],
     })
     .select()
     .single();

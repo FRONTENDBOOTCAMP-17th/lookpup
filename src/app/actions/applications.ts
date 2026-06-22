@@ -45,13 +45,22 @@ export async function createApplication(
 
   const { data: requestRow } = await db
     .from("requests")
-    .select("id, status")
+    .select("id, status, owner_id")
     .eq("id", requestId)
     .single();
 
   if (!requestRow) {
     return {
       error: { code: "NOT_FOUND", message: "구인글을 찾을 수 없습니다." },
+    };
+  }
+
+  if (requestRow.owner_id === user.id) {
+    return {
+      error: {
+        code: "FORBIDDEN",
+        message: "본인의 구인글에는 지원할 수 없습니다.",
+      },
     };
   }
 
@@ -91,6 +100,22 @@ export async function createApplication(
 
   if (error) {
     return { error: { code: "INTERNAL_ERROR", message: error.message } };
+  }
+
+  const { data: existingRoom } = await db
+    .from("chat_rooms")
+    .select("id")
+    .eq("request_id", requestId)
+    .eq("sitter_id", sitter.id)
+    .maybeSingle();
+
+  if (!existingRoom) {
+    await db.from("chat_rooms").insert({
+      room_type: "request",
+      owner_id: requestRow.owner_id,
+      sitter_id: sitter.id,
+      request_id: requestId,
+    });
   }
 
   return { data };
@@ -197,14 +222,12 @@ export async function updateApplication(
       .eq("request_id", requestRow.id);
 
     if (requestPets && requestPets.length > 0) {
-      await db
-        .from("reservation_items")
-        .insert(
-          requestPets.map(({ pet_id }) => ({
-            reservation_id: reservation.id,
-            pet_id,
-          })),
-        );
+      await db.from("reservation_items").insert(
+        requestPets.map(({ pet_id }) => ({
+          reservation_id: reservation.id,
+          pet_id,
+        })),
+      );
     }
 
     const { data: existingRoom } = await db

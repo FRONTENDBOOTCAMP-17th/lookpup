@@ -31,6 +31,8 @@ export interface Post {
 interface RoomApiItem {
   id: string;
   room_type: "direct" | "request";
+  owner_id: string | null;
+  sitter_id: string | null;
   other_user_full_name: string | null;
   last_message: string | null;
   last_message_at: string | null;
@@ -85,6 +87,7 @@ export function useChatRooms(activeRoomId: string | null) {
           .filter((r) => r.room_type === "direct")
           .map((r) => ({
             id: r.id,
+            sitterId: r.sitter_id ?? null,
             name: r.other_user_full_name ?? "",
             initial: (r.other_user_full_name ?? "?")[0],
             sub: "1:1 채팅",
@@ -96,6 +99,8 @@ export function useChatRooms(activeRoomId: string | null) {
         const requestRooms = data.filter((r) => r.room_type === "request");
         const applicantList = requestRooms.map((r) => ({
           id: r.id,
+          sitterId: r.sitter_id ?? null,
+          ownerId: r.owner_id ?? null,
           postId: r.request_id ?? "",
           name: r.other_user_full_name ?? "",
           initial: (r.other_user_full_name ?? "?")[0],
