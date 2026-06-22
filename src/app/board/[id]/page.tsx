@@ -9,6 +9,8 @@ import {
   Clock,
   DollarSign,
   Send,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -18,8 +20,11 @@ import { CustomModal } from "@/components/common/CustomModal";
 import BackButton from "@/components/common/BackButton";
 import KakaoMap from "@/components/KakaoMap";
 import { splitConditions } from "@/utils/boardConditions";
-import { createComment } from "@/app/actions/comments";
-import { incrementViewCount } from "@/app/actions/requests";
+import {
+  incrementViewCount,
+  updateRequest,
+  deleteRequest,
+} from "@/app/actions/requests";
 import { useUserStore } from "@/store/userStore";
 
 const STATUS_MAP: Record<string, string> = {
@@ -44,13 +49,6 @@ type OtherPost = {
   budget: number;
   status: string;
   created_at: string;
-};
-
-type Comment = {
-  id: string;
-  content: string;
-  created_at: string;
-  users: { full_name: string | null; profile_image: string | null } | null;
 };
 
 type RequestDetail = {
@@ -130,33 +128,6 @@ function formatJoinDate(dateStr: string) {
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
 }
 
-const COMMENTS = [
-  {
-    id: 1,
-    author: "이서연",
-    initial: "이",
-    createdAt: "1시간 전",
-    content: "관심 있습니다! 강아지 산책 경험 많아요. 연락 주세요.",
-    replyCount: 1,
-  },
-  {
-    id: 2,
-    author: "박준호",
-    initial: "박",
-    createdAt: "3시간 전",
-    content: "평일 오전 시간대 가능합니다. 상세 내용 문의드립니다.",
-    replyCount: 0,
-  },
-  {
-    id: 3,
-    author: "최예진",
-    initial: "최",
-    createdAt: "5시간 전",
-    content: "주말도 가능한가요?",
-    replyCount: 1,
-  },
-];
-
 // 페이지
 export default function BoardDetailPage() {
   const { id } = useParams() as { id: string };
@@ -164,14 +135,11 @@ export default function BoardDetailPage() {
   const user = useUserStore((state) => state.user);
   const isLoggedIn = useUserStore((state) => state.isLoggedIn);
   const currentUserId = user?.id;
-  const [comment, setComment] = useState("");
   const [showApplyModal, setShowApplyModal] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [post, setPost] = useState<RequestDetail | null>(null);
   const [postLoading, setPostLoading] = useState(true);
   const [otherPosts, setOtherPosts] = useState<OtherPost[] | null>(null);
-  // null = 아직 로드 전/실패(테이블 미생성 등) → 더미 COMMENTS fallback. 배열이면 실데이터.
-  const [comments, setComments] = useState<Comment[] | null>(null);
-  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     fetch(`/api/requests/${id}`)
@@ -188,50 +156,6 @@ export default function BoardDetailPage() {
   useEffect(() => {
     incrementViewCount(id);
   }, [id]);
-
-  useEffect(() => {
-    fetch(`/api/requests/${id}/comments`)
-      .then((res) => res.json())
-      .then((result) => {
-        if ("data" in result && Array.isArray(result.data)) {
-          setComments(result.data as Comment[]);
-        }
-      })
-      .catch(() => {
-        // comments 테이블 미생성 등 실패 시 더미 fallback 유지
-      });
-  }, [id]);
-
-  const handleSubmitComment = async () => {
-    const trimmed = comment.trim();
-    if (!trimmed || submitting) return;
-    setSubmitting(true);
-    const result = await createComment(id, trimmed);
-    setSubmitting(false);
-    if ("data" in result && result.data) {
-      setComments((prev) => [...(prev ?? []), result.data as Comment]);
-      setComment("");
-    } else if ("error" in result && result.error) {
-      alert(result.error.message);
-    }
-  };
-
-  // 실데이터(comments)가 로드되면 그걸, 아니면 더미 COMMENTS를 표시 형태로 정규화
-  const displayComments = comments
-    ? comments.map((c) => ({
-        id: c.id,
-        name: c.users?.full_name ?? "알 수 없음",
-        initial: c.users?.full_name?.[0] ?? "?",
-        createdAt: formatRelativeTime(c.created_at),
-        content: c.content,
-      }))
-    : COMMENTS.map((c) => ({
-        id: String(c.id),
-        name: c.author,
-        initial: c.initial,
-        createdAt: c.createdAt,
-        content: c.content,
-      }));
 
   useEffect(() => {
     if (!post?.owner_id) return;
@@ -282,6 +206,28 @@ export default function BoardDetailPage() {
       return;
     }
     setShowApplyModal(true);
+  };
+
+  // 모집마감: 상태를 matched로 변경 후 로컬 post 반영
+  const handleClose = async () => {
+    const result = await updateRequest(post.id, { status: "matched" });
+    if (result.error) {
+      alert(result.error.message);
+      return;
+    }
+    setPost((prev) => (prev ? { ...prev, status: "matched" } : prev));
+  };
+
+  // 삭제 확정: 삭제 성공 시 목록으로 이동
+  const confirmDelete = async () => {
+    if (!deleteTargetId) return;
+    const result = await deleteRequest(deleteTargetId);
+    setDeleteTargetId(null);
+    if (result.error) {
+      alert(result.error.message);
+      return;
+    }
+    router.push("/board");
   };
 
   return (
@@ -464,61 +410,33 @@ export default function BoardDetailPage() {
                 </SectionCard>
               )}
 
-              {/* 댓글 */}
-              <SectionCard>
-                <h2 className="text-stone-900 text-xl font-bold">
-                  댓글 {displayComments.length}
-                </h2>
-
-                {/* 댓글 입력 */}
-                <div className="flex items-start gap-3 pb-6 border-b border-orange-100">
-                  <Avatar initial="나" size="md" variant="orange" />
-                  <div className="flex-1 flex flex-col gap-2">
-                    <textarea
-                      value={comment}
-                      onChange={(e) => setComment(e.target.value)}
-                      placeholder="댓글을 입력하세요..."
-                      rows={3}
-                      className="w-full p-3 rounded-lg border border-orange-100 text-stone-900 text-base placeholder:text-stone-900/40 outline-none resize-none focus:border-orange-300 transition-colors"
-                    />
-                    <div className="flex justify-end">
-                      <button
-                        onClick={handleSubmitComment}
-                        className={`h-9 px-4 rounded-[10px] text-xs font-semibold transition-colors ${
-                          comment.trim() && !submitting
-                            ? "bg-orange-500 text-white hover:bg-orange-600"
-                            : "bg-orange-100 text-gray-300 cursor-not-allowed"
-                        }`}
-                        disabled={!comment.trim() || submitting}
-                      >
-                        {submitting ? "등록 중..." : "등록"}
-                      </button>
-                    </div>
-                  </div>
+              {/* 작성자 전용 액션 (수정/모집마감/삭제) */}
+              {isAuthor && (
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <button
+                    onClick={() => router.push(`/board/${post.id}/edit`)}
+                    className="flex-1 py-2.5 bg-orange-500 rounded-xl text-white text-sm font-medium flex items-center justify-center gap-1.5 hover:bg-orange-600 transition-colors"
+                  >
+                    <Pencil size={14} />
+                    수정하기
+                  </button>
+                  {post.status === "open" && (
+                    <button
+                      onClick={handleClose}
+                      className="flex-1 py-2.5 bg-gray-100 rounded-xl text-gray-500 text-sm font-medium hover:bg-gray-200 transition-colors"
+                    >
+                      모집마감
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setDeleteTargetId(post.id)}
+                    className="flex-1 py-2.5 bg-red-100 rounded-xl text-red-500 text-sm font-medium flex items-center justify-center gap-1.5 hover:bg-red-200 transition-colors"
+                  >
+                    <Trash2 size={14} />
+                    삭제
+                  </button>
                 </div>
-
-                {/* 댓글 목록 (평면 댓글 — 답글 기능 없음) */}
-                <div className="flex flex-col gap-6 pt-2">
-                  {displayComments.map((c) => (
-                    <div key={c.id} className="flex items-start gap-3">
-                      <Avatar initial={c.initial} size="md" variant="orange" />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-stone-900 text-sm font-semibold">
-                            {c.name}
-                          </span>
-                          <span className="text-gray-500 text-xs">
-                            {c.createdAt}
-                          </span>
-                        </div>
-                        <p className="text-stone-900 text-sm leading-5">
-                          {c.content}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </SectionCard>
+              )}
             </div>
 
             {/* 오른쪽 사이드바 */}
@@ -658,6 +576,20 @@ export default function BoardDetailPage() {
           router.push("/chat");
         }}
       />
+
+      {/* 삭제 확인 모달 */}
+      {deleteTargetId && (
+        <CustomModal
+          open={!!deleteTargetId}
+          type="danger"
+          title="게시글 삭제"
+          description="게시글을 삭제하면 복구할 수 없어요. 정말 삭제하시겠어요?"
+          confirmText="삭제하기"
+          cancelText="취소"
+          onClose={() => setDeleteTargetId(null)}
+          onConfirm={confirmDelete}
+        />
+      )}
     </>
   );
 }

@@ -25,6 +25,7 @@ const REQUEST_TYPE_MAP: Record<string, string> = {
   walk: "산책",
   hotel: "펫호텔",
   pickup: "픽업",
+  other: "기타",
 };
 
 function formatPeriod(start: string, end: string) {
