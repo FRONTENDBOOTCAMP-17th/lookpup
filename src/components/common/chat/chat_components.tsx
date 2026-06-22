@@ -39,6 +39,7 @@ export type Applicant = {
   rating: number;
   preview: string;
   unread: number;
+  applicationStatus?: string | null;
   location?: string;
   reviewCount?: number;
   services?: string[];

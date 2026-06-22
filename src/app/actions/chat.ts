@@ -113,6 +113,39 @@ export async function sendMessage(roomId: string, content: string) {
   return { data: message };
 }
 
+const SYSTEM_MSG_PREFIX = "__system__:";
+
+export async function sendSystemMessage(roomId: string, content: string) {
+  const user = await getAuthUser();
+  if (!user) {
+    return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
+  }
+
+  const db = createServiceClient();
+  const now = new Date().toISOString();
+
+  const { data: message, error } = await db
+    .from("messages")
+    .insert({
+      room_id: roomId,
+      sender_id: user.id,
+      content: `${SYSTEM_MSG_PREFIX}${content}`,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    return { error: { code: "INTERNAL_ERROR", message: error.message } };
+  }
+
+  await db
+    .from("chat_rooms")
+    .update({ last_message: content, last_message_at: now })
+    .eq("id", roomId);
+
+  return { data: message };
+}
+
 export async function markRoomRead(roomId: string) {
   const user = await getAuthUser();
   if (!user) {

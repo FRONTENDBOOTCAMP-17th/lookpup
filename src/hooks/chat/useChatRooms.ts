@@ -40,6 +40,14 @@ interface RoomApiItem {
   request_id: string | null;
   request_title: string | null;
   request_status: string | null;
+  application_status: string | null;
+}
+
+const SYSTEM_MSG_PREFIX = "__system__:";
+function stripSystemPrefix(content: string): string {
+  return content.startsWith(SYSTEM_MSG_PREFIX)
+    ? content.slice(SYSTEM_MSG_PREFIX.length)
+    : content;
 }
 
 export function useChatRooms(activeRoomId: string | null) {
@@ -107,6 +115,7 @@ export function useChatRooms(activeRoomId: string | null) {
           rating: 0,
           preview: r.last_message ?? "",
           unread: r.unread_count ?? 0,
+          applicationStatus: r.application_status ?? null,
         }));
 
         setRooms(directRooms);
@@ -149,7 +158,7 @@ export function useChatRooms(activeRoomId: string | null) {
 
           if (sender_id !== userIdRef.current) return;
           if (!myRoomIdsRef.current.has(room_id)) return;
-          updateRoomPreview(room_id, content, created_at);
+          updateRoomPreview(room_id, stripSystemPrefix(content), created_at);
         },
       )
       .subscribe();
@@ -181,7 +190,7 @@ export function useChatRooms(activeRoomId: string | null) {
             content: string;
             created_at: string;
           };
-          updateRoomPreview(roomId, m.content, m.created_at);
+          updateRoomPreview(roomId, stripSystemPrefix(m.content), m.created_at);
 
           if (
             m.sender_id !== userIdRef.current &&

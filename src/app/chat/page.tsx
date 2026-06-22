@@ -19,7 +19,11 @@ import {
 } from "@/components/common/chat/chat_components";
 import { CustomModalPayment } from "@/components/common/CustomModalPayment";
 import CareRecordModal from "@/components/common/chat/CareRecordModal";
-import { sendMessage, markRoomRead } from "@/app/actions/chat";
+import {
+  sendMessage,
+  markRoomRead,
+  sendSystemMessage,
+} from "@/app/actions/chat";
 import { updateApplicationByRoom } from "@/app/actions/applications";
 import { useChatRooms } from "@/hooks/chat/useChatRooms";
 import { useRequest } from "@/hooks/chat/useRequest";
@@ -72,7 +76,6 @@ function ChatPageContent({
   const {
     rejectedIds,
     confirmedId,
-    sysMessages,
     rejectApplicant,
     confirmApplicant,
     getApplicantBadge,
@@ -89,6 +92,11 @@ function ChatPageContent({
         return;
       }
       rejectApplicant(id);
+      const sysResult = await sendSystemMessage(id, "지원이 거절되었습니다.");
+      if (sysResult.data) {
+        addMessage(sysResult.data);
+        broadcastMessage(sysResult.data);
+      }
     } catch {
       setApplicationActionError("오류가 발생했습니다. 다시 시도해주세요.");
     } finally {
@@ -107,6 +115,11 @@ function ChatPageContent({
         return;
       }
       confirmApplicant(id);
+      const sysResult = await sendSystemMessage(id, "선택 확정되었습니다 🎉");
+      if (sysResult.data) {
+        addMessage(sysResult.data);
+        broadcastMessage(sysResult.data);
+      }
     } catch {
       setApplicationActionError("오류가 발생했습니다. 다시 시도해주세요.");
     } finally {
@@ -273,6 +286,11 @@ function ChatPageContent({
     !rejectedIds.has(selectedApplicantId) &&
     confirmedId !== selectedApplicantId &&
     confirmedId === null;
+
+  const isRejectedApplicant =
+    activeTab === "applicants" &&
+    !isOwnerOfSelectedRoom &&
+    messages.some((m) => m.from === "divider" && m.text.includes("거절"));
 
   return (
     <div className="h-screen overflow-hidden flex flex-col">
@@ -519,16 +537,6 @@ function ChatPageContent({
                     senderInitial={mobileRoomInitial}
                   />
                 ))}
-
-                {activeTab === "applicants" &&
-                  selectedApplicantId !== null &&
-                  sysMessages[selectedApplicantId] && (
-                    <div className="flex justify-center">
-                      <span className="px-4 py-1 bg-white rounded-full text-gray-400 text-xs">
-                        {sysMessages[selectedApplicantId]}
-                      </span>
-                    </div>
-                  )}
               </div>
             </div>
 
@@ -580,37 +588,45 @@ function ChatPageContent({
             )}
 
             {/* 입력창 */}
-            {sendError && (
-              <p className="px-4 py-1 text-xs text-red-500 bg-red-50 border-t border-red-100 shrink-0">
-                {sendError}
-              </p>
+            {isRejectedApplicant ? (
+              <div className="px-4 py-3 bg-stone-50 border-t border-stone-200 text-center text-xs text-stone-400 shrink-0">
+                지원이 거절되어 메시지를 보낼 수 없습니다.
+              </div>
+            ) : (
+              <>
+                {sendError && (
+                  <p className="px-4 py-1 text-xs text-red-500 bg-red-50 border-t border-red-100 shrink-0">
+                    {sendError}
+                  </p>
+                )}
+                <div className="px-4 py-3 bg-white border-t border-orange-100 flex items-center gap-2.5 shrink-0">
+                  <button
+                    onClick={() => setPlusMenuOpen((v) => !v)}
+                    className="w-11 h-11 rounded-xl flex items-center justify-center hover:bg-orange-50 transition-colors shrink-0"
+                  >
+                    <Plus
+                      size={22}
+                      className={`text-gray-500 transition-transform duration-200 ${plusMenuOpen ? "rotate-45" : ""}`}
+                    />
+                  </button>
+                  <input
+                    type="text"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                    placeholder="메시지를 입력하세요"
+                    className="flex-1 h-11 px-4 bg-orange-50 rounded-2xl text-sm text-stone-900 placeholder-stone-900/50 outline-none"
+                  />
+                  <button
+                    onClick={handleSend}
+                    disabled={sending}
+                    className="w-11 h-11 bg-orange-500 rounded-xl flex items-center justify-center shrink-0 disabled:opacity-50"
+                  >
+                    <Send size={16} className="text-white" />
+                  </button>
+                </div>
+              </>
             )}
-            <div className="px-4 py-3 bg-white border-t border-orange-100 flex items-center gap-2.5 shrink-0">
-              <button
-                onClick={() => setPlusMenuOpen((v) => !v)}
-                className="w-11 h-11 rounded-xl flex items-center justify-center hover:bg-orange-50 transition-colors shrink-0"
-              >
-                <Plus
-                  size={22}
-                  className={`text-gray-500 transition-transform duration-200 ${plusMenuOpen ? "rotate-45" : ""}`}
-                />
-              </button>
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                placeholder="메시지를 입력하세요"
-                className="flex-1 h-11 px-4 bg-orange-50 rounded-2xl text-sm text-stone-900 placeholder-stone-900/50 outline-none"
-              />
-              <button
-                onClick={handleSend}
-                disabled={sending}
-                className="w-11 h-11 bg-orange-500 rounded-xl flex items-center justify-center shrink-0 disabled:opacity-50"
-              >
-                <Send size={16} className="text-white" />
-              </button>
-            </div>
           </div>
         )}
       </div>
@@ -803,14 +819,6 @@ function ChatPageContent({
                     />
                   ))}
 
-                  {activeTab === "applicants" &&
-                    sysMessages[selectedApplicantId!] && (
-                      <div className="flex justify-center">
-                        <span className="px-4 py-1 bg-white rounded-full text-gray-400 text-xs">
-                          {sysMessages[selectedApplicantId!]}
-                        </span>
-                      </div>
-                    )}
                   <div ref={messagesEndRef} />
                 </div>
               </ScrollArea>
@@ -836,19 +844,27 @@ function ChatPageContent({
                   onSendPhoto={() => setPlusMenuOpen(false)}
                 />
               )}
-              {sendError && (
-                <p className="px-8 py-1 text-xs text-red-500 bg-red-50 border-t border-red-100 shrink-0">
-                  {sendError}
-                </p>
+              {isRejectedApplicant ? (
+                <div className="px-8 py-4 bg-stone-50 border-t border-stone-200 text-center text-sm text-stone-400 shrink-0">
+                  지원이 거절되어 메시지를 보낼 수 없습니다.
+                </div>
+              ) : (
+                <>
+                  {sendError && (
+                    <p className="px-8 py-1 text-xs text-red-500 bg-red-50 border-t border-red-100 shrink-0">
+                      {sendError}
+                    </p>
+                  )}
+                  <ChatInput
+                    input={input}
+                    onChange={setInput}
+                    onSend={handleSend}
+                    showPlusButton={true}
+                    plusOpen={plusMenuOpen}
+                    onPlusToggle={() => setPlusMenuOpen((v) => !v)}
+                  />
+                </>
               )}
-              <ChatInput
-                input={input}
-                onChange={setInput}
-                onSend={handleSend}
-                showPlusButton={true}
-                plusOpen={plusMenuOpen}
-                onPlusToggle={() => setPlusMenuOpen((v) => !v)}
-              />
             </>
           )}
         </div>
