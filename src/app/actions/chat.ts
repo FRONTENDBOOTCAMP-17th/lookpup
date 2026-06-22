@@ -114,6 +114,50 @@ export async function sendMessage(roomId: string, content: string) {
 }
 
 const SYSTEM_MSG_PREFIX = "__system__:";
+const IMAGE_MSG_PREFIX = "__image__:";
+
+export async function sendImageMessage(roomId: string, imageUrl: string) {
+  const user = await getAuthUser();
+  if (!user) {
+    return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
+  }
+
+  const db = createServiceClient();
+
+  const { data: room } = await db
+    .from("chat_rooms")
+    .select("id, owner_id, sitters!inner(user_id)")
+    .eq("id", roomId)
+    .single();
+
+  if (!room) {
+    return { error: { code: "NOT_FOUND", message: "채팅방을 찾을 수 없습니다." } };
+  }
+
+  const sitter = room.sitters as unknown as { user_id: string };
+  if (room.owner_id !== user.id && sitter.user_id !== user.id) {
+    return { error: { code: "FORBIDDEN", message: "채팅방 참여자만 메시지를 보낼 수 있습니다." } };
+  }
+
+  const now = new Date().toISOString();
+
+  const { data: message, error: msgError } = await db
+    .from("messages")
+    .insert({ room_id: roomId, sender_id: user.id, content: `${IMAGE_MSG_PREFIX}${imageUrl}` })
+    .select()
+    .single();
+
+  if (msgError) {
+    return { error: { code: "INTERNAL_ERROR", message: msgError.message } };
+  }
+
+  await db
+    .from("chat_rooms")
+    .update({ last_message: "사진", last_message_at: now })
+    .eq("id", roomId);
+
+  return { data: message };
+}
 
 export async function sendSystemMessage(roomId: string, content: string) {
   const user = await getAuthUser();

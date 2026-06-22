@@ -41,10 +41,12 @@ interface RoomApiItem {
 }
 
 const SYSTEM_MSG_PREFIX = "__system__:";
-function stripSystemPrefix(content: string): string {
-  return content.startsWith(SYSTEM_MSG_PREFIX)
-    ? content.slice(SYSTEM_MSG_PREFIX.length)
-    : content;
+const IMAGE_MSG_PREFIX = "__image__:";
+
+function formatPreview(content: string): string {
+  if (content.startsWith(SYSTEM_MSG_PREFIX)) return content.slice(SYSTEM_MSG_PREFIX.length);
+  if (content.startsWith(IMAGE_MSG_PREFIX)) return "사진";
+  return content;
 }
 
 export function useChatRooms(activeRoomId: string | null) {
@@ -96,7 +98,7 @@ export function useChatRooms(activeRoomId: string | null) {
             name: r.other_user_full_name ?? "",
             initial: (r.other_user_full_name ?? "?")[0],
             sub: "1:1 채팅",
-            lastMessage: r.last_message ?? "",
+            lastMessage: formatPreview(r.last_message ?? ""),
             time: formatTime(r.last_message_at),
             unread: r.unread_count ?? 0,
           }));
@@ -110,7 +112,7 @@ export function useChatRooms(activeRoomId: string | null) {
           name: r.other_user_full_name ?? "",
           initial: (r.other_user_full_name ?? "?")[0],
           rating: 0,
-          preview: r.last_message ?? "",
+          preview: formatPreview(r.last_message ?? ""),
           unread: r.unread_count ?? 0,
           applicationStatus: r.application_status ?? null,
         }));
@@ -155,7 +157,7 @@ export function useChatRooms(activeRoomId: string | null) {
 
           if (sender_id !== userIdRef.current) return;
           if (!myRoomIdsRef.current.has(room_id)) return;
-          updateRoomPreview(room_id, stripSystemPrefix(content), created_at);
+          updateRoomPreview(room_id, formatPreview(content), created_at);
         },
       )
       .subscribe();
@@ -187,7 +189,7 @@ export function useChatRooms(activeRoomId: string | null) {
             content: string;
             created_at: string;
           };
-          updateRoomPreview(roomId, stripSystemPrefix(m.content), m.created_at);
+          updateRoomPreview(roomId, formatPreview(m.content), m.created_at);
 
           if (
             m.sender_id !== userIdRef.current &&

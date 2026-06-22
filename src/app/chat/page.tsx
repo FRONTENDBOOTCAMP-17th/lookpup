@@ -22,9 +22,11 @@ import { CustomModalPayment } from "@/components/common/CustomModalPayment";
 import CareRecordModal from "@/components/common/chat/CareRecordModal";
 import {
   sendMessage,
+  sendImageMessage,
   markRoomRead,
   sendSystemMessage,
 } from "@/app/actions/chat";
+import { uploadToCloudinary } from "@/utils/cloudinary";
 import { updateApplicationByRoom } from "@/app/actions/applications";
 import { useChatRooms } from "@/hooks/chat/useChatRooms";
 import { useRequest } from "@/hooks/chat/useRequest";
@@ -202,6 +204,32 @@ function ChatPageContent({
     }
   }
 
+  async function handlePhotoSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !activeRoomId || sendingPhoto) return;
+    setSendError(null);
+    setSendingPhoto(true);
+    setPlusMenuOpen(false);
+    try {
+      const imageUrl = await uploadToCloudinary(file, "chats/photos");
+      const result = await sendImageMessage(activeRoomId, imageUrl);
+      if (result.error) {
+        setSendError(result.error.message);
+        return;
+      }
+      if (result.data) {
+        addMessage(result.data);
+        broadcastMessage(result.data);
+        updatePreview(activeRoomId, "사진", result.data.created_at);
+      }
+    } catch {
+      setSendError("사진 전송에 실패했습니다. 다시 시도해주세요.");
+    } finally {
+      setSendingPhoto(false);
+    }
+  }
+
   // 로그인 유저 ID 가져오기
   useEffect(() => {
     const supabase = createClient();
@@ -223,6 +251,8 @@ function ChatPageContent({
     });
 
   const [plusMenuOpen, setPlusMenuOpen] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const [sendingPhoto, setSendingPhoto] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [careRecordOpen, setCareRecordOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<{
@@ -619,7 +649,7 @@ function ChatPageContent({
                     ? () => setPlusMenuOpen(false)
                     : undefined
                 }
-                onSendPhoto={() => setPlusMenuOpen(false)}
+                onSendPhoto={() => photoInputRef.current?.click()}
               />
             )}
 
@@ -877,7 +907,7 @@ function ChatPageContent({
                         }
                       : undefined
                   }
-                  onSendPhoto={() => setPlusMenuOpen(false)}
+                  onSendPhoto={() => photoInputRef.current?.click()}
                 />
               )}
               {applicationActionError && (
@@ -910,6 +940,15 @@ function ChatPageContent({
           )}
         </div>
       </div>
+
+      <input
+        ref={photoInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handlePhotoSelect}
+        disabled={sendingPhoto}
+      />
 
       {profilePopupApplicant && (
         <ApplicantProfilePopup
