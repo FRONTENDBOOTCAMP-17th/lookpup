@@ -17,9 +17,16 @@ import {
   ApplicantPostGroup,
   type Applicant,
 } from "@/components/common/chat/chat_components";
+import { CustomModal } from "@/components/common/CustomModal";
 import { CustomModalPayment } from "@/components/common/CustomModalPayment";
 import CareRecordModal from "@/components/common/chat/CareRecordModal";
-import { sendMessage, markRoomRead } from "@/app/actions/chat";
+import {
+  sendMessage,
+  sendImageMessage,
+  markRoomRead,
+  sendSystemMessage,
+} from "@/app/actions/chat";
+import { uploadToCloudinary } from "@/utils/cloudinary";
 import { updateApplicationByRoom } from "@/app/actions/applications";
 import { useChatRooms } from "@/hooks/chat/useChatRooms";
 import { useRequest } from "@/hooks/chat/useRequest";
@@ -72,7 +79,6 @@ function ChatPageContent({
   const {
     rejectedIds,
     confirmedId,
-    sysMessages,
     rejectApplicant,
     confirmApplicant,
     getApplicantBadge,
@@ -89,6 +95,11 @@ function ChatPageContent({
         return;
       }
       rejectApplicant(id);
+      const sysResult = await sendSystemMessage(id, "지원이 거절되었습니다.");
+      if (sysResult.data && id === activeRoomId) {
+        addMessage(sysResult.data);
+        broadcastMessage(sysResult.data);
+      }
     } catch {
       setApplicationActionError("오류가 발생했습니다. 다시 시도해주세요.");
     } finally {
@@ -107,6 +118,11 @@ function ChatPageContent({
         return;
       }
       confirmApplicant(id);
+      const sysResult = await sendSystemMessage(id, "선택 확정되었습니다 🎉");
+      if (sysResult.data && id === activeRoomId) {
+        addMessage(sysResult.data);
+        broadcastMessage(sysResult.data);
+      }
     } catch {
       setApplicationActionError("오류가 발생했습니다. 다시 시도해주세요.");
     } finally {
@@ -127,6 +143,7 @@ function ChatPageContent({
     if (!activeRoomId) return;
     markRoomAsRead(activeRoomId);
     markRoomRead(activeRoomId);
+    setSendError(null);
   }, [activeRoomId]);
 
   useLayoutEffect(() => {
@@ -187,6 +204,32 @@ function ChatPageContent({
     }
   }
 
+  async function handlePhotoSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !activeRoomId || sendingPhoto) return;
+    setSendError(null);
+    setSendingPhoto(true);
+    setPlusMenuOpen(false);
+    try {
+      const imageUrl = await uploadToCloudinary(file, "chats/photos");
+      const result = await sendImageMessage(activeRoomId, imageUrl);
+      if (result.error) {
+        setSendError(result.error.message);
+        return;
+      }
+      if (result.data) {
+        addMessage(result.data);
+        broadcastMessage(result.data);
+        updatePreview(activeRoomId, "사진", result.data.created_at);
+      }
+    } catch {
+      setSendError("사진 전송에 실패했습니다. 다시 시도해주세요.");
+    } finally {
+      setSendingPhoto(false);
+    }
+  }
+
   // 로그인 유저 ID 가져오기
   useEffect(() => {
     const supabase = createClient();
@@ -208,8 +251,16 @@ function ChatPageContent({
     });
 
   const [plusMenuOpen, setPlusMenuOpen] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const [sendingPhoto, setSendingPhoto] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [careRecordOpen, setCareRecordOpen] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<{
+    id: string;
+    type: "room" | "applicant";
+  } | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   function openApplicantProfile(id: string) {
     const found = applicants.find((a) => a.id === id) ?? null;
@@ -225,13 +276,41 @@ function ChatPageContent({
   );
 
   function handleDeleteRoom(id: string) {
-    deleteRoom(id);
-    if (selectedRoomId === id) setSelectedRoomId(null);
+    setPendingDelete({ id, type: "room" });
+    setDeleteError(null);
   }
 
   function handleDeleteApplicant(id: string) {
-    deleteApplicant(id);
-    if (selectedApplicantId === id) setSelectedApplicantId(null);
+    setPendingDelete({ id, type: "applicant" });
+    setDeleteError(null);
+  }
+
+  async function handleConfirmDelete() {
+    if (!pendingDelete || deleting) return;
+    setDeleting(true);
+    setDeleteError(null);
+    const result =
+      pendingDelete.type === "room"
+        ? await deleteRoom(pendingDelete.id)
+        : await deleteApplicant(pendingDelete.id);
+    setDeleting(false);
+    if (result.error) {
+      setDeleteError(result.error);
+      return;
+    }
+    if (pendingDelete.type === "room" && selectedRoomId === pendingDelete.id) {
+      setSelectedRoomId(null);
+      setMobileChatView("list");
+    }
+    if (
+      pendingDelete.type === "applicant" &&
+      selectedApplicantId === pendingDelete.id
+    ) {
+      setSelectedApplicantId(null);
+      setMobileChatView("list");
+    }
+    setPendingDelete(null);
+    setMobileMenuOpen(false);
   }
 
   function getHeaderBadge() {
@@ -273,6 +352,12 @@ function ChatPageContent({
     !rejectedIds.has(selectedApplicantId) &&
     confirmedId !== selectedApplicantId &&
     confirmedId === null;
+
+  const isRejectedApplicant =
+    activeTab === "applicants" &&
+    !isOwnerOfSelectedRoom &&
+    selectedApplicantId !== null &&
+    rejectedIds.has(selectedApplicantId);
 
   return (
     <div className="h-screen overflow-hidden flex flex-col">
@@ -468,7 +553,6 @@ function ChatPageContent({
                             selectedApplicantId !== null
                           )
                             handleDeleteApplicant(selectedApplicantId);
-                          setMobileChatView("list");
                           setMobileMenuOpen(false);
                         }}
                         className="w-full px-4 py-3 text-left text-sm text-stone-700 hover:bg-orange-50 transition-colors border-t border-orange-50"
@@ -519,16 +603,6 @@ function ChatPageContent({
                     senderInitial={mobileRoomInitial}
                   />
                 ))}
-
-                {activeTab === "applicants" &&
-                  selectedApplicantId !== null &&
-                  sysMessages[selectedApplicantId] && (
-                    <div className="flex justify-center">
-                      <span className="px-4 py-1 bg-white rounded-full text-gray-400 text-xs">
-                        {sysMessages[selectedApplicantId]}
-                      </span>
-                    </div>
-                  )}
               </div>
             </div>
 
@@ -575,42 +649,50 @@ function ChatPageContent({
                     ? () => setPlusMenuOpen(false)
                     : undefined
                 }
-                onSendPhoto={() => setPlusMenuOpen(false)}
+                onSendPhoto={() => photoInputRef.current?.click()}
               />
             )}
 
             {/* 입력창 */}
-            {sendError && (
-              <p className="px-4 py-1 text-xs text-red-500 bg-red-50 border-t border-red-100 shrink-0">
-                {sendError}
-              </p>
+            {isRejectedApplicant ? (
+              <div className="px-4 py-3 bg-stone-50 border-t border-stone-200 text-center text-xs text-stone-400 shrink-0">
+                지원이 거절되어 메시지를 보낼 수 없습니다.
+              </div>
+            ) : (
+              <>
+                {sendError && (
+                  <p className="px-4 py-1 text-xs text-red-500 bg-red-50 border-t border-red-100 shrink-0">
+                    {sendError}
+                  </p>
+                )}
+                <div className="px-4 py-3 bg-white border-t border-orange-100 flex items-center gap-2.5 shrink-0">
+                  <button
+                    onClick={() => setPlusMenuOpen((v) => !v)}
+                    className="w-11 h-11 rounded-xl flex items-center justify-center hover:bg-orange-50 transition-colors shrink-0"
+                  >
+                    <Plus
+                      size={22}
+                      className={`text-gray-500 transition-transform duration-200 ${plusMenuOpen ? "rotate-45" : ""}`}
+                    />
+                  </button>
+                  <input
+                    type="text"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                    placeholder="메시지를 입력하세요"
+                    className="flex-1 h-11 px-4 bg-orange-50 rounded-2xl text-sm text-stone-900 placeholder-stone-900/50 outline-none"
+                  />
+                  <button
+                    onClick={handleSend}
+                    disabled={sending}
+                    className="w-11 h-11 bg-orange-500 rounded-xl flex items-center justify-center shrink-0 disabled:opacity-50"
+                  >
+                    <Send size={16} className="text-white" />
+                  </button>
+                </div>
+              </>
             )}
-            <div className="px-4 py-3 bg-white border-t border-orange-100 flex items-center gap-2.5 shrink-0">
-              <button
-                onClick={() => setPlusMenuOpen((v) => !v)}
-                className="w-11 h-11 rounded-xl flex items-center justify-center hover:bg-orange-50 transition-colors shrink-0"
-              >
-                <Plus
-                  size={22}
-                  className={`text-gray-500 transition-transform duration-200 ${plusMenuOpen ? "rotate-45" : ""}`}
-                />
-              </button>
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                placeholder="메시지를 입력하세요"
-                className="flex-1 h-11 px-4 bg-orange-50 rounded-2xl text-sm text-stone-900 placeholder-stone-900/50 outline-none"
-              />
-              <button
-                onClick={handleSend}
-                disabled={sending}
-                className="w-11 h-11 bg-orange-500 rounded-xl flex items-center justify-center shrink-0 disabled:opacity-50"
-              >
-                <Send size={16} className="text-white" />
-              </button>
-            </div>
           </div>
         )}
       </div>
@@ -803,14 +885,6 @@ function ChatPageContent({
                     />
                   ))}
 
-                  {activeTab === "applicants" &&
-                    sysMessages[selectedApplicantId!] && (
-                      <div className="flex justify-center">
-                        <span className="px-4 py-1 bg-white rounded-full text-gray-400 text-xs">
-                          {sysMessages[selectedApplicantId!]}
-                        </span>
-                      </div>
-                    )}
                   <div ref={messagesEndRef} />
                 </div>
               </ScrollArea>
@@ -833,33 +907,74 @@ function ChatPageContent({
                         }
                       : undefined
                   }
-                  onSendPhoto={() => setPlusMenuOpen(false)}
+                  onSendPhoto={() => photoInputRef.current?.click()}
                 />
               )}
-              {sendError && (
+              {applicationActionError && (
                 <p className="px-8 py-1 text-xs text-red-500 bg-red-50 border-t border-red-100 shrink-0">
-                  {sendError}
+                  {applicationActionError}
                 </p>
               )}
-              <ChatInput
-                input={input}
-                onChange={setInput}
-                onSend={handleSend}
-                showPlusButton={true}
-                plusOpen={plusMenuOpen}
-                onPlusToggle={() => setPlusMenuOpen((v) => !v)}
-              />
+              {isRejectedApplicant ? (
+                <div className="px-8 py-4 bg-stone-50 border-t border-stone-200 text-center text-sm text-stone-400 shrink-0">
+                  지원이 거절되어 메시지를 보낼 수 없습니다.
+                </div>
+              ) : (
+                <>
+                  {sendError && (
+                    <p className="px-8 py-1 text-xs text-red-500 bg-red-50 border-t border-red-100 shrink-0">
+                      {sendError}
+                    </p>
+                  )}
+                  <ChatInput
+                    input={input}
+                    onChange={setInput}
+                    onSend={handleSend}
+                    showPlusButton={true}
+                    plusOpen={plusMenuOpen}
+                    onPlusToggle={() => setPlusMenuOpen((v) => !v)}
+                  />
+                </>
+              )}
             </>
           )}
         </div>
       </div>
 
+      <input
+        ref={photoInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handlePhotoSelect}
+        disabled={sendingPhoto}
+      />
+
       {profilePopupApplicant && (
         <ApplicantProfilePopup
           applicant={profilePopupApplicant}
           onClose={() => setProfilePopupApplicant(null)}
+          cardVariant={profilePopupApplicant.ownerId === userId ? "sitter" : "owner"}
         />
       )}
+
+      <CustomModal
+        open={pendingDelete !== null}
+        preset="leaveChat"
+        confirmText={deleting ? "처리 중..." : "나가기"}
+        onClose={() => {
+          if (!deleting) {
+            setPendingDelete(null);
+            setDeleteError(null);
+          }
+        }}
+        onConfirm={handleConfirmDelete}
+        description={
+          deleteError
+            ? deleteError
+            : "채팅방을 나가면 대화 내역을 다시 볼 수 없습니다."
+        }
+      />
 
       <CustomModalPayment
         open={paymentModalOpen}

@@ -13,6 +13,9 @@ import { createClient } from "@/utils/supabase/client";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import type { Message } from "@/components/common/chat/chat_components";
 
+const SYSTEM_MSG_PREFIX = "__system__:";
+const IMAGE_MSG_PREFIX = "__image__:";
+
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString("ko-KR", {
     hour: "2-digit",
@@ -28,6 +31,22 @@ export interface MessageApiItem {
 }
 
 function toMessage(m: MessageApiItem, userId: string): Message {
+  if (m.content.startsWith(SYSTEM_MSG_PREFIX)) {
+    return {
+      id: m.id,
+      from: "divider",
+      text: m.content.slice(SYSTEM_MSG_PREFIX.length),
+    };
+  }
+  if (m.content.startsWith(IMAGE_MSG_PREFIX)) {
+    return {
+      id: m.id,
+      from: m.sender_id === userId ? "me" : "other",
+      text: "",
+      imageUrl: m.content.slice(IMAGE_MSG_PREFIX.length),
+      time: formatTime(m.created_at),
+    };
+  }
   return {
     id: m.id,
     from: m.sender_id === userId ? "me" : "other",

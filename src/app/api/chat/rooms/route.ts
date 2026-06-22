@@ -41,9 +41,13 @@ export async function GET() {
     .order("last_message_at", { ascending: false, nullsFirst: false });
 
   if (sitterId) {
-    roomsQuery = roomsQuery.or(`owner_id.eq.${user.id},sitter_id.eq.${sitterId}`);
+    roomsQuery = roomsQuery.or(
+      `and(owner_id.eq.${user.id},owner_left.is.false),and(sitter_id.eq.${sitterId},sitter_left.is.false)`,
+    );
   } else {
-    roomsQuery = roomsQuery.eq("owner_id", user.id);
+    roomsQuery = roomsQuery
+      .eq("owner_id", user.id)
+      .eq("owner_left", false);
   }
 
   const { data: rooms, error } = await roomsQuery;
@@ -59,7 +63,25 @@ export async function GET() {
     return NextResponse.json({ data: [] });
   }
 
-  // 읽지 않은 메시지 수 일괄 조회
+  const requestRooms = rooms.filter((r) => r.room_type === "request");
+  const applicationStatusMap = new Map<string, string>();
+  if (requestRooms.length > 0) {
+    const requestIds = requestRooms
+      .map((r) => r.request_id)
+      .filter(Boolean) as string[];
+    const sitterIds = requestRooms
+      .map((r) => r.sitter_id)
+      .filter(Boolean) as string[];
+    const { data: applications } = await db
+      .from("applications")
+      .select("request_id, sitter_id, status")
+      .in("request_id", requestIds)
+      .in("sitter_id", sitterIds);
+    (applications ?? []).forEach((a) => {
+      applicationStatusMap.set(`${a.request_id}-${a.sitter_id}`, a.status);
+    });
+  }
+
   const roomIds = rooms.map((r) => r.id);
   const { data: unreadMessages } = await db
     .from("messages")
@@ -75,11 +97,17 @@ export async function GET() {
 
   const result = rooms.map((room) => {
     const isOwner = room.owner_id === user.id;
-    const owner = room.owner as unknown as { full_name: string; profile_image: string | null };
+    const owner = room.owner as unknown as {
+      full_name: string;
+      profile_image: string | null;
+    };
     const sitter = room.sitter as unknown as {
       sitter_user: { full_name: string; profile_image: string | null };
     };
-    const request = room.request as unknown as { title: string; status: string } | null;
+    const request = room.request as unknown as {
+      title: string;
+      status: string;
+    } | null;
 
     return {
       id: room.id,
@@ -97,6 +125,11 @@ export async function GET() {
       request_id: room.request_id ?? null,
       request_title: request?.title ?? null,
       request_status: request?.status ?? null,
+      application_status:
+        room.room_type === "request" && room.request_id && room.sitter_id
+          ? (applicationStatusMap.get(`${room.request_id}-${room.sitter_id}`) ??
+            null)
+          : null,
       last_message: room.last_message ?? null,
       last_message_at: room.last_message_at ?? null,
     };

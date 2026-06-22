@@ -2,9 +2,6 @@
  * 채팅 목록 전체 관리.
  * direct와 request 두 타입을 room_type으로 분리하고 각각 저장함!
  * rooms : 1:1 채팅 / applicants : 지원 목록 채팅
- *
- * 방 삭제하는 것 나중에 추가해야 함...확인할 것.
- * 지금의 deleteRoom / deleteApplicant는 클라이언트 목록에서만 제거함.
  */
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
@@ -40,6 +37,16 @@ interface RoomApiItem {
   request_id: string | null;
   request_title: string | null;
   request_status: string | null;
+  application_status: string | null;
+}
+
+const SYSTEM_MSG_PREFIX = "__system__:";
+const IMAGE_MSG_PREFIX = "__image__:";
+
+function formatPreview(content: string): string {
+  if (content.startsWith(SYSTEM_MSG_PREFIX)) return content.slice(SYSTEM_MSG_PREFIX.length);
+  if (content.startsWith(IMAGE_MSG_PREFIX)) return "사진";
+  return content;
 }
 
 export function useChatRooms(activeRoomId: string | null) {
@@ -91,7 +98,7 @@ export function useChatRooms(activeRoomId: string | null) {
             name: r.other_user_full_name ?? "",
             initial: (r.other_user_full_name ?? "?")[0],
             sub: "1:1 채팅",
-            lastMessage: r.last_message ?? "",
+            lastMessage: formatPreview(r.last_message ?? ""),
             time: formatTime(r.last_message_at),
             unread: r.unread_count ?? 0,
           }));
@@ -105,8 +112,9 @@ export function useChatRooms(activeRoomId: string | null) {
           name: r.other_user_full_name ?? "",
           initial: (r.other_user_full_name ?? "?")[0],
           rating: 0,
-          preview: r.last_message ?? "",
+          preview: formatPreview(r.last_message ?? ""),
           unread: r.unread_count ?? 0,
+          applicationStatus: r.application_status ?? null,
         }));
 
         setRooms(directRooms);
@@ -149,7 +157,7 @@ export function useChatRooms(activeRoomId: string | null) {
 
           if (sender_id !== userIdRef.current) return;
           if (!myRoomIdsRef.current.has(room_id)) return;
-          updateRoomPreview(room_id, content, created_at);
+          updateRoomPreview(room_id, formatPreview(content), created_at);
         },
       )
       .subscribe();
@@ -181,7 +189,7 @@ export function useChatRooms(activeRoomId: string | null) {
             content: string;
             created_at: string;
           };
-          updateRoomPreview(roomId, m.content, m.created_at);
+          updateRoomPreview(roomId, formatPreview(m.content), m.created_at);
 
           if (
             m.sender_id !== userIdRef.current &&
@@ -240,12 +248,33 @@ export function useChatRooms(activeRoomId: string | null) {
     );
   }, []);
 
-  function deleteRoom(id: string) {
+  async function deleteRoom(id: string): Promise<{ error?: string }> {
+    const res = await fetch(`/api/chat/rooms/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      return { error: body?.error?.message ?? "채팅방 나가기에 실패했습니다." };
+    }
     setRooms((prev) => prev.filter((r) => r.id !== id));
+    return {};
   }
 
-  function deleteApplicant(id: string) {
+  async function deleteApplicant(id: string): Promise<{ error?: string }> {
+    const applicant = applicants.find((a) => a.id === id);
+    const res = await fetch(`/api/chat/rooms/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      return { error: body?.error?.message ?? "채팅방 나가기에 실패했습니다." };
+    }
     setApplicants((prev) => prev.filter((a) => a.id !== id));
+    if (applicant) {
+      const remaining = applicants.filter(
+        (a) => a.id !== id && a.postId === applicant.postId,
+      );
+      if (remaining.length === 0) {
+        setPosts((prev) => prev.filter((p) => p.id !== applicant.postId));
+      }
+    }
+    return {};
   }
 
   return {

@@ -13,6 +13,7 @@ export type PresetKey =
   | 'logoutDisabled'
   | 'deleteAccount'
   | 'deleteAccountDisabled'
+  | 'leaveChat'
   | 'empty'
   | 'error';
 
@@ -110,6 +111,14 @@ export const modalPresets: Record<PresetKey, ModalConfig> = {
     description:
       '현재 예약 중이거나 예약이 진행 중인 내역이 있어 계정을 삭제할 수 없습니다. 모든 예약이 완료되거나 취소된 후 다시 시도해 주세요.',
     confirmText: '확인',
+  },
+  leaveChat: {
+    type: 'danger',
+    size: 'small',
+    title: '채팅방을 나가시겠습니까?',
+    description: '채팅방을 나가면 대화 내역을 다시 볼 수 없습니다.',
+    cancelText: '취소',
+    confirmText: '나가기',
   },
   empty: {
     type: 'empty',

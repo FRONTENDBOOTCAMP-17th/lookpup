@@ -2,20 +2,32 @@
  * 지원 목록에서의 거절 / 선택 확정 상태 관리.
  * useChatRooms의 applicants 참고.
  */
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { Applicant } from "@/components/common/chat/chat_components";
 
 export function useRequest(applicants: Applicant[]) {
   const [rejectedIds, setRejectedIds] = useState<Set<string>>(new Set());
   const [confirmedId, setConfirmedId] = useState<string | null>(null);
-  // 채팅창에 표시되는 현 지원 상태 안내 문구를 지원자 ID키로 저장
-  const [sysMessages, setSysMessages] = useState<Record<string, string>>({});
+  const initializedRef = useRef(false);
+
+  // applicants가 처음 로드될 때 DB 상태로 초기화
+  useEffect(() => {
+    if (initializedRef.current || applicants.length === 0) return;
+    initializedRef.current = true;
+
+    const rejected = new Set<string>();
+    let confirmed: string | null = null;
+    applicants.forEach((a) => {
+      if (a.applicationStatus === "rejected") rejected.add(a.id);
+      if (a.applicationStatus === "selected") confirmed = a.id;
+    });
+    if (rejected.size > 0) setRejectedIds(rejected);
+    if (confirmed !== null) setConfirmedId(confirmed);
+  }, [applicants]);
 
   function rejectApplicant(id: string) {
     if (confirmedId === id || rejectedIds.has(id)) return;
     setRejectedIds((prev) => new Set(prev).add(id));
-    const name = applicants.find((a) => a.id === id)?.name ?? "";
-    setSysMessages((prev) => ({ ...prev, [id]: `${name}님을 거절했습니다` }));
   }
 
   function confirmApplicant(id: string) {
@@ -23,17 +35,10 @@ export function useRequest(applicants: Applicant[]) {
     setConfirmedId(id);
 
     const newRejected = new Set(rejectedIds);
-    const newMessages: Record<string, string> = { ...sysMessages };
     applicants.forEach((a) => {
-      if (a.id !== id) {
-        newRejected.add(a.id);
-        newMessages[a.id] = `${a.name}님을 거절했습니다`;
-      }
+      if (a.id !== id) newRejected.add(a.id);
     });
     setRejectedIds(newRejected);
-    const confirmedName = applicants.find((a) => a.id === id)?.name ?? "";
-    newMessages[id] = `${confirmedName}님을 선택 확정했습니다 🎉`;
-    setSysMessages(newMessages);
   }
 
   function getApplicantBadge(id: string) {
@@ -53,7 +58,6 @@ export function useRequest(applicants: Applicant[]) {
   return {
     rejectedIds,
     confirmedId,
-    sysMessages,
     rejectApplicant,
     confirmApplicant,
     getApplicantBadge,

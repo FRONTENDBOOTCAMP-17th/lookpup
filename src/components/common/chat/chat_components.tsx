@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Image from "next/image";
 import {
   Star,
   Trash2,
@@ -39,6 +40,7 @@ export type Applicant = {
   rating: number;
   preview: string;
   unread: number;
+  applicationStatus?: string | null;
   location?: string;
   reviewCount?: number;
   services?: string[];
@@ -51,6 +53,7 @@ export type Message = {
   id: string;
   from: "me" | "other" | "divider";
   text: string;
+  imageUrl?: string;
   time?: string;
 };
 
@@ -344,9 +347,21 @@ export function MessageBubble({ msg, senderInitial }: MessageBubbleProps) {
       <div className="flex items-start gap-3">
         <Avatar initial={senderInitial} size="sm" />
         <div>
-          <div className="max-w-xs px-5 py-4 bg-white rounded-tl-sm rounded-tr-2xl rounded-bl-2xl rounded-br-2xl shadow-sm">
-            <p className="text-stone-900 text-sm leading-6">{msg.text}</p>
-          </div>
+          {msg.imageUrl ? (
+            <div className="max-w-xs overflow-hidden rounded-tl-sm rounded-tr-2xl rounded-bl-2xl rounded-br-2xl shadow-sm">
+              <Image
+                src={msg.imageUrl}
+                alt="사진"
+                width={240}
+                height={240}
+                className="object-cover w-60 h-auto"
+              />
+            </div>
+          ) : (
+            <div className="max-w-xs px-5 py-4 bg-white rounded-tl-sm rounded-tr-2xl rounded-bl-2xl rounded-br-2xl shadow-sm">
+              <p className="text-stone-900 text-sm leading-6">{msg.text}</p>
+            </div>
+          )}
           <p className="text-gray-500 text-xs mt-1 pl-3">{msg.time}</p>
         </div>
       </div>
@@ -354,9 +369,21 @@ export function MessageBubble({ msg, senderInitial }: MessageBubbleProps) {
   }
   return (
     <div className="flex flex-col items-end gap-1">
-      <div className="max-w-xs px-5 py-4 bg-orange-500 rounded-tl-2xl rounded-tr-sm rounded-bl-2xl rounded-br-2xl">
-        <p className="text-white text-sm leading-6">{msg.text}</p>
-      </div>
+      {msg.imageUrl ? (
+        <div className="max-w-xs overflow-hidden rounded-tl-2xl rounded-tr-sm rounded-bl-2xl rounded-br-2xl">
+          <Image
+            src={msg.imageUrl}
+            alt="사진"
+            width={240}
+            height={240}
+            className="object-cover w-60 h-auto"
+          />
+        </div>
+      ) : (
+        <div className="max-w-xs px-5 py-4 bg-orange-500 rounded-tl-2xl rounded-tr-sm rounded-bl-2xl rounded-br-2xl">
+          <p className="text-white text-sm leading-6">{msg.text}</p>
+        </div>
+      )}
       <p className="text-gray-500 text-xs pr-3">{msg.time}</p>
     </div>
   );
@@ -366,11 +393,13 @@ export function MessageBubble({ msg, senderInitial }: MessageBubbleProps) {
 type ApplicantProfilePopupProps = {
   applicant: Applicant;
   onClose: () => void;
+  cardVariant?: "sitter" | "owner";
 };
 
 export function ApplicantProfilePopup({
   applicant,
   onClose,
+  cardVariant = "sitter",
 }: ApplicantProfilePopupProps) {
   const profile: SitterProfile = {
     name: applicant.name,
@@ -381,7 +410,6 @@ export function ApplicantProfilePopup({
     reviewCount: applicant.reviewCount ?? 0,
     services: applicant.services ?? [],
     career: applicant.experience ?? "",
-    completedCount: applicant.completedJobs ?? "",
   };
 
   return (
@@ -396,7 +424,7 @@ export function ApplicantProfilePopup({
         >
           <X size={16} className="text-gray-400" />
         </button>
-        <SitterProfileCard profile={profile} />
+        <SitterProfileCard profile={profile} variant={cardVariant} />
       </div>
     </div>
   );
