@@ -264,7 +264,7 @@ export async function updateReservation(
   return { data };
 }
 
-export const STATUS_MAP: Record<string, string> = {
+const STATUS_MAP: Record<string, string> = {
   pending: "pending",
   accepted: "confirmed",
   paid: "confirmed",

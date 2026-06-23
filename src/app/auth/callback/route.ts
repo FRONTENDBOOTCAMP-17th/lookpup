@@ -19,10 +19,12 @@ export async function GET(request: Request) {
         const db = createServiceClient();
         const { data: existingUser } = await db
           .from("users")
-          .select("is_verified")
+          .select("is_verified, deleted_at")
           .eq("id", user.id)
-          .is("deleted_at", null)
           .maybeSingle();
+
+        if (existingUser?.deleted_at)
+          return NextResponse.redirect(`${origin}/auth/restore`);
 
         if (existingUser?.is_verified)
           return NextResponse.redirect(`${origin}/`);
