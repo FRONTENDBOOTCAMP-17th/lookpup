@@ -586,7 +586,7 @@ interface CareRecordModalProps {
   reservationId?: string;
   roomId?: string;
   senderId?: string;
-  onSubmit?: (record: CareRecordPayload) => void;
+  onSubmit: (record: CareRecordPayload) => void;
 }
 
 export default function CareRecordModal({
@@ -601,6 +601,13 @@ export default function CareRecordModal({
   const [step, setStep] = useState<"select" | "form">("select");
   const [selectedType, setSelectedType] = useState<CareRecordType | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+
+  useEffect(() => {
+    if (!open) {
+      setStep("select");
+      setSelectedType(null);
+    }
+  }, [open]);
 
   if (!open) return null;
 
@@ -644,7 +651,7 @@ export default function CareRecordModal({
         imageUrls,
         createdAt: new Date().toISOString(),
       };
-      onSubmit?.(record);
+      onSubmit(record);
       handleClose();
     } finally {
       setIsUploading(false);

@@ -21,7 +21,7 @@ import {
 } from "@/components/common/chat/chat_components";
 import { CustomModal } from "@/components/common/CustomModal";
 import { CustomModalPayment } from "@/components/common/CustomModalPayment";
-import CareRecordModal from "@/components/common/chat/CareRecordModal";
+import CareRecordModal, { type CareRecordPayload } from "@/components/common/chat/CareRecordModal";
 import {
   sendMessage,
   sendImageMessage,
@@ -272,6 +272,17 @@ function ChatPageContent({
   const [sendingPhoto, setSendingPhoto] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [careRecordOpen, setCareRecordOpen] = useState(false);
+
+  const handleCareRecordSubmit = async (record: CareRecordPayload) => {
+    if (!activeRoomId) return;
+    const content = `[돌봄기록] ${record.title}`;
+    const result = await sendSystemMessage(activeRoomId, content);
+    if (result.data) {
+      addMessage(result.data);
+      broadcastMessage(result.data);
+      updatePreview(activeRoomId, content, result.data.created_at);
+    }
+  };
   const [pendingDelete, setPendingDelete] = useState<{
     id: string;
     type: "room" | "applicant";
@@ -1108,6 +1119,7 @@ function ChatPageContent({
         open={careRecordOpen}
         onClose={() => setCareRecordOpen(false)}
         serviceType="care"
+        onSubmit={handleCareRecordSubmit}
       />
     </div>
   );
