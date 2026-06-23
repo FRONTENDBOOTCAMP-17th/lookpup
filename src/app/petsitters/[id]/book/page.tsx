@@ -14,6 +14,7 @@ import { format, differenceInDays } from "date-fns";
 import { ko } from "date-fns/locale";
 import { useBookingStore } from "@/store/bookingStore";
 import { usePortOne } from "@/hooks/usePortOne";
+import { findOrCreateRoom } from "@/app/actions/chat";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import RangePicker from "@/components/ui/RangePicker";
@@ -120,13 +121,13 @@ function BookingSummary({
   rows: { label: string; value: string }[];
 }) {
   return (
-    <div className="p-4 sm:p-5 bg-white rounded-2xl border border-[#ffe9d6]">
-      <p className="text-[#281a0e] text-base font-semibold mb-3">예약 요약</p>
+    <div className="p-4 sm:p-5 bg-white rounded-2xl border border-orange-100">
+      <p className="text-stone-900 text-base font-semibold mb-3">예약 요약</p>
       <div className="flex flex-col gap-2">
         {rows.map((r) => (
           <div key={r.label} className="flex justify-between text-sm gap-2">
             <span className="text-gray-500 shrink-0">{r.label}</span>
-            <span className="text-[#281a0e] font-medium text-right">
+            <span className="text-stone-900 font-medium text-right">
               {r.value}
             </span>
           </div>
@@ -157,8 +158,8 @@ function StepDateContent({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="bg-white rounded-2xl border border-[#ffe9d6] p-4 sm:p-7">
-        <h2 className="text-lg font-semibold text-[#281a0e] mb-5">
+      <div className="bg-white rounded-2xl border border-orange-100 p-4 sm:p-7">
+        <h2 className="text-lg font-semibold text-stone-900 mb-5">
           날짜를 선택해주세요
         </h2>
 
@@ -167,14 +168,14 @@ function StepDateContent({
         </div>
 
         {dateRange?.from && (
-          <div className="mt-4 p-4 bg-[#fff8f3] rounded-xl border border-[#ffe9d6] flex flex-col gap-2">
+          <div className="mt-4 p-4 bg-orange-50 rounded-xl border border-orange-100 flex flex-col gap-2">
             <div className="flex items-center gap-2">
-              <Calendar size={18} className="text-[#e8742a] shrink-0" />
-              <span className="text-[#e8742a] text-sm sm:text-base font-semibold">
+              <Calendar size={18} className="text-orange-500 shrink-0" />
+              <span className="text-orange-500 text-sm sm:text-base font-semibold">
                 {formatDateRange(dateRange)}
               </span>
               {nights > 1 && (
-                <span className="ml-auto text-[#e8742a] text-sm font-medium shrink-0">
+                <span className="ml-auto text-orange-500 text-sm font-medium shrink-0">
                   {nights}일
                 </span>
               )}
@@ -182,11 +183,11 @@ function StepDateContent({
             {(startTime || endTime) && (
               <div className="flex items-center gap-1.5 pl-6 text-sm text-gray-500">
                 <span>시간</span>
-                <span className="text-[#281a0e] font-medium">
+                <span className="text-stone-900 font-medium">
                   {startTime ? formatTime12h(startTime) : "--:--"}
                 </span>
                 <span>~</span>
-                <span className="text-[#281a0e] font-medium">
+                <span className="text-stone-900 font-medium">
                   {endTime ? formatTime12h(endTime) : "--:--"}
                 </span>
               </div>
@@ -196,13 +197,13 @@ function StepDateContent({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-5">
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-[#281a0e]">
+            <label className="text-sm font-medium text-stone-900">
               시작 시간
             </label>
             <SimpleTimePicker value={startTime} onChange={setStartTime} />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-[#281a0e]">
+            <label className="text-sm font-medium text-stone-900">
               종료 시간
             </label>
             <SimpleTimePicker value={endTime} onChange={setEndTime} />
@@ -238,9 +239,9 @@ function StepPetContent({
   return (
     <div className="flex flex-col gap-4">
       {/* 반려동물 선택 */}
-      <div className="bg-white rounded-2xl border border-[#ffe9d6] p-4 sm:p-7">
+      <div className="bg-white rounded-2xl border border-orange-100 p-4 sm:p-7">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-[#281a0e]">
+          <h2 className="text-lg font-semibold text-stone-900">
             반려동물을 선택하세요
           </h2>
           <span className="text-xs text-gray-400">중복 선택 가능</span>
@@ -255,8 +256,8 @@ function StepPetContent({
                 onClick={() => togglePet(pet.id, pet.name)}
                 className={`w-full p-4 sm:p-5 rounded-2xl border text-left flex items-center gap-3 sm:gap-4 transition-colors ${
                   selected
-                    ? "bg-[#fff8f3] border-[#e8742a]"
-                    : "bg-white border-[#ffe9d6] hover:border-[#e8742a]/50"
+                    ? "bg-orange-50 border-orange-500"
+                    : "bg-white border-orange-100 hover:border-orange-500/50"
                 }`}
               >
                 {pet.image_url ? (
@@ -267,10 +268,10 @@ function StepPetContent({
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[#281a0e] text-sm sm:text-base font-semibold">
+                    <span className="text-stone-900 text-sm sm:text-base font-semibold">
                       {pet.name}
                     </span>
-                    <span className="px-2 py-0.5 bg-white border border-[#ffe9d6] text-[#e8742a] text-[10px] font-medium rounded-full shrink-0">
+                    <span className="px-2 py-0.5 bg-white border border-orange-100 text-orange-500 text-[10px] font-medium rounded-full shrink-0">
                       {pet.type}
                     </span>
                   </div>
@@ -279,7 +280,7 @@ function StepPetContent({
                   </p>
                 </div>
                 {selected && (
-                  <Check size={20} className="text-[#e8742a] shrink-0" />
+                  <Check size={20} className="text-orange-500 shrink-0" />
                 )}
               </button>
             );
@@ -288,7 +289,7 @@ function StepPetContent({
           <button
             type="button"
             onClick={() => router.push("/pet-register")}
-            className="w-full min-h-11 h-14 rounded-2xl border-2 border-dashed border-[#ffe9d6] text-gray-400 text-sm font-medium hover:border-[#e8742a]/50 hover:text-[#e8742a] transition-colors"
+            className="w-full min-h-11 h-14 rounded-2xl border-2 border-dashed border-orange-100 text-gray-400 text-sm font-medium hover:border-orange-500/50 hover:text-orange-500 transition-colors"
           >
             + 반려동물 추가
           </button>
@@ -296,8 +297,8 @@ function StepPetContent({
       </div>
 
       {/* 서비스 선택 */}
-      <div className="bg-white rounded-2xl border border-[#ffe9d6] p-4 sm:p-7">
-        <h2 className="text-lg font-semibold text-[#281a0e] mb-4">
+      <div className="bg-white rounded-2xl border border-orange-100 p-4 sm:p-7">
+        <h2 className="text-lg font-semibold text-stone-900 mb-4">
           제공 서비스를 선택해주세요
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -310,19 +311,19 @@ function StepPetContent({
                 onClick={() => setSelectedService(svc.key)}
                 className={`w-full p-4 rounded-2xl border text-left flex items-center gap-3 transition-colors ${
                   selected
-                    ? "bg-[#fff8f3] border-[#e8742a]"
-                    : "bg-white border-[#ffe9d6] hover:border-[#e8742a]/50"
+                    ? "bg-orange-50 border-orange-500"
+                    : "bg-white border-orange-100 hover:border-orange-500/50"
                 }`}
               >
                 <span className="text-2xl shrink-0">{svc.emoji}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[#281a0e] text-sm font-semibold">
+                  <p className="text-stone-900 text-sm font-semibold">
                     {svc.label}
                   </p>
                   <p className="text-gray-500 text-xs">{svc.desc}</p>
                 </div>
                 {selected && (
-                  <Check size={18} className="text-[#e8742a] shrink-0" />
+                  <Check size={18} className="text-orange-500 shrink-0" />
                 )}
               </button>
             );
@@ -369,8 +370,8 @@ function StepNoteContent({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="bg-white rounded-2xl border border-[#ffe9d6] p-4 sm:p-7">
-        <h2 className="text-lg font-semibold text-[#281a0e] mb-5">
+      <div className="bg-white rounded-2xl border border-orange-100 p-4 sm:p-7">
+        <h2 className="text-lg font-semibold text-stone-900 mb-5">
           특이사항을 입력해주세요
         </h2>
 
@@ -382,7 +383,7 @@ function StepNoteContent({
             }
             placeholder={`펫시터에게 전달할 특이사항을 입력해주세요\n예) 낯선 사람 경계함, 약 복용 필요 등`}
             rows={7}
-            className="w-full px-4 py-3 pb-8 bg-white border border-[#ffe9d6] rounded-xl text-[#281a0e] placeholder:text-gray-400 outline-none resize-none focus:border-[#e8742a] transition-colors"
+            className="w-full px-4 py-3 pb-8 bg-white border border-orange-100 rounded-xl text-stone-900 placeholder:text-gray-400 outline-none resize-none focus:border-orange-500 transition-colors"
           />
           <span className="absolute bottom-3 right-4 text-gray-400 text-xs">
             {note.length}/{MAX}
@@ -390,7 +391,7 @@ function StepNoteContent({
         </div>
 
         <div className="mt-4">
-          <p className="text-[#281a0e] text-sm font-medium mb-3">
+          <p className="text-stone-900 text-sm font-medium mb-3">
             자주 선택되는 특이사항
           </p>
           <div className="flex gap-2 flex-wrap">
@@ -399,7 +400,7 @@ function StepNoteContent({
                 key={q}
                 type="button"
                 onClick={() => appendQuickNote(q)}
-                className="min-h-9 px-4 py-1 border border-[#ffe9d6] text-gray-500 text-xs font-medium rounded-full hover:border-[#e8742a]/50 hover:text-[#e8742a] transition-colors"
+                className="min-h-9 px-4 py-1 border border-orange-100 text-gray-500 text-xs font-medium rounded-full hover:border-orange-500/50 hover:text-orange-500 transition-colors"
               >
                 {q}
               </button>
@@ -441,16 +442,16 @@ function StepPaymentContent({
   return (
     <div className="flex flex-col gap-4">
       {/* 주문 정보 */}
-      <div className="bg-white rounded-2xl border border-[#ffe9d6] p-4 sm:p-7">
-        <p className="text-[#281a0e] text-lg font-semibold mb-5">주문 정보</p>
-        <div className="pb-4 border-b border-[#ffe9d6] flex items-start gap-3">
-          <div className="w-10 h-10 bg-[#fff8f3] rounded-full border border-[#ffe9d6] flex items-center justify-center shrink-0">
-            <span className="text-[#e8742a] text-base font-semibold">
+      <div className="bg-white rounded-2xl border border-orange-100 p-4 sm:p-7">
+        <p className="text-stone-900 text-lg font-semibold mb-5">주문 정보</p>
+        <div className="pb-4 border-b border-orange-100 flex items-start gap-3">
+          <div className="w-10 h-10 bg-orange-50 rounded-full border border-orange-100 flex items-center justify-center shrink-0">
+            <span className="text-orange-500 text-base font-semibold">
               {petsitter.initial}
             </span>
           </div>
           <div className="min-w-0">
-            <p className="text-[#281a0e] text-base font-medium">
+            <p className="text-stone-900 text-base font-medium">
               {petsitter.name} 펫시터
             </p>
             <p className="text-gray-500 text-sm">
@@ -466,22 +467,22 @@ function StepPaymentContent({
         <div className="pt-4 flex flex-col gap-2">
           <div className="flex justify-between text-sm">
             <span className="text-gray-500">서비스 금액</span>
-            <span className="text-[#281a0e]">
+            <span className="text-stone-900">
               {servicePrice.toLocaleString()}원
               {nights > 1 ? ` (${nights}일)` : ""}
             </span>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-gray-500">플랫폼 수수료</span>
-            <span className="text-[#281a0e]">
+            <span className="text-stone-900">
               {PLATFORM_FEE.toLocaleString()}원
             </span>
           </div>
-          <div className="flex justify-between pt-3 border-t border-[#ffe9d6]">
-            <span className="text-[#281a0e] text-base font-bold">
+          <div className="flex justify-between pt-3 border-t border-orange-100">
+            <span className="text-stone-900 text-base font-bold">
               총 결제금액
             </span>
-            <span className="text-[#e8742a] text-xl font-bold">
+            <span className="text-orange-500 text-xl font-bold">
               {(servicePrice + PLATFORM_FEE).toLocaleString()}원
             </span>
           </div>
@@ -489,10 +490,10 @@ function StepPaymentContent({
       </div>
 
       {/* 환불 정책 */}
-      <div className="bg-white rounded-2xl border border-[#ffe9d6] p-4 sm:p-5">
+      <div className="bg-white rounded-2xl border border-orange-100 p-4 sm:p-5">
         <div className="flex items-center gap-2 mb-2">
           <CreditCard size={16} className="text-gray-400" />
-          <p className="text-[#281a0e] text-base font-medium">환불 정책 확인</p>
+          <p className="text-stone-900 text-base font-medium">환불 정책 확인</p>
         </div>
         <p className="text-gray-500 text-sm leading-6">
           예약 24시간 전까지 무료 취소 가능합니다. 24시간 이내 취소 시 50% 환불,
@@ -509,10 +510,12 @@ function StepCompleteContent({
   petsitter,
   pets,
   selectedService,
+  chatRoomId,
 }: {
   petsitter: Sitter;
   pets: Pet[];
   selectedService: ServiceKey | null;
+  chatRoomId: string | null;
 }) {
   const router = useRouter();
   const { dateRange, petIds, reset } = useBookingStore();
@@ -532,16 +535,16 @@ function StepCompleteContent({
 
   function goChat() {
     reset();
-    router.push(`/chat?roomId=${petsitter.id}`);
+    router.push(chatRoomId ? `/chat?roomId=${chatRoomId}` : "/chat");
   }
 
   return (
     <div className="flex flex-col items-center py-8">
-      <div className="w-20 h-20 sm:w-24 sm:h-24 bg-[#e8742a] rounded-full shadow-[0px_4px_20px_0px_rgba(232,116,42,0.30)] flex items-center justify-center mb-6">
+      <div className="w-20 h-20 sm:w-24 sm:h-24 bg-orange-500 rounded-full shadow-[0px_4px_20px_0px_rgba(232,116,42,0.30)] flex items-center justify-center mb-6">
         <Check size={36} className="text-white" strokeWidth={3} />
       </div>
 
-      <h1 className="text-[#281a0e] text-2xl sm:text-3xl font-bold mb-3 text-center">
+      <h1 className="text-stone-900 text-2xl sm:text-3xl font-bold mb-3 text-center">
         예약이 완료되었습니다!
       </h1>
       <p className="text-gray-500 text-sm sm:text-base text-center leading-6 mb-8">
@@ -550,16 +553,16 @@ function StepCompleteContent({
         채팅으로 자세한 사항을 상담하세요.
       </p>
 
-      <div className="w-full max-w-sm sm:max-w-[384px] bg-white rounded-2xl border border-[#ffe9d6] p-4 sm:p-5 mb-8">
-        <p className="text-[#281a0e] text-base font-semibold mb-4">예약 정보</p>
-        <div className="flex items-start gap-3 pb-3 border-b border-[#ffe9d6] mb-3">
-          <div className="w-10 h-10 bg-[#fff8f3] rounded-full border border-[#ffe9d6] flex items-center justify-center shrink-0">
-            <span className="text-[#e8742a] text-base font-semibold">
+      <div className="w-full max-w-sm sm:max-w-[384px] bg-white rounded-2xl border border-orange-100 p-4 sm:p-5 mb-8">
+        <p className="text-stone-900 text-base font-semibold mb-4">예약 정보</p>
+        <div className="flex items-start gap-3 pb-3 border-b border-orange-100 mb-3">
+          <div className="w-10 h-10 bg-orange-50 rounded-full border border-orange-100 flex items-center justify-center shrink-0">
+            <span className="text-orange-500 text-base font-semibold">
               {petsitter.initial}
             </span>
           </div>
           <div>
-            <p className="text-[#281a0e] text-base font-medium">
+            <p className="text-stone-900 text-base font-medium">
               {petsitter.name} 펫시터
             </p>
             <p className="text-gray-500 text-sm">{serviceLabel}</p>
@@ -568,19 +571,19 @@ function StepCompleteContent({
         <div className="flex flex-col gap-2">
           <div className="flex justify-between text-sm gap-2">
             <span className="text-gray-500 shrink-0">날짜</span>
-            <span className="text-[#281a0e] font-medium text-right">
+            <span className="text-stone-900 font-medium text-right">
               {formatDateRange(dateRange)}
             </span>
           </div>
           <div className="flex justify-between text-sm gap-2">
             <span className="text-gray-500 shrink-0">반려동물</span>
-            <span className="text-[#281a0e] font-medium text-right">
+            <span className="text-stone-900 font-medium text-right">
               {selectedPetNames.length > 0 ? selectedPetNames.join(", ") : "-"}
             </span>
           </div>
           <div className="flex justify-between text-sm gap-2">
             <span className="text-gray-500 shrink-0">결제금액</span>
-            <span className="text-[#e8742a] font-semibold">
+            <span className="text-orange-500 font-semibold">
               {total.toLocaleString()}원
             </span>
           </div>
@@ -591,14 +594,14 @@ function StepCompleteContent({
         <button
           type="button"
           onClick={goChat}
-          className="w-full min-h-11 h-12 bg-white border border-[#e8742a] text-[#e8742a] text-base font-semibold rounded-xl hover:bg-[#fff8f3] transition-colors"
+          className="w-full min-h-11 h-12 bg-white border border-orange-500 text-orange-500 text-base font-semibold rounded-xl hover:bg-orange-50 transition-colors"
         >
           채팅으로 인사하기
         </button>
         <button
           type="button"
           onClick={goHome}
-          className="w-full min-h-11 h-12 text-[#e8742a] text-base font-semibold hover:underline transition-colors"
+          className="w-full min-h-11 h-12 text-orange-500 text-base font-semibold hover:underline transition-colors"
         >
           홈으로 돌아가기
         </button>
@@ -620,6 +623,7 @@ export default function BookPage() {
   const [selectedService, setSelectedService] = useState<ServiceKey | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [chatRoomId, setChatRoomId] = useState<string | null>(null);
   const [pets, setPets] = useState<Pet[]>([]);
   const [petsitter, setPetsitter] = useState<Sitter>({ id: sitterId, name: "", initial: "", service: "", pricePerDay: 0 });
   const [sitterServices, setSitterServices] = useState<SitterService[]>([]);
@@ -729,6 +733,9 @@ export default function BookPage() {
             return;
           }
           setStep(5);
+          findOrCreateRoom({ sitter_id: petsitter.id, room_type: "direct" })
+            .then((result) => { if (result.data) setChatRoomId(result.data.room_id); })
+            .catch(() => {});
         },
         onFail: () => {
           setShowPaymentModal(false);
@@ -742,7 +749,7 @@ export default function BookPage() {
     <>
       <Header />
 
-      <main className="flex-1 bg-[#fff8f3] min-h-screen pb-28">
+      <main className="flex-1 bg-orange-50 min-h-screen pb-28">
         <div className="max-w-205 mx-auto px-4 sm:px-6 pt-10">
           {/* 페이지 헤더 */}
           <div className="flex items-center justify-between">
@@ -752,11 +759,11 @@ export default function BookPage() {
                 onClick={() =>
                   step > 1 ? setStep((s) => s - 1) : router.back()
                 }
-                className="w-10 h-10 rounded-xl border border-[#ffe9d6] flex items-center justify-center text-[#281a0e] hover:bg-[#fff8f3] transition-colors"
+                className="w-10 h-10 rounded-xl border border-orange-100 flex items-center justify-center text-stone-900 hover:bg-orange-50 transition-colors"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
-              <h1 className="text-2xl font-bold text-[#281a0e]">
+              <h1 className="text-2xl font-bold text-stone-900">
                 {step === 5 ? "예약 완료" : "펫시터 예약"}
               </h1>
             </div>
@@ -780,8 +787,8 @@ export default function BookPage() {
                       <div
                         className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors ${
                           isActive || isDone
-                            ? "bg-[#e8742a] text-white"
-                            : "border-2 border-[#ffe9d6] text-gray-500"
+                            ? "bg-orange-500 text-white"
+                            : "border-2 border-orange-100 text-gray-500"
                         }`}
                       >
                         {isDone ? <Check className="size-3.5" /> : num}
@@ -789,7 +796,7 @@ export default function BookPage() {
                       <span
                         className={`text-[10px] sm:text-xs text-center leading-tight ${
                           isActive
-                            ? "font-bold text-[#281a0e]"
+                            ? "font-bold text-stone-900"
                             : "font-normal text-gray-500"
                         }`}
                       >
@@ -798,7 +805,7 @@ export default function BookPage() {
                     </div>
                     {i < STEP_LABELS.length - 1 && (
                       <div
-                        className={`flex-1 h-px mt-4 mx-2 ${isDone ? "bg-[#e8742a]" : "bg-[#ffe9d6]"}`}
+                        className={`flex-1 h-px mt-4 mx-2 ${isDone ? "bg-orange-500" : "bg-orange-100"}`}
                       />
                     )}
                   </Fragment>
@@ -824,7 +831,7 @@ export default function BookPage() {
               <StepPaymentContent petsitter={petsitter} pets={pets} selectedService={selectedService} />
             )}
             {step === 5 && (
-              <StepCompleteContent petsitter={petsitter} pets={pets} selectedService={selectedService} />
+              <StepCompleteContent petsitter={petsitter} pets={pets} selectedService={selectedService} chatRoomId={chatRoomId} />
             )}
           </div>
         </div>
@@ -832,12 +839,12 @@ export default function BookPage() {
 
       {/* 하단 sticky 네비게이션 */}
       {step < 5 && (
-        <div className="sticky bottom-0 bg-white border-t border-[#ffe9d6] z-10">
+        <div className="sticky bottom-0 bg-white border-t border-orange-100 z-10">
           <div className="max-w-205 mx-auto flex items-center justify-between h-19 px-6">
             <button
               type="button"
               onClick={() => (step > 1 ? setStep((s) => s - 1) : router.back())}
-              className="h-11 px-6 rounded-xl border border-[#ffe9d6] flex items-center gap-1.5 text-gray-500 text-[15px] font-medium hover:bg-[#fff8f3] transition-colors"
+              className="h-11 px-6 rounded-xl border border-orange-100 flex items-center gap-1.5 text-gray-500 text-[15px] font-medium hover:bg-orange-50 transition-colors"
             >
               <ChevronLeft className="w-4 h-4" />
               이전
@@ -853,8 +860,8 @@ export default function BookPage() {
                 onClick={() => canNext() && setStep((s) => s + 1)}
                 className={`h-11 px-6 rounded-xl flex items-center gap-1.5 text-[15px] font-semibold transition-colors ${
                   canNext()
-                    ? "bg-[#e8742a] text-white hover:opacity-90"
-                    : "bg-[#ffe9d6] text-gray-500 cursor-default"
+                    ? "bg-orange-500 text-white hover:opacity-90"
+                    : "bg-orange-100 text-gray-500 cursor-default"
                 }`}
               >
                 다음 단계
@@ -864,7 +871,7 @@ export default function BookPage() {
               <button
                 type="button"
                 onClick={handleNext}
-                className="h-11 px-6 rounded-xl bg-[#e8742a] text-white text-[15px] font-semibold hover:opacity-90 transition-opacity"
+                className="h-11 px-6 rounded-xl bg-orange-500 text-white text-[15px] font-semibold hover:opacity-90 transition-opacity"
               >
                 결제하기 {total.toLocaleString()}원
               </button>

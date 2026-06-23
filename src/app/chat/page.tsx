@@ -36,8 +36,10 @@ import { useChatMessages } from "@/hooks/chat/useChatMessages";
 
 function ChatPageContent({
   initialTab,
+  initialRoomId,
 }: {
   initialTab: "one_on_one" | "applicants";
+  initialRoomId?: string | null;
 }) {
   const router = useRouter();
 
@@ -79,6 +81,7 @@ function ChatPageContent({
     updatePreview,
     updateApplicantStatus,
   } = useChatRooms(activeRoomId);
+
   const {
     rejectedIds,
     confirmedId,
@@ -240,6 +243,19 @@ function ChatPageContent({
   }, []);
 
   const [mobileChatView, setMobileChatView] = useState<"list" | "room">("list");
+
+  const hasAutoSelected = useRef(false);
+  useEffect(() => {
+    if (!initialRoomId || hasAutoSelected.current || loading) return;
+    hasAutoSelected.current = true;
+    const room = rooms.find((r) => r.id === initialRoomId);
+    if (room) {
+      setActiveTab("one_on_one");
+      setSelectedRoomId(room.id);
+      setMobileChatView("room");
+    }
+  }, [initialRoomId, rooms, loading]);
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profilePopupApplicant, setProfilePopupApplicant] =
     useState<Applicant | null>(null);
@@ -1101,7 +1117,8 @@ function ChatPageInner() {
   const searchParams = useSearchParams();
   const initialTab =
     searchParams.get("tab") === "applicants" ? "applicants" : "one_on_one";
-  return <ChatPageContent initialTab={initialTab} />;
+  const initialRoomId = searchParams.get("roomId");
+  return <ChatPageContent initialTab={initialTab} initialRoomId={initialRoomId} />;
 }
 
 export default function ChatPage() {
