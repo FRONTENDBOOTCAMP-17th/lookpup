@@ -15,6 +15,8 @@ import {
   ChatPlusPanel,
   ApplicantProfilePopup,
   ApplicantPostGroup,
+  ConfirmationCard,
+  SitterConfirmationCard,
   type Applicant,
 } from "@/components/common/chat/chat_components";
 import { CustomModal } from "@/components/common/CustomModal";
@@ -75,6 +77,7 @@ function ChatPageContent({
     deleteApplicant,
     markRoomAsRead,
     updatePreview,
+    updateApplicantStatus,
   } = useChatRooms(activeRoomId);
   const {
     rejectedIds,
@@ -118,11 +121,8 @@ function ChatPageContent({
         return;
       }
       confirmApplicant(id);
-      const sysResult = await sendSystemMessage(id, "선택 확정되었습니다 🎉");
-      if (sysResult.data && id === activeRoomId) {
-        addMessage(sysResult.data);
-        broadcastMessage(sysResult.data);
-      }
+      updateApplicantStatus(id, "selected");
+      broadcastConfirmation();
     } catch {
       setApplicationActionError("오류가 발생했습니다. 다시 시도해주세요.");
     } finally {
@@ -134,6 +134,7 @@ function ChatPageContent({
     messages,
     addMessage,
     broadcastMessage,
+    broadcastConfirmation,
     loadMore,
     hasMore,
     loadingMore,
@@ -386,6 +387,22 @@ function ChatPageContent({
     selectedApplicantId !== null &&
     rejectedIds.has(selectedApplicantId);
 
+  const showConfirmationCard =
+    activeTab === "applicants" &&
+    selectedApplicantId !== null &&
+    confirmedId === selectedApplicantId &&
+    isOwnerOfSelectedRoom;
+
+  const showSitterConfirmationCard =
+    activeTab === "applicants" &&
+    selectedApplicantId !== null &&
+    selectedApplicant?.applicationStatus === "selected" &&
+    !isOwnerOfSelectedRoom;
+
+  const confirmedPostTitle = selectedApplicant
+    ? (posts.find((p) => p.id === selectedApplicant.postId)?.title ?? "")
+    : "";
+
   return (
     <div className="h-screen overflow-hidden flex flex-col">
       <Header />
@@ -631,6 +648,32 @@ function ChatPageContent({
                     senderProfileImage={mobileRoomProfileImage}
                   />
                 ))}
+                {showConfirmationCard && (
+                  <ConfirmationCard
+                    postTitle={confirmedPostTitle}
+                    sitterInitial={selectedApplicant?.initial ?? ""}
+                    sitterProfileImage={selectedApplicant?.profileImage}
+                    onPostClick={() => {
+                      if (selectedApplicant?.postId)
+                        router.push(`/board/${selectedApplicant.postId}`);
+                    }}
+                    onBook={() => {
+                      if (selectedApplicant?.sitterId)
+                        router.push(`/petsitters/${selectedApplicant.sitterId}/book`);
+                    }}
+                  />
+                )}
+                {showSitterConfirmationCard && (
+                  <SitterConfirmationCard
+                    postTitle={confirmedPostTitle}
+                    ownerInitial={selectedApplicant?.initial ?? ""}
+                    ownerProfileImage={selectedApplicant?.profileImage}
+                    onPostClick={() => {
+                      if (selectedApplicant?.postId)
+                        router.push(`/board/${selectedApplicant.postId}`);
+                    }}
+                  />
+                )}
               </div>
             </div>
 
@@ -922,6 +965,32 @@ function ChatPageContent({
                       }
                     />
                   ))}
+                  {showConfirmationCard && (
+                    <ConfirmationCard
+                      postTitle={confirmedPostTitle}
+                      sitterInitial={selectedApplicant?.initial ?? ""}
+                      sitterProfileImage={selectedApplicant?.profileImage}
+                      onPostClick={() => {
+                        if (selectedApplicant?.postId)
+                          router.push(`/board/${selectedApplicant.postId}`);
+                      }}
+                      onBook={() => {
+                        if (selectedApplicant?.sitterId)
+                          router.push(`/petsitters/${selectedApplicant.sitterId}/book`);
+                      }}
+                    />
+                  )}
+                  {showSitterConfirmationCard && (
+                    <SitterConfirmationCard
+                      postTitle={confirmedPostTitle}
+                      ownerInitial={selectedApplicant?.initial ?? ""}
+                      ownerProfileImage={selectedApplicant?.profileImage}
+                      onPostClick={() => {
+                        if (selectedApplicant?.postId)
+                          router.push(`/board/${selectedApplicant.postId}`);
+                      }}
+                    />
+                  )}
 
                   <div ref={messagesEndRef} />
                 </div>

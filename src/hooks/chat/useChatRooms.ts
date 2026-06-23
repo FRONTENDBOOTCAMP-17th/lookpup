@@ -201,6 +201,13 @@ export function useChatRooms(activeRoomId: string | null) {
             incrementUnread(roomId);
           }
         })
+        .on("broadcast", { event: "application_confirmed" }, () => {
+          setApplicants((prev) =>
+            prev.map((a) =>
+              a.id === roomId ? { ...a, applicationStatus: "selected" } : a,
+            ),
+          );
+        })
         .subscribe();
       broadcastChannelsRef.current.push(ch);
     });
@@ -280,6 +287,14 @@ export function useChatRooms(activeRoomId: string | null) {
     return {};
   }
 
+  function updateApplicantStatus(roomId: string, status: string) {
+    setApplicants((prev) =>
+      prev.map((a) =>
+        a.id === roomId ? { ...a, applicationStatus: status } : a,
+      ),
+    );
+  }
+
   return {
     rooms,
     applicants,
@@ -290,5 +305,6 @@ export function useChatRooms(activeRoomId: string | null) {
     deleteApplicant,
     markRoomAsRead,
     updatePreview: updateRoomPreview,
+    updateApplicantStatus,
   };
 }

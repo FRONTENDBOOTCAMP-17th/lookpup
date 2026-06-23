@@ -132,6 +132,14 @@ export function useChatMessages(
     });
   }
 
+  function broadcastConfirmation() {
+    channelRef.current?.send({
+      type: "broadcast",
+      event: "application_confirmed",
+      payload: {},
+    });
+  }
+
   async function loadMore() {
     if (!nextCursor || !activeRoomId || !userId || loadingMore) return;
     setLoadingMore(true);
@@ -155,5 +163,5 @@ export function useChatMessages(
     }
   }
 
-  return { messages, addMessage, broadcastMessage, loadMore, hasMore, loadingMore };
+  return { messages, addMessage, broadcastMessage, broadcastConfirmation, loadMore, hasMore, loadingMore };
 }
