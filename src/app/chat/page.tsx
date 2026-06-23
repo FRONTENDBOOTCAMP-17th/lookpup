@@ -15,6 +15,8 @@ import {
   ChatPlusPanel,
   ApplicantProfilePopup,
   ApplicantPostGroup,
+  ConfirmationCard,
+  SitterConfirmationCard,
   type Applicant,
 } from "@/components/common/chat/chat_components";
 import { CustomModal } from "@/components/common/CustomModal";
@@ -34,8 +36,10 @@ import { useChatMessages } from "@/hooks/chat/useChatMessages";
 
 function ChatPageContent({
   initialTab,
+  initialRoomId,
 }: {
   initialTab: "one_on_one" | "applicants";
+  initialRoomId?: string | null;
 }) {
   const router = useRouter();
 
@@ -75,7 +79,9 @@ function ChatPageContent({
     deleteApplicant,
     markRoomAsRead,
     updatePreview,
+    updateApplicantStatus,
   } = useChatRooms(activeRoomId);
+
   const {
     rejectedIds,
     confirmedId,
@@ -118,11 +124,8 @@ function ChatPageContent({
         return;
       }
       confirmApplicant(id);
-      const sysResult = await sendSystemMessage(id, "선택 확정되었습니다 🎉");
-      if (sysResult.data && id === activeRoomId) {
-        addMessage(sysResult.data);
-        broadcastMessage(sysResult.data);
-      }
+      updateApplicantStatus(id, "selected");
+      broadcastConfirmation();
     } catch {
       setApplicationActionError("오류가 발생했습니다. 다시 시도해주세요.");
     } finally {
@@ -134,6 +137,7 @@ function ChatPageContent({
     messages,
     addMessage,
     broadcastMessage,
+    broadcastConfirmation,
     loadMore,
     hasMore,
     loadingMore,
@@ -239,6 +243,19 @@ function ChatPageContent({
   }, []);
 
   const [mobileChatView, setMobileChatView] = useState<"list" | "room">("list");
+
+  const hasAutoSelected = useRef(false);
+  useEffect(() => {
+    if (!initialRoomId || hasAutoSelected.current || loading) return;
+    hasAutoSelected.current = true;
+    const room = rooms.find((r) => r.id === initialRoomId);
+    if (room) {
+      setActiveTab("one_on_one");
+      setSelectedRoomId(room.id);
+      setMobileChatView("room");
+    }
+  }, [initialRoomId, rooms, loading]);
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profilePopupApplicant, setProfilePopupApplicant] =
     useState<Applicant | null>(null);
@@ -385,6 +402,22 @@ function ChatPageContent({
     !isOwnerOfSelectedRoom &&
     selectedApplicantId !== null &&
     rejectedIds.has(selectedApplicantId);
+
+  const showConfirmationCard =
+    activeTab === "applicants" &&
+    selectedApplicantId !== null &&
+    confirmedId === selectedApplicantId &&
+    isOwnerOfSelectedRoom;
+
+  const showSitterConfirmationCard =
+    activeTab === "applicants" &&
+    selectedApplicantId !== null &&
+    selectedApplicant?.applicationStatus === "selected" &&
+    !isOwnerOfSelectedRoom;
+
+  const confirmedPostTitle = selectedApplicant
+    ? (posts.find((p) => p.id === selectedApplicant.postId)?.title ?? "")
+    : "";
 
   return (
     <div className="h-screen overflow-hidden flex flex-col">
@@ -631,6 +664,32 @@ function ChatPageContent({
                     senderProfileImage={mobileRoomProfileImage}
                   />
                 ))}
+                {showConfirmationCard && (
+                  <ConfirmationCard
+                    postTitle={confirmedPostTitle}
+                    sitterInitial={selectedApplicant?.initial ?? ""}
+                    sitterProfileImage={selectedApplicant?.profileImage}
+                    onPostClick={() => {
+                      if (selectedApplicant?.postId)
+                        router.push(`/board/${selectedApplicant.postId}`);
+                    }}
+                    onBook={() => {
+                      if (selectedApplicant?.sitterId)
+                        router.push(`/petsitters/${selectedApplicant.sitterId}/book`);
+                    }}
+                  />
+                )}
+                {showSitterConfirmationCard && (
+                  <SitterConfirmationCard
+                    postTitle={confirmedPostTitle}
+                    ownerInitial={selectedApplicant?.initial ?? ""}
+                    ownerProfileImage={selectedApplicant?.profileImage}
+                    onPostClick={() => {
+                      if (selectedApplicant?.postId)
+                        router.push(`/board/${selectedApplicant.postId}`);
+                    }}
+                  />
+                )}
               </div>
             </div>
 
@@ -922,6 +981,32 @@ function ChatPageContent({
                       }
                     />
                   ))}
+                  {showConfirmationCard && (
+                    <ConfirmationCard
+                      postTitle={confirmedPostTitle}
+                      sitterInitial={selectedApplicant?.initial ?? ""}
+                      sitterProfileImage={selectedApplicant?.profileImage}
+                      onPostClick={() => {
+                        if (selectedApplicant?.postId)
+                          router.push(`/board/${selectedApplicant.postId}`);
+                      }}
+                      onBook={() => {
+                        if (selectedApplicant?.sitterId)
+                          router.push(`/petsitters/${selectedApplicant.sitterId}/book`);
+                      }}
+                    />
+                  )}
+                  {showSitterConfirmationCard && (
+                    <SitterConfirmationCard
+                      postTitle={confirmedPostTitle}
+                      ownerInitial={selectedApplicant?.initial ?? ""}
+                      ownerProfileImage={selectedApplicant?.profileImage}
+                      onPostClick={() => {
+                        if (selectedApplicant?.postId)
+                          router.push(`/board/${selectedApplicant.postId}`);
+                      }}
+                    />
+                  )}
 
                   <div ref={messagesEndRef} />
                 </div>
@@ -1032,7 +1117,8 @@ function ChatPageInner() {
   const searchParams = useSearchParams();
   const initialTab =
     searchParams.get("tab") === "applicants" ? "applicants" : "one_on_one";
-  return <ChatPageContent initialTab={initialTab} />;
+  const initialRoomId = searchParams.get("roomId");
+  return <ChatPageContent initialTab={initialTab} initialRoomId={initialRoomId} />;
 }
 
 export default function ChatPage() {

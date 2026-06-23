@@ -184,7 +184,11 @@ export function ApplicantCard({
             }}
             className="shrink-0"
           >
-            <Avatar initial={applicant.initial} src={applicant.profileImage} size="sm" />
+            <Avatar
+              initial={applicant.initial}
+              src={applicant.profileImage}
+              size="sm"
+            />
           </button>
           <span className="text-sm font-semibold text-stone-900 flex-1">
             {applicant.name}
@@ -337,7 +341,11 @@ type MessageBubbleProps = {
   senderProfileImage?: string | null;
 };
 
-export function MessageBubble({ msg, senderInitial, senderProfileImage }: MessageBubbleProps) {
+export function MessageBubble({
+  msg,
+  senderInitial,
+  senderProfileImage,
+}: MessageBubbleProps) {
   if (msg.from === "divider") {
     return (
       <div className="flex justify-center">
@@ -430,6 +438,130 @@ export function ApplicantProfilePopup({
           <X size={16} className="text-gray-400" />
         </button>
         <SitterProfileCard profile={profile} variant={cardVariant} />
+      </div>
+    </div>
+  );
+}
+
+// 선택 확정 안내 카드 (보호자용)
+type ConfirmationCardProps = {
+  postTitle: string;
+  sitterInitial: string;
+  sitterProfileImage?: string | null;
+  onBook: () => void;
+  onPostClick?: () => void;
+};
+
+export function ConfirmationCard({
+  postTitle,
+  sitterInitial,
+  sitterProfileImage,
+  onBook,
+  onPostClick,
+}: ConfirmationCardProps) {
+  return (
+    <div className="flex justify-end">
+      <div className="w-79.5 p-4 bg-white rounded-2xl outline-[1.11px] outline-[#FFE9D6] outline-offset-[-1.11px] flex flex-col">
+        <div className="flex flex-col">
+          <span className="text-[#6B7280] text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
+            선택 확정
+          </span>
+          <span className="text-[#281A0E] text-sm leading-5 mt-0.5">
+            펫시터가 선택되었습니다. 지금 예약해보세요!
+          </span>
+        </div>
+        <div className="py-3">
+          <button
+            type="button"
+            onClick={onPostClick}
+            className="w-full flex items-center gap-3 px-3 py-2.5 bg-[#FFF4EC] rounded-xl hover:bg-orange-100 transition-colors text-left"
+          >
+            <div className="w-10 h-10 rounded-lg bg-[#FFE9D6] shrink-0 overflow-hidden flex items-center justify-center">
+              {sitterProfileImage ? (
+                <Image
+                  src={sitterProfileImage}
+                  alt=""
+                  width={40}
+                  height={40}
+                  className="object-cover w-full h-full"
+                />
+              ) : (
+                <span className="text-sm font-semibold text-orange-500">
+                  {sitterInitial}
+                </span>
+              )}
+            </div>
+            <span className="text-[#374151] text-sm leading-5 truncate flex-1">
+              {postTitle}
+            </span>
+          </button>
+        </div>
+        <button
+          type="button"
+          onClick={onBook}
+          className="w-full h-10 rounded-xl outline-[1.11px] outline-[#E8742A] outline-offset-[-1.11px] text-[#E8742A] text-sm font-medium hover:bg-orange-50 transition-colors"
+        >
+          예약하기
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// 선택 확정 대기 카드 (펫시터용)
+type SitterConfirmationCardProps = {
+  postTitle: string;
+  ownerInitial: string;
+  ownerProfileImage?: string | null;
+  onPostClick?: () => void;
+};
+
+export function SitterConfirmationCard({
+  postTitle,
+  ownerInitial,
+  ownerProfileImage,
+  onPostClick,
+}: SitterConfirmationCardProps) {
+  return (
+    <div className="flex justify-end">
+      <div className="w-[318px] p-4 bg-[#FFF4EC] rounded-2xl outline-[1.11px] outline-[#F5A468] outline-offset-[-1.11px] flex flex-col">
+        <div className="flex flex-col">
+          <span className="text-[#E8742A] text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
+            선택 확정
+          </span>
+          <span className="text-[#281A0E] text-sm leading-5 mt-0.5">
+            예약을 기다리고 있어요
+          </span>
+        </div>
+        <div className="pt-3">
+          <button
+            type="button"
+            onClick={onPostClick}
+            className="w-full flex items-center gap-3 px-3 py-2.5 bg-[#FFE9D6] rounded-xl hover:bg-orange-200 transition-colors text-left"
+          >
+            <div className="w-10 h-10 rounded-lg bg-[#FFD4B0] shrink-0 overflow-hidden flex items-center justify-center">
+              {ownerProfileImage ? (
+                <Image
+                  src={ownerProfileImage}
+                  alt=""
+                  width={40}
+                  height={40}
+                  className="object-cover w-full h-full"
+                />
+              ) : (
+                <span className="text-sm font-semibold text-orange-500">
+                  {ownerInitial}
+                </span>
+              )}
+            </div>
+            <span className="text-[#374151] text-sm leading-5 truncate flex-1">
+              {postTitle}
+            </span>
+          </button>
+        </div>
+        <p className="pt-3 text-[#6B7280] text-xs leading-relaxed">
+          작성자의 확인 여부에 따라 예약이 늦어질 수 있습니다.
+        </p>
       </div>
     </div>
   );

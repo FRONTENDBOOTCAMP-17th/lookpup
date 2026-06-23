@@ -84,62 +84,91 @@ export function useChatRooms(activeRoomId: string | null) {
       .then(({ data }) => setUserId(data.user?.id ?? null));
   }, []);
 
-  useEffect(() => {
-    fetch("/api/chat/rooms")
-      .then((res) => {
-        if (!res.ok) throw new Error("채팅 목록을 불러오지 못했습니다");
-        return res.json();
-      })
-      .then(({ data }: { data: RoomApiItem[] }) => {
-        const directRooms = data
-          .filter((r) => r.room_type === "direct")
-          .map((r) => ({
-            id: r.id,
-            sitterId: r.sitter_id ?? null,
-            name: r.other_user_full_name ?? "",
-            initial: (r.other_user_full_name ?? "?")[0],
-            profileImage: r.other_user_profile_image ?? null,
-            sub: "1:1 채팅",
-            lastMessage: formatPreview(r.last_message ?? ""),
-            time: formatTime(r.last_message_at),
-            unread: r.unread_count ?? 0,
-          }));
+  const fetchRooms = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    try {
+      const res = await fetch("/api/chat/rooms");
+      if (!res.ok) throw new Error("채팅 목록을 불러오지 못했습니다");
+      const { data }: { data: RoomApiItem[] } = await res.json();
 
-        const requestRooms = data.filter((r) => r.room_type === "request");
-        const applicantList = requestRooms.map((r) => ({
+      const directRooms = data
+        .filter((r) => r.room_type === "direct")
+        .map((r) => ({
           id: r.id,
           sitterId: r.sitter_id ?? null,
-          ownerId: r.owner_id ?? null,
-          postId: r.request_id ?? "",
           name: r.other_user_full_name ?? "",
           initial: (r.other_user_full_name ?? "?")[0],
           profileImage: r.other_user_profile_image ?? null,
-          rating: 0,
-          preview: formatPreview(r.last_message ?? ""),
+          sub: "1:1 채팅",
+          lastMessage: formatPreview(r.last_message ?? ""),
+          time: formatTime(r.last_message_at),
           unread: r.unread_count ?? 0,
-          applicationStatus: r.application_status ?? null,
         }));
 
-        setRooms(directRooms);
-        setApplicants(applicantList);
+      const requestRooms = data.filter((r) => r.room_type === "request");
+      const applicantList = requestRooms.map((r) => ({
+        id: r.id,
+        sitterId: r.sitter_id ?? null,
+        ownerId: r.owner_id ?? null,
+        postId: r.request_id ?? "",
+        name: r.other_user_full_name ?? "",
+        initial: (r.other_user_full_name ?? "?")[0],
+        profileImage: r.other_user_profile_image ?? null,
+        rating: 0,
+        preview: formatPreview(r.last_message ?? ""),
+        unread: r.unread_count ?? 0,
+        applicationStatus: r.application_status ?? null,
+      }));
 
-        const seen = new Set<string>();
-        const derivedPosts: Post[] = [];
-        for (const r of requestRooms) {
-          if (r.request_id && !seen.has(r.request_id)) {
-            seen.add(r.request_id);
-            derivedPosts.push({
-              id: r.request_id,
-              title: r.request_title ?? "구인글",
-              status: r.request_status ?? "open",
-            });
-          }
+      setRooms(directRooms);
+      setApplicants(applicantList);
+
+      const seen = new Set<string>();
+      const derivedPosts: Post[] = [];
+      for (const r of requestRooms) {
+        if (r.request_id && !seen.has(r.request_id)) {
+          seen.add(r.request_id);
+          derivedPosts.push({
+            id: r.request_id,
+            title: r.request_title ?? "구인글",
+            status: r.request_status ?? "open",
+          });
         }
-        setPosts(derivedPosts);
-      })
-      .catch((err: Error) => setError(err.message))
-      .finally(() => setLoading(false));
+      }
+      setPosts(derivedPosts);
+    } catch (err) {
+      if (!silent) setError((err as Error).message);
+    } finally {
+      if (!silent) setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchRooms();
+  }, [fetchRooms]);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    const supabase = createClient();
+    const channel = supabase
+      .channel("new-rooms-tracker")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "chat_rooms", filter: `sitter_id=eq.${userId}` },
+        () => { fetchRooms(true); },
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "chat_rooms", filter: `owner_id=eq.${userId}` },
+        () => { fetchRooms(true); },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId, fetchRooms]);
 
   useEffect(() => {
     if (!userId) return;
@@ -200,6 +229,13 @@ export function useChatRooms(activeRoomId: string | null) {
           ) {
             incrementUnread(roomId);
           }
+        })
+        .on("broadcast", { event: "application_confirmed" }, () => {
+          setApplicants((prev) =>
+            prev.map((a) =>
+              a.id === roomId ? { ...a, applicationStatus: "selected" } : a,
+            ),
+          );
         })
         .subscribe();
       broadcastChannelsRef.current.push(ch);
@@ -280,6 +316,14 @@ export function useChatRooms(activeRoomId: string | null) {
     return {};
   }
 
+  function updateApplicantStatus(roomId: string, status: string) {
+    setApplicants((prev) =>
+      prev.map((a) =>
+        a.id === roomId ? { ...a, applicationStatus: status } : a,
+      ),
+    );
+  }
+
   return {
     rooms,
     applicants,
@@ -290,5 +334,6 @@ export function useChatRooms(activeRoomId: string | null) {
     deleteApplicant,
     markRoomAsRead,
     updatePreview: updateRoomPreview,
+    updateApplicantStatus,
   };
 }
