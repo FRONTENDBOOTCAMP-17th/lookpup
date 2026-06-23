@@ -579,6 +579,7 @@ const result = await createReport({
   target_id: "target-uuid",
   reason: "부적절한 내용",
   content: "상세 내용...",
+  image_urls: ["https://res.cloudinary.com/..."],  // 선택. Cloudinary 업로드 후 URL 배열
 });
 // result.data.id, result.data.status === "pending"
 ```
