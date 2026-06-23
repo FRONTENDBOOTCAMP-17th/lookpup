@@ -109,7 +109,7 @@ export default function ReportPage() {
   const handleSelectUser = (u: UserResult) => {
     setTargetId(u.id);
     setTargetName(u.full_name || "알 수 없음");
-    setTargetRole(u.role === "both" ? "펫시터" : "");
+    setTargetRole(u.role === "both" || u.role === "admin" ? "펫시터" : "");
     setTargetService("");
     setTargetImage(u.profile_image ?? null);
     setSearchQuery("");
@@ -388,7 +388,7 @@ export default function ReportPage() {
                 {images.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-4">
                     {images.map((file, i) => (
-                      <div key={i} className="relative w-20 h-20 shrink-0">
+                      <div key={`${file.name}-${file.size}-${file.lastModified}`} className="relative w-20 h-20 shrink-0">
                         <img
                           src={previewUrls[i]}
                           alt={`첨부 ${i + 1}`}
