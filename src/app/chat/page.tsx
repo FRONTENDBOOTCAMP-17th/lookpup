@@ -331,6 +331,29 @@ function ChatPageContent({
     return "구인글 채팅 · 지원자";
   }
 
+  function getReportUrl() {
+    const isOneOnOne = activeTab === "one_on_one";
+    const targetName = isOneOnOne
+      ? (selectedRoom?.name ?? "")
+      : (selectedApplicant?.name ?? "");
+    const targetId = isOneOnOne
+      ? (selectedRoom?.sitterId ?? "")
+      : (selectedApplicant?.sitterId ?? "");
+  
+    const role = isOneOnOne && selectedRoom?.sitterId === userId ? "보호자" : "펫시터";
+    const service = getHeaderSub();
+    const targetImage = isOneOnOne
+      ? (selectedRoom?.profileImage ?? null)
+      : (selectedApplicant?.profileImage ?? null);
+    const params = new URLSearchParams();
+    if (targetId) params.set("targetId", targetId);
+    if (targetName) params.set("targetName", targetName);
+    params.set("role", role);
+    if (service) params.set("service", service);
+    if (targetImage) params.set("targetImage", targetImage);
+    return `/myprofile/report?${params.toString()}`;
+  }
+
   const mobileRoomName =
     activeTab === "one_on_one"
       ? (selectedRoom?.name ?? "")
@@ -339,6 +362,10 @@ function ChatPageContent({
     activeTab === "one_on_one"
       ? (selectedRoom?.initial ?? "")
       : (selectedApplicant?.initial ?? "");
+  const mobileRoomProfileImage =
+    activeTab === "one_on_one"
+      ? (selectedRoom?.profileImage ?? null)
+      : (selectedApplicant?.profileImage ?? null);
   const headerBadge = getHeaderBadge();
 
   const isOwnerOfSelectedRoom =
@@ -500,7 +527,7 @@ function ChatPageContent({
               >
                 <ChevronLeft size={24} className="text-stone-900" />
               </button>
-              <Avatar initial={mobileRoomInitial} size="sm" />
+              <Avatar initial={mobileRoomInitial} src={mobileRoomProfileImage} size="sm" />
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm text-stone-900 truncate">
                   {mobileRoomName}
@@ -561,7 +588,7 @@ function ChatPageContent({
                       </button>
                       <button
                         onClick={() => {
-                          router.push("/myprofile/report");
+                          router.push(getReportUrl());
                           setMobileMenuOpen(false);
                         }}
                         className="w-full px-4 py-3 text-left text-sm text-red-500 hover:bg-red-50 transition-colors border-t border-orange-50"
@@ -601,6 +628,7 @@ function ChatPageContent({
                     key={msg.id}
                     msg={msg}
                     senderInitial={mobileRoomInitial}
+                    senderProfileImage={mobileRoomProfileImage}
                   />
                 ))}
               </div>
@@ -829,6 +857,11 @@ function ChatPageContent({
                     ? (selectedRoom?.initial ?? "")
                     : (selectedApplicant?.initial ?? "")
                 }
+                src={
+                  activeTab === "one_on_one"
+                    ? (selectedRoom?.profileImage ?? null)
+                    : (selectedApplicant?.profileImage ?? null)
+                }
                 name={
                   activeTab === "one_on_one"
                     ? (selectedRoom?.name ?? "")
@@ -852,7 +885,7 @@ function ChatPageContent({
                   )
                     handleDeleteApplicant(selectedApplicantId);
                 }}
-                onReport={() => router.push("/myprofile/report")}
+                onReport={() => router.push(getReportUrl())}
               />
 
               <ScrollArea className="flex-1 min-h-0">
@@ -881,6 +914,11 @@ function ChatPageContent({
                         activeTab === "one_on_one"
                           ? (selectedRoom?.initial ?? "")
                           : (selectedApplicant?.initial ?? "")
+                      }
+                      senderProfileImage={
+                        activeTab === "one_on_one"
+                          ? (selectedRoom?.profileImage ?? null)
+                          : (selectedApplicant?.profileImage ?? null)
                       }
                     />
                   ))}

@@ -37,7 +37,7 @@ export function AvatarMobile({ initial, src, className = "" }: AvatarMobileProps
       className={`relative w-16 h-16 bg-white/30 rounded-full border-2 border-white flex items-center justify-center shrink-0 overflow-hidden ${className}`}
     >
       {src ? (
-        <Image src={src} alt={initial} fill className="object-cover" sizes="64px" />
+        <Image src={src} alt={initial || "사용자 프로필"} fill className="object-cover" sizes="64px" />
       ) : (
         <span className="text-white text-2xl font-semibold">{initial}</span>
       )}
@@ -74,18 +74,20 @@ export function AvatarWithCamera({
 
 interface AvatarReportProps {
   initial: string;
+  src?: string | null;
   badge: ReactNode;
   className?: string;
 }
 
 export function AvatarReport({
   initial,
+  src,
   badge,
   className = "",
 }: AvatarReportProps) {
   return (
     <div className={`relative shrink-0 ${className}`}>
-      <Avatar initial={initial} size="lg" variant="blue" />
+      <Avatar initial={initial} src={src} size="lg" variant="blue" />
       <div className="absolute bottom-0 right-0 w-5 h-5 rounded-full bg-[#e8742a] flex items-center justify-center">
         {badge}
       </div>
@@ -105,7 +107,7 @@ export default function Avatar({
       className={`relative ${SIZE[size]} ${VARIANT[variant].container} rounded-full flex items-center justify-center shrink-0 overflow-hidden ${className}`}
     >
       {src ? (
-        <Image src={src} alt={initial} fill className="object-cover" sizes="128px" />
+        <Image src={src} alt={initial || "사용자 프로필"} fill className="object-cover" sizes="128px" />
       ) : (
         <span className={`${VARIANT[variant].text} font-semibold`}>{initial}</span>
       )}

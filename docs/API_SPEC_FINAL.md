@@ -1278,7 +1278,8 @@ API Route는 초기 데이터 로드용으로 사용한다.
   "target_type": "user | sitter | request | service | reservation | review | message",
   "target_id": "uuid",
   "reason": "string",
-  "content": "string | null"
+  "content": "string | null",
+  "image_urls": "string[] | null"
 }
 ```
 
