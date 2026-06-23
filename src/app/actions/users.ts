@@ -64,6 +64,36 @@ export async function restoreUser() {
   return { data: { restored: true } };
 }
 
+export async function searchUsers(query: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
+  }
+
+  const trimmed = query.trim();
+  if (trimmed.length < 1) return { data: [] };
+
+  const db = createServiceClient();
+
+  const { data, error } = await db
+    .from("users")
+    .select("id, full_name, profile_image, role")
+    .ilike("full_name", `%${trimmed}%`)
+    .is("deleted_at", null)
+    .neq("id", user.id)
+    .limit(10);
+
+  if (error) {
+    return { error: { code: "INTERNAL_ERROR", message: error.message } };
+  }
+
+  return { data: data ?? [] };
+}
+
 export async function deleteUser(reason?: string) {
   const supabase = await createClient();
   const {
