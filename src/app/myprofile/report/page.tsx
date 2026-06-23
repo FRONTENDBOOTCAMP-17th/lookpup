@@ -57,11 +57,21 @@ export default function ReportPage() {
   const [searchResults, setSearchResults] = useState<UserResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestQueryRef = useRef<string>("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedReason, setSelectedReason] = useState("");
   const [content, setContent] = useState("");
   const [images, setImages] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+
+  useEffect(() => {
+    const urls = images.map((file) => URL.createObjectURL(file));
+    setPreviewUrls(urls);
+    return () => {
+      urls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [images]);
 
   const isValid = selectedReason !== "" && content.length >= 10;
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -73,10 +83,18 @@ export default function ReportPage() {
       setSearchResults([]);
       return;
     }
+    latestQueryRef.current = query;
     setIsSearching(true);
-    const result = await searchUsers(query);
-    setIsSearching(false);
-    if (result.data) setSearchResults(result.data as UserResult[]);
+    try {
+      const result = await searchUsers(query);
+      if (latestQueryRef.current !== query) return;
+      if (result.data) setSearchResults(result.data as UserResult[]);
+      else setSearchResults([]);
+    } catch {
+      setSearchResults([]);
+    } finally {
+      if (latestQueryRef.current === query) setIsSearching(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -372,7 +390,7 @@ export default function ReportPage() {
                     {images.map((file, i) => (
                       <div key={i} className="relative w-20 h-20 shrink-0">
                         <img
-                          src={URL.createObjectURL(file)}
+                          src={previewUrls[i]}
                           alt={`첨부 ${i + 1}`}
                           className="w-20 h-20 object-cover rounded-xl"
                         />
