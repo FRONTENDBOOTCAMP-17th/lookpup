@@ -74,18 +74,20 @@ export function AvatarWithCamera({
 
 interface AvatarReportProps {
   initial: string;
+  src?: string | null;
   badge: ReactNode;
   className?: string;
 }
 
 export function AvatarReport({
   initial,
+  src,
   badge,
   className = "",
 }: AvatarReportProps) {
   return (
     <div className={`relative shrink-0 ${className}`}>
-      <Avatar initial={initial} size="lg" variant="blue" />
+      <Avatar initial={initial} src={src} size="lg" variant="blue" />
       <div className="absolute bottom-0 right-0 w-5 h-5 rounded-full bg-[#e8742a] flex items-center justify-center">
         {badge}
       </div>

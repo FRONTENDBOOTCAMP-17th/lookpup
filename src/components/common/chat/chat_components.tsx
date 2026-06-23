@@ -23,6 +23,7 @@ export type ChatRoom = {
   sitterId: string | null;
   name: string;
   initial: string;
+  profileImage?: string | null;
   sub: string;
   lastMessage: string;
   time: string;
@@ -37,6 +38,7 @@ export type Applicant = {
   postId: string;
   name: string;
   initial: string;
+  profileImage?: string | null;
   rating: number;
   preview: string;
   unread: number;
@@ -97,7 +99,7 @@ export function ChatRoomItem({
         </button>
       )}
       <div className="relative shrink-0">
-        <Avatar initial={room.initial} size="lg" />
+        <Avatar initial={room.initial} src={room.profileImage} size="lg" />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between">
@@ -182,7 +184,7 @@ export function ApplicantCard({
             }}
             className="shrink-0"
           >
-            <Avatar initial={applicant.initial} size="sm" />
+            <Avatar initial={applicant.initial} src={applicant.profileImage} size="sm" />
           </button>
           <span className="text-sm font-semibold text-stone-900 flex-1">
             {applicant.name}
@@ -240,6 +242,7 @@ export function ApplicantCard({
 // 채팅창 헤더
 type ChatWindowHeaderProps = {
   initial: string;
+  src?: string | null;
   name: string;
   sub: string;
   badge: Badge;
@@ -250,6 +253,7 @@ type ChatWindowHeaderProps = {
 
 export function ChatWindowHeader({
   initial,
+  src,
   name,
   sub,
   badge,
@@ -262,7 +266,7 @@ export function ChatWindowHeader({
   return (
     <div className="h-16 px-8 bg-white border-b border-orange-100 flex items-center justify-between shrink-0">
       <div className="flex items-center gap-4">
-        <Avatar initial={initial} />
+        <Avatar initial={initial} src={src} />
         <div>
           <p className="text-stone-900 text-base font-semibold leading-5">
             {name}
@@ -330,9 +334,10 @@ export function ChatWindowHeader({
 type MessageBubbleProps = {
   msg: Message;
   senderInitial: string;
+  senderProfileImage?: string | null;
 };
 
-export function MessageBubble({ msg, senderInitial }: MessageBubbleProps) {
+export function MessageBubble({ msg, senderInitial, senderProfileImage }: MessageBubbleProps) {
   if (msg.from === "divider") {
     return (
       <div className="flex justify-center">
@@ -345,7 +350,7 @@ export function MessageBubble({ msg, senderInitial }: MessageBubbleProps) {
   if (msg.from === "other") {
     return (
       <div className="flex items-start gap-3">
-        <Avatar initial={senderInitial} size="sm" />
+        <Avatar initial={senderInitial} src={senderProfileImage} size="sm" />
         <div>
           {msg.imageUrl ? (
             <div className="max-w-xs overflow-hidden rounded-tl-sm rounded-tr-2xl rounded-bl-2xl rounded-br-2xl shadow-sm">

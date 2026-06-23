@@ -31,6 +31,7 @@ interface RoomApiItem {
   owner_id: string | null;
   sitter_id: string | null;
   other_user_full_name: string | null;
+  other_user_profile_image: string | null;
   last_message: string | null;
   last_message_at: string | null;
   unread_count: number | null;
@@ -97,6 +98,7 @@ export function useChatRooms(activeRoomId: string | null) {
             sitterId: r.sitter_id ?? null,
             name: r.other_user_full_name ?? "",
             initial: (r.other_user_full_name ?? "?")[0],
+            profileImage: r.other_user_profile_image ?? null,
             sub: "1:1 채팅",
             lastMessage: formatPreview(r.last_message ?? ""),
             time: formatTime(r.last_message_at),
@@ -111,6 +113,7 @@ export function useChatRooms(activeRoomId: string | null) {
           postId: r.request_id ?? "",
           name: r.other_user_full_name ?? "",
           initial: (r.other_user_full_name ?? "?")[0],
+          profileImage: r.other_user_profile_image ?? null,
           rating: 0,
           preview: formatPreview(r.last_message ?? ""),
           unread: r.unread_count ?? 0,

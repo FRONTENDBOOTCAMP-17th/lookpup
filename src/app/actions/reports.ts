@@ -17,6 +17,7 @@ export async function createReport(input: {
   target_id: string;
   reason: string;
   content?: string | null;
+  image_urls?: string[] | null;
 }) {
   const supabase = await createClient();
   const {
@@ -41,6 +42,7 @@ export async function createReport(input: {
       target_id: input.target_id,
       reason: input.reason,
       content: input.content ?? null,
+      image_urls: input.image_urls ?? [],
       status: "pending",
     })
     .select("id, status")
