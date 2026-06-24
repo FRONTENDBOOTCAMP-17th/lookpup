@@ -35,6 +35,7 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { signOut } from "@/app/actions/auth";
+import { updateOwnerLocation, getOwnerLocation } from "@/app/actions/users";
 import {
   coordToRegion,
   searchAddressList,
@@ -309,6 +310,17 @@ export default function MyProfilePage() {
       return parseStoredLocation(localStorage.getItem(OWNER_LOCATION_STORAGE_KEY));
     });
 
+  // 마운트 시 DB 위치 불러오기 (localStorage 없으면 DB 폴백)
+  useEffect(() => {
+    getOwnerLocation().then(({ data }) => {
+      if (!data) return;
+      setOwnerLocationData((prev) => {
+        if (prev) return prev; // localStorage 값이 있으면 유지
+        return { address: data.address, detailAddress: "", lat: data.lat, lng: data.lng, dong: data.dong };
+      });
+    });
+  }, []);
+
   // 위치 수정 모달
   const [showLocationEditModal, setShowLocationEditModal] = useState(false);
   const [locationInput, setLocationInput] = useState("");
@@ -447,6 +459,7 @@ export default function MyProfilePage() {
     const data: OwnerLocationData = { ...pendingLocation, detailAddress: detailInput.trim() };
     setOwnerLocationData(data);
     localStorage.setItem(OWNER_LOCATION_STORAGE_KEY, JSON.stringify(data));
+    updateOwnerLocation({ address: pendingLocation.address, lat: pendingLocation.lat, lng: pendingLocation.lng, dong: pendingLocation.dong });
     setShowLocationEditModal(false);
     setLocationInput("");
     setDetailInput("");

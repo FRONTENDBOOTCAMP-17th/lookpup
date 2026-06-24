@@ -94,6 +94,68 @@ export async function searchUsers(query: string) {
   return { data: data ?? [] };
 }
 
+export async function updateOwnerLocation(location: {
+  address: string;
+  lat: number;
+  lng: number;
+  dong: string;
+}) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
+  }
+
+  const db = createServiceClient();
+
+  const { error } = await db
+    .from("users")
+    .update({
+      latitude: location.lat,
+      longitude: location.lng,
+      address: location.address,
+      display_area: location.dong,
+    })
+    .eq("id", user.id);
+
+  if (error) {
+    return { error: { code: "INTERNAL_ERROR", message: error.message } };
+  }
+
+  return { data: { saved: true } };
+}
+
+export async function getOwnerLocation() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { data: null };
+
+  const db = createServiceClient();
+
+  const { data } = await db
+    .from("users")
+    .select("latitude, longitude, address, display_area")
+    .eq("id", user.id)
+    .single();
+
+  if (!data?.latitude || !data?.longitude) return { data: null };
+
+  return {
+    data: {
+      lat: Number(data.latitude),
+      lng: Number(data.longitude),
+      address: data.address ?? "",
+      dong: data.display_area ?? data.address ?? "",
+    },
+  };
+}
+
 export async function deleteUser(reason?: string) {
   const supabase = await createClient();
   const {
