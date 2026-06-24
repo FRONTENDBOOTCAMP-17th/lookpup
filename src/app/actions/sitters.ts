@@ -18,8 +18,10 @@ interface SitterInput {
   introduction: string;
   career?: string | null;
   available_area: string;
+  display_area?: string | null;
   latitude: number;
   longitude: number;
+  service_radius_km?: number;
   base_price: number;
   request_type?: RequestType[];
   available_animals?: AnimalType[];
@@ -220,7 +222,7 @@ export async function getMySitterProfile() {
 
   const { data, error } = await db
     .from("sitters")
-    .select("id, available_area, career, introduction, rating, latitude, longitude, request_type, available_animals, activity_photo_urls, services(title, is_active)")
+    .select("id, available_area, display_area, career, introduction, rating, latitude, longitude, service_radius_km, request_type, available_animals, activity_photo_urls, services(title, is_active)")
     .eq("user_id", user.id)
     .single();
 
@@ -237,6 +239,7 @@ export async function getMySitterProfile() {
     data: {
       id: data.id,
       availableArea: data.available_area ?? "",
+      displayArea: (data as any).display_area ?? null,
       career: data.career ?? null,
       introduction: data.introduction ?? null,
       rating: data.rating ?? 0,
@@ -249,14 +252,17 @@ export async function getMySitterProfile() {
       activityPhotoUrls: (data.activity_photo_urls as string[]) ?? [],
       latitude: data.latitude ?? null,
       longitude: data.longitude ?? null,
+      serviceRadiusKm: (data as any).service_radius_km ?? null,
     },
   };
 }
 
 interface UpdateSitterProfileInput {
   availableArea: string;
+  displayArea?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  serviceRadiusKm?: number | null;
   introduction: string;
   career: string;
   availableAnimals: string[];
@@ -297,8 +303,10 @@ export async function updateSitterProfile(input: UpdateSitterProfileInput) {
     available_animals: input.availableAnimals,
     activity_photo_urls: input.activityPhotoUrls,
   };
+  if (input.displayArea != null) updatePayload.display_area = input.displayArea;
   if (input.latitude != null) updatePayload.latitude = input.latitude;
   if (input.longitude != null) updatePayload.longitude = input.longitude;
+  if (input.serviceRadiusKm != null) updatePayload.service_radius_km = input.serviceRadiusKm;
 
   const { error: updateError } = await db
     .from("sitters")
