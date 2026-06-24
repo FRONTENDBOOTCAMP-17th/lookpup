@@ -93,16 +93,12 @@ export async function GET(
   }
 
   const applications = (data ?? []).map((item) => {
-    const sitter = item.sitters as unknown as {
-      rating: number;
-      users: { full_name: string; profile_image: string | null };
-    };
     return {
       id: item.id,
       sitter_id: item.sitter_id,
-      sitter_full_name: sitter.users.full_name,
-      sitter_profile_image: sitter.users.profile_image,
-      sitter_rating: sitter.rating,
+      sitter_full_name: item.sitters.users.full_name ?? "알 수 없음",
+      sitter_profile_image: item.sitters.users.profile_image ?? null,
+      sitter_rating: item.sitters.rating,
       message: item.message,
       proposed_price: item.proposed_price,
       status: item.status,

@@ -97,17 +97,9 @@ export async function GET() {
 
   const result = rooms.map((room) => {
     const isOwner = room.owner_id === user.id;
-    const owner = room.owner as unknown as {
-      full_name: string;
-      profile_image: string | null;
-    };
-    const sitter = room.sitter as unknown as {
-      sitter_user: { full_name: string; profile_image: string | null };
-    };
-    const request = room.request as unknown as {
-      title: string;
-      status: string;
-    } | null;
+    const owner = room.owner;
+    const sitter = room.sitter;
+    const request = room.request;
 
     return {
       id: room.id,

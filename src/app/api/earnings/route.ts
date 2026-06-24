@@ -70,20 +70,13 @@ export async function GET() {
     .filter((p) => p.paid_at && p.paid_at >= weekAgoStart)
     .reduce((sum, p) => sum + (p.settle_amount ?? 0), 0);
 
-  type ReservationRow = {
-    start_datetime: string;
-    services: { title: string } | null;
-    users: { full_name: string } | null;
-  };
-
   const transactions = payments.map((p) => {
-    const reservation = p.reservations as unknown as ReservationRow;
     const dateStr = (p.paid_at ?? p.created_at ?? "").slice(0, 10);
     return {
       id: p.id,
       date: dateStr,
-      service: reservation?.services?.title ?? "-",
-      clientName: reservation?.users?.full_name ?? "-",
+      service: p.reservations?.services?.title ?? "-",
+      clientName: p.reservations?.users?.full_name ?? "-",
       amount: p.settle_amount ?? 0,
       status: p.status === "paid" ? "completed" : "pending",
     };

@@ -349,13 +349,12 @@ export async function getSitterById(id: string) {
 
   if (error || !sitter) return { error: { code: "NOT_FOUND", message: "펫시터를 찾을 수 없습니다." } };
 
-  const users = sitter.users as unknown as { full_name: string };
-  const services = (sitter.services as { id: string; service_type: string; title: string; price: number; is_active: boolean }[]) ?? [];
+  const services = sitter.services ?? [];
 
   return {
     data: {
-      full_name: users.full_name,
-      base_price: sitter.base_price as number | null,
+      full_name: sitter.users.full_name,
+      base_price: sitter.base_price,
       services,
     },
   };

@@ -36,8 +36,7 @@ export async function GET(
     );
   }
 
-  const sitter = room.sitters as unknown as { user_id: string };
-  if (room.owner_id !== user.id && sitter.user_id !== user.id) {
+  if (room.owner_id !== user.id && room.sitters.user_id !== user.id) {
     return NextResponse.json(
       { error: { code: "FORBIDDEN", message: "채팅방 참여자만 조회할 수 있습니다." } },
       { status: 403 },
