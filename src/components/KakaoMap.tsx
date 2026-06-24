@@ -31,6 +31,8 @@ interface KakaoMapProps {
   // 지도 빈 곳 클릭 시 클릭 지점 좌표 전달 (위치 직접 지정용)
   onMapClick?: (lat: number, lng: number) => void;
   basePosition?: { lat: number; lng: number };
+  // 활동 반경 원 표시 (km 단위, 첫 번째 마커 기준)
+  serviceRadius?: number;
 }
 
 function markerImageUrl(selected = false): string {
@@ -65,12 +67,14 @@ export default function KakaoMap({
   onMarkerClick,
   onMapClick,
   basePosition,
+  serviceRadius,
 }: KakaoMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const kakaoMarkersRef = useRef<any[]>([]);
   const overlayRef = useRef<any>(null);
   const polylineRef = useRef<any>(null);
+  const circleRef = useRef<any>(null);
   const onMarkerClickRef = useRef(onMarkerClick);
   const onMapClickRef = useRef(onMapClick);
   const basePositionRef = useRef(basePosition);
@@ -134,6 +138,27 @@ export default function KakaoMap({
     );
 
     drawMarkers();
+    drawServiceCircle();
+  }
+
+  function drawServiceCircle() {
+    if (circleRef.current) {
+      circleRef.current.setMap(null);
+      circleRef.current = null;
+    }
+    const map = mapRef.current;
+    if (!map || !serviceRadius || markers.length === 0) return;
+    const { lat, lng } = markers[0];
+    circleRef.current = new window.kakao.maps.Circle({
+      center: new window.kakao.maps.LatLng(lat, lng),
+      radius: serviceRadius * 1000,
+      strokeWeight: 2,
+      strokeColor: "#f97316",
+      strokeOpacity: 0.7,
+      fillColor: "#f97316",
+      fillOpacity: 0.08,
+    });
+    circleRef.current.setMap(map);
   }
 
   function drawMarkers() {
@@ -235,6 +260,12 @@ export default function KakaoMap({
       drawMarkers();
     }
   }, [markers, selectedMarkerId]);
+
+  useEffect(() => {
+    if (mapRef.current) {
+      drawServiceCircle();
+    }
+  }, [serviceRadius, markers]);
 
   return (
     <div style={{ width: "100%", height: "100%" }} className={className}>
