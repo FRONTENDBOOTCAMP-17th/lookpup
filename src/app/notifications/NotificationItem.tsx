@@ -9,6 +9,7 @@ import {
   FileText,
   Bell,
   XCircle,
+  ClipboardList,
 } from "lucide-react";
 import { markNotificationRead } from "@/app/actions/notifications";
 
@@ -31,6 +32,8 @@ function getNotificationIcon(type: string): { icon: React.ReactNode; iconBg: str
       return { icon: <CheckCircle size={16} className="text-green-700" />, iconBg: "bg-green-100" };
     case "application_rejected":
       return { icon: <XCircle size={16} className="text-red-500" />, iconBg: "bg-red-50" };
+    case "care_record":
+      return { icon: <ClipboardList size={16} className="text-teal-600" />, iconBg: "bg-teal-50" };
     case "message":
       return { icon: <MessageSquare size={16} className="text-sky-600" />, iconBg: "bg-sky-100" };
     case "review":
