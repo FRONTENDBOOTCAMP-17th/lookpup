@@ -396,6 +396,12 @@ function ChatPageContent({
       : (selectedApplicant?.profileImage ?? null);
   const headerBadge = getHeaderBadge();
 
+  const isCurrentUserSitter =
+    activeTab === "one_on_one" &&
+    selectedRoom !== undefined &&
+    selectedRoom.ownerId !== null &&
+    selectedRoom.ownerId !== userId;
+
   const isOwnerOfSelectedRoom =
     selectedApplicant?.ownerId !== null &&
     selectedApplicant?.ownerId === userId;
@@ -735,7 +741,7 @@ function ChatPageContent({
             {plusMenuOpen && (
               <ChatPlusPanel
                 onPaymentRequest={
-                  activeTab === "one_on_one"
+                  isCurrentUserSitter
                     ? () => {
                         setPlusMenuOpen(false);
                         setPaymentModalOpen(true);
@@ -743,8 +749,11 @@ function ChatPageContent({
                     : undefined
                 }
                 onSendCareRecord={
-                  activeTab === "one_on_one"
-                    ? () => setPlusMenuOpen(false)
+                  isCurrentUserSitter
+                    ? () => {
+                        setPlusMenuOpen(false);
+                        setCareRecordOpen(true);
+                      }
                     : undefined
                 }
                 onSendPhoto={() => photoInputRef.current?.click()}
@@ -1026,7 +1035,7 @@ function ChatPageContent({
               {plusMenuOpen && (
                 <ChatPlusPanel
                   onPaymentRequest={
-                    activeTab === "one_on_one"
+                    isCurrentUserSitter
                       ? () => {
                           setPlusMenuOpen(false);
                           setPaymentModalOpen(true);
@@ -1034,7 +1043,7 @@ function ChatPageContent({
                       : undefined
                   }
                   onSendCareRecord={
-                    activeTab === "one_on_one"
+                    isCurrentUserSitter
                       ? () => {
                           setPlusMenuOpen(false);
                           setCareRecordOpen(true);
