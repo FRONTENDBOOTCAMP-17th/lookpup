@@ -88,8 +88,7 @@ export async function sendMessage(roomId: string, content: string) {
     return { error: { code: "NOT_FOUND", message: "채팅방을 찾을 수 없습니다." } };
   }
 
-  const sitter = room.sitters as unknown as { user_id: string };
-  if (room.owner_id !== user.id && sitter.user_id !== user.id) {
+  if (room.owner_id !== user.id && room.sitters.user_id !== user.id) {
     return { error: { code: "FORBIDDEN", message: "채팅방 참여자만 메시지를 보낼 수 있습니다." } };
   }
 
@@ -134,8 +133,7 @@ export async function sendImageMessage(roomId: string, imageUrl: string) {
     return { error: { code: "NOT_FOUND", message: "채팅방을 찾을 수 없습니다." } };
   }
 
-  const sitter = room.sitters as unknown as { user_id: string };
-  if (room.owner_id !== user.id && sitter.user_id !== user.id) {
+  if (room.owner_id !== user.id && room.sitters.user_id !== user.id) {
     return { error: { code: "FORBIDDEN", message: "채팅방 참여자만 메시지를 보낼 수 있습니다." } };
   }
 
@@ -208,8 +206,7 @@ export async function markRoomRead(roomId: string) {
     return { error: { code: "NOT_FOUND", message: "채팅방을 찾을 수 없습니다." } };
   }
 
-  const sitter = room.sitters as unknown as { user_id: string };
-  if (room.owner_id !== user.id && sitter.user_id !== user.id) {
+  if (room.owner_id !== user.id && room.sitters.user_id !== user.id) {
     return { error: { code: "FORBIDDEN", message: "채팅방 참여자만 읽음 처리할 수 있습니다." } };
   }
 

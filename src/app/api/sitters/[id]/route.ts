@@ -31,11 +31,7 @@ export async function GET(
     .select("id", { count: "exact", head: true })
     .eq("sitter_id", id);
 
-  const { full_name, profile_image, is_verified } = sitter.users as unknown as {
-    full_name: string;
-    profile_image: string | null;
-    is_verified: boolean;
-  };
+  const { full_name, profile_image, is_verified } = sitter.users;
 
   return NextResponse.json({
     data: {

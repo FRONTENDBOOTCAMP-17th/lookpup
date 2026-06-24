@@ -86,10 +86,7 @@ export async function createPayment(
     return { error: { code: "INTERNAL_ERROR", message: error.message } };
   }
 
-  const sitter = reservation.sitters as unknown as {
-    users: { full_name: string };
-  };
-  const orderName = `${sitter.users.full_name} 펫시팅 서비스`;
+  const orderName = `${reservation.sitters.users.full_name ?? "펫시터"} 펫시팅 서비스`;
 
   return { data: { payment_id: paymentId, amount, order_name: orderName } };
 }
@@ -117,12 +114,7 @@ export async function cancelPayment(paymentId: string, reason: string) {
     };
   }
 
-  const reservation = payment.reservations as unknown as {
-    id: string;
-    owner_id: string;
-    start_datetime: string;
-    status: string;
-  };
+  const reservation = payment.reservations;
 
   if (reservation.owner_id !== user.id) {
     return { error: { code: "FORBIDDEN", message: "취소 권한이 없습니다." } };
@@ -138,7 +130,7 @@ export async function cancelPayment(paymentId: string, reason: string) {
   }
 
   // 서비스 시작 전인지 확인
-  if (new Date(reservation.start_datetime) <= new Date()) {
+  if (!reservation.start_datetime || new Date(reservation.start_datetime) <= new Date()) {
     return {
       error: {
         code: "FORBIDDEN",

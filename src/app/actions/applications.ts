@@ -147,14 +147,7 @@ export async function updateApplication(
     };
   }
 
-  const requestRow = application.requests as unknown as {
-    id: string;
-    owner_id: string;
-    start_datetime: string;
-    end_datetime: string;
-    budget: number;
-    status: string;
-  };
+  const requestRow = application.requests;
 
   const { data: sitterProfile } = await db
     .from("sitters")
@@ -192,7 +185,7 @@ export async function updateApplication(
       };
     }
 
-    const totalPrice = application.proposed_price ?? requestRow.budget;
+    const totalPrice = application.proposed_price ?? requestRow.budget ?? 0;
 
     const { data: reservation, error: reservationError } = await db
       .from("reservations")

@@ -49,12 +49,11 @@ export async function GET(
   const nextCursor = hasMore ? items[items.length - 1].id : null;
 
   const reviews = items.map((item) => {
-    const owner = item.users as unknown as { full_name: string; profile_image: string | null };
     return {
       id: item.id,
       owner_id: item.owner_id,
-      owner_full_name: owner.full_name,
-      owner_profile_image: owner.profile_image,
+      owner_full_name: item.users.full_name ?? "알 수 없음",
+      owner_profile_image: item.users.profile_image ?? null,
       rating: item.rating,
       content: item.content,
       created_at: item.created_at,
