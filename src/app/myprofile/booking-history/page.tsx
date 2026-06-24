@@ -99,20 +99,14 @@ function BookingCard({
   const status = STATUS_CONFIG[booking.status];
 
   return (
-    <div
-      className="bg-white border rounded-2xl overflow-hidden shadow-[0_2px_12px_rgba(232,116,42,0.06)]"
-      style={{
-        borderColor: booking.status === "completed" ? "#DFF3E6" : "#FFE9D6",
-      }}
-    >
+    <div className="bg-white border border-orange-100 rounded-2xl overflow-hidden shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)]">
       {/* 상단 행 */}
-      <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-[#FFE9D6]">
+      <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-orange-100">
         <div className="flex items-center gap-2">
           <span
-            className="text-xs font-semibold px-3 py-1 rounded-full"
+            className="text-xs font-semibold px-3 py-1 rounded-full text-stone-900"
             style={{
-              background: SERVICE_BADGE_COLOR[booking.serviceType] ?? "#FFF0E8",
-              color: "#281A0E",
+              background: SERVICE_BADGE_COLOR[booking.serviceType] ?? "#FFF7ED",
             }}
           >
             {booking.serviceType}
@@ -129,13 +123,13 @@ function BookingCard({
           </span>
           {booking.status === "completed" && (
             <span
-              className={`text-xs font-semibold px-3 py-1 rounded-full ${booking.reviewWritten ? "bg-[#F3F4F6] text-[#6B7280]" : "bg-[#FFF0E8] text-[#E8742A]"}`}
+              className={`text-xs font-semibold px-3 py-1 rounded-full ${booking.reviewWritten ? "bg-gray-100 text-gray-500" : "bg-orange-50 text-orange-500"}`}
             >
               {booking.reviewWritten ? "후기 작성 완료" : "후기 작성 가능"}
             </span>
           )}
         </div>
-        <span className="text-xs text-[#6B7280]">{booking.bookingNo}</span>
+        <span className="text-xs text-gray-500">{booking.bookingNo}</span>
       </div>
 
       {/* 중앙 내용 */}
@@ -144,38 +138,38 @@ function BookingCard({
           <Avatar initial={booking.sitterName[0]} />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <span className="font-semibold text-[#281A0E]">
+              <span className="font-semibold text-stone-900">
                 {booking.sitterName}
               </span>
               <div className="flex items-center gap-0.5">
                 <Star size={12} className="fill-yellow-400 text-yellow-400" />
-                <span className="text-xs text-[#6B7280]">
+                <span className="text-xs text-gray-500">
                   {booking.sitterRating}
                 </span>
               </div>
             </div>
             <div className="space-y-1.5 mt-2">
-              <div className="flex items-center gap-2 text-sm text-[#6B7280]">
-                <Calendar size={14} className="text-[#E8742A] shrink-0" />
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <Calendar size={14} className="text-orange-500 shrink-0" />
                 <span>{booking.date}</span>
               </div>
-              <div className="flex items-center gap-2 text-sm text-[#6B7280]">
-                <Clock size={14} className="text-[#E8742A] shrink-0" />
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <Clock size={14} className="text-orange-500 shrink-0" />
                 <span>{booking.time}</span>
               </div>
-              <div className="flex items-center gap-2 text-sm text-[#6B7280]">
-                <MapPin size={14} className="text-[#E8742A] shrink-0" />
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <MapPin size={14} className="text-orange-500 shrink-0" />
                 <span>{booking.location}</span>
               </div>
             </div>
             <div className="mt-3">
-              <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#FFF8F3] border border-[#FFE9D6] rounded-full text-xs text-[#281A0E]">
+              <span className="inline-flex items-center gap-1 px-3 py-1 bg-orange-50 border border-orange-100 rounded-full text-xs text-stone-900">
                 🐾 {booking.petName} · {booking.petType}
               </span>
             </div>
           </div>
           <div className="text-right shrink-0">
-            <p className="font-bold text-[#E8742A]">
+            <p className="font-bold text-orange-500">
               {booking.price.toLocaleString()}원
             </p>
           </div>
@@ -183,12 +177,12 @@ function BookingCard({
       </div>
 
       {/* 액션 버튼 */}
-      <div className="px-6 pb-5 flex gap-2 border-t border-[#FFE9D6] pt-4">
+      <div className="px-6 pb-5 flex gap-2 border-t border-orange-100 pt-4">
         {booking.status === "pending" && (
           // 예약 취소 기능 모달
           <button
             onClick={() => onCancelRequest(booking.id)}
-            className="flex-1 h-10 rounded-xl border border-[#FFE9D6] text-[#6B7280] text-sm font-medium hover:border-red-300 hover:text-red-500 transition-colors"
+            className="flex-1 h-10 rounded-xl border border-orange-100 text-gray-500 text-sm font-medium hover:border-red-300 hover:text-red-500 transition-colors"
           >
             예약 취소
           </button>
@@ -197,7 +191,7 @@ function BookingCard({
           <>
             <button
               onClick={() => router.push("/chat")}
-              className="flex-1 h-10 rounded-xl border border-[#FFE9D6] text-[#281A0E] text-sm font-medium hover:border-[#E8742A]/50 transition-colors flex items-center justify-center gap-1.5"
+              className="flex-1 h-10 rounded-xl border border-orange-100 text-stone-900 text-sm font-medium hover:border-orange-400 transition-colors flex items-center justify-center gap-1.5"
             >
               <MessageCircle size={15} />
               채팅하기
@@ -205,7 +199,7 @@ function BookingCard({
             {/* 예약 취소 기능 모달 */}
             <button
               onClick={() => onCancelRequest(booking.id)}
-              className="flex-1 h-10 rounded-xl border border-[#FFE9D6] text-[#6B7280] text-sm font-medium hover:border-red-300 hover:text-red-500 transition-colors"
+              className="flex-1 h-10 rounded-xl border border-orange-100 text-gray-500 text-sm font-medium hover:border-red-300 hover:text-red-500 transition-colors"
             >
               예약 취소
             </button>
@@ -217,13 +211,13 @@ function BookingCard({
               onClick={() =>
                 router.push(`/myprofile/booking-history/${booking.id}`)
               }
-              className="flex-1 h-10 rounded-xl border border-[#FFE9D6] text-[#281A0E] text-sm font-medium hover:border-[#E8742A]/50 transition-colors"
+              className="flex-1 h-10 rounded-xl border border-orange-100 text-stone-900 text-sm font-medium hover:border-orange-400 transition-colors"
             >
               예약 상세보기
             </button>
             <button
               onClick={() => router.push("/chat")}
-              className="flex-1 h-10 rounded-xl bg-[#FFF0E8] text-[#E8742A] text-sm font-semibold hover:bg-[#FFE4D0] transition-colors flex items-center justify-center gap-1.5"
+              className="flex-1 h-10 rounded-xl bg-orange-50 text-orange-500 text-sm font-semibold hover:bg-orange-100 transition-colors flex items-center justify-center gap-1.5"
             >
               <MessageCircle size={15} />
               채팅하기
@@ -236,7 +230,7 @@ function BookingCard({
               onClick={() =>
                 router.push(`/myprofile/booking-history/${booking.id}`)
               }
-              className="flex-1 h-10 rounded-xl border border-[#FFE9D6] text-[#281A0E] text-sm font-medium hover:border-[#E8742A]/50 transition-colors"
+              className="flex-1 h-10 rounded-xl border border-orange-100 text-stone-900 text-sm font-medium hover:border-orange-400 transition-colors"
             >
               예약 상세보기
             </button>
@@ -247,14 +241,14 @@ function BookingCard({
                     `/myprofile/reviews/write?bookingId=${booking.id}`,
                   )
                 }
-                className="flex-1 h-10 rounded-xl bg-[#E8742A] text-white text-sm font-semibold hover:bg-[#D4621A] transition-colors"
+                className="flex-1 h-10 rounded-xl bg-orange-500 text-white text-sm font-semibold hover:bg-orange-600 transition-colors"
               >
                 후기 작성하기
               </button>
             ) : (
               <button
                 disabled
-                className="flex-1 h-10 rounded-xl bg-[#F3F4F6] text-[#6B7280] text-sm font-medium cursor-not-allowed"
+                className="flex-1 h-10 rounded-xl bg-gray-100 text-gray-500 text-sm font-medium cursor-not-allowed"
               >
                 후기 작성 완료
               </button>
@@ -266,7 +260,7 @@ function BookingCard({
             onClick={() =>
               router.push(`/myprofile/booking-history/${booking.id}`)
             }
-            className="flex-1 h-10 rounded-xl border border-[#FFE9D6] text-[#6B7280] text-sm font-medium hover:border-[#E8742A]/50 transition-colors"
+            className="flex-1 h-10 rounded-xl border border-orange-100 text-gray-500 text-sm font-medium hover:border-orange-400 transition-colors"
           >
             상세보기
           </button>
@@ -329,16 +323,16 @@ export default function BookingHistoryPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FFF8F3]">
+    <div className="min-h-screen bg-orange-50">
       <Header />
 
       {/* 모바일 헤더 */}
-      <div className="md:hidden sticky top-16 z-50 bg-white border-b border-[#FFE9D6]">
+      <div className="md:hidden sticky top-16 z-50 bg-white border-b border-orange-100">
         <div className="h-14 px-5 flex items-center gap-3">
           <button onClick={() => router.back()} className="p-1 -ml-1">
-            <ChevronLeft size={24} className="text-[#281A0E]" />
+            <ChevronLeft size={24} className="text-stone-900" />
           </button>
-          <span className="flex-1 font-semibold text-[#281A0E]">예약 내역</span>
+          <span className="flex-1 font-semibold text-stone-900">예약 내역</span>
         </div>
       </div>
 
@@ -347,20 +341,20 @@ export default function BookingHistoryPage() {
         <div className="hidden md:flex items-center gap-4 mb-8">
           <button
             onClick={() => router.back()}
-            className="w-10 h-10 rounded-xl border border-[#FFE9D6] flex items-center justify-center hover:bg-[#FFF8F3] transition-colors shrink-0"
+            className="w-10 h-10 rounded-xl border border-orange-100 flex items-center justify-center hover:bg-orange-50 transition-colors shrink-0"
           >
-            <ChevronLeft size={20} className="text-[#281A0E]" />
+            <ChevronLeft size={20} className="text-stone-900" />
           </button>
           <div>
-            <h2 className="text-2xl font-bold text-[#281A0E]">예약 내역</h2>
-            <p className="text-sm text-[#6B7280] mt-1">
+            <h2 className="text-2xl font-bold text-stone-900">예약 내역</h2>
+            <p className="text-sm text-gray-500 mt-1">
               진행 중인 예약과 지난 예약을 확인할 수 있어요
             </p>
           </div>
         </div>
 
         {/* 탭 */}
-        <div className="flex gap-1 overflow-x-auto scrollbar-hide mb-6 bg-white border border-[#FFE9D6] rounded-2xl p-1">
+        <div className="flex gap-1 overflow-x-auto scrollbar-hide mb-6 bg-white border border-orange-100 rounded-2xl p-1">
           {TABS.map((tab) => (
             <button
               key={tab.id}
@@ -370,14 +364,14 @@ export default function BookingHistoryPage() {
               }}
               className={`flex-1 min-w-fit px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${
                 activeTab === tab.id
-                  ? "bg-[#E8742A] text-white"
-                  : "text-[#6B7280] hover:text-[#281A0E]"
+                  ? "bg-orange-500 text-white"
+                  : "text-gray-500 hover:text-stone-900"
               }`}
             >
               {tab.label}
               {counts[tab.id] > 0 && (
                 <span
-                  className={`ml-1.5 text-xs ${activeTab === tab.id ? "text-white/80" : "text-[#9CA3AF]"}`}
+                  className={`ml-1.5 text-xs ${activeTab === tab.id ? "text-white/80" : "text-gray-400"}`}
                 >
                   {counts[tab.id]}
                 </span>
@@ -388,16 +382,16 @@ export default function BookingHistoryPage() {
 
         {/* 카드 목록 */}
         {loading ? (
-          <div className="flex justify-center py-20 text-sm text-[#6B7280]">불러오는 중...</div>
+          <div className="flex justify-center py-20 text-sm text-gray-500">불러오는 중...</div>
         ) : paged.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20">
-            <div className="w-16 h-16 bg-white border border-[#FFE9D6] rounded-full flex items-center justify-center mb-4">
-              <Calendar size={28} className="text-[#FFD4AE]" />
+            <div className="w-16 h-16 bg-white border border-orange-100 rounded-full flex items-center justify-center mb-4">
+              <Calendar size={28} className="text-orange-200" />
             </div>
-            <p className="font-semibold text-[#281A0E] mb-1">
+            <p className="font-semibold text-stone-900 mb-1">
               예약 내역이 없어요
             </p>
-            <p className="text-sm text-[#6B7280]">새로운 예약을 만들어보세요</p>
+            <p className="text-sm text-gray-500">새로운 예약을 만들어보세요</p>
             <Link
               href="/search"
               className="mt-6 px-6 py-3 bg-[#E8742A] text-white rounded-xl text-sm font-semibold hover:bg-[#D4621A] transition-colors"
@@ -423,7 +417,7 @@ export default function BookingHistoryPage() {
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="w-9 h-9 rounded-xl border border-[#FFE9D6] flex items-center justify-center text-[#6B7280] hover:border-[#E8742A]/50 disabled:opacity-40 transition-colors"
+              className="w-9 h-9 rounded-xl border border-orange-100 flex items-center justify-center text-gray-500 hover:border-orange-300 disabled:opacity-40 transition-colors"
             >
               <ChevronLeft size={16} />
             </button>
@@ -434,7 +428,7 @@ export default function BookingHistoryPage() {
                 className={`w-9 h-9 rounded-xl text-sm font-medium transition-all ${
                   page === p
                     ? "bg-[#E8742A] text-white"
-                    : "border border-[#FFE9D6] text-[#6B7280] hover:border-[#E8742A]/50"
+                    : "border border-orange-100 text-gray-500 hover:border-orange-300"
                 }`}
               >
                 {p}
@@ -443,7 +437,7 @@ export default function BookingHistoryPage() {
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="w-9 h-9 rounded-xl border border-[#FFE9D6] flex items-center justify-center text-[#6B7280] hover:border-[#E8742A]/50 disabled:opacity-40 transition-colors"
+              className="w-9 h-9 rounded-xl border border-orange-100 flex items-center justify-center text-gray-500 hover:border-orange-300 disabled:opacity-40 transition-colors"
             >
               <ChevronRight size={16} />
             </button>
