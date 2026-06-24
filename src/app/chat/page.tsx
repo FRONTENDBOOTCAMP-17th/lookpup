@@ -22,6 +22,7 @@ import {
 import { CustomModal } from "@/components/common/CustomModal";
 import { CustomModalPayment } from "@/components/common/CustomModalPayment";
 import CareRecordModal, { type CareRecordPayload } from "@/components/common/chat/CareRecordModal";
+import { createCareRecord, getInProgressReservationByOwnerAndSitter } from "@/app/actions/care-records";
 import {
   sendMessage,
   sendImageMessage,
@@ -199,7 +200,7 @@ function ChatPageContent({
         updatePreview(
           activeRoomId,
           result.data.content,
-          result.data.created_at,
+          result.data.created_at ?? "",
         );
       }
       setInput("");
@@ -225,7 +226,7 @@ function ChatPageContent({
       if (result.data) {
         addMessage(result.data);
         broadcastMessage(result.data);
-        updatePreview(activeRoomId, "사진", result.data.created_at);
+        updatePreview(activeRoomId, "사진", result.data.created_at ?? "");
       }
     } catch {
       setSendError("사진 전송에 실패했습니다. 다시 시도해주세요.");
@@ -275,12 +276,27 @@ function ChatPageContent({
 
   const handleCareRecordSubmit = async (record: CareRecordPayload) => {
     if (!activeRoomId) return;
+
+    let reservationId = record.reservationId;
+
+    if (!reservationId && selectedRoom?.ownerId && selectedRoom?.sitterId) {
+      const res = await getInProgressReservationByOwnerAndSitter(
+        selectedRoom.ownerId,
+        selectedRoom.sitterId,
+      );
+      if ("data" in res && res.data) reservationId = res.data.id;
+    }
+
+    if (reservationId) {
+      await createCareRecord({ ...record, reservationId });
+    }
+
     const content = `[돌봄기록] ${record.title}`;
     const result = await sendSystemMessage(activeRoomId, content);
     if (result.data) {
       addMessage(result.data);
       broadcastMessage(result.data);
-      updatePreview(activeRoomId, content, result.data.created_at);
+      updatePreview(activeRoomId, content, result.data.created_at ?? "");
     }
   };
   const [pendingDelete, setPendingDelete] = useState<{
@@ -1128,6 +1144,7 @@ function ChatPageContent({
         open={careRecordOpen}
         onClose={() => setCareRecordOpen(false)}
         serviceType="care"
+        reservationId={selectedRoom?.reservationId ?? undefined}
         onSubmit={handleCareRecordSubmit}
       />
     </div>

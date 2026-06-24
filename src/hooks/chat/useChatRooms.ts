@@ -30,6 +30,7 @@ interface RoomApiItem {
   room_type: "direct" | "request";
   owner_id: string | null;
   sitter_id: string | null;
+  reservation_id: string | null;
   other_user_full_name: string | null;
   other_user_profile_image: string | null;
   last_message: string | null;
@@ -97,6 +98,7 @@ export function useChatRooms(activeRoomId: string | null) {
           id: r.id,
           ownerId: r.owner_id ?? null,
           sitterId: r.sitter_id ?? null,
+          reservationId: r.reservation_id ?? null,
           name: r.other_user_full_name ?? "",
           initial: (r.other_user_full_name ?? "?")[0],
           profileImage: r.other_user_profile_image ?? null,

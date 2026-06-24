@@ -212,13 +212,23 @@ function BookingCard({
           </>
         )}
         {booking.status === "in-progress" && (
-          <button
-            onClick={() => router.push("/chat")}
-            className="flex-1 h-10 rounded-xl bg-[#FFF0E8] text-[#E8742A] text-sm font-semibold hover:bg-[#FFE4D0] transition-colors flex items-center justify-center gap-1.5"
-          >
-            <MessageCircle size={15} />
-            채팅하기
-          </button>
+          <>
+            <button
+              onClick={() =>
+                router.push(`/myprofile/booking-history/${booking.id}`)
+              }
+              className="flex-1 h-10 rounded-xl border border-[#FFE9D6] text-[#281A0E] text-sm font-medium hover:border-[#E8742A]/50 transition-colors"
+            >
+              예약 상세보기
+            </button>
+            <button
+              onClick={() => router.push("/chat")}
+              className="flex-1 h-10 rounded-xl bg-[#FFF0E8] text-[#E8742A] text-sm font-semibold hover:bg-[#FFE4D0] transition-colors flex items-center justify-center gap-1.5"
+            >
+              <MessageCircle size={15} />
+              채팅하기
+            </button>
+          </>
         )}
         {booking.status === "completed" && (
           <>

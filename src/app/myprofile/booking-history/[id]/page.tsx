@@ -11,9 +11,23 @@ import {
   ChevronLeft,
   FileText,
   BadgeCheck,
+  ClipboardList,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
 import { getReservationById } from "@/app/actions/reservations";
+import { getCareRecordsByReservationId, type CareRecord } from "@/app/actions/care-records";
+import { CARE_RECORD_TYPES } from "@/components/common/chat/CareRecordModal";
+import {
+  Timeline,
+  TimelineItem,
+  TimelineConnector,
+  TimelineDot,
+  TimelineContent,
+  TimelineHeader,
+  TimelineTitle,
+  TimelineDescription,
+  TimelineTime,
+} from "@/components/ui/timeline";
 
 type BookingStatus =
   | "pending"
@@ -110,6 +124,74 @@ function ReviewSection({
   );
 }
 
+function CareRecordTimeline({ records }: { records: CareRecord[] }) {
+  return (
+    <div className="bg-white border border-[#FFE9D6] rounded-2xl px-6 py-5 shadow-[0_2px_12px_rgba(232,116,42,0.06)]">
+      <div className="flex items-center gap-2 mb-5">
+        <ClipboardList size={18} className="text-[#E8742A]" />
+        <h3 className="text-sm font-semibold text-[#281A0E]">돌봄 기록</h3>
+        {records.length > 0 && (
+          <span className="ml-auto text-xs text-[#E8742A] font-semibold bg-[#FFF0E8] px-2 py-0.5 rounded-full">
+            {records.length}건
+          </span>
+        )}
+      </div>
+
+      {records.length === 0 ? (
+        <p className="text-sm text-[#6B7280] text-center py-4">아직 등록된 돌봄 기록이 없어요</p>
+      ) : (
+        <Timeline>
+          {records.map((record, index) => {
+            const config = CARE_RECORD_TYPES.find((t) => t.type === record.type);
+            const emoji = config?.emoji ?? "📋";
+            const dt = new Date(record.created_at);
+            const timeStr = dt.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
+            const dateStr = dt.toLocaleDateString("ko-KR", { month: "long", day: "numeric" });
+            const isLast = index === records.length - 1;
+
+            return (
+              <TimelineItem key={record.id}>
+                {!isLast && (
+                  <TimelineConnector className="bg-[#FFE9D6]" />
+                )}
+                <TimelineDot className="bg-[#FFF0E8] border-[#FFE9D6] text-base">
+                  {emoji}
+                </TimelineDot>
+                <TimelineContent>
+                  <TimelineHeader>
+                    <TimelineTitle className="text-[#281A0E]">{record.title}</TimelineTitle>
+                    <span className="text-xs text-white bg-[#E8742A] px-2 py-0.5 rounded-full leading-none">
+                      {record.status_text}
+                    </span>
+                  </TimelineHeader>
+                  <TimelineTime className="text-[#6B7280]">{dateStr} {timeStr}</TimelineTime>
+                  {record.content && (
+                    <TimelineDescription className="text-[#6B7280] mt-0.5">
+                      {record.content}
+                    </TimelineDescription>
+                  )}
+                  {record.image_urls.length > 0 && (
+                    <div className="flex gap-2 mt-2 flex-wrap">
+                      {record.image_urls.map((url, i) => (
+                        <img
+                          key={i}
+                          src={url}
+                          alt={`돌봄 사진 ${i + 1}`}
+                          className="w-20 h-20 object-cover rounded-xl border border-[#FFE9D6]"
+                        />
+                      ))}
+                    </div>
+                  )}
+                </TimelineContent>
+              </TimelineItem>
+            );
+          })}
+        </Timeline>
+      )}
+    </div>
+  );
+}
+
 export default function BookingDetailPage() {
   const router = useRouter();
   const { id } = useParams<{ id: string }>();
@@ -117,6 +199,7 @@ export default function BookingDetailPage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [reviewWritten, setReviewWritten] = useState(false);
+  const [careRecords, setCareRecords] = useState<CareRecord[]>([]);
 
   useEffect(() => {
     if (!id) return;
@@ -129,6 +212,24 @@ export default function BookingDetailPage() {
       }
       setLoading(false);
     });
+    getCareRecordsByReservationId(id).then((res) => {
+      if ("data" in res && res.data) {
+        setCareRecords(res.data);
+      }
+    });
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+
+    const fetch = () =>
+      getCareRecordsByReservationId(id).then((res) => {
+        if ("data" in res && res.data) setCareRecords(res.data);
+      });
+
+    fetch();
+    const interval = setInterval(fetch, 5000);
+    return () => clearInterval(interval);
   }, [id]);
 
   if (loading) {
@@ -306,6 +407,9 @@ export default function BookingDetailPage() {
               <span className="font-bold text-[#E8742A]">{booking.price.toLocaleString()}원</span>
             </div>
           </div>
+
+          {/* 돌봄 기록 타임라인 */}
+          <CareRecordTimeline records={careRecords} />
 
           {/* 후기 섹션 - 완료 상태일 때만 표시 */}
           {booking.status === "completed" && (

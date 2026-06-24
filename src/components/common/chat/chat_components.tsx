@@ -22,6 +22,7 @@ export type ChatRoom = {
   id: string;
   ownerId: string | null;
   sitterId: string | null;
+  reservationId: string | null;
   name: string;
   initial: string;
   profileImage?: string | null;

@@ -62,6 +62,63 @@ export type Database = {
           },
         ]
       }
+      care_records: {
+        Row: {
+          content: string
+          created_at: string
+          fields: Json
+          id: string
+          image_urls: string[]
+          reservation_id: string
+          service_type: string | null
+          sitter_id: string
+          status_text: string
+          title: string
+          type: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          fields?: Json
+          id?: string
+          image_urls?: string[]
+          reservation_id: string
+          service_type?: string | null
+          sitter_id: string
+          status_text: string
+          title: string
+          type: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          fields?: Json
+          id?: string
+          image_urls?: string[]
+          reservation_id?: string
+          service_type?: string | null
+          sitter_id?: string
+          status_text?: string
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "care_records_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: false
+            referencedRelation: "reservations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "care_records_sitter_id_fkey"
+            columns: ["sitter_id"]
+            isOneToOne: false
+            referencedRelation: "sitters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_rooms: {
         Row: {
           application_id: string | null
@@ -458,6 +515,7 @@ export type Database = {
           handled_at: string | null
           handled_by: string | null
           id: string
+          image_urls: string[] | null
           reason: string
           reporter_id: string
           status: string
@@ -472,6 +530,7 @@ export type Database = {
           handled_at?: string | null
           handled_by?: string | null
           id?: string
+          image_urls?: string[] | null
           reason: string
           reporter_id: string
           status?: string
@@ -486,6 +545,7 @@ export type Database = {
           handled_at?: string | null
           handled_by?: string | null
           id?: string
+          image_urls?: string[] | null
           reason?: string
           reporter_id?: string
           status?: string
