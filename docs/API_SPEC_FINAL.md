@@ -24,6 +24,7 @@
 16. 신고 Reports
 17. 지도 검색 Map Search
 18. 추가금 요청 Extra Charges
+19. 돌봄 일지 Care Records
 
 ---
 
@@ -131,6 +132,12 @@ export async function signOut(): Promise<void>;
     "role": "owner | both | admin",
     "is_verified": "boolean",
     "has_sitter_profile": "boolean",
+    "location_consent": "boolean",
+    "latitude": "number | null",
+    "longitude": "number | null",
+    "address": "string | null",
+    "display_area": "string | null",
+    "suspended_until": "timestamptz | null",
     "created_at": "timestamptz"
   }
 }
@@ -201,7 +208,7 @@ export async function signOut(): Promise<void>;
     {
       "id": "uuid",
       "name": "string",
-      "animal_type": "dog | cat ",
+      "animal_type": "dog | cat | other",
       "breed": "string | null",
       "age": "number",
       "gender": "MALE | FEMALE | MALE_NEUTERED | FEMALE_NEUTERED",
@@ -227,7 +234,7 @@ export async function signOut(): Promise<void>;
 ```json
 {
   "name": "string (1~20자)",
-  "animal_type": "dog | cat",
+  "animal_type": "dog | cat | other",
   "breed": "string | null",
   "age": "number (0~240 개월)",
   "gender": "MALE | FEMALE | MALE_NEUTERED | FEMALE_NEUTERED",
@@ -379,6 +386,12 @@ PostGIS 기반 반경 검색 처리
     "rating": "number",
     "status": "pending | approved | rejected",
     "is_verified": "boolean",
+    "service_radius_km": "number | null",
+    "display_area": "string | null",
+    "request_type": ["visit | foster | walk | hotel"],
+    "available_animals": ["small_dog | medium_dog | large_dog | cat"],
+    "certificate_urls": ["string"],
+    "activity_photo_urls": ["string"],
     "services": ["Service"],
     "review_count": "number"
   }
@@ -406,6 +419,12 @@ PostGIS 기반 반경 검색 처리
   "latitude": "number",
   "longitude": "number",
   "base_price": "number (≥0)",
+  "service_radius_km": "number | null",
+  "display_area": "string | null",
+  "request_type": ["visit | foster | walk | hotel"],
+  "available_animals": ["small_dog | medium_dog | large_dog | cat"],
+  "certificate_urls": ["string"],
+  "activity_photo_urls": ["string"],
   "services": [
     {
       "service_type": "walk | care | hotel | pickup",
@@ -762,11 +781,14 @@ PostGIS 기반 반경 검색 처리
         "total_price": "number",
         "status": "pending | accepted | paid | in_progress | completed | canceled",
         "memo": "string | null",
+        "application_id": "uuid | null",
         "pets": ["Pet"],
         "accepted_at": "timestamptz | null",
         "paid_at": "timestamptz | null",
+        "started_at": "timestamptz | null",
         "completed_at": "timestamptz | null",
-        "canceled_at": "timestamptz | null"
+        "canceled_at": "timestamptz | null",
+        "cancel_reason": "string | null"
       }
     ],
     "next_cursor": "uuid | null"
@@ -857,7 +879,7 @@ PostGIS 기반 반경 검색 처리
 
 1. 해당 `reservation_id`에 `status = 'paid'` 결제 존재 시 `409` 반환
 2. `payments` 테이블에 `status = 'ready'` 레코드 생성
-3. `fee_rate = 0.05` 적용, `platform_fee` / `settle_amount` 계산 후 저장
+3. `fee_rate = 0.10` 적용, `platform_fee` / `settle_amount` 계산 후 저장
 4. PortOne 결제 요청용 `payment_id` 반환
 
 #### 응답 201
@@ -1099,7 +1121,11 @@ API Route는 초기 데이터 로드용으로 사용한다.
       "other_user_full_name": "string",
       "other_user_profile_image": "string | null",
       "unread_count": "number",
-      "reservation_id": "uuid | null"
+      "reservation_id": "uuid | null",
+      "last_message": "string | null",
+      "last_message_at": "timestamptz | null",
+      "owner_left": "boolean",
+      "sitter_left": "boolean"
     }
   ]
 }
@@ -1349,6 +1375,80 @@ const notificationType = z.enum([
 ]);
 ```
 
+# 돌봄 일지 API 명세서
+
+> `care_records` 테이블 기반. 시터가 돌봄 진행 중 보호자에게 상태를 공유하는 일지 기능.
+
+---
+
+## 19. 돌봄 일지 Care Records
+
+### GET /api/reservations/[id]/care-records
+
+특정 예약의 돌봄 일지 목록 조회
+
+- 방식: API Route
+- 인증: 필요
+- 권한: 해당 예약의 보호자 또는 시터
+
+#### 응답 200
+
+```json
+{
+  "data": [
+    {
+      "id": "uuid",
+      "reservation_id": "uuid",
+      "sitter_id": "uuid",
+      "type": "string",
+      "service_type": "string | null",
+      "title": "string",
+      "status_text": "string",
+      "content": "string",
+      "fields": "object",
+      "image_urls": ["string"],
+      "created_at": "timestamptz"
+    }
+  ]
+}
+```
+
+---
+
+### POST /api/reservations/[id]/care-records
+
+돌봄 일지 작성  
+시터가 예약 진행 중 상태를 기록한다.
+
+- 방식: Server Action
+- 인증: 필요
+- 권한: 해당 예약의 시터만 가능
+
+#### Request Body
+
+```json
+{
+  "type": "string",
+  "service_type": "string | null",
+  "title": "string",
+  "status_text": "string",
+  "content": "string",
+  "fields": "object",
+  "image_urls": ["string"]
+}
+```
+
+#### 비즈니스 로직
+
+1. `reservations.status = 'in_progress'`인 경우만 허용 → 아니면 `403` 반환
+2. `care_records` 테이블에 레코드 생성
+
+#### 응답 201
+
+생성된 care_record 객체 반환
+
+---
+
 # 추가금 요청 API 명세서
 
 > `extra_charges` 테이블 기반. 시터가 보호자에게 추가금을 요청하고 보호자가 승인/거절하는 흐름.
@@ -1504,7 +1604,7 @@ pending → approved → paid
 
 1. `extra_charges.status = 'approved'`인 경우만 허용 → 아니면 `403` 반환
 2. `payments` 테이블에 `status = 'ready'` 레코드 생성
-3. `fee_rate = 0.05` 적용, `platform_fee` / `settle_amount` 계산 후 저장
+3. `fee_rate = 0.10` 적용, `platform_fee` / `settle_amount` 계산 후 저장
 4. PortOne 결제 요청용 `payment_id` 반환
 
 #### 응답 201

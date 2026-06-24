@@ -3,15 +3,22 @@ Table users {
   id uuid [pk, note: "사용자 ID (Supabase Auth ID 연동)"]
   email text [note: "탈퇴 충돌 방지를 위해 DB 유니크 제거 -> 가입 로직 단에서 WHERE deleted_at IS NULL 조건으로 중복 검증"]
   provider text [not null, note: "oauth 제공자 (kakao / google)"]
-  
+
   full_name text [note: "본인인증 실명"]
   birthdate date [note: "본인인증 생년월일"]
   phone_number text [note: "탈퇴 충돌 방지를 위해 DB 유니크 제거 -> 가입 로직 단에서 WHERE deleted_at IS NULL 조건으로 중복 검증"]
-  gender text [note: "본인인증 성별 (MALE / FEMALE)"] 
+  gender text [note: "본인인증 성별 (MALE / FEMALE)"]
   is_verified boolean [not null, default: false, note: "본인인증 성공 여부 플래그"]
   profile_image text [note: "프로필 이미지"]
   role text [not null, default: "owner", note: "owner / both / admin"]
-  
+
+  location_consent boolean [not null, default: false, note: "위치 정보 동의 여부"]
+  latitude numeric [note: "보호자 위도"]
+  longitude numeric [note: "보호자 경도"]
+  address text [note: "보호자 주소"]
+  display_area text [note: "보호자 표시 지역명"]
+  suspended_until timestamptz [note: "계정 정지 만료 일시 (null이면 정지 없음)"]
+
   delete_reason text [note: "탈퇴 사유"]
   deleted_at timestamptz [note: "탈퇴 일시 (소프트 삭제)"]
   created_at timestamptz [default: `now()` ]
@@ -50,6 +57,8 @@ Table sitters {
   certificate_urls text[] [not null, default: `'{}'`, note: "자격증 파일 URL 배열"]
   available_animals text[] [not null, default: `'{}'`, note: "돌봄 가능 동물 배열: small_dog / medium_dog / large_dog / cat"]
   activity_photo_urls text[] [not null, default: `'{}'`, note: "활동 사진 URL 배열"]
+  service_radius_km numeric [default: 5, note: "서비스 가능 반경(km)"]
+  display_area text [note: "표시 지역명"]
   created_at timestamptz [default: `now()` ]
   updated_at timestamptz [default: `now()` ]
 }
@@ -114,6 +123,7 @@ Table reservations {
   sitter_id uuid [not null, ref: > sitters.id]
   service_id uuid [ref: > services.id]
   request_id uuid [ref: > requests.id]
+  application_id uuid [ref: > applications.id, note: "구인글 경로로 생성된 경우 연결되는 지원서 ID"]
   
   start_datetime timestamptz
   end_datetime timestamptz
@@ -192,8 +202,9 @@ Table reports {
   status text [not null, default: "pending", note: "pending / processing / completed / rejected"]
   
   handled_by uuid [ref: > users.id]
-  handled_at timestamptz 
-  admin_memo text 
+  handled_at timestamptz
+  admin_memo text
+  image_urls text[] [not null, default: `'{}'`, note: "신고 첨부 이미지 URL 배열"]
 
   created_at timestamptz [default: `now()` ]
   updated_at timestamptz [default: `now()` ]
@@ -221,6 +232,10 @@ Table chat_rooms {
   request_id uuid [ref: > requests.id]
   application_id uuid [ref: > applications.id]
   reservation_id uuid [ref: > reservations.id]
+  last_message text [note: "마지막 메시지 미리보기"]
+  last_message_at timestamptz [note: "마지막 메시지 전송 일시"]
+  owner_left boolean [not null, default: false, note: "보호자 채팅방 나감 여부"]
+  sitter_left boolean [not null, default: false, note: "시터 채팅방 나감 여부"]
   created_at timestamptz [default: `now()` ]
   updated_at timestamptz [default: `now()` ]
 
@@ -254,6 +269,20 @@ Table extra_charges {
   updated_at timestamptz [default: `now()`]
 
   note: "시터의 추가금 요청 테이블"
+}
+
+Table care_records {
+  id uuid [pk, default: `gen_random_uuid()`, note: "돌봄 일지 ID"]
+  reservation_id uuid [not null, ref: > reservations.id]
+  sitter_id uuid [not null, ref: > sitters.id]
+  type text [not null, note: "일지 유형"]
+  service_type text [note: "서비스 종류"]
+  title text [not null, note: "일지 제목"]
+  status_text text [not null, note: "상태 텍스트"]
+  content text [not null, note: "일지 내용"]
+  fields jsonb [not null, default: `'{}'`, note: "추가 데이터 (유형별 가변 필드)"]
+  image_urls text[] [not null, default: `'{}'`, note: "첨부 이미지 URL 배열"]
+  created_at timestamptz [not null, default: `now()` ]
 }
 
 // 명시적 외래키 외부 선언부
