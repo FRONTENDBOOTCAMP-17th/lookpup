@@ -13,6 +13,7 @@ interface UserProfile {
 export interface SitterData {
   id: string;
   availableArea: string;
+  displayArea: string | null;
   career: string | null;
   introduction: string | null;
   rating: number;
@@ -23,6 +24,7 @@ export interface SitterData {
   activityPhotoUrls: string[];
   latitude: number | null;
   longitude: number | null;
+  serviceRadiusKm: number | null;
 }
 
 interface UserState {

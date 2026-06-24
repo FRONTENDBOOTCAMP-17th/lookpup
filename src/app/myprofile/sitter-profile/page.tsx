@@ -153,7 +153,8 @@ export default function SitterProfilePreviewPage() {
               <KakaoMap
                 markers={[{ lat: sitter.latitude, lng: sitter.longitude, id: 1, certified: user.isVerified }]}
                 center={{ lat: sitter.latitude, lng: sitter.longitude }}
-                level={5}
+                level={sitter.serviceRadiusKm ? (sitter.serviceRadiusKm <= 2 ? 6 : sitter.serviceRadiusKm <= 5 ? 7 : 8) : 5}
+                serviceRadius={sitter.serviceRadiusKm ?? undefined}
               />
             </div>
           ) : (
@@ -161,7 +162,10 @@ export default function SitterProfilePreviewPage() {
           )}
           <p className="mt-4 text-gray-500 text-sm flex items-center gap-1">
             <MapPin size={14} className="text-orange-500 shrink-0" />
-            {sitter.availableArea}
+            {sitter.displayArea ?? sitter.availableArea}
+            {sitter.serviceRadiusKm && (
+              <span className="text-orange-400 font-medium ml-1">· 반경 {sitter.serviceRadiusKm}km</span>
+            )}
           </p>
         </div>
       )}

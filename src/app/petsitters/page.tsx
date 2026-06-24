@@ -44,6 +44,7 @@ interface Sitter {
   services: string[];
   lat: number;
   lng: number;
+  serviceRadiusKm: number | null;
 }
 
 function parseArea(area: string | null): { district: string; neighborhood: string } {
@@ -136,8 +137,10 @@ export default function PetsittersPage() {
     type SitterRow = {
       id: string;
       available_area: string | null;
+      display_area: string | null;
       latitude: number | null;
       longitude: number | null;
+      service_radius_km: number | null;
       base_price: number | null;
       rating: number | null;
       full_name: string | null;
@@ -170,6 +173,7 @@ export default function PetsittersPage() {
             services: [...new Set(serviceTypes)],
             lat: parseFloat(String(row.latitude)),
             lng: parseFloat(String(row.longitude)),
+            serviceRadiusKm: row.service_radius_km ?? null,
           };
         });
 
@@ -326,7 +330,10 @@ export default function PetsittersPage() {
         s.name.includes(searchQuery) ||
         s.district.includes(searchQuery) ||
         s.neighborhood.includes(searchQuery);
-      return matchFilter && matchSearch;
+      // 펫시터가 반경 정보를 가지고 있으면 보호자 위치가 반경 안에 있을 때만 표시
+      const matchRadius =
+        !s.serviceRadiusKm || s.distanceKm <= s.serviceRadiusKm;
+      return matchFilter && matchSearch && matchRadius;
     })
     .sort((a, b) => {
       if (sortBy === "평점순") return b.rating - a.rating;
