@@ -137,7 +137,9 @@ export default function SitterProfilePreviewPage() {
         <div className="bg-white rounded-2xl shadow-[0px_2px_12px_rgba(232,116,42,0.10)] border border-orange-100 p-6">
           <div className="text-center py-4">
             <p className="text-5xl font-bold text-orange-500 mb-2">{sitter.rating.toFixed(1)}</p>
-            <StarRow size={16} />
+            <div className="flex justify-center gap-0.5">
+              <StarRow size={16} />
+            </div>
             <p className="text-xs text-gray-400 mt-1">{sitter.reviewCount}개 리뷰</p>
           </div>
         </div>
