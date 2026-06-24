@@ -51,11 +51,15 @@ export function NotificationItem({ id, type, title, content, time, isRead, linkU
   function handleClick() {
     startTransition(async () => {
       if (!isRead) {
-        await markNotificationRead(id);
+        const result = await markNotificationRead(id);
+        if (result?.error) {
+          console.error("알림 읽음 처리 실패:", result.error.message);
+        }
       }
-      router.refresh();
       if (linkUrl) {
         router.push(linkUrl);
+      } else {
+        router.refresh();
       }
     });
   }

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { ChevronLeft, Bell } from "lucide-react";
 import Header from "@/components/layout/Header";
@@ -30,17 +31,18 @@ function formatRelativeTime(dateStr: string | null): string {
   if (diffHours < 24) return `${diffHours}시간 전`;
   const diffDays = Math.floor(diffHours / 24);
   if (diffDays < 7) return `${diffDays}일 전`;
-  return date.toLocaleDateString("ko-KR");
+  return date.toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul" });
 }
 
 function isToday(dateStr: string | null): boolean {
   if (!dateStr) return false;
-  const date = new Date(dateStr);
-  const now = new Date();
+  const toKST = (d: Date) => new Date(d.getTime() + 9 * 60 * 60 * 1000);
+  const kstDate = toKST(new Date(dateStr));
+  const kstNow = toKST(new Date());
   return (
-    date.getFullYear() === now.getFullYear() &&
-    date.getMonth() === now.getMonth() &&
-    date.getDate() === now.getDate()
+    kstDate.getFullYear() === kstNow.getFullYear() &&
+    kstDate.getMonth() === kstNow.getMonth() &&
+    kstDate.getDate() === kstNow.getDate()
   );
 }
 
@@ -49,6 +51,10 @@ export default async function NotificationsPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/auth/login");
+  }
 
   let notifications: NotificationRow[] = [];
 
@@ -69,7 +75,10 @@ export default async function NotificationsPage() {
 
   async function handleMarkAllRead() {
     "use server";
-    await markAllNotificationsRead();
+    const result = await markAllNotificationsRead();
+    if (result?.error) {
+      console.error("모두 읽음 처리 실패:", result.error.message);
+    }
     revalidatePath("/notifications");
   }
 
