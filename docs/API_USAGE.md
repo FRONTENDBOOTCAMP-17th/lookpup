@@ -91,7 +91,7 @@ import { createPet } from "@/app/actions/pets";
 
 const result = await createPet({
   name: "초코",
-  animal_type: "dog",
+  animal_type: "dog",   // dog | cat | other
   age: 24,
   gender: "MALE",
   weight: 5.2,
@@ -141,6 +141,8 @@ const result = await createSitter({
   latitude: 37.5665,
   longitude: 126.9780,
   base_price: 30000,
+  service_radius_km: 5,          // 서비스 가능 반경(km), 기본값 5
+  display_area: "서울 마포구",   // 표시 지역명
   // 제공 서비스 (복수 선택)
   // visit: 방문돌봄 / foster: 위탁돌봄 / walk: 산책 / hotel: 펫호텔
   request_type: ["visit", "walk"],
@@ -452,6 +454,8 @@ const { data } = await res.json();
 // data[].other_user_full_name, data[].unread_count, data[].reservation_id
 // data[].last_message      — 마지막 메시지 미리보기 (null이면 아직 메시지 없음)
 // data[].last_message_at   — 마지막 메시지 전송 일시
+// data[].owner_left        — 보호자 채팅방 나감 여부 (boolean)
+// data[].sitter_left       — 시터 채팅방 나감 여부 (boolean)
 ```
 
 ### 채팅방 생성 또는 입장
