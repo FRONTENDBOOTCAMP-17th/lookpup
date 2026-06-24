@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
   const { data: payment } = await db
     .from("payments")
     .select("id, reservation_id")
-    .eq("payment_id", paymentId)
+    .eq("id", paymentId)
     .maybeSingle();
 
   // 알 수 없는 결제 ID면 200 반환 (재전송 방지)

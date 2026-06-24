@@ -136,7 +136,7 @@ export async function updateApplication(
     .from("applications")
     .select(
       `id, sitter_id, request_id, proposed_price, status,
-       requests!inner(id, owner_id, start_datetime, end_datetime, budget, status)`,
+       requests!inner(id, owner_id, start_datetime, end_datetime, budget, status, pet_id)`,
     )
     .eq("id", id)
     .single();
@@ -209,18 +209,13 @@ export async function updateApplication(
       };
     }
 
-    const { data: requestPets } = await db
-      .from("request_pets")
-      .select("pet_id")
-      .eq("request_id", requestRow.id);
-
-    if (requestPets && requestPets.length > 0) {
-      await db.from("reservation_items").insert(
-        requestPets.map(({ pet_id }) => ({
-          reservation_id: reservation.id,
-          pet_id,
-        })),
-      );
+    type RequestRow = { pet_id?: string | null };
+    const pet_id = (requestRow as RequestRow).pet_id;
+    if (pet_id) {
+      await db.from("reservation_items").insert({
+        reservation_id: reservation.id,
+        pet_id,
+      });
     }
 
     const { data: existingRoom } = await db

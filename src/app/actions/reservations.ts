@@ -2,6 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import type { TablesUpdate } from "@/types/database.types";
 
 const FEE_RATE = 0.05;
 
@@ -236,16 +237,11 @@ export async function updateReservation(
   }
 
   const now = new Date().toISOString();
-  const timestamps: Record<string, string> = {
-    accepted: "accepted_at",
-    completed: "completed_at",
-    canceled: "canceled_at",
-  };
 
-  const updatePayload: Record<string, unknown> = { status: input.status };
-  if (timestamps[input.status]) {
-    updatePayload[timestamps[input.status]] = now;
-  }
+  const updatePayload: TablesUpdate<"reservations"> = { status: input.status };
+  if (input.status === "accepted") updatePayload.accepted_at = now;
+  else if (input.status === "completed") updatePayload.completed_at = now;
+  else if (input.status === "canceled") updatePayload.canceled_at = now;
   if (input.status === "canceled" && input.cancel_reason) {
     updatePayload.cancel_reason = input.cancel_reason;
   }
@@ -298,8 +294,8 @@ export async function getMyReservations() {
   const pad = (n: number) => String(n).padStart(2, "0");
 
   const bookings = (data ?? []).map((r) => {
-    const start = new Date(r.start_datetime);
-    const end = new Date(r.end_datetime);
+    const start = new Date(r.start_datetime ?? "");
+    const end = new Date(r.end_datetime ?? "");
     const created = new Date(r.created_at ?? "");
     const dateStr = `${created.getFullYear()}${pad(created.getMonth() + 1)}${pad(created.getDate())}`;
 
@@ -311,7 +307,7 @@ export async function getMyReservations() {
     const service = r.services as { title: string } | null;
     const items = (r.reservation_items as ItemRow[]) ?? [];
     const firstPet = items[0]?.pets;
-    const reviews = (r.reviews as { id: string }[]) ?? [];
+    const reviews = (r.reviews as unknown as { id: string }[] | null) ?? [];
 
     return {
       id: r.id,
@@ -366,8 +362,8 @@ export async function getReservationById(id: string) {
   if (error || !r) return { error: { code: "NOT_FOUND", message: "예약 정보를 찾을 수 없습니다." } };
 
   const pad = (n: number) => String(n).padStart(2, "0");
-  const start = new Date(r.start_datetime);
-  const end = new Date(r.end_datetime);
+  const start = new Date(r.start_datetime ?? "");
+  const end = new Date(r.end_datetime ?? "");
   const created = new Date(r.created_at ?? "");
   const dateStr = `${created.getFullYear()}${pad(created.getMonth() + 1)}${pad(created.getDate())}`;
 
@@ -378,7 +374,7 @@ export async function getReservationById(id: string) {
   const service = r.services as { title: string } | null;
   const items = (r.reservation_items as { pets: PetRow }[]) ?? [];
   const firstPet = items[0]?.pets;
-  const reviews = (r.reviews as { id: string }[]) ?? [];
+  const reviews = (r.reviews as unknown as { id: string }[] | null) ?? [];
 
   const { count: reviewCount } = await db
     .from("reviews")

@@ -27,7 +27,7 @@ export interface MessageApiItem {
   id: string;
   sender_id: string;
   content: string;
-  created_at: string;
+  created_at: string | null;
 }
 
 function toMessage(m: MessageApiItem, userId: string): Message {
@@ -44,14 +44,14 @@ function toMessage(m: MessageApiItem, userId: string): Message {
       from: m.sender_id === userId ? "me" : "other",
       text: "",
       imageUrl: m.content.slice(IMAGE_MSG_PREFIX.length),
-      time: formatTime(m.created_at),
+      time: m.created_at ? formatTime(m.created_at) : "",
     };
   }
   return {
     id: m.id,
     from: m.sender_id === userId ? "me" : "other",
     text: m.content,
-    time: formatTime(m.created_at),
+    time: m.created_at ? formatTime(m.created_at) : "",
   };
 }
 

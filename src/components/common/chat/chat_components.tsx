@@ -20,7 +20,9 @@ import SitterProfileCard, {
 // 1:1 채팅의 각 목록
 export type ChatRoom = {
   id: string;
+  ownerId: string | null;
   sitterId: string | null;
+  reservationId: string | null;
   name: string;
   initial: string;
   profileImage?: string | null;
