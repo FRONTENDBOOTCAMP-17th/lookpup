@@ -1,6 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  type ReactNode,
+} from "react";
 import Link from "next/link";
 import Script from "next/script";
 import { useRouter } from "next/navigation";
@@ -307,7 +313,9 @@ export default function MyProfilePage() {
   const [ownerLocationData, setOwnerLocationData] =
     useState<OwnerLocationData | null>(() => {
       if (typeof window === "undefined") return null;
-      return parseStoredLocation(localStorage.getItem(OWNER_LOCATION_STORAGE_KEY));
+      return parseStoredLocation(
+        localStorage.getItem(OWNER_LOCATION_STORAGE_KEY),
+      );
     });
 
   // 마운트 시 DB 위치 불러오기 (localStorage 없으면 DB 폴백)
@@ -328,10 +336,14 @@ export default function MyProfilePage() {
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   // pendingLocation: 드롭다운에서 선택된 좌표 확정 주소 (자유 텍스트 저장 불가)
-  const [pendingLocation, setPendingLocation] =
-    useState<Omit<OwnerLocationData, "detailAddress"> | null>(null);
+  const [pendingLocation, setPendingLocation] = useState<Omit<
+    OwnerLocationData,
+    "detailAddress"
+  > | null>(null);
   const [locationSearching, setLocationSearching] = useState(false);
-  const [locationModalError, setLocationModalError] = useState<string | null>(null);
+  const [locationModalError, setLocationModalError] = useState<string | null>(
+    null,
+  );
   const suggestTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const miniMapContainerRef = useRef<HTMLDivElement>(null);
   const miniMapRef = useRef<any>(null);
@@ -354,10 +366,13 @@ export default function MyProfilePage() {
     const coords = new window.kakao.maps.LatLng(lat, lng);
 
     if (!miniMapRef.current) {
-      miniMapRef.current = new window.kakao.maps.Map(miniMapContainerRef.current, {
-        center: coords,
-        level: 4,
-      });
+      miniMapRef.current = new window.kakao.maps.Map(
+        miniMapContainerRef.current,
+        {
+          center: coords,
+          level: 4,
+        },
+      );
     } else {
       miniMapRef.current.setCenter(coords);
     }
@@ -374,7 +389,9 @@ export default function MyProfilePage() {
     if (!pendingLocation) return;
     // SDK가 이미 로드된 경우
     if (window.kakao?.maps) {
-      window.kakao.maps.load(() => updateMiniMap(pendingLocation.lat, pendingLocation.lng));
+      window.kakao.maps.load(() =>
+        updateMiniMap(pendingLocation.lat, pendingLocation.lng),
+      );
     }
   }, [pendingLocation, updateMiniMap]);
 
@@ -415,7 +432,12 @@ export default function MyProfilePage() {
     const dong = region
       ? [region.sido, region.sigungu, region.dong].filter(Boolean).join(" ")
       : s.addressName;
-    setPendingLocation({ address: s.addressName, lat: s.lat, lng: s.lng, dong });
+    setPendingLocation({
+      address: s.addressName,
+      lat: s.lat,
+      lng: s.lng,
+      dong,
+    });
   };
 
   // 현재 위치 사용 (보조) — 주소 변환 실패 시 저장하지 않음
@@ -435,10 +457,14 @@ export default function MyProfilePage() {
         ]);
         setLocationSearching(false);
         if (!region || !address) {
-          setLocationModalError("주소를 확인하지 못했어요. 직접 주소를 검색해주세요.");
+          setLocationModalError(
+            "주소를 확인하지 못했어요. 직접 주소를 검색해주세요.",
+          );
           return;
         }
-        const dong = [region.sido, region.sigungu, region.dong].filter(Boolean).join(" ");
+        const dong = [region.sido, region.sigungu, region.dong]
+          .filter(Boolean)
+          .join(" ");
         setLocationInput(address);
         setPendingLocation({ address, lat, lng, dong });
       },
@@ -456,7 +482,10 @@ export default function MyProfilePage() {
       setLocationModalError("주소 검색 후 목록에서 주소를 선택해주세요.");
       return;
     }
-    const data: OwnerLocationData = { ...pendingLocation, detailAddress: detailInput.trim() };
+    const data: OwnerLocationData = {
+      ...pendingLocation,
+      detailAddress: detailInput.trim(),
+    };
     setOwnerLocationData(data);
     localStorage.setItem(OWNER_LOCATION_STORAGE_KEY, JSON.stringify(data));
     updateOwnerLocation({ address: pendingLocation.address, lat: pendingLocation.lat, lng: pendingLocation.lng, dong: pendingLocation.dong });
@@ -472,7 +501,12 @@ export default function MyProfilePage() {
     setDetailInput(ownerLocationData?.detailAddress ?? "");
     setPendingLocation(
       ownerLocationData
-        ? { address: ownerLocationData.address, lat: ownerLocationData.lat, lng: ownerLocationData.lng, dong: ownerLocationData.dong }
+        ? {
+            address: ownerLocationData.address,
+            lat: ownerLocationData.lat,
+            lng: ownerLocationData.lng,
+            dong: ownerLocationData.dong,
+          }
         : null,
     );
     setLocationModalError(null);
@@ -482,7 +516,9 @@ export default function MyProfilePage() {
   };
 
   const ownerLocationAction = (
-    <IconHoverAction label={ownerLocationData ? "위치 수정하기" : "위치 등록하기"}>
+    <IconHoverAction
+      label={ownerLocationData ? "위치 수정하기" : "위치 등록하기"}
+    >
       <button
         type="button"
         onClick={handleOpenLocationModal}
@@ -519,7 +555,9 @@ export default function MyProfilePage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-stone-900 text-lg font-semibold">위치 수정</h2>
+              <h2 className="text-stone-900 text-lg font-semibold">
+                위치 수정
+              </h2>
               <button
                 type="button"
                 onClick={() => setShowLocationEditModal(false)}
@@ -580,10 +618,17 @@ export default function MyProfilePage() {
                   className="w-full h-36 rounded-xl overflow-hidden border border-orange-100"
                 />
                 <div className="flex items-start gap-1.5 mt-1.5 px-1">
-                  <MapPin size={13} className="text-orange-400 shrink-0 mt-0.5" />
+                  <MapPin
+                    size={13}
+                    className="text-orange-400 shrink-0 mt-0.5"
+                  />
                   <div>
-                    <p className="text-sm font-medium text-stone-900">{pendingLocation.dong}</p>
-                    <p className="text-xs text-gray-400">{pendingLocation.address}</p>
+                    <p className="text-sm font-medium text-stone-900">
+                      {pendingLocation.dong}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {pendingLocation.address}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -618,7 +663,8 @@ export default function MyProfilePage() {
             )}
 
             <p className="text-xs text-gray-400 mb-4">
-              프로필에는 &quot;동&quot; 단위까지만 표시됩니다. 좌표는 거리 계산에만 사용돼요.
+              프로필에는 &quot;동&quot; 단위까지만 표시됩니다. 좌표는 거리
+              계산에만 사용돼요.
             </p>
 
             <div className="flex gap-3">
@@ -890,7 +936,7 @@ export default function MyProfilePage() {
 
         {/* 펫시터 등록 CTA */}
         {userType === "owner" && (
-          <Link href="/register/petsitter">
+          <Link href="/sitter-register">
             <div className="bg-gradient-to-r from-orange-500 to-stone-600 rounded-2xl p-5 mb-5">
               <div className="flex items-center justify-between">
                 <div>
