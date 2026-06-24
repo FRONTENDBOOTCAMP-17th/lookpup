@@ -13,7 +13,7 @@ export interface LocationValue {
   lat: number;
   lng: number;
   displayArea: string; // 동 단위 공개용
-  radiusKm: number;
+  radiusKm: number | null; // null = 활동 제한 없음 설정
 }
 
 interface LocationPickerWithMapProps {
@@ -35,7 +35,7 @@ export default function LocationPickerWithMap({
   const [query, setQuery] = useState(value?.address ?? "");
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [radius, setRadius] = useState(value?.radiusKm ?? 3);
+  const [radius, setRadius] = useState<number | null>(value?.radiusKm ?? 3);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const selectedRef = useRef<{ lat: number; lng: number } | null>(
     value ? { lat: value.lat, lng: value.lng } : null,
@@ -87,7 +87,11 @@ export default function LocationPickerWithMap({
     return addr;
   }
 
-  function placeMarkerAndCircle(lat: number, lng: number, radiusKm: number) {
+  function placeMarkerAndCircle(
+    lat: number,
+    lng: number,
+    radiusKm: number | null,
+  ) {
     const map = mapRef.current;
     if (!map) return;
 
@@ -96,22 +100,35 @@ export default function LocationPickerWithMap({
     if (markerRef.current) markerRef.current.setMap(null);
     markerRef.current = new window.kakao.maps.Marker({ map, position });
 
-    if (circleRef.current) circleRef.current.setMap(null);
-    circleRef.current = new window.kakao.maps.Circle({
-      center: position,
-      radius: radiusKm * 1000,
-      strokeWeight: 2,
-      strokeColor: "#f97316",
-      strokeOpacity: 0.7,
-      fillColor: "#f97316",
-      fillOpacity: 0.08,
-    });
-    circleRef.current.setMap(map);
+    if (circleRef.current) {
+      circleRef.current.setMap(null);
+      circleRef.current = null;
+    }
+
+    if (radiusKm != null) {
+      circleRef.current = new window.kakao.maps.Circle({
+        center: position,
+        radius: radiusKm * 1000,
+        strokeWeight: 2,
+        strokeColor: "#f97316",
+        strokeOpacity: 0.7,
+        fillColor: "#f97316",
+        fillOpacity: 0.08,
+      });
+      circleRef.current.setMap(map);
+    }
 
     map.setCenter(position);
-    // 반경에 따라 지도 레벨 자동 조정
     const level =
-      radiusKm <= 2 ? 6 : radiusKm <= 5 ? 7 : radiusKm <= 10 ? 8 : 9;
+      radiusKm == null
+        ? 7
+        : radiusKm <= 2
+          ? 6
+          : radiusKm <= 5
+            ? 7
+            : radiusKm <= 10
+              ? 8
+              : 9;
     map.setLevel(level);
   }
 
@@ -130,7 +147,7 @@ export default function LocationPickerWithMap({
     });
   }
 
-  function handleRadiusChange(newRadius: number) {
+  function handleRadiusChange(newRadius: number | null) {
     setRadius(newRadius);
     if (selectedRef.current) {
       placeMarkerAndCircle(
@@ -239,8 +256,35 @@ export default function LocationPickerWithMap({
         <label className="block text-sm font-medium text-stone-900 mb-2">
           활동 반경
         </label>
-        <div className="flex items-center gap-3">
-          <div className="relative flex-1">
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          <button
+            type="button"
+            onClick={() => handleRadiusChange(null)}
+            className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+              radius === null
+                ? "bg-[#e8742a] text-white"
+                : "bg-orange-50 text-orange-500 hover:bg-orange-100"
+            }`}
+          >
+            상관없음
+          </button>
+          {[1, 3, 5, 10].map((km) => (
+            <button
+              key={km}
+              type="button"
+              onClick={() => handleRadiusChange(km)}
+              className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                radius === km
+                  ? "bg-[#e8742a] text-white"
+                  : "bg-orange-50 text-orange-500 hover:bg-orange-100"
+              }`}
+            >
+              {km}km
+            </button>
+          ))}
+        </div>
+        {radius !== null && (
+          <div className="relative">
             <input
               type="number"
               min={1}
@@ -253,25 +297,11 @@ export default function LocationPickerWithMap({
               km
             </span>
           </div>
-          <div className="flex gap-1.5">
-            {[1, 3, 5, 10].map((km) => (
-              <button
-                key={km}
-                type="button"
-                onClick={() => handleRadiusChange(km)}
-                className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-                  radius === km
-                    ? "bg-[#e8742a] text-white"
-                    : "bg-orange-50 text-orange-500 hover:bg-orange-100"
-                }`}
-              >
-                {km}km
-              </button>
-            ))}
-          </div>
-        </div>
+        )}
         <p className="text-xs text-gray-400 mt-1.5">
-          보호자가 이 반경 안에 있을 때만 목록에 표시됩니다
+          {radius === null
+            ? "위치에 상관없이 모든 보호자에게 표시됩니다"
+            : "보호자가 이 반경 안에 있을 때만 목록에 표시됩니다"}
         </p>
       </div>
 
@@ -296,7 +326,10 @@ export default function LocationPickerWithMap({
         {value && (
           <p className="mt-2 text-xs text-gray-500 flex items-center gap-1">
             <MapPin size={12} className="text-orange-400 shrink-0" />
-            {value.displayArea} 기준 {value.radiusKm}km 반경
+            {value.displayArea}
+            {value.radiusKm != null
+              ? ` 기준 ${value.radiusKm}km 반경`
+              : " · 반경 제한 없음"}
           </p>
         )}
       </div>
