@@ -9,7 +9,7 @@ import StatGrid from "@/components/ui/StatGrid";
 import { useUserStore } from "@/store/userStore";
 import { updateSitterProfile, getMySitterProfile, getSitterServices } from "@/app/actions/sitters";
 import { uploadToCloudinary } from "@/utils/cloudinary";
-import { searchAddressToCoord } from "@/utils/kakaoGeocode";
+import LocationPickerWithMap, { type LocationValue } from "@/components/LocationPickerWithMap";
 
 const SERVICE_OPTIONS = ["방문돌봄", "위탁돌봄", "산책", "호텔"];
 
@@ -55,14 +55,12 @@ interface ServiceItem {
 
 const EMPTY_FORM = {
   fullName: "",
-  availableArea: "",
   bio: "",
   career: "",
   completedCount: 0,
   services: [] as string[],
   pets: [] as string[],
   serviceList: [] as ServiceItem[],
-  radius: "3",
   photos: [null, null, null, null, null, null] as (string | null)[],
 };
 
@@ -159,6 +157,7 @@ export default function SitterEditPage() {
   const sitterIdRef = useRef<string | null>(null);
 
   const [form, setForm] = useState(EMPTY_FORM);
+  const [locationValue, setLocationValue] = useState<LocationValue | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("소개");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -183,9 +182,19 @@ export default function SitterEditPage() {
       if (i < 6) photoSlots[i] = url;
     });
 
+    // 기존 위치 데이터가 있으면 locationValue 초기화
+    if (sitter.latitude && sitter.longitude && sitter.availableArea) {
+      setLocationValue({
+        address: sitter.availableArea,
+        lat: sitter.latitude,
+        lng: sitter.longitude,
+        displayArea: sitter.displayArea ?? sitter.availableArea,
+        radiusKm: sitter.serviceRadiusKm ?? 5,
+      });
+    }
+
     const baseValues = {
       fullName: user.fullName,
-      availableArea: sitter.availableArea,
       bio: sitter.introduction ?? "",
       career: sitter.career ?? "",
       completedCount: sitter.reviewCount,
@@ -325,15 +334,12 @@ export default function SitterEditPage() {
       }
     }
 
-    // 주소가 변경된 경우 새 좌표로 변환
-    const geocoded = form.availableArea
-      ? await searchAddressToCoord(form.availableArea)
-      : null;
-
     const result = await updateSitterProfile({
-      availableArea: form.availableArea,
-      latitude: geocoded?.lat ?? null,
-      longitude: geocoded?.lng ?? null,
+      availableArea: locationValue?.address ?? "",
+      displayArea: locationValue?.displayArea ?? null,
+      latitude: locationValue?.lat ?? null,
+      longitude: locationValue?.lng ?? null,
+      serviceRadiusKm: locationValue?.radiusKm ?? null,
       introduction: form.bio,
       career: form.career,
       availableAnimals: form.pets.map((p) => LABEL_TO_ANIMAL[p] ?? p),
@@ -516,50 +522,7 @@ export default function SitterEditPage() {
       {activeTab === "위치" && (
         <div className={CARD}>
           <h3 className="font-bold text-stone-900 mb-4">활동 지역</h3>
-          <div className="h-64 bg-linear-to-br from-gray-100 to-gray-200 rounded-xl flex flex-col items-center justify-center gap-2 mb-4">
-            <MapPin size={28} className="text-gray-400" />
-            <span className="text-sm text-gray-500">지도 미리보기</span>
-          </div>
-          <div className="flex gap-3 items-end">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-stone-900 mb-2">
-                기준 주소
-              </label>
-              <div className="relative">
-                <MapPin
-                  size={16}
-                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-                />
-                <input
-                  value={form.availableArea}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, availableArea: e.target.value }))
-                  }
-                  className="w-full h-12 pl-9 pr-4 bg-white border border-orange-100 rounded-[10px] text-[15px] text-stone-900 placeholder:text-gray-400 outline-none focus:border-orange-300 transition-colors"
-                />
-              </div>
-            </div>
-            <div className="w-28">
-              <label className="block text-sm font-medium text-stone-900 mb-2">
-                반경 (km)
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  min={1}
-                  max={30}
-                  value={form.radius}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, radius: e.target.value }))
-                  }
-                  className="w-full h-12 pl-4 pr-9 bg-white border border-orange-100 rounded-[10px] text-[15px] text-stone-900 outline-none focus:border-orange-300"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 pointer-events-none">
-                  km
-                </span>
-              </div>
-            </div>
-          </div>
+          <LocationPickerWithMap value={locationValue} onChange={setLocationValue} />
         </div>
       )}
     </>
@@ -623,14 +586,12 @@ export default function SitterEditPage() {
             />
             <div className="flex items-center gap-1 text-white/80">
               <MapPin size={11} aria-hidden="true" />
-              <input
-                value={form.availableArea}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, availableArea: e.target.value }))
-                }
-                className="text-sm bg-transparent border-b border-white/30 outline-none flex-1 placeholder:text-white/50"
-                placeholder="활동 지역"
-              />
+              <span
+                className="text-sm flex-1 truncate"
+                onClick={() => setActiveTab("위치")}
+              >
+                {locationValue?.displayArea ?? "위치 탭에서 설정하세요"}
+              </span>
             </div>
           </div>
         </div>
@@ -708,18 +669,17 @@ export default function SitterEditPage() {
                 className="text-2xl font-bold text-stone-900 text-center border-b-2 border-orange-100 outline-none bg-transparent w-full mb-2 pb-1 opacity-60 cursor-not-allowed"
               />
 
-              {/* 위치 편집 */}
-              <div className="flex items-center gap-1 text-gray-500 mb-4 w-full justify-center">
+              {/* 위치 표시 (위치 탭에서 편집) */}
+              <button
+                type="button"
+                onClick={() => setActiveTab("위치")}
+                className="flex items-center gap-1 text-gray-500 mb-4 w-full justify-center hover:text-orange-500 transition-colors"
+              >
                 <MapPin size={14} className="shrink-0 text-orange-400" />
-                <input
-                  value={form.availableArea}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, availableArea: e.target.value }))
-                  }
-                  placeholder="활동 지역"
-                  className="text-sm text-center border-b border-orange-100 focus:border-orange-400 outline-none bg-transparent flex-1 transition-colors"
-                />
-              </div>
+                <span className="text-sm truncate">
+                  {locationValue?.displayArea ?? "위치 탭에서 설정"}
+                </span>
+              </button>
 
               {/* 경력 / 완료 통계 */}
               <StatGrid stats={stats} className="w-full mb-4" />
