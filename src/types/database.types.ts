@@ -906,12 +906,14 @@ export type Database = {
           career: string | null
           certificate_urls: string[]
           created_at: string | null
+          display_area: string | null
           id: string
           introduction: string | null
           latitude: number | null
           longitude: number | null
           rating: number | null
           request_type: string[]
+          service_radius_km: number | null
           status: string
           title: string | null
           updated_at: string | null
@@ -925,12 +927,14 @@ export type Database = {
           career?: string | null
           certificate_urls?: string[]
           created_at?: string | null
+          display_area?: string | null
           id?: string
           introduction?: string | null
           latitude?: number | null
           longitude?: number | null
           rating?: number | null
           request_type?: string[]
+          service_radius_km?: number | null
           status?: string
           title?: string | null
           updated_at?: string | null
@@ -944,12 +948,14 @@ export type Database = {
           career?: string | null
           certificate_urls?: string[]
           created_at?: string | null
+          display_area?: string | null
           id?: string
           introduction?: string | null
           latitude?: number | null
           longitude?: number | null
           rating?: number | null
           request_type?: string[]
+          service_radius_km?: number | null
           status?: string
           title?: string | null
           updated_at?: string | null
@@ -967,16 +973,20 @@ export type Database = {
       }
       users: {
         Row: {
+          address: string | null
           birthdate: string | null
           created_at: string | null
           delete_reason: string | null
           deleted_at: string | null
+          display_area: string | null
           email: string | null
           full_name: string | null
           gender: string | null
           id: string
           is_verified: boolean
+          latitude: number | null
           location_consent: boolean
+          longitude: number | null
           phone_number: string | null
           profile_image: string | null
           provider: string
@@ -984,16 +994,20 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          address?: string | null
           birthdate?: string | null
           created_at?: string | null
           delete_reason?: string | null
           deleted_at?: string | null
+          display_area?: string | null
           email?: string | null
           full_name?: string | null
           gender?: string | null
           id: string
           is_verified?: boolean
+          latitude?: number | null
           location_consent?: boolean
+          longitude?: number | null
           phone_number?: string | null
           profile_image?: string | null
           provider: string
@@ -1001,16 +1015,20 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          address?: string | null
           birthdate?: string | null
           created_at?: string | null
           delete_reason?: string | null
           deleted_at?: string | null
+          display_area?: string | null
           email?: string | null
           full_name?: string | null
           gender?: string | null
           id?: string
           is_verified?: boolean
+          latitude?: number | null
           location_consent?: boolean
+          longitude?: number | null
           phone_number?: string | null
           profile_image?: string | null
           provider?: string
@@ -1034,12 +1052,21 @@ export type Database = {
         Returns: {
           available_area: string
           base_price: number
+          display_area: string
           full_name: string
           id: string
           latitude: number
           longitude: number
           rating: number
+          service_radius_km: number
           service_types: string[]
+        }[]
+      }
+      get_unread_counts: {
+        Args: { my_id: string; room_ids: string[] }
+        Returns: {
+          count: number
+          room_id: string
         }[]
       }
     }
