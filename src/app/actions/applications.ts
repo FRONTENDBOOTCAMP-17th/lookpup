@@ -2,6 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { createNotification } from "@/lib/notificationHelpers";
 
 async function getAuthUser() {
   const supabase = await createClient();
@@ -117,6 +118,21 @@ export async function createApplication(
       request_id: requestId,
     });
   }
+
+  const { data: sitterUser } = await db
+    .from("users")
+    .select("full_name")
+    .eq("id", user.id)
+    .single();
+  const sitterName = sitterUser?.full_name ?? "펫시터";
+
+  await createNotification({
+    userId: requestRow.owner_id,
+    type: "application",
+    title: "새로운 지원자가 도착했어요",
+    content: `${sitterName}님이 구인글에 지원했습니다.`,
+    linkUrl: `/board/${requestId}`,
+  });
 
   return { data };
 }
@@ -250,6 +266,43 @@ export async function updateApplication(
 
   if (error) {
     return { error: { code: "INTERNAL_ERROR", message: error.message } };
+  }
+
+  if (input.status === "selected" || input.status === "rejected") {
+    const { data: applicantSitter } = await db
+      .from("sitters")
+      .select("user_id")
+      .eq("id", application.sitter_id)
+      .single();
+
+    if (applicantSitter?.user_id) {
+      const { data: chatRoom } = await db
+        .from("chat_rooms")
+        .select("id")
+        .eq("request_id", requestRow.id)
+        .eq("sitter_id", application.sitter_id)
+        .maybeSingle();
+      const chatLink = chatRoom ? `/chat?roomId=${chatRoom.id}` : undefined;
+
+      if (input.status === "selected") {
+        await createNotification({
+          userId: applicantSitter.user_id,
+          type: "application_selected",
+          title: "지원이 수락되었어요",
+          content: "구인글 작성자의 예약이 완료될 때까지 기다려주세요.",
+          linkUrl: chatLink,
+        });
+      } else {
+        await createNotification({
+          userId: applicantSitter.user_id,
+          type: "application_rejected",
+          title: "지원이 거절되었습니다",
+          content:
+            "아쉽지만 다음 기회를 기다려봐요. 다른 구인글도 확인해 보세요.",
+          linkUrl: chatLink,
+        });
+      }
+    }
   }
 
   return { data };

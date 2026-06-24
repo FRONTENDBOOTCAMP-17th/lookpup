@@ -1024,6 +1024,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_unread_counts: {
+        Args: { room_ids: string[]; my_id: string }
+        Returns: { room_id: string; count: number }[]
+      }
       get_petsitter_detail: { Args: { p_sitter_id: string }; Returns: Json }
       get_petsitters_for_map: {
         Args: never

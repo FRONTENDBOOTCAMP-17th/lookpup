@@ -83,16 +83,12 @@ export async function GET() {
   }
 
   const roomIds = rooms.map((r) => r.id);
-  const { data: unreadMessages } = await db
-    .from("messages")
-    .select("room_id")
-    .in("room_id", roomIds)
-    .neq("sender_id", user.id)
-    .eq("is_read", false);
+  const { data: unreadData } = await db
+    .rpc("get_unread_counts", { room_ids: roomIds, my_id: user.id });
 
   const unreadCounts: Record<string, number> = {};
-  (unreadMessages ?? []).forEach((msg) => {
-    unreadCounts[msg.room_id] = (unreadCounts[msg.room_id] ?? 0) + 1;
+  (unreadData ?? []).forEach(({ room_id, count }) => {
+    unreadCounts[room_id] = Number(count);
   });
 
   const result = rooms.map((room) => {

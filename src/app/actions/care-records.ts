@@ -3,6 +3,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import type { CareRecordPayload } from "@/components/common/chat/CareRecordModal";
+import { createNotification } from "@/lib/notificationHelpers";
 
 async function getAuthUser() {
   const supabase = await createClient();
@@ -47,6 +48,29 @@ export async function createCareRecord(payload: CareRecordPayload) {
     .single();
 
   if (error) return { error: { code: "INTERNAL_ERROR", message: error.message } };
+
+  const { data: reservation } = await db
+    .from("reservations")
+    .select("owner_id")
+    .eq("id", payload.reservationId)
+    .single();
+
+  if (reservation) {
+    const { data: sitterUser } = await db
+      .from("users")
+      .select("full_name")
+      .eq("id", user.id)
+      .single();
+    const sitterName = sitterUser?.full_name ?? "펫시터";
+
+    await createNotification({
+      userId: reservation.owner_id,
+      type: "care_record",
+      title: "돌봄기록이 도착했어요",
+      content: `${sitterName}님이 '${payload.title}'을 기록했습니다.`,
+      linkUrl: `/myprofile/booking-history/${payload.reservationId}`,
+    });
+  }
 
   return { data };
 }
