@@ -8,6 +8,7 @@ import { createClient } from "@/utils/supabase/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { markAllNotificationsRead } from "@/app/actions/notifications";
 import { NotificationItem } from "./NotificationItem";
+import { NotificationsRealtimeSync } from "./NotificationsRealtimeSync";
 
 type NotificationRow = {
   id: string;
@@ -17,6 +18,7 @@ type NotificationRow = {
   is_read: boolean;
   link_url: string | null;
   created_at: string | null;
+  updated_at: string | null;
 };
 
 function formatRelativeTime(dateStr: string | null): string {
@@ -62,15 +64,15 @@ export default async function NotificationsPage() {
     const db = createServiceClient();
     const { data } = await db
       .from("notifications")
-      .select("id, type, title, content, is_read, link_url, created_at")
+      .select("id, type, title, content, is_read, link_url, created_at, updated_at")
       .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
+      .order("updated_at", { ascending: false })
       .limit(50);
     notifications = data ?? [];
   }
 
-  const todayList = notifications.filter((n) => isToday(n.created_at));
-  const prevList = notifications.filter((n) => !isToday(n.created_at));
+  const todayList = notifications.filter((n) => isToday(n.updated_at ?? n.created_at));
+  const prevList = notifications.filter((n) => !isToday(n.updated_at ?? n.created_at));
   const hasUnread = notifications.some((n) => !n.is_read);
 
   async function handleMarkAllRead() {
@@ -84,6 +86,7 @@ export default async function NotificationsPage() {
 
   return (
     <>
+      <NotificationsRealtimeSync userId={user.id} />
       <Header />
       <main className="flex-1 bg-orange-50 min-h-screen">
         <div className="max-w-[720px] mx-auto px-6 pt-12 pb-20">
@@ -135,7 +138,7 @@ export default async function NotificationsPage() {
                     type={n.type}
                     title={n.title}
                     content={n.content}
-                    time={formatRelativeTime(n.created_at)}
+                    time={formatRelativeTime(n.updated_at ?? n.created_at)}
                     isRead={n.is_read}
                     linkUrl={n.link_url}
                     last={i === todayList.length - 1}
@@ -157,7 +160,7 @@ export default async function NotificationsPage() {
                     type={n.type}
                     title={n.title}
                     content={n.content}
-                    time={formatRelativeTime(n.created_at)}
+                    time={formatRelativeTime(n.updated_at ?? n.created_at)}
                     isRead={n.is_read}
                     linkUrl={n.link_url}
                     last={i === prevList.length - 1}

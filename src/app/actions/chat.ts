@@ -114,27 +114,36 @@ export async function sendMessage(roomId: string, content: string) {
     user.id === room.owner_id ? room.sitters.user_id : room.owner_id;
   const chatLink = `/chat?roomId=${roomId}`;
 
-  const { count: existingUnread } = await db
+  const { data: sender } = await db
+    .from("users")
+    .select("full_name")
+    .eq("id", user.id)
+    .single();
+  const senderName = sender?.full_name ?? "상대방";
+  const notificationContent = `${senderName}: ${content.trim().slice(0, 50)}`;
+
+  const { data: existingNotifications } = await db
     .from("notifications")
-    .select("id", { count: "exact", head: true })
+    .select("id")
     .eq("user_id", recipientId)
     .eq("type", "message")
     .eq("link_url", chatLink)
-    .eq("is_read", false);
+    .eq("is_read", false)
+    .limit(1);
 
-  if ((existingUnread ?? 0) === 0) {
-    const { data: sender } = await db
-      .from("users")
-      .select("full_name")
-      .eq("id", user.id)
-      .single();
-    const senderName = sender?.full_name ?? "상대방";
+  const existingNotification = existingNotifications?.[0] ?? null;
 
+  if (existingNotification) {
+    await db
+      .from("notifications")
+      .update({ content: notificationContent })
+      .eq("id", existingNotification.id);
+  } else {
     await createNotification({
       userId: recipientId,
       type: "message",
       title: "새로운 메시지가 왔어요",
-      content: `${senderName}: ${content.trim().slice(0, 50)}`,
+      content: notificationContent,
       linkUrl: chatLink,
     });
   }
@@ -188,27 +197,36 @@ export async function sendImageMessage(roomId: string, imageUrl: string) {
     user.id === room.owner_id ? room.sitters.user_id : room.owner_id;
   const chatLink = `/chat?roomId=${roomId}`;
 
-  const { count: existingUnread } = await db
+  const { data: sender } = await db
+    .from("users")
+    .select("full_name")
+    .eq("id", user.id)
+    .single();
+  const senderName = sender?.full_name ?? "상대방";
+  const notificationContent = `${senderName}: 사진을 보냈습니다.`;
+
+  const { data: existingNotifications } = await db
     .from("notifications")
-    .select("id", { count: "exact", head: true })
+    .select("id")
     .eq("user_id", recipientId)
     .eq("type", "message")
     .eq("link_url", chatLink)
-    .eq("is_read", false);
+    .eq("is_read", false)
+    .limit(1);
 
-  if ((existingUnread ?? 0) === 0) {
-    const { data: sender } = await db
-      .from("users")
-      .select("full_name")
-      .eq("id", user.id)
-      .single();
-    const senderName = sender?.full_name ?? "상대방";
+  const existingNotification = existingNotifications?.[0] ?? null;
 
+  if (existingNotification) {
+    await db
+      .from("notifications")
+      .update({ content: notificationContent })
+      .eq("id", existingNotification.id);
+  } else {
     await createNotification({
       userId: recipientId,
       type: "message",
       title: "새로운 메시지가 왔어요",
-      content: `${senderName}: 사진을 보냈습니다.`,
+      content: notificationContent,
       linkUrl: chatLink,
     });
   }
