@@ -192,7 +192,7 @@ export default function SitterEditPage() {
         lat: sitter.latitude,
         lng: sitter.longitude,
         displayArea: sitter.displayArea ?? sitter.availableArea,
-        radiusKm: sitter.serviceRadiusKm ?? 5,
+        radiusKm: sitter.serviceRadiusKm ?? null,
       });
     }
 
