@@ -8,6 +8,7 @@ import Avatar from "@/components/ui/Avatar";
 import StatGrid from "@/components/ui/StatGrid";
 import { useUserStore } from "@/store/userStore";
 import { updateSitterProfile, getMySitterProfile, getSitterServices } from "@/app/actions/sitters";
+import { updateProfile } from "@/app/actions/users";
 import { uploadToCloudinary } from "@/utils/cloudinary";
 import LocationPickerWithMap, { type LocationValue } from "@/components/LocationPickerWithMap";
 
@@ -150,13 +151,15 @@ function ServiceRow({
 
 export default function SitterEditPage() {
   const router = useRouter();
-  const { user, sitter, setSitter } = useUserStore();
+  const { user, sitter, setSitter, setUser } = useUserStore();
   const profileFileRef = useRef<HTMLInputElement>(null);
   const photoFileRef = useRef<HTMLInputElement>(null);
   const photoSlotIndex = useRef(-1);
   const sitterIdRef = useRef<string | null>(null);
 
   const [form, setForm] = useState(EMPTY_FORM);
+  const [profilePreview, setProfilePreview] = useState<string | null>(null);
+  const profilePhotoFileRef = useRef<File | null>(null);
   const [locationValue, setLocationValue] = useState<LocationValue | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("소개");
   const [loading, setLoading] = useState(true);
@@ -287,6 +290,14 @@ export default function SitterEditPage() {
       };
     });
 
+  const handleProfileFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    profilePhotoFileRef.current = file;
+    setProfilePreview(URL.createObjectURL(file));
+    e.target.value = "";
+  };
+
   const openPhotoSlot = (idx: number) => {
     photoSlotIndex.current = idx;
     photoFileRef.current?.click();
@@ -319,54 +330,67 @@ export default function SitterEditPage() {
 
   const handleSave = async () => {
     setSaving(true);
-
-    // 새로 추가된 사진은 Cloudinary에 업로드, 기존 URL은 그대로 유지
-    const finalPhotoUrls: string[] = [];
-    for (let i = 0; i < form.photos.length; i++) {
-      const photo = form.photos[i];
-      const file = photoFilesRef.current[i];
-      if (!photo) continue;
-      if (file) {
-        const url = await uploadToCloudinary(file, "sitters/activity-photos");
-        finalPhotoUrls.push(url);
-      } else {
-        finalPhotoUrls.push(photo);
+    try {
+      // 프로필 사진 업로드
+      if (profilePhotoFileRef.current) {
+        const profileUrl = await uploadToCloudinary(profilePhotoFileRef.current, "users/profile");
+        const profileResult = await updateProfile(profileUrl);
+        if ("data" in profileResult && profileResult.data && user) {
+          setUser({ ...user, profileImage: profileUrl });
+        }
       }
-    }
 
-    const result = await updateSitterProfile({
-      availableArea: locationValue?.address ?? "",
-      displayArea: locationValue?.displayArea ?? null,
-      latitude: locationValue?.lat ?? null,
-      longitude: locationValue?.lng ?? null,
-      serviceRadiusKm: locationValue?.radiusKm ?? null,
-      introduction: form.bio,
-      career: form.career,
-      availableAnimals: form.pets.map((p) => LABEL_TO_ANIMAL[p] ?? p),
-      activityPhotoUrls: finalPhotoUrls,
-      services: form.serviceList.map((s) => ({
-        id: s.dbId,
-        title: s.name,
-        price: Number(s.price) || 0,
-        description: s.desc,
-      })),
-      deletedServiceIds: deletedServiceIdsRef.current,
-    });
+      // 새로 추가된 사진은 Cloudinary에 업로드, 기존 URL은 그대로 유지
+      const finalPhotoUrls: string[] = [];
+      for (let i = 0; i < form.photos.length; i++) {
+        const photo = form.photos[i];
+        const file = photoFilesRef.current[i];
+        if (!photo) continue;
+        if (file) {
+          const url = await uploadToCloudinary(file, "sitters/activity-photos");
+          finalPhotoUrls.push(url);
+        } else {
+          finalPhotoUrls.push(photo);
+        }
+      }
 
-    if ("error" in result) {
+      const result = await updateSitterProfile({
+        availableArea: locationValue?.address ?? "",
+        displayArea: locationValue?.displayArea ?? null,
+        latitude: locationValue?.lat ?? null,
+        longitude: locationValue?.lng ?? null,
+        serviceRadiusKm: locationValue?.radiusKm ?? null,
+        introduction: form.bio,
+        career: form.career,
+        availableAnimals: form.pets.map((p) => LABEL_TO_ANIMAL[p] ?? p),
+        activityPhotoUrls: finalPhotoUrls,
+        services: form.serviceList.map((s) => ({
+          id: s.dbId,
+          title: s.name,
+          price: Number(s.price) || 0,
+          description: s.desc,
+        })),
+        deletedServiceIds: deletedServiceIdsRef.current,
+      });
+
+      if (result?.error) {
+        alert(result.error.message ?? "저장 중 오류가 발생했습니다.");
+        return;
+      }
+
+      // store 갱신
+      const refreshed = await getMySitterProfile();
+      if (refreshed?.data) {
+        setSitter(refreshed.data);
+      }
+
+      router.replace("/myprofile/sitter-profile");
+    } catch (e) {
+      console.error("handleSave error:", e);
+      alert("저장 중 오류가 발생했습니다.");
+    } finally {
       setSaving(false);
-      alert(result.error?.message ?? "저장 중 오류가 발생했습니다.");
-      return;
     }
-
-    // store 갱신 후 이동
-    const refreshed = await getMySitterProfile();
-    if ("data" in refreshed && refreshed.data) {
-      setSitter(refreshed.data);
-    }
-
-    setSaving(false);
-    router.push("/myprofile/sitter-profile");
   };
 
   const stats = [
@@ -543,7 +567,7 @@ export default function SitterEditPage() {
             <ChevronLeft size={20} className="text-stone-900" />
           </button>
 
-          <Avatar initial={form.fullName[0] ?? "?"} size="2xl" variant="dark" />
+          <Avatar initial={form.fullName[0] ?? "?"} size="2xl" variant="dark" src={profilePreview ?? user?.profileImage} />
 
           <button
             type="button"
@@ -560,6 +584,7 @@ export default function SitterEditPage() {
             type="file"
             accept="image/*"
             className="hidden"
+            onChange={handleProfileFileChange}
           />
           {/* 갤러리 슬롯 공유 input — openPhotoSlot()으로 슬롯 인덱스 지정 후 트리거 */}
           <input
@@ -650,6 +675,7 @@ export default function SitterEditPage() {
                   initial={form.fullName[0] ?? "?"}
                   size="2xl"
                   variant="dark"
+                  src={profilePreview ?? user?.profileImage}
                 />
                 <button
                   type="button"
