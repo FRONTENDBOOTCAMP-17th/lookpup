@@ -2,6 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { createNotification } from "@/lib/notificationHelpers";
 
 async function getAuthUser() {
   const supabase = await createClient();
@@ -109,6 +110,35 @@ export async function sendMessage(roomId: string, content: string) {
     .update({ last_message: content.trim(), last_message_at: now })
     .eq("id", roomId);
 
+  const recipientId =
+    user.id === room.owner_id ? room.sitters.user_id : room.owner_id;
+  const chatLink = `/chat?roomId=${roomId}`;
+
+  const { count: existingUnread } = await db
+    .from("notifications")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", recipientId)
+    .eq("type", "message")
+    .eq("link_url", chatLink)
+    .eq("is_read", false);
+
+  if ((existingUnread ?? 0) === 0) {
+    const { data: sender } = await db
+      .from("users")
+      .select("full_name")
+      .eq("id", user.id)
+      .single();
+    const senderName = sender?.full_name ?? "상대방";
+
+    await createNotification({
+      userId: recipientId,
+      type: "message",
+      title: "새로운 메시지가 왔어요",
+      content: `${senderName}: ${content.trim().slice(0, 50)}`,
+      linkUrl: chatLink,
+    });
+  }
+
   return { data: message };
 }
 
@@ -153,6 +183,35 @@ export async function sendImageMessage(roomId: string, imageUrl: string) {
     .from("chat_rooms")
     .update({ last_message: "사진", last_message_at: now })
     .eq("id", roomId);
+
+  const recipientId =
+    user.id === room.owner_id ? room.sitters.user_id : room.owner_id;
+  const chatLink = `/chat?roomId=${roomId}`;
+
+  const { count: existingUnread } = await db
+    .from("notifications")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", recipientId)
+    .eq("type", "message")
+    .eq("link_url", chatLink)
+    .eq("is_read", false);
+
+  if ((existingUnread ?? 0) === 0) {
+    const { data: sender } = await db
+      .from("users")
+      .select("full_name")
+      .eq("id", user.id)
+      .single();
+    const senderName = sender?.full_name ?? "상대방";
+
+    await createNotification({
+      userId: recipientId,
+      type: "message",
+      title: "새로운 메시지가 왔어요",
+      content: `${senderName}: 사진을 보냈습니다.`,
+      linkUrl: chatLink,
+    });
+  }
 
   return { data: message };
 }

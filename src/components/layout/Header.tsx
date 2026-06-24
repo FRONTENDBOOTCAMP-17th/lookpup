@@ -14,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { signOut } from "@/app/actions/auth";
+import { createClient } from "@/utils/supabase/client";
 import {
   HoverCard,
   HoverCardContent,
@@ -33,7 +34,48 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const { user, isLoggedIn, isLoading, clearUser } = useUserStore();
-  const unreadCount = 2;
+  const [unreadCount, setUnreadCount] = useState(0);
+  const userId = user?.id;
+
+  const fetchUnreadCount = () => {
+    fetch("/api/notifications?limit=1")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.data) setUnreadCount(json.data.unread_total ?? 0);
+      })
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setUnreadCount(0);
+      return;
+    }
+    fetchUnreadCount();
+  }, [isLoggedIn, pathname]);
+
+  useEffect(() => {
+    if (!isLoggedIn || !userId) return;
+
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`notifications:${userId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${userId}`,
+        },
+        fetchUnreadCount,
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isLoggedIn, userId]);
 
   const isActivePath = (href: string) => {
     return pathname === href || pathname.startsWith(`${href}/`);
@@ -157,7 +199,10 @@ export default function Header() {
                     <div className="mx-2 my-1 h-px bg-[#ffe9d6]" />
                     <button
                       type="button"
-                      onClick={() => { clearUser(); signOut(); }}
+                      onClick={() => {
+                        clearUser();
+                        signOut();
+                      }}
                       className="w-full px-3 py-2.5 flex items-center gap-3 text-sm text-gray-500 rounded-lg hover:bg-orange-50 transition-colors"
                     >
                       <LogOut
@@ -388,7 +433,10 @@ export default function Header() {
                   <div className="w-full px-5 py-4">
                     <button
                       type="button"
-                      onClick={() => { clearUser(); signOut(); }}
+                      onClick={() => {
+                        clearUser();
+                        signOut();
+                      }}
                       className="w-full h-12 rounded-xl border border-orange-100 bg-white flex items-center justify-center gap-2 text-gray-500 text-sm font-normal leading-6 hover:bg-orange-50 transition-colors"
                     >
                       <LogOut
