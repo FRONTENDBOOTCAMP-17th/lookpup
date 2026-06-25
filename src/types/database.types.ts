@@ -991,6 +991,7 @@ export type Database = {
           profile_image: string | null
           provider: string
           role: string
+          suspended_until: string | null
           updated_at: string | null
         }
         Insert: {
@@ -1012,6 +1013,7 @@ export type Database = {
           profile_image?: string | null
           provider: string
           role?: string
+          suspended_until?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -1033,6 +1035,7 @@ export type Database = {
           profile_image?: string | null
           provider?: string
           role?: string
+          suspended_until?: string | null
           updated_at?: string | null
         }
         Relationships: []

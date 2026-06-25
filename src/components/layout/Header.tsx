@@ -10,6 +10,7 @@ import {
   LogOut,
   Menu,
   MessageSquare,
+  ShieldCheck,
   User,
   X,
 } from "lucide-react";
@@ -195,6 +196,21 @@ export default function Header() {
                       />
                       채팅
                     </button>
+
+                    {user?.role === "admin" && (
+                      <button
+                        type="button"
+                        onClick={() => router.push("/admin")}
+                        className="w-full px-3 py-2.5 flex items-center gap-3 text-sm text-stone-900 rounded-lg hover:bg-orange-50 transition-colors"
+                      >
+                        <ShieldCheck
+                          size={16}
+                          className="text-orange-500 shrink-0"
+                          strokeWidth={1.8}
+                        />
+                        관리자 페이지
+                      </button>
+                    )}
 
                     <div className="mx-2 my-1 h-px bg-[#ffe9d6]" />
                     <button
@@ -423,6 +439,33 @@ export default function Header() {
                         strokeWidth={2}
                       />
                     </Link>
+
+                    {user?.role === "admin" && (
+                      <Link
+                        href="/admin/reports"
+                        onClick={closeMobileMenu}
+                        className="px-4 py-3 rounded-xl inline-flex items-center justify-between hover:bg-orange-50 transition-colors"
+                      >
+                        <span className="inline-flex items-center gap-3">
+                          <span className="size-8 bg-orange-50 rounded-xl flex items-center justify-center">
+                            <ShieldCheck
+                              size={16}
+                              className="text-orange-500"
+                              strokeWidth={1.8}
+                            />
+                          </span>
+                          <span className="text-stone-900 text-base font-medium leading-6">
+                            관리자 페이지
+                          </span>
+                        </span>
+
+                        <ChevronRight
+                          size={16}
+                          className="text-gray-300"
+                          strokeWidth={2}
+                        />
+                      </Link>
+                    )}
                   </div>
 
                   <div className="px-5">
