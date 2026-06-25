@@ -260,6 +260,49 @@ export async function updateReservation(
   return { data };
 }
 
+const RESERVATION_CANCELED_PREFIX = "__reservation_canceled__";
+
+export async function cancelReservationAndNotify(
+  id: string,
+  cancel_reason?: string | null,
+) {
+  const result = await updateReservation(id, { status: "canceled", cancel_reason });
+  if (result.error) return result;
+
+  const db = createServiceClient();
+  const user = await getAuthUser();
+  if (!user) return result;
+
+  const { data: reservation } = await db
+    .from("reservations")
+    .select("owner_id, sitter_id")
+    .eq("id", id)
+    .single();
+
+  if (!reservation) return result;
+
+  const { data: room } = await db
+    .from("chat_rooms")
+    .select("id")
+    .eq("owner_id", reservation.owner_id)
+    .eq("sitter_id", reservation.sitter_id)
+    .eq("room_type", "direct")
+    .maybeSingle();
+
+  if (!room) return result;
+
+  const now = new Date().toISOString();
+  await db
+    .from("messages")
+    .insert({ room_id: room.id, sender_id: user.id, content: RESERVATION_CANCELED_PREFIX });
+  await db
+    .from("chat_rooms")
+    .update({ last_message: "예약 취소", last_message_at: now })
+    .eq("id", room.id);
+
+  return { ...result, data: { ...result.data, chatRoomId: room.id } };
+}
+
 const STATUS_MAP: Record<string, string> = {
   pending: "pending",
   accepted: "confirmed",

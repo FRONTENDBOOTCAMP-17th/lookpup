@@ -1,6 +1,13 @@
 "use client";
 
-import { useState, useEffect, useLayoutEffect, useRef, Suspense } from "react";
+import {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useMemo,
+  Suspense,
+} from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { Search, ChevronLeft, MoreVertical, Send, Plus } from "lucide-react";
@@ -15,22 +22,39 @@ import {
   ChatPlusPanel,
   ApplicantProfilePopup,
   ApplicantPostGroup,
-  ConfirmationCard,
-  SitterConfirmationCard,
   type Applicant,
 } from "@/components/common/chat/chat_components";
 import { CustomModal } from "@/components/common/CustomModal";
 import { CustomModalPayment } from "@/components/common/CustomModalPayment";
-import CareRecordModal, { type CareRecordPayload } from "@/components/common/chat/CareRecordModal";
-import { createCareRecord, getInProgressReservationByOwnerAndSitter } from "@/app/actions/care-records";
+import CareRecordModal, {
+  type CareRecordPayload,
+} from "@/components/common/chat/CareRecordModal";
+import {
+  createCareRecord,
+  getInProgressReservationByOwnerAndSitter,
+} from "@/app/actions/care-records";
 import {
   sendMessage,
   sendImageMessage,
   markRoomRead,
   sendSystemMessage,
+  sendPaymentRequestMessage,
+  sendAutoPaymentRequestMessage,
+  sendPaymentCompleteMessage,
+  sendApplicationSelectedMessage,
+  sendApplicationRejectedMessage,
 } from "@/app/actions/chat";
+import { usePortOne } from "@/hooks/usePortOne";
 import { uploadToCloudinary } from "@/utils/cloudinary";
-import { updateApplicationByRoom } from "@/app/actions/applications";
+import {
+  updateApplicationByRoom,
+  getRequestDetailsForReservation,
+} from "@/app/actions/applications";
+import { findOrCreateRoom } from "@/app/actions/chat";
+import {
+  ReservationConfirmModal,
+  type ReservationDetails,
+} from "@/components/common/chat/ReservationConfirmModal";
 import { useChatRooms } from "@/hooks/chat/useChatRooms";
 import { useRequest } from "@/hooks/chat/useRequest";
 import { useChatMessages } from "@/hooks/chat/useChatMessages";
@@ -61,11 +85,19 @@ function ChatPageContent({
   const mobileScrollRef = useRef<HTMLDivElement>(null);
   const isLoadMoreRef = useRef(false);
   const scrollAnchorRef = useRef<number | null>(null);
+  const prevApplicantStatusRef = useRef<string | null | undefined>(null);
 
   const [applicationActionError, setApplicationActionError] = useState<
     string | null
   >(null);
   const [actioningId, setActioningId] = useState<string | null>(null);
+
+  const [reservationModalOpen, setReservationModalOpen] = useState(false);
+  const [reservationModalLoading, setReservationModalLoading] = useState(false);
+  const [reservationDetails, setReservationDetails] =
+    useState<ReservationDetails | null>(null);
+  const [pendingConfirmId, setPendingConfirmId] = useState<string | null>(null);
+  const [messagesRefreshKey, setMessagesRefreshKey] = useState(0);
 
   const activeRoomId =
     activeTab === "one_on_one" ? selectedRoomId : selectedApplicantId;
@@ -85,7 +117,7 @@ function ChatPageContent({
 
   const {
     rejectedIds,
-    confirmedId,
+    confirmedIds,
     rejectApplicant,
     confirmApplicant,
     getApplicantBadge,
@@ -102,10 +134,11 @@ function ChatPageContent({
         return;
       }
       rejectApplicant(id);
-      const sysResult = await sendSystemMessage(id, "지원이 거절되었습니다.");
-      if (sysResult.data && id === activeRoomId) {
-        addMessage(sysResult.data);
-        broadcastMessage(sysResult.data);
+      const msgResult = await sendApplicationRejectedMessage(id);
+      if (msgResult.data) {
+        addMessage(msgResult.data);
+        broadcastMessage(msgResult.data);
+        updatePreview(id, "지원 거절", msgResult.data.created_at ?? "");
       }
     } catch {
       setApplicationActionError("오류가 발생했습니다. 다시 시도해주세요.");
@@ -114,12 +147,43 @@ function ChatPageContent({
     }
   }
 
-  async function handleConfirmApplicant(id: string) {
+  async function handleConfirmClick(id: string) {
     if (actioningId) return;
+    setPendingConfirmId(id);
+    setReservationDetails(null);
+    setReservationModalOpen(true);
+    setReservationModalLoading(true);
+    try {
+      const result = await getRequestDetailsForReservation(id);
+      if ("error" in result && result.error) {
+        setApplicationActionError(result.error.message);
+        setReservationModalOpen(false);
+        return;
+      }
+      if ("data" in result) {
+        setReservationDetails(result.data);
+      }
+    } catch {
+      setApplicationActionError("오류가 발생했습니다. 다시 시도해주세요.");
+      setReservationModalOpen(false);
+    } finally {
+      setReservationModalLoading(false);
+    }
+  }
+
+  async function handleConfirmApplicant(overrides: {
+    startDatetime: string | null;
+    endDatetime: string | null;
+    totalPrice: number | null;
+    location: string | null;
+  }) {
+    const id = pendingConfirmId;
+    if (!id || actioningId) return;
+    setReservationModalOpen(false);
     setActioningId(id);
     setApplicationActionError(null);
     try {
-      const result = await updateApplicationByRoom(id, "selected");
+      const result = await updateApplicationByRoom(id, "selected", overrides);
       if (result.error) {
         setApplicationActionError(result.error.message);
         return;
@@ -127,10 +191,60 @@ function ChatPageContent({
       confirmApplicant(id);
       updateApplicantStatus(id, "selected");
       broadcastConfirmation();
+      const confirmingApplicant = applicants.find((a) => a.id === id);
+      const postTitle = confirmingApplicant
+        ? (posts.find((p) => p.id === confirmingApplicant.postId)?.title ?? "")
+        : "";
+      const appData = {
+        postTitle,
+        postId: confirmingApplicant?.postId ?? "",
+        sitterId: confirmingApplicant?.sitterId ?? "",
+      };
+      const msgResult = await sendApplicationSelectedMessage(id, appData);
+      if (msgResult.data) {
+        addMessage(msgResult.data);
+        broadcastMessage(msgResult.data);
+        updatePreview(id, "선택 확정", msgResult.data.created_at ?? "");
+      }
+
+      if (confirmingApplicant?.sitterId) {
+        const roomResult = await findOrCreateRoom({
+          sitter_id: confirmingApplicant.sitterId,
+          room_type: "direct",
+        });
+        if ("data" in roomResult && roomResult.data) {
+          const newRoomId = roomResult.data.room_id;
+
+          if (overrides.totalPrice && overrides.totalPrice > 0) {
+            const d = new Date(Date.now() + 24 * 60 * 60 * 1000);
+            const pad = (n: number) => String(n).padStart(2, "0");
+            const deadline = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            const payResult = await sendAutoPaymentRequestMessage(newRoomId, {
+              amount: overrides.totalPrice,
+              reason: postTitle || "펫시팅 서비스",
+              deadline,
+              postId: confirmingApplicant?.postId,
+            });
+            if (payResult.data) {
+              updatePreview(
+                newRoomId,
+                "결제 요청",
+                payResult.data.created_at ?? "",
+              );
+            }
+          }
+
+          setActiveTab("one_on_one");
+          setSelectedRoomId(newRoomId);
+          setSelectedApplicantId(null);
+          setMobileChatView("room");
+        }
+      }
     } catch {
       setApplicationActionError("오류가 발생했습니다. 다시 시도해주세요.");
     } finally {
       setActioningId(null);
+      setPendingConfirmId(null);
     }
   }
 
@@ -142,14 +256,18 @@ function ChatPageContent({
     loadMore,
     hasMore,
     loadingMore,
-  } = useChatMessages(activeRoomId, userId);
+    paymentState,
+  } = useChatMessages(activeRoomId, userId, messagesRefreshKey);
+
+  const { requestPayment, isPending: isPaymentPending } = usePortOne();
+  const [payingNow, setPayingNow] = useState(false);
 
   useEffect(() => {
     if (!activeRoomId) return;
     markRoomAsRead(activeRoomId);
     markRoomRead(activeRoomId);
     setSendError(null);
-  }, [activeRoomId]);
+  }, [activeRoomId, markRoomAsRead]);
 
   useLayoutEffect(() => {
     if (isLoadMoreRef.current) {
@@ -183,6 +301,68 @@ function ChatPageContent({
     loadMore();
   }
 
+  async function handlePaymentSubmit(data: {
+    type: string;
+    amount: number;
+    reason: string;
+    costItems?: {
+      id: string;
+      name: string;
+      amount: string;
+      description: string;
+    }[];
+  }) {
+    if (!activeRoomId) return;
+    const d = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const deadline = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+    const result = await sendPaymentRequestMessage(activeRoomId, {
+      amount: data.amount,
+      reason: data.reason,
+      deadline,
+      costItems: data.costItems,
+    });
+    if (result.data) {
+      addMessage(result.data);
+      broadcastMessage(result.data);
+      updatePreview(activeRoomId, "결제 요청", result.data.created_at ?? "");
+    }
+  }
+
+  async function handlePayNow() {
+    if (!paymentState || payingNow || isPaymentPending || !activeRoomId) return;
+    setPayingNow(true);
+    requestPayment(
+      {
+        paymentId: `pay_${Date.now()}`,
+        orderName: paymentState.reason || "펫시팅 서비스 결제",
+        totalAmount: paymentState.amount,
+        currency: "KRW",
+        payMethod: "CARD",
+        redirectUrl: `${window.location.origin}/payment/complete`,
+      },
+      {
+        onSuccess: async () => {
+          const result = await sendPaymentCompleteMessage(activeRoomId, {
+            amount: paymentState.amount,
+          });
+          if (result.data) {
+            addMessage(result.data);
+            broadcastMessage(result.data);
+            updatePreview(
+              activeRoomId,
+              "결제 완료",
+              result.data.created_at ?? "",
+            );
+          }
+          setPayingNow(false);
+        },
+        onFail: () => {
+          setPayingNow(false);
+        },
+      },
+    );
+  }
+
   async function handleSend() {
     if (!input.trim() || !activeRoomId || sending) return;
     setSendError(null);
@@ -213,6 +393,14 @@ function ChatPageContent({
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file || !activeRoomId || sendingPhoto) return;
+    if (file.size > 10 * 1024 * 1024) {
+      setSendError("10MB 이하의 이미지만 전송할 수 있습니다.");
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      setSendError("이미지 파일만 전송할 수 있습니다.");
+      return;
+    }
     setSendError(null);
     setSendingPhoto(true);
     setPlusMenuOpen(false);
@@ -244,6 +432,7 @@ function ChatPageContent({
   }, []);
 
   const [mobileChatView, setMobileChatView] = useState<"list" | "room">("list");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const hasAutoSelected = useRef(false);
   useEffect(() => {
@@ -276,27 +465,30 @@ function ChatPageContent({
 
   const handleCareRecordSubmit = async (record: CareRecordPayload) => {
     if (!activeRoomId) return;
+    try {
+      let reservationId = record.reservationId;
 
-    let reservationId = record.reservationId;
+      if (!reservationId && selectedRoom?.ownerId && selectedRoom?.sitterId) {
+        const res = await getInProgressReservationByOwnerAndSitter(
+          selectedRoom.ownerId,
+          selectedRoom.sitterId,
+        );
+        if ("data" in res && res.data) reservationId = res.data.id;
+      }
 
-    if (!reservationId && selectedRoom?.ownerId && selectedRoom?.sitterId) {
-      const res = await getInProgressReservationByOwnerAndSitter(
-        selectedRoom.ownerId,
-        selectedRoom.sitterId,
-      );
-      if ("data" in res && res.data) reservationId = res.data.id;
-    }
+      if (reservationId) {
+        await createCareRecord({ ...record, reservationId });
+      }
 
-    if (reservationId) {
-      await createCareRecord({ ...record, reservationId });
-    }
-
-    const content = `[돌봄기록] ${record.title}`;
-    const result = await sendSystemMessage(activeRoomId, content);
-    if (result.data) {
-      addMessage(result.data);
-      broadcastMessage(result.data);
-      updatePreview(activeRoomId, content, result.data.created_at ?? "");
+      const content = `[돌봄기록] ${record.title}`;
+      const result = await sendSystemMessage(activeRoomId, content);
+      if (result.data) {
+        addMessage(result.data);
+        broadcastMessage(result.data);
+        updatePreview(activeRoomId, content, result.data.created_at ?? "");
+      }
+    } catch {
+      setSendError("돌봄기록 전송에 실패했습니다. 다시 시도해주세요.");
     }
   };
   const [pendingDelete, setPendingDelete] = useState<{
@@ -319,6 +511,32 @@ function ChatPageContent({
     (a) => a.id === selectedApplicantId,
   );
 
+  useEffect(() => {
+    const currentStatus = selectedApplicant?.applicationStatus;
+    const prevStatus = prevApplicantStatusRef.current;
+    prevApplicantStatusRef.current = currentStatus;
+
+    if (
+      prevStatus !== "selected" &&
+      currentStatus === "selected" &&
+      selectedApplicantId
+    ) {
+      setMessagesRefreshKey((k) => k + 1);
+    }
+  }, [selectedApplicant?.applicationStatus, selectedApplicantId]);
+
+  const filteredRooms = rooms.filter(
+    (r) =>
+      !searchQuery || r.name.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
+  const filteredApplicants = applicants.filter(
+    (a) =>
+      !searchQuery || a.name.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
+  const filteredPosts = posts.filter((p) =>
+    filteredApplicants.some((a) => a.postId === p.id),
+  );
+
   function handleDeleteRoom(id: string) {
     setPendingDelete({ id, type: "room" });
     setDeleteError(null);
@@ -333,28 +551,36 @@ function ChatPageContent({
     if (!pendingDelete || deleting) return;
     setDeleting(true);
     setDeleteError(null);
-    const result =
-      pendingDelete.type === "room"
-        ? await deleteRoom(pendingDelete.id)
-        : await deleteApplicant(pendingDelete.id);
-    setDeleting(false);
-    if (result.error) {
-      setDeleteError(result.error);
-      return;
+    try {
+      const result =
+        pendingDelete.type === "room"
+          ? await deleteRoom(pendingDelete.id)
+          : await deleteApplicant(pendingDelete.id);
+      if (result.error) {
+        setDeleteError(result.error);
+        return;
+      }
+      if (
+        pendingDelete.type === "room" &&
+        selectedRoomId === pendingDelete.id
+      ) {
+        setSelectedRoomId(null);
+        setMobileChatView("list");
+      }
+      if (
+        pendingDelete.type === "applicant" &&
+        selectedApplicantId === pendingDelete.id
+      ) {
+        setSelectedApplicantId(null);
+        setMobileChatView("list");
+      }
+      setPendingDelete(null);
+      setMobileMenuOpen(false);
+    } catch {
+      setDeleteError("오류가 발생했습니다. 다시 시도해주세요.");
+    } finally {
+      setDeleting(false);
     }
-    if (pendingDelete.type === "room" && selectedRoomId === pendingDelete.id) {
-      setSelectedRoomId(null);
-      setMobileChatView("list");
-    }
-    if (
-      pendingDelete.type === "applicant" &&
-      selectedApplicantId === pendingDelete.id
-    ) {
-      setSelectedApplicantId(null);
-      setMobileChatView("list");
-    }
-    setPendingDelete(null);
-    setMobileMenuOpen(false);
   }
 
   function getHeaderBadge() {
@@ -362,14 +588,19 @@ function ChatPageContent({
       return { label: "진행중", className: "bg-orange-50 text-orange-500" };
     if (selectedApplicantId !== null && rejectedIds.has(selectedApplicantId))
       return { label: "거절됨", className: "bg-stone-100 text-stone-500" };
-    if (confirmedId === selectedApplicantId)
+    if (
+      confirmedIds.get(selectedApplicant?.postId ?? "") === selectedApplicantId
+    )
       return { label: "선택됨", className: "bg-green-50 text-green-700" };
     return { label: "채팅중", className: "bg-orange-50 text-orange-500" };
   }
 
   function getHeaderSub() {
     if (activeTab === "one_on_one") return selectedRoom?.sub ?? "";
-    if (confirmedId === selectedApplicantId) return "구인글 채팅 · 선택됨";
+    if (
+      confirmedIds.get(selectedApplicant?.postId ?? "") === selectedApplicantId
+    )
+      return "구인글 채팅 · 선택됨";
     if (selectedApplicantId !== null && rejectedIds.has(selectedApplicantId))
       return "구인글 채팅 · 거절됨";
     return "구인글 채팅 · 지원자";
@@ -377,14 +608,17 @@ function ChatPageContent({
 
   function getReportUrl() {
     const isOneOnOne = activeTab === "one_on_one";
+    const isUserSitter = isOneOnOne && selectedRoom?.sitterId === userId;
     const targetName = isOneOnOne
       ? (selectedRoom?.name ?? "")
       : (selectedApplicant?.name ?? "");
     const targetId = isOneOnOne
-      ? (selectedRoom?.sitterId ?? "")
+      ? isUserSitter
+        ? (selectedRoom?.ownerId ?? "")
+        : (selectedRoom?.sitterId ?? "")
       : (selectedApplicant?.sitterId ?? "");
-  
-    const role = isOneOnOne && selectedRoom?.sitterId === userId ? "보호자" : "펫시터";
+
+    const role = isUserSitter ? "보호자" : "펫시터";
     const service = getHeaderSub();
     const targetImage = isOneOnOne
       ? (selectedRoom?.profileImage ?? null)
@@ -427,8 +661,8 @@ function ChatPageContent({
     selectedApplicantId !== null &&
     isOwnerOfSelectedRoom &&
     !rejectedIds.has(selectedApplicantId) &&
-    confirmedId !== selectedApplicantId &&
-    confirmedId === null;
+    confirmedIds.get(selectedApplicant?.postId ?? "") !== selectedApplicantId &&
+    !confirmedIds.has(selectedApplicant?.postId ?? "");
 
   const isRejectedApplicant =
     activeTab === "applicants" &&
@@ -436,21 +670,107 @@ function ChatPageContent({
     selectedApplicantId !== null &&
     rejectedIds.has(selectedApplicantId);
 
-  const showConfirmationCard =
-    activeTab === "applicants" &&
-    selectedApplicantId !== null &&
-    confirmedId === selectedApplicantId &&
-    isOwnerOfSelectedRoom;
-
-  const showSitterConfirmationCard =
-    activeTab === "applicants" &&
-    selectedApplicantId !== null &&
-    selectedApplicant?.applicationStatus === "selected" &&
-    !isOwnerOfSelectedRoom;
-
   const confirmedPostTitle = selectedApplicant
     ? (posts.find((p) => p.id === selectedApplicant.postId)?.title ?? "")
     : "";
+
+  const syntheticCardRef = useRef<{ roomId: string | null; insertAt: number }>({
+    roomId: null,
+    insertAt: 0,
+  });
+
+  const displayMessages = useMemo(() => {
+    const fillPostTitles = (msgs: typeof messages) =>
+      msgs.map((msg) => {
+        if (
+          msg.from === "application_selected" &&
+          msg.applicationData &&
+          !msg.applicationData.postTitle &&
+          msg.applicationData.postId
+        ) {
+          const post = posts.find((p) => p.id === msg.applicationData!.postId);
+          if (post) {
+            return {
+              ...msg,
+              applicationData: {
+                ...msg.applicationData,
+                postTitle: post.title,
+              },
+            };
+          }
+        }
+        return msg;
+      });
+
+    if (activeTab !== "applicants" || !selectedApplicant) return messages;
+    const hasCard = messages.some(
+      (m) =>
+        m.from === "application_selected" || m.from === "application_rejected",
+    );
+    if (hasCard) return fillPostTitles(messages);
+
+    const status = selectedApplicant.applicationStatus;
+    if (status !== "selected" && status !== "rejected") return messages;
+
+    if (hasMore) return messages;
+
+    if (
+      syntheticCardRef.current.roomId !== selectedApplicant.id ||
+      messages.length === 0
+    ) {
+      if (messages.length === 0) {
+        syntheticCardRef.current = { roomId: null, insertAt: 0 };
+        return messages;
+      }
+      syntheticCardRef.current = {
+        roomId: selectedApplicant.id,
+        insertAt: messages.length,
+      };
+    }
+
+    const insertAt = Math.min(
+      syntheticCardRef.current.insertAt,
+      messages.length,
+    );
+    const card =
+      status === "selected"
+        ? {
+            id: "__synthetic_selected__",
+            from: "application_selected" as const,
+            text: "",
+            applicationData: {
+              postTitle: confirmedPostTitle,
+              postId: selectedApplicant.postId,
+              sitterId: selectedApplicant.sitterId ?? "",
+              sentByMe: isOwnerOfSelectedRoom,
+            },
+          }
+        : {
+            id: "__synthetic_rejected__",
+            from: "application_rejected" as const,
+            text: "",
+            applicationData: {
+              postTitle: "",
+              postId: "",
+              sitterId: "",
+              sentByMe: isOwnerOfSelectedRoom,
+            },
+          };
+
+    return fillPostTitles([
+      ...messages.slice(0, insertAt),
+      card,
+      ...messages.slice(insertAt),
+    ]);
+  }, [
+    messages,
+    hasMore,
+    activeTab,
+    selectedApplicant,
+    confirmedPostTitle,
+    isOwnerOfSelectedRoom,
+    posts,
+  ]);
 
   return (
     <div className="h-screen overflow-hidden flex flex-col">
@@ -499,6 +819,8 @@ function ChatPageContent({
                 <Search size={16} className="text-gray-400 shrink-0" />
                 <input
                   type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="채팅방 검색"
                   className="flex-1 bg-transparent text-sm text-stone-900 placeholder-stone-900/50 outline-none"
                 />
@@ -534,7 +856,7 @@ function ChatPageContent({
                   </p>
                 )}
               {activeTab === "one_on_one" &&
-                rooms.map((room) => (
+                filteredRooms.map((room) => (
                   <ChatRoomItem
                     key={room.id}
                     room={room}
@@ -550,11 +872,11 @@ function ChatPageContent({
 
               {activeTab === "applicants" && (
                 <>
-                  {posts.map((post) => (
+                  {filteredPosts.map((post) => (
                     <ApplicantPostGroup
                       key={post.id}
                       post={post}
-                      applicants={applicants.filter(
+                      applicants={filteredApplicants.filter(
                         (a) => a.postId === post.id,
                       )}
                       isCollapsed={collapsedPosts.has(post.id)}
@@ -564,12 +886,12 @@ function ChatPageContent({
                       }
                       selectedApplicantId={selectedApplicantId}
                       rejectedIds={rejectedIds}
-                      confirmedId={confirmedId}
+                      confirmedId={confirmedIds.get(post.id) ?? null}
                       editMode={editMode}
                       onToggle={() => togglePostCollapse(post.id)}
                       onDelete={handleDeleteApplicant}
                       onReject={handleRejectApplicant}
-                      onConfirm={handleConfirmApplicant}
+                      onConfirm={handleConfirmClick}
                       onSelect={(id) => {
                         setSelectedApplicantId(id);
                         setMobileChatView("room");
@@ -593,7 +915,11 @@ function ChatPageContent({
               >
                 <ChevronLeft size={24} className="text-stone-900" />
               </button>
-              <Avatar initial={mobileRoomInitial} src={mobileRoomProfileImage} size="sm" />
+              <Avatar
+                initial={mobileRoomInitial}
+                src={mobileRoomProfileImage}
+                size="sm"
+              />
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm text-stone-900 truncate">
                   {mobileRoomName}
@@ -670,7 +996,7 @@ function ChatPageContent({
             {/* 메시지 영역 */}
             <div
               ref={mobileScrollRef}
-              className="flex-1 min-h-0 overflow-y-auto"
+              className="flex-1 min-h-0 overflow-y-auto bg-orange-50"
             >
               <div
                 className="px-4 py-4 flex flex-col gap-4"
@@ -689,40 +1015,33 @@ function ChatPageContent({
                     </button>
                   </div>
                 )}
-                {messages.map((msg) => (
-                  <MessageBubble
-                    key={msg.id}
-                    msg={msg}
-                    senderInitial={mobileRoomInitial}
-                    senderProfileImage={mobileRoomProfileImage}
-                  />
-                ))}
-                {showConfirmationCard && (
-                  <ConfirmationCard
-                    postTitle={confirmedPostTitle}
-                    sitterInitial={selectedApplicant?.initial ?? ""}
-                    sitterProfileImage={selectedApplicant?.profileImage}
-                    onPostClick={() => {
-                      if (selectedApplicant?.postId)
-                        router.push(`/board/${selectedApplicant.postId}`);
-                    }}
-                    onBook={() => {
-                      if (selectedApplicant?.sitterId)
-                        router.push(`/petsitters/${selectedApplicant.sitterId}/book`);
-                    }}
-                  />
-                )}
-                {showSitterConfirmationCard && (
-                  <SitterConfirmationCard
-                    postTitle={confirmedPostTitle}
-                    ownerInitial={selectedApplicant?.initial ?? ""}
-                    ownerProfileImage={selectedApplicant?.profileImage}
-                    onPostClick={() => {
-                      if (selectedApplicant?.postId)
-                        router.push(`/board/${selectedApplicant.postId}`);
-                    }}
-                  />
-                )}
+                {displayMessages.map((msg) => {
+                  const postId =
+                    msg.applicationData?.postId ||
+                    msg.paymentData?.postId ||
+                    selectedApplicant?.postId;
+                  return (
+                    <MessageBubble
+                      key={msg.id}
+                      msg={msg}
+                      senderInitial={mobileRoomInitial}
+                      senderProfileImage={mobileRoomProfileImage}
+                      onPaymentRequest={handlePayNow}
+                      isPaymentPending={payingNow || isPaymentPending}
+                      isPaymentPaid={paymentState?.paid ?? false}
+                      onPostClick={
+                        postId
+                          ? () => router.push(`/board/${postId}`)
+                          : undefined
+                      }
+                      onGoToChat={() => {
+                        setActiveTab("one_on_one");
+                        setSelectedApplicantId(null);
+                        setMobileChatView("list");
+                      }}
+                    />
+                  );
+                })}
               </div>
             </div>
 
@@ -743,7 +1062,7 @@ function ChatPageContent({
                     거절
                   </button>
                   <button
-                    onClick={() => handleConfirmApplicant(selectedApplicantId!)}
+                    onClick={() => handleConfirmClick(selectedApplicantId!)}
                     disabled={!!actioningId}
                     className="flex-1 py-2 text-sm text-white bg-orange-500 rounded-xl hover:bg-orange-600 transition-colors font-medium disabled:opacity-50"
                   >
@@ -802,7 +1121,10 @@ function ChatPageContent({
                     type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.nativeEvent.isComposing)
+                        handleSend();
+                    }}
                     placeholder="메시지를 입력하세요"
                     className="flex-1 h-11 px-4 bg-orange-50 rounded-2xl text-sm text-stone-900 placeholder-stone-900/50 outline-none"
                   />
@@ -863,6 +1185,8 @@ function ChatPageContent({
               <Search size={16} className="text-gray-400 shrink-0" />
               <input
                 type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="채팅방 검색"
                 className="flex-1 bg-transparent text-sm text-stone-900 placeholder-stone-900/50 outline-none"
               />
@@ -872,7 +1196,7 @@ function ChatPageContent({
           {/* 1:1 채팅 목록 */}
           {activeTab === "one_on_one" && (
             <ScrollArea className="flex-1 overflow-hidden">
-              {rooms.map((room) => (
+              {filteredRooms.map((room) => (
                 <ChatRoomItem
                   key={room.id}
                   room={room}
@@ -888,11 +1212,13 @@ function ChatPageContent({
           {/* 지원 목록 */}
           {activeTab === "applicants" && (
             <ScrollArea className="flex-1 overflow-hidden">
-              {posts.map((post) => (
+              {filteredPosts.map((post) => (
                 <ApplicantPostGroup
                   key={post.id}
                   post={post}
-                  applicants={applicants.filter((a) => a.postId === post.id)}
+                  applicants={filteredApplicants.filter(
+                    (a) => a.postId === post.id,
+                  )}
                   isCollapsed={collapsedPosts.has(post.id)}
                   isOwner={
                     applicants.find((a) => a.postId === post.id)?.ownerId ===
@@ -900,12 +1226,12 @@ function ChatPageContent({
                   }
                   selectedApplicantId={selectedApplicantId}
                   rejectedIds={rejectedIds}
-                  confirmedId={confirmedId}
+                  confirmedId={confirmedIds.get(post.id) ?? null}
                   editMode={editMode}
                   onToggle={() => togglePostCollapse(post.id)}
                   onDelete={handleDeleteApplicant}
                   onReject={handleRejectApplicant}
-                  onConfirm={handleConfirmApplicant}
+                  onConfirm={handleConfirmClick}
                   onSelect={setSelectedApplicantId}
                   onAvatarClick={openApplicantProfile}
                   getApplicantBadge={getApplicantBadge}
@@ -1001,48 +1327,40 @@ function ChatPageContent({
                       </button>
                     </div>
                   )}
-                  {messages.map((msg) => (
-                    <MessageBubble
-                      key={msg.id}
-                      msg={msg}
-                      senderInitial={
-                        activeTab === "one_on_one"
-                          ? (selectedRoom?.initial ?? "")
-                          : (selectedApplicant?.initial ?? "")
-                      }
-                      senderProfileImage={
-                        activeTab === "one_on_one"
-                          ? (selectedRoom?.profileImage ?? null)
-                          : (selectedApplicant?.profileImage ?? null)
-                      }
-                    />
-                  ))}
-                  {showConfirmationCard && (
-                    <ConfirmationCard
-                      postTitle={confirmedPostTitle}
-                      sitterInitial={selectedApplicant?.initial ?? ""}
-                      sitterProfileImage={selectedApplicant?.profileImage}
-                      onPostClick={() => {
-                        if (selectedApplicant?.postId)
-                          router.push(`/board/${selectedApplicant.postId}`);
-                      }}
-                      onBook={() => {
-                        if (selectedApplicant?.sitterId)
-                          router.push(`/petsitters/${selectedApplicant.sitterId}/book`);
-                      }}
-                    />
-                  )}
-                  {showSitterConfirmationCard && (
-                    <SitterConfirmationCard
-                      postTitle={confirmedPostTitle}
-                      ownerInitial={selectedApplicant?.initial ?? ""}
-                      ownerProfileImage={selectedApplicant?.profileImage}
-                      onPostClick={() => {
-                        if (selectedApplicant?.postId)
-                          router.push(`/board/${selectedApplicant.postId}`);
-                      }}
-                    />
-                  )}
+                  {displayMessages.map((msg) => {
+                    const postId =
+                      msg.applicationData?.postId ||
+                      msg.paymentData?.postId ||
+                      selectedApplicant?.postId;
+                    return (
+                      <MessageBubble
+                        key={msg.id}
+                        msg={msg}
+                        senderInitial={
+                          activeTab === "one_on_one"
+                            ? (selectedRoom?.initial ?? "")
+                            : (selectedApplicant?.initial ?? "")
+                        }
+                        senderProfileImage={
+                          activeTab === "one_on_one"
+                            ? (selectedRoom?.profileImage ?? null)
+                            : (selectedApplicant?.profileImage ?? null)
+                        }
+                        onPaymentRequest={handlePayNow}
+                        isPaymentPending={payingNow || isPaymentPending}
+                        isPaymentPaid={paymentState?.paid ?? false}
+                        onPostClick={
+                          postId
+                            ? () => router.push(`/board/${postId}`)
+                            : undefined
+                        }
+                        onGoToChat={() => {
+                          setActiveTab("one_on_one");
+                          setSelectedApplicantId(null);
+                        }}
+                      />
+                    );
+                  })}
 
                   <div ref={messagesEndRef} />
                 </div>
@@ -1113,7 +1431,9 @@ function ChatPageContent({
         <ApplicantProfilePopup
           applicant={profilePopupApplicant}
           onClose={() => setProfilePopupApplicant(null)}
-          cardVariant={profilePopupApplicant.ownerId === userId ? "sitter" : "owner"}
+          cardVariant={
+            profilePopupApplicant.ownerId === userId ? "sitter" : "owner"
+          }
         />
       )}
 
@@ -1138,6 +1458,7 @@ function ChatPageContent({
       <CustomModalPayment
         open={paymentModalOpen}
         onClose={() => setPaymentModalOpen(false)}
+        onSubmit={handlePaymentSubmit}
       />
 
       <CareRecordModal
@@ -1146,6 +1467,23 @@ function ChatPageContent({
         serviceType="care"
         reservationId={selectedRoom?.reservationId ?? undefined}
         onSubmit={handleCareRecordSubmit}
+      />
+
+      <ReservationConfirmModal
+        open={reservationModalOpen}
+        sitterName={
+          pendingConfirmId
+            ? (applicants.find((a) => a.id === pendingConfirmId)?.name ?? "")
+            : ""
+        }
+        details={reservationDetails}
+        loading={reservationModalLoading}
+        confirming={!!actioningId}
+        onClose={() => {
+          setReservationModalOpen(false);
+          setPendingConfirmId(null);
+        }}
+        onConfirm={handleConfirmApplicant}
       />
     </div>
   );
@@ -1156,7 +1494,9 @@ function ChatPageInner() {
   const initialTab =
     searchParams.get("tab") === "applicants" ? "applicants" : "one_on_one";
   const initialRoomId = searchParams.get("roomId");
-  return <ChatPageContent initialTab={initialTab} initialRoomId={initialRoomId} />;
+  return (
+    <ChatPageContent initialTab={initialTab} initialRoomId={initialRoomId} />
+  );
 }
 
 export default function ChatPage() {

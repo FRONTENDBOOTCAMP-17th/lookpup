@@ -137,9 +137,81 @@ export async function createApplication(
   return { data };
 }
 
+export async function getRequestDetailsForReservation(roomId: string) {
+  const user = await getAuthUser();
+  if (!user) {
+    return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
+  }
+
+  const db = createServiceClient();
+
+  const { data: room } = await db
+    .from("chat_rooms")
+    .select("request_id, sitter_id")
+    .eq("id", roomId)
+    .single();
+
+  if (!room?.request_id) {
+    return { error: { code: "NOT_FOUND", message: "구인글 정보를 찾을 수 없습니다." } };
+  }
+
+  const { data: request } = await db
+    .from("requests")
+    .select("id, title, start_datetime, end_datetime, request_type, location, budget, pet_id")
+    .eq("id", room.request_id)
+    .single();
+
+  if (!request) {
+    return { error: { code: "NOT_FOUND", message: "구인글을 찾을 수 없습니다." } };
+  }
+
+  const { data: application } = await db
+    .from("applications")
+    .select("proposed_price")
+    .eq("request_id", room.request_id)
+    .eq("sitter_id", room.sitter_id)
+    .maybeSingle();
+
+  let petName: string | null = null;
+  let petAnimalType: string | null = null;
+  let petBreed: string | null = null;
+  if (request.pet_id) {
+    const { data: pet } = await db
+      .from("pets")
+      .select("name, animal_type, breed")
+      .eq("id", request.pet_id)
+      .maybeSingle();
+    if (pet) {
+      petName = pet.name;
+      petAnimalType = pet.animal_type;
+      petBreed = pet.breed;
+    }
+  }
+
+  return {
+    data: {
+      title: request.title,
+      startDatetime: request.start_datetime,
+      endDatetime: request.end_datetime,
+      requestType: request.request_type,
+      location: request.location,
+      totalPrice: application?.proposed_price ?? request.budget,
+      petName,
+      petAnimalType,
+      petBreed,
+    },
+  };
+}
+
 export async function updateApplication(
   id: string,
   input: { status: "selected" | "rejected" | "canceled" },
+  overrides?: {
+    startDatetime?: string | null;
+    endDatetime?: string | null;
+    totalPrice?: number | null;
+    location?: string | null;
+  },
 ) {
   const user = await getAuthUser();
   if (!user) {
@@ -201,7 +273,9 @@ export async function updateApplication(
       };
     }
 
-    const totalPrice = application.proposed_price ?? requestRow.budget ?? 0;
+    const totalPrice = overrides?.totalPrice ?? application.proposed_price ?? requestRow.budget ?? 0;
+    const startDatetime = overrides?.startDatetime ?? requestRow.start_datetime;
+    const endDatetime = overrides?.endDatetime ?? requestRow.end_datetime;
 
     const { data: reservation, error: reservationError } = await db
       .from("reservations")
@@ -211,10 +285,11 @@ export async function updateApplication(
         service_id: null,
         request_id: requestRow.id,
         application_id: id,
-        start_datetime: requestRow.start_datetime,
-        end_datetime: requestRow.end_datetime,
+        start_datetime: startDatetime,
+        end_datetime: endDatetime,
         total_price: totalPrice,
-        status: "pending",
+        status: "accepted",
+        accepted_at: new Date().toISOString(),
       })
       .select()
       .single();
@@ -311,6 +386,12 @@ export async function updateApplication(
 export async function updateApplicationByRoom(
   roomId: string,
   status: "selected" | "rejected",
+  overrides?: {
+    startDatetime?: string | null;
+    endDatetime?: string | null;
+    totalPrice?: number | null;
+    location?: string | null;
+  },
 ) {
   const user = await getAuthUser();
   if (!user) {
@@ -344,5 +425,5 @@ export async function updateApplicationByRoom(
     };
   }
 
-  return updateApplication(application.id, { status });
+  return updateApplication(application.id, { status }, overrides);
 }
