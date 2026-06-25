@@ -149,7 +149,7 @@ function ChatPageContent({
     markRoomAsRead(activeRoomId);
     markRoomRead(activeRoomId);
     setSendError(null);
-  }, [activeRoomId]);
+  }, [activeRoomId, markRoomAsRead]);
 
   useLayoutEffect(() => {
     if (isLoadMoreRef.current) {
@@ -213,6 +213,14 @@ function ChatPageContent({
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file || !activeRoomId || sendingPhoto) return;
+    if (file.size > 10 * 1024 * 1024) {
+      setSendError("10MB 이하의 이미지만 전송할 수 있습니다.");
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      setSendError("이미지 파일만 전송할 수 있습니다.");
+      return;
+    }
     setSendError(null);
     setSendingPhoto(true);
     setPlusMenuOpen(false);
@@ -244,6 +252,7 @@ function ChatPageContent({
   }, []);
 
   const [mobileChatView, setMobileChatView] = useState<"list" | "room">("list");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const hasAutoSelected = useRef(false);
   useEffect(() => {
@@ -276,27 +285,30 @@ function ChatPageContent({
 
   const handleCareRecordSubmit = async (record: CareRecordPayload) => {
     if (!activeRoomId) return;
+    try {
+      let reservationId = record.reservationId;
 
-    let reservationId = record.reservationId;
+      if (!reservationId && selectedRoom?.ownerId && selectedRoom?.sitterId) {
+        const res = await getInProgressReservationByOwnerAndSitter(
+          selectedRoom.ownerId,
+          selectedRoom.sitterId,
+        );
+        if ("data" in res && res.data) reservationId = res.data.id;
+      }
 
-    if (!reservationId && selectedRoom?.ownerId && selectedRoom?.sitterId) {
-      const res = await getInProgressReservationByOwnerAndSitter(
-        selectedRoom.ownerId,
-        selectedRoom.sitterId,
-      );
-      if ("data" in res && res.data) reservationId = res.data.id;
-    }
+      if (reservationId) {
+        await createCareRecord({ ...record, reservationId });
+      }
 
-    if (reservationId) {
-      await createCareRecord({ ...record, reservationId });
-    }
-
-    const content = `[돌봄기록] ${record.title}`;
-    const result = await sendSystemMessage(activeRoomId, content);
-    if (result.data) {
-      addMessage(result.data);
-      broadcastMessage(result.data);
-      updatePreview(activeRoomId, content, result.data.created_at ?? "");
+      const content = `[돌봄기록] ${record.title}`;
+      const result = await sendSystemMessage(activeRoomId, content);
+      if (result.data) {
+        addMessage(result.data);
+        broadcastMessage(result.data);
+        updatePreview(activeRoomId, content, result.data.created_at ?? "");
+      }
+    } catch {
+      setSendError("돌봄기록 전송에 실패했습니다. 다시 시도해주세요.");
     }
   };
   const [pendingDelete, setPendingDelete] = useState<{
@@ -319,6 +331,16 @@ function ChatPageContent({
     (a) => a.id === selectedApplicantId,
   );
 
+  const filteredRooms = rooms.filter(
+    (r) => !searchQuery || r.name.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
+  const filteredApplicants = applicants.filter(
+    (a) => !searchQuery || a.name.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
+  const filteredPosts = posts.filter((p) =>
+    filteredApplicants.some((a) => a.postId === p.id),
+  );
+
   function handleDeleteRoom(id: string) {
     setPendingDelete({ id, type: "room" });
     setDeleteError(null);
@@ -333,28 +355,33 @@ function ChatPageContent({
     if (!pendingDelete || deleting) return;
     setDeleting(true);
     setDeleteError(null);
-    const result =
-      pendingDelete.type === "room"
-        ? await deleteRoom(pendingDelete.id)
-        : await deleteApplicant(pendingDelete.id);
-    setDeleting(false);
-    if (result.error) {
-      setDeleteError(result.error);
-      return;
+    try {
+      const result =
+        pendingDelete.type === "room"
+          ? await deleteRoom(pendingDelete.id)
+          : await deleteApplicant(pendingDelete.id);
+      if (result.error) {
+        setDeleteError(result.error);
+        return;
+      }
+      if (pendingDelete.type === "room" && selectedRoomId === pendingDelete.id) {
+        setSelectedRoomId(null);
+        setMobileChatView("list");
+      }
+      if (
+        pendingDelete.type === "applicant" &&
+        selectedApplicantId === pendingDelete.id
+      ) {
+        setSelectedApplicantId(null);
+        setMobileChatView("list");
+      }
+      setPendingDelete(null);
+      setMobileMenuOpen(false);
+    } catch {
+      setDeleteError("오류가 발생했습니다. 다시 시도해주세요.");
+    } finally {
+      setDeleting(false);
     }
-    if (pendingDelete.type === "room" && selectedRoomId === pendingDelete.id) {
-      setSelectedRoomId(null);
-      setMobileChatView("list");
-    }
-    if (
-      pendingDelete.type === "applicant" &&
-      selectedApplicantId === pendingDelete.id
-    ) {
-      setSelectedApplicantId(null);
-      setMobileChatView("list");
-    }
-    setPendingDelete(null);
-    setMobileMenuOpen(false);
   }
 
   function getHeaderBadge() {
@@ -377,14 +404,17 @@ function ChatPageContent({
 
   function getReportUrl() {
     const isOneOnOne = activeTab === "one_on_one";
+    const isUserSitter = isOneOnOne && selectedRoom?.sitterId === userId;
     const targetName = isOneOnOne
       ? (selectedRoom?.name ?? "")
       : (selectedApplicant?.name ?? "");
     const targetId = isOneOnOne
-      ? (selectedRoom?.sitterId ?? "")
+      ? isUserSitter
+        ? (selectedRoom?.ownerId ?? "")
+        : (selectedRoom?.sitterId ?? "")
       : (selectedApplicant?.sitterId ?? "");
-  
-    const role = isOneOnOne && selectedRoom?.sitterId === userId ? "보호자" : "펫시터";
+
+    const role = isUserSitter ? "보호자" : "펫시터";
     const service = getHeaderSub();
     const targetImage = isOneOnOne
       ? (selectedRoom?.profileImage ?? null)
@@ -499,6 +529,8 @@ function ChatPageContent({
                 <Search size={16} className="text-gray-400 shrink-0" />
                 <input
                   type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="채팅방 검색"
                   className="flex-1 bg-transparent text-sm text-stone-900 placeholder-stone-900/50 outline-none"
                 />
@@ -534,7 +566,7 @@ function ChatPageContent({
                   </p>
                 )}
               {activeTab === "one_on_one" &&
-                rooms.map((room) => (
+                filteredRooms.map((room) => (
                   <ChatRoomItem
                     key={room.id}
                     room={room}
@@ -550,11 +582,11 @@ function ChatPageContent({
 
               {activeTab === "applicants" && (
                 <>
-                  {posts.map((post) => (
+                  {filteredPosts.map((post) => (
                     <ApplicantPostGroup
                       key={post.id}
                       post={post}
-                      applicants={applicants.filter(
+                      applicants={filteredApplicants.filter(
                         (a) => a.postId === post.id,
                       )}
                       isCollapsed={collapsedPosts.has(post.id)}
@@ -802,7 +834,9 @@ function ChatPageContent({
                     type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.nativeEvent.isComposing) handleSend();
+                    }}
                     placeholder="메시지를 입력하세요"
                     className="flex-1 h-11 px-4 bg-orange-50 rounded-2xl text-sm text-stone-900 placeholder-stone-900/50 outline-none"
                   />
@@ -863,6 +897,8 @@ function ChatPageContent({
               <Search size={16} className="text-gray-400 shrink-0" />
               <input
                 type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="채팅방 검색"
                 className="flex-1 bg-transparent text-sm text-stone-900 placeholder-stone-900/50 outline-none"
               />
@@ -872,7 +908,7 @@ function ChatPageContent({
           {/* 1:1 채팅 목록 */}
           {activeTab === "one_on_one" && (
             <ScrollArea className="flex-1 overflow-hidden">
-              {rooms.map((room) => (
+              {filteredRooms.map((room) => (
                 <ChatRoomItem
                   key={room.id}
                   room={room}
@@ -888,11 +924,11 @@ function ChatPageContent({
           {/* 지원 목록 */}
           {activeTab === "applicants" && (
             <ScrollArea className="flex-1 overflow-hidden">
-              {posts.map((post) => (
+              {filteredPosts.map((post) => (
                 <ApplicantPostGroup
                   key={post.id}
                   post={post}
-                  applicants={applicants.filter((a) => a.postId === post.id)}
+                  applicants={filteredApplicants.filter((a) => a.postId === post.id)}
                   isCollapsed={collapsedPosts.has(post.id)}
                   isOwner={
                     applicants.find((a) => a.postId === post.id)?.ownerId ===
