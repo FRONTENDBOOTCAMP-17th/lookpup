@@ -54,11 +54,19 @@ export type Applicant = {
   completedJobs?: string;
 };
 
+export type CostItem = {
+  id: string;
+  name: string;
+  amount: string;
+  description: string;
+};
+
 export type PaymentData = {
   amount: number;
   reason: string;
   deadline: string;
   sentByMe?: boolean;
+  costItems?: CostItem[];
 };
 
 export type ApplicationData = {
@@ -421,6 +429,7 @@ export function MessageBubble({
           otherInitial={senderInitial}
           otherProfileImage={senderProfileImage}
           onPostClick={onPostClick}
+          costItems={data.costItems}
         />
       );
     }
@@ -435,6 +444,7 @@ export function MessageBubble({
         otherInitial={senderInitial}
         otherProfileImage={senderProfileImage}
         onPostClick={onPostClick}
+        costItems={data.costItems}
       />
     );
   }
@@ -921,6 +931,7 @@ type PaymentRequestCardProps = {
   otherInitial: string;
   otherProfileImage?: string | null;
   onPostClick?: () => void;
+  costItems?: CostItem[];
 };
 
 export function PaymentRequestCard({
@@ -933,6 +944,7 @@ export function PaymentRequestCard({
   otherInitial,
   otherProfileImage,
   onPostClick,
+  costItems,
 }: PaymentRequestCardProps) {
   return (
     <div className="flex justify-end">
@@ -974,6 +986,34 @@ export function PaymentRequestCard({
             {reason}
           </span>
         </button>
+
+        {costItems && costItems.length > 0 && (
+          <div className="flex flex-col gap-1 px-1">
+            <span className="text-[#6B7280] text-[10px] font-semibold uppercase tracking-[0.3px]">
+              비용 상세 내역
+            </span>
+            <div className="flex flex-col gap-1 mt-0.5">
+              {costItems.map((item) => (
+                <div key={item.id} className="flex flex-col">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#374151] text-xs font-medium">
+                      {item.name}
+                    </span>
+                    <span className="text-orange-500 text-xs font-medium">
+                      {Number(item.amount.replace(/,/g, "")).toLocaleString("ko-KR")}원
+                    </span>
+                  </div>
+                  {item.description && (
+                    <span className="text-[#9CA3AF] text-[10px] leading-4">
+                      {item.description}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="border-t border-orange-100 mt-1" />
+          </div>
+        )}
 
         <div className="flex flex-col gap-1.5">
           <div className="flex justify-between items-center">
@@ -1017,6 +1057,7 @@ type SitterPaymentRequestCardProps = {
   otherInitial: string;
   otherProfileImage?: string | null;
   onPostClick?: () => void;
+  costItems?: CostItem[];
 };
 
 export function SitterPaymentRequestCard({
@@ -1025,6 +1066,7 @@ export function SitterPaymentRequestCard({
   otherInitial,
   otherProfileImage,
   onPostClick,
+  costItems,
 }: SitterPaymentRequestCardProps) {
   return (
     <div className="flex justify-end">
@@ -1060,6 +1102,35 @@ export function SitterPaymentRequestCard({
             {reason}
           </span>
         </button>
+
+        {costItems && costItems.length > 0 && (
+          <div className="mt-3 flex flex-col gap-1 px-1">
+            <span className="text-[#6B7280] text-[10px] font-semibold uppercase tracking-[0.3px]">
+              비용 상세 내역
+            </span>
+            <div className="flex flex-col gap-1 mt-0.5">
+              {costItems.map((item) => (
+                <div key={item.id} className="flex flex-col">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#374151] text-xs font-medium">
+                      {item.name}
+                    </span>
+                    <span className="text-orange-500 text-xs font-medium">
+                      {Number(item.amount.replace(/,/g, "")).toLocaleString("ko-KR")}원
+                    </span>
+                  </div>
+                  {item.description && (
+                    <span className="text-[#9CA3AF] text-[10px] leading-4">
+                      {item.description}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="border-t border-orange-300 mt-1" />
+          </div>
+        )}
+
         <div className="mt-3 flex flex-col gap-1.5">
           <div className="flex justify-between items-center">
             <span className="text-[#6B7280] text-xs">요청 금액</span>

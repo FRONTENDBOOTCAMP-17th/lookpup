@@ -271,7 +271,7 @@ export async function sendSystemMessage(roomId: string, content: string) {
 
 export async function sendPaymentRequestMessage(
   roomId: string,
-  data: { amount: number; reason: string; deadline: string },
+  data: { amount: number; reason: string; deadline: string; costItems?: { id: string; name: string; amount: string; description: string }[] },
 ) {
   const user = await getAuthUser();
   if (!user) {

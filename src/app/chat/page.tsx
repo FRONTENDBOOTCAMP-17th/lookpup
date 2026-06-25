@@ -218,6 +218,7 @@ function ChatPageContent({
     type: string;
     amount: number;
     reason: string;
+    costItems?: { id: string; name: string; amount: string; description: string }[];
   }) {
     if (!activeRoomId) return;
     const d = new Date(Date.now() + 24 * 60 * 60 * 1000);
@@ -226,6 +227,7 @@ function ChatPageContent({
       amount: data.amount,
       reason: data.reason,
       deadline,
+      costItems: data.costItems,
     });
     if (result.data) {
       addMessage(result.data);
