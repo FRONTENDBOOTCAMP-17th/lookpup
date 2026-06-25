@@ -1,111 +1,91 @@
 import Link from "next/link";
-import { Search, Shield, Calendar, MessageCircle, Star } from "lucide-react";
+import Image from "next/image";
+import {
+  Search,
+  Shield,
+  Calendar,
+  MessageCircle,
+  Star,
+  MapPin,
+} from "lucide-react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { createClient } from "@/utils/supabase/server";
 
-// 소개란 정보값
-
-const STATS = [
-  { value: "1,500+", label: "인증 펫시터" },
-  { value: "10,000+", label: "완료된 예약" },
-  { value: "4.9", label: "평균 평점" },
-];
-
 const FEATURES = [
   {
-    icon: Search,
-    color: "bg-orange-500/10",
-    iconColor: "text-orange-500",
-    title: "쉬운 펫시터 검색",
-    desc: "지역, 서비스 종류, 가격대로 필터링하여 딱 맞는 펫시터를 찾아보세요",
+    icon: MapPin,
+    title: "위치 기반 매칭",
+    desc: "현재 위치 또는 원하는 지역을 기준으로 가까운 펫시터를 우선 노출합니다.",
   },
   {
-    icon: Shield,
-    color: "bg-emerald-500/10",
-    iconColor: "text-emerald-500",
-    title: "안전한 인증 시스템",
-    desc: "신원 확인과 자격증 인증을 완료한 펫시터만 활동할 수 있습니다",
+    icon: Search,
+    title: "지역·조건 맞춤 검색",
+    desc: "서비스 유형, 가격대, 지역을 조합해 딱 맞는 펫시터를 빠르게 찾을 수 있습니다.",
   },
   {
     icon: Calendar,
-    color: "bg-blue-500/10",
-    iconColor: "text-blue-500",
-    title: "간편한 예약 관리",
-    desc: "원하는 날짜와 시간을 선택하고 실시간으로 예약을 관리하세요",
+    title: "실시간 예약 관리",
+    desc: "달력으로 가능한 날짜를 실시간 확인하고, 예약 확정부터 완료까지 단계별로 추적합니다.",
   },
   {
     icon: MessageCircle,
-    color: "bg-amber-500/10",
-    iconColor: "text-amber-500",
-    title: "실시간 소통",
-    desc: "펫시터와 채팅으로 소통하며 반려동물 상태를 실시간으로 확인하세요",
+    title: "1:1 채팅 소통",
+    desc: "예약 전후 언제든지 채팅으로 소통하고 돌봄 상황을 실시간으로 파악할 수 있습니다.",
   },
   {
     icon: Star,
-    color: "bg-violet-500/10",
-    iconColor: "text-violet-500",
-    title: "투명한 리뷰 시스템",
-    desc: "실제 이용자들의 후기를 확인하고 믿을 수 있는 선택을 하세요",
+    title: "검증된 리뷰",
+    desc: "실제 예약을 완료한 보호자만 리뷰를 작성할 수 있어 신뢰할 수 있는 후기를 확인할 수 있습니다.",
   },
 ];
 
-const STEPS = [
-  {
-    num: 1,
-    title: "펫시터 검색",
-    desc: "지역과 서비스를 선택하여 마음에 드는 펫시터를 찾아보세요",
-  },
-  {
-    num: 2,
-    title: "프로필 확인",
-    desc: "펫시터의 경력, 후기, 인증서를 꼼꼼히 확인하세요",
-  },
-  {
-    num: 3,
-    title: "예약 및 결제",
-    desc: "날짜와 시간을 선택하고 안전하게 결제하세요",
-  },
-  {
-    num: 4,
-    title: "서비스 이용",
-    desc: "채팅으로 소통하며 안심하고 서비스를 이용하세요",
-  },
-  {
-    num: 5,
-    title: "후기 작성",
-    desc: "서비스 이용 후 솔직한 후기를 남겨주세요",
-  },
+const STEPS_OWNER = [
+  { num: 1, title: "펫시터 검색", desc: "지역·서비스 종류·가격대로 필터링" },
+  { num: 2, title: "프로필 비교", desc: "자격증·경력·후기 꼼꼼히 확인" },
+  { num: 3, title: "채팅 문의", desc: "예약 전 궁금한 점을 직접 질문" },
+  { num: 4, title: "예약 & 결제", desc: "날짜·시간 선택 후 안전하게 결제" },
+  { num: 5, title: "돌봄 진행", desc: "실시간 채팅으로 상태 확인" },
+  { num: 6, title: "후기 작성", desc: "솔직한 후기로 커뮤니티에 기여" },
+];
+
+const STEPS_SITTER = [
+  { num: 1, title: "회원가입", desc: "기본 정보 입력 후 가입" },
+  { num: 2, title: "신원 인증", desc: "신분증·자격증 서류 제출" },
+  { num: 3, title: "프로필 작성", desc: "서비스·가격·일정 설정" },
+  { num: 4, title: "예약 수락", desc: "보호자 요청 검토 후 수락" },
+  { num: 5, title: "돌봄 제공", desc: "약속된 서비스 성실히 수행" },
+  { num: 6, title: "정산 수령", desc: "서비스 완료 후 자동 정산" },
 ];
 
 const FAQS = [
   {
+    q: "서비스 중 반려동물이 다쳤을 경우 어떻게 되나요?",
+    a: "펫시터의 과실이 확인된 경우, 당사는 예약 내역·채팅 기록 등 플랫폼 내 증거 자료를 보관하고 분쟁 조정 시 이를 제공합니다. 다만 lookpup은 중개 플랫폼으로 직접적인 의료비 보상 의무는 없으며, 손해배상 청구는 보호자-펫시터 간 민사 절차(또는 소비자분쟁조정위원회)를 통해 진행됩니다. 보호자분께서는 서비스 이용 전 반려동물 의료보험 가입을 권장드립니다.",
+  },
+  {
+    q: "펫시터가 연락이 되지 않거나 서비스를 이행하지 않으면 어떻게 하나요?",
+    a: "예약 확정 후 펫시터가 무단으로 서비스를 이행하지 않은 경우 전액 환불 처리됩니다. 고객센터에 신고하시면 해당 펫시터 계정은 즉시 이용 정지되며, 반복 위반 시 영구 제재됩니다. 채팅 기록과 예약 데이터는 분쟁 증빙 자료로 활용될 수 있도록 90일간 보관됩니다.",
+  },
+  {
     q: "펫시터 인증은 어떻게 진행되나요?",
-    a: "신분증 확인, 반려동물 관련 자격증 확인, 범죄경력조회를 통해 안전한 펫시터만 활동할 수 있도록 합니다.",
+    a: "신분증 실명 확인(필수)과 반려동물 관련 자격증 사본 제출(권장)을 통해 검토합니다. 심사는 영업일 기준 2~5일 소요되며, 허위 서류 제출이 확인될 경우 계정은 즉시 영구 정지되고 관련 기관에 통보될 수 있습니다.",
   },
   {
-    q: "예약 취소는 어떻게 하나요?",
-    a: "예약 3일 전까지는 100% 환불, 1-2일 전은 50% 환불, 당일 취소는 환불이 불가합니다.",
+    q: "예약 취소 및 환불 정책이 어떻게 되나요?",
+    a: "서비스 시작 3일 이전 취소 시 100% 환불, 1~2일 전 취소 시 50% 환불, 당일 취소 또는 노쇼는 환불이 불가합니다. 펫시터 귀책 사유로 인한 취소는 취소 시점과 무관하게 전액 환불됩니다.",
   },
   {
-    q: "서비스 중 문제가 생기면 어떻게 하나요?",
-    a: "24시간 고객센터를 운영하고 있으며, 긴급 상황 시 즉시 대응팀이 출동합니다.",
-  },
-  {
-    q: "펫시터로 활동하려면 어떻게 해야 하나요?",
-    a: "회원가입 후 펫시터 등록을 진행하시면 됩니다. 인증 심사는 3-5일 소요됩니다.",
-  },
-  {
-    q: "결제는 어떻게 이루어지나요?",
-    a: "신용카드, 계좌이체, 간편결제를 지원하며, 서비스 완료 후 정산됩니다.",
+    q: "결제는 어떻게 이루어지며 안전한가요?",
+    a: "토스페이먼츠를 통해 신용카드, 계좌이체, 간편결제(토스페이·카카오페이 등)를 지원합니다. 결제 정보는 토스페이먼츠의 PCI-DSS 인증 보안 시스템으로 안전하게 관리됩니다.",
   },
 ];
 
-// 페이지
-
 export default async function AboutPage() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   const isLoggedIn = !!user;
 
   return (
@@ -113,57 +93,55 @@ export default async function AboutPage() {
       <Header />
 
       <main className="flex-1">
-        {/* 히어로*/}
+        {/* 히어로 */}
         <section className="bg-gradient-to-b from-white via-white to-orange-50 py-16 md:py-20">
-          <div className="max-w-[1280px] mx-auto px-4 sm:px-10 flex flex-col items-center text-center">
-            <h1 className="text-3xl md:text-5xl font-bold text-stone-900 leading-tight mb-6">
-              <span className="whitespace-nowrap">우리 아이를</span>
-              <br className="sm:hidden" />{" "}
-              <span className="whitespace-nowrap">믿고 맡길 수 있는</span>
-              <br />
-              <span className="whitespace-nowrap">펫시터를 만나보세요</span>
-            </h1>
-            <p className="text-gray-500 text-base md:text-xl leading-7 mb-10 md:mb-16">
-              <span className="whitespace-nowrap">
-                검증된 펫시터와 함께하는
-              </span>{" "}
-              <span className="whitespace-nowrap">
-                안전하고 편리한 반려동물 케어 서비스
+          <div className="mx-auto flex flex-col items-center text-center">
+            {/* 로고 */}
+            <div className="mb-4 flex flex-col items-center gap-2">
+              <span className="text-orange-500 text-base md:text-lg font-bold tracking-widest uppercase">
+                lookpup
               </span>
-            </p>
 
-            {/* 통계 */}
-            <div className="grid grid-cols-3 w-full max-w-3xl">
-              {STATS.map(({ value, label }) => (
-                <div key={label} className="flex flex-col items-center">
-                  <span className="text-orange-500 text-2xl md:text-4xl font-bold">
-                    {value}
-                  </span>
-                  <span className="text-gray-500 text-sm md:text-base mt-2">
-                    {label}
-                  </span>
-                </div>
-              ))}
+              <Image
+                src="/logo.png"
+                alt="lookpup 로고"
+                width={260}
+                height={120}
+                className="object-contain w-44 md:w-64 h-auto"
+                priority
+              />
             </div>
+            <br></br>
+
+            <p className="text-gray-500 text-sm md:text-lg leading-6 md:leading-7 w-[300px] md:w-auto">
+              lookpup은 <strong className="text-stone-700">보호자</strong>와{" "}
+              <strong className="text-stone-700">펫시터</strong>를 신뢰 기반으로
+              연결하는
+              <br className="md:hidden" /> 반려동물 케어 중개 플랫폼입니다.
+              <br />
+              인증된 시터 검색부터 예약, 결제, 후기까지
+              <br className="md:hidden" /> 하나의 서비스로 경험해보세요.
+            </p>
           </div>
         </section>
 
         {/* 주요 기능 */}
         <section className="py-16 md:py-20">
           <div className="max-w-[1280px] mx-auto px-4 sm:px-10">
-            <h2 className="text-2xl md:text-3xl font-bold text-stone-900 text-center mb-8 md:mb-12">
+            <h2 className="text-2xl md:text-3xl font-bold text-stone-900 text-center mb-4">
               주요 기능
             </h2>
+            <p className="text-gray-500 text-center mb-10 md:mb-14">
+              lookpup이 제공하는 핵심 기능을 확인하세요
+            </p>
             <div className="flex flex-wrap justify-center gap-6">
-              {FEATURES.map(({ icon: Icon, color, iconColor, title, desc }) => (
+              {FEATURES.map(({ icon: Icon, title, desc }) => (
                 <div
                   key={title}
                   className="w-full sm:w-[calc(50%-0.75rem)] lg:w-[calc(33.333%-1rem)] p-5 bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100 flex flex-col gap-4 hover:border-orange-500 hover:-translate-y-1 hover:shadow-[0px_8px_24px_0px_rgba(232,116,42,0.15)] transition-all duration-200"
                 >
-                  <div
-                    className={`w-14 h-14 ${color} rounded-2xl flex items-center justify-center`}
-                  >
-                    <Icon className={`w-7 h-7 ${iconColor}`} />
+                  <div className="w-14 h-14 bg-orange-500/10 rounded-2xl flex items-center justify-center">
+                    <Icon className="w-7 h-7 text-orange-500" />
                   </div>
                   <h3 className="text-stone-900 text-lg font-semibold">
                     {title}
@@ -175,25 +153,56 @@ export default async function AboutPage() {
           </div>
         </section>
 
-        {/* 이용 방법 */}
+        {/* 이용 방법 - 보호자 */}
         <section className="py-16 md:py-20 bg-white">
           <div className="max-w-[1280px] mx-auto px-8 sm:px-10">
-            <h2 className="text-2xl md:text-3xl font-bold text-stone-900 text-center mb-8 md:mb-12">
+            <h2 className="text-2xl md:text-3xl font-bold text-stone-900 text-center mb-2">
               이용 방법
             </h2>
-            <div className="flex flex-col md:flex-row md:items-start md:justify-between relative gap-6 md:gap-0">
-              {/* 연결선 - 데스크탑만 */}
-              <div className="hidden md:block absolute top-8 left-[calc(10%+32px)] right-[calc(10%+32px)] h-px border-t-2 border-dashed border-orange-100" />
-              {STEPS.map(({ num, title, desc }) => (
+            <p className="text-gray-500 text-center mb-10 md:mb-14">
+              간단한 단계로 시작할 수 있습니다
+            </p>
+
+            {/* 보호자 플로우 */}
+            <p className="text-orange-500 font-semibold text-center mb-6">
+              보호자
+            </p>
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between relative gap-6 md:gap-0 mb-14">
+              <div className="hidden md:block absolute top-8 left-[calc(8%+32px)] right-[calc(8%+32px)] h-px border-t-2 border-dashed border-orange-100" />
+              {STEPS_OWNER.map(({ num, title, desc }) => (
                 <div
                   key={num}
-                  className="flex md:flex-col items-start md:items-center text-left md:text-center md:w-50 relative z-10 gap-4 md:gap-0"
+                  className="flex md:flex-col items-start md:items-center text-left md:text-center md:w-36 relative z-10 gap-4 md:gap-0"
                 >
                   <div className="w-16 h-16 shrink-0 bg-orange-500 rounded-full flex items-center justify-center text-white text-2xl font-bold md:mb-4">
                     {num}
                   </div>
                   <div>
-                    <h3 className="text-stone-900 text-lg font-semibold mb-1 md:mb-2">
+                    <h3 className="text-stone-900 text-base font-semibold mb-1">
+                      {title}
+                    </h3>
+                    <p className="text-gray-500 text-sm leading-5">{desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* 펫시터 플로우 */}
+            <p className="text-stone-600 font-semibold text-center mb-6">
+              펫시터
+            </p>
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between relative gap-6 md:gap-0">
+              <div className="hidden md:block absolute top-8 left-[calc(8%+32px)] right-[calc(8%+32px)] h-px border-t-2 border-dashed border-stone-200" />
+              {STEPS_SITTER.map(({ num, title, desc }) => (
+                <div
+                  key={num}
+                  className="flex md:flex-col items-start md:items-center text-left md:text-center md:w-36 relative z-10 gap-4 md:gap-0"
+                >
+                  <div className="w-16 h-16 shrink-0 bg-stone-700 rounded-full flex items-center justify-center text-white text-2xl font-bold md:mb-4">
+                    {num}
+                  </div>
+                  <div>
+                    <h3 className="text-stone-900 text-base font-semibold mb-1">
                       {title}
                     </h3>
                     <p className="text-gray-500 text-sm leading-5">{desc}</p>
@@ -207,9 +216,12 @@ export default async function AboutPage() {
         {/* 자주 묻는 질문 */}
         <section className="py-16 md:py-20">
           <div className="max-w-[1280px] mx-auto px-4 sm:px-10">
-            <h2 className="text-2xl md:text-3xl font-bold text-stone-900 text-center mb-8 md:mb-12">
+            <h2 className="text-2xl md:text-3xl font-bold text-stone-900 text-center mb-4">
               자주 묻는 질문
             </h2>
+            <p className="text-gray-500 text-center mb-10 md:mb-14">
+              궁금한 점을 미리 확인하세요
+            </p>
             <div className="flex flex-col gap-4">
               {FAQS.map(({ q, a }) => (
                 <div
@@ -217,7 +229,12 @@ export default async function AboutPage() {
                   className="p-5 bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100 flex items-start gap-4"
                 >
                   <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center shrink-0">
-                    <span className="text-white text-base font-bold" aria-label="질문">Q</span>
+                    <span
+                      className="text-white text-base font-bold"
+                      aria-label="질문"
+                    >
+                      Q
+                    </span>
                   </div>
                   <div>
                     <h3 className="text-stone-900 text-lg font-semibold mb-2">
@@ -235,10 +252,10 @@ export default async function AboutPage() {
         <section className="py-16 md:py-20 bg-linear-to-r from-orange-500 to-stone-600">
           <div className="max-w-[1280px] mx-auto px-4 sm:px-10 flex flex-col items-center text-center">
             <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
-              지금 시작해보세요
+              지금 lookpup을 시작해보세요
             </h2>
             <p className="text-white/90 text-base md:text-lg leading-7 mb-8">
-              믿을 수 있는 펫시터와 함께 소중한 반려동물을 케어하세요
+              보호자도, 펫시터도 — 반려동물 돌봄의 새로운 기준을 경험하세요
             </p>
             <div className="flex flex-row gap-4">
               {!isLoggedIn && (
