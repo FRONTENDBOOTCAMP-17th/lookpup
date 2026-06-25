@@ -44,10 +44,18 @@ interface RoomApiItem {
 
 const SYSTEM_MSG_PREFIX = "__system__:";
 const IMAGE_MSG_PREFIX = "__image__:";
+const PAYMENT_REQUEST_PREFIX = "__payment_request__:";
+const PAYMENT_COMPLETE_PREFIX = "__payment_complete__:";
+const APPLICATION_SELECTED_PREFIX = "__application_selected__:";
+const APPLICATION_REJECTED_PREFIX = "__application_rejected__";
 
 function formatPreview(content: string): string {
   if (content.startsWith(SYSTEM_MSG_PREFIX)) return content.slice(SYSTEM_MSG_PREFIX.length);
   if (content.startsWith(IMAGE_MSG_PREFIX)) return "사진";
+  if (content.startsWith(PAYMENT_REQUEST_PREFIX)) return "결제 요청";
+  if (content.startsWith(PAYMENT_COMPLETE_PREFIX)) return "결제 완료";
+  if (content.startsWith(APPLICATION_SELECTED_PREFIX)) return "선택 확정";
+  if (content.startsWith(APPLICATION_REJECTED_PREFIX)) return "지원 거절";
   return content;
 }
 

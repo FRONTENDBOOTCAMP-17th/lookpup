@@ -1,6 +1,13 @@
 "use client";
 
-import { useState, useEffect, useLayoutEffect, useRef, Suspense } from "react";
+import {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useMemo,
+  Suspense,
+} from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { Search, ChevronLeft, MoreVertical, Send, Plus } from "lucide-react";
@@ -15,10 +22,6 @@ import {
   ChatPlusPanel,
   ApplicantProfilePopup,
   ApplicantPostGroup,
-  ConfirmationCard,
-  SitterConfirmationCard,
-  OwnerRejectionCard,
-  SitterRejectionCard,
   type Applicant,
 } from "@/components/common/chat/chat_components";
 import { CustomModal } from "@/components/common/CustomModal";
@@ -35,7 +38,12 @@ import {
   sendImageMessage,
   markRoomRead,
   sendSystemMessage,
+  sendPaymentRequestMessage,
+  sendPaymentCompleteMessage,
+  sendApplicationSelectedMessage,
+  sendApplicationRejectedMessage,
 } from "@/app/actions/chat";
+import { usePortOne } from "@/hooks/usePortOne";
 import { uploadToCloudinary } from "@/utils/cloudinary";
 import { updateApplicationByRoom } from "@/app/actions/applications";
 import { useChatRooms } from "@/hooks/chat/useChatRooms";
@@ -109,6 +117,12 @@ function ChatPageContent({
         return;
       }
       rejectApplicant(id);
+      const msgResult = await sendApplicationRejectedMessage(id);
+      if (msgResult.data) {
+        addMessage(msgResult.data);
+        broadcastMessage(msgResult.data);
+        updatePreview(id, "지원 거절", msgResult.data.created_at ?? "");
+      }
     } catch {
       setApplicationActionError("오류가 발생했습니다. 다시 시도해주세요.");
     } finally {
@@ -129,6 +143,17 @@ function ChatPageContent({
       confirmApplicant(id);
       updateApplicantStatus(id, "selected");
       broadcastConfirmation();
+      const appData = {
+        postTitle: confirmedPostTitle,
+        postId: selectedApplicant?.postId ?? "",
+        sitterId: selectedApplicant?.sitterId ?? "",
+      };
+      const msgResult = await sendApplicationSelectedMessage(id, appData);
+      if (msgResult.data) {
+        addMessage(msgResult.data);
+        broadcastMessage(msgResult.data);
+        updatePreview(id, "선택 확정", msgResult.data.created_at ?? "");
+      }
     } catch {
       setApplicationActionError("오류가 발생했습니다. 다시 시도해주세요.");
     } finally {
@@ -144,7 +169,11 @@ function ChatPageContent({
     loadMore,
     hasMore,
     loadingMore,
+    paymentState,
   } = useChatMessages(activeRoomId, userId);
+
+  const { requestPayment, isPending: isPaymentPending } = usePortOne();
+  const [payingNow, setPayingNow] = useState(false);
 
   useEffect(() => {
     if (!activeRoomId) return;
@@ -183,6 +212,61 @@ function ChatPageContent({
     }
     isLoadMoreRef.current = true;
     loadMore();
+  }
+
+  async function handlePaymentSubmit(data: {
+    type: string;
+    amount: number;
+    reason: string;
+  }) {
+    if (!activeRoomId) return;
+    const d = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const deadline = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+    const result = await sendPaymentRequestMessage(activeRoomId, {
+      amount: data.amount,
+      reason: data.reason,
+      deadline,
+    });
+    if (result.data) {
+      addMessage(result.data);
+      broadcastMessage(result.data);
+      updatePreview(activeRoomId, "결제 요청", result.data.created_at ?? "");
+    }
+  }
+
+  async function handlePayNow() {
+    if (!paymentState || payingNow || isPaymentPending || !activeRoomId) return;
+    setPayingNow(true);
+    requestPayment(
+      {
+        paymentId: `pay_${Date.now()}`,
+        orderName: paymentState.reason || "펫시팅 서비스 결제",
+        totalAmount: paymentState.amount,
+        currency: "KRW",
+        payMethod: "CARD",
+        redirectUrl: `${window.location.origin}/payment/complete`,
+      },
+      {
+        onSuccess: async () => {
+          const result = await sendPaymentCompleteMessage(activeRoomId, {
+            amount: paymentState.amount,
+          });
+          if (result.data) {
+            addMessage(result.data);
+            broadcastMessage(result.data);
+            updatePreview(
+              activeRoomId,
+              "결제 완료",
+              result.data.created_at ?? "",
+            );
+          }
+          setPayingNow(false);
+        },
+        onFail: () => {
+          setPayingNow(false);
+        },
+      },
+    );
   }
 
   async function handleSend() {
@@ -473,33 +557,71 @@ function ChatPageContent({
     selectedApplicantId !== null &&
     rejectedIds.has(selectedApplicantId);
 
-  const showConfirmationCard =
-    activeTab === "applicants" &&
-    selectedApplicantId !== null &&
-    confirmedId === selectedApplicantId &&
-    isOwnerOfSelectedRoom;
-
-  const showSitterConfirmationCard =
-    activeTab === "applicants" &&
-    selectedApplicantId !== null &&
-    selectedApplicant?.applicationStatus === "selected" &&
-    !isOwnerOfSelectedRoom;
-
-  const showOwnerRejectionCard =
-    activeTab === "applicants" &&
-    selectedApplicantId !== null &&
-    isOwnerOfSelectedRoom &&
-    rejectedIds.has(selectedApplicantId);
-
-  const showSitterRejectionCard =
-    activeTab === "applicants" &&
-    selectedApplicantId !== null &&
-    !isOwnerOfSelectedRoom &&
-    rejectedIds.has(selectedApplicantId);
-
   const confirmedPostTitle = selectedApplicant
     ? (posts.find((p) => p.id === selectedApplicant.postId)?.title ?? "")
     : "";
+
+  const syntheticCardRef = useRef<{ roomId: string | null; insertAt: number }>({
+    roomId: null,
+    insertAt: 0,
+  });
+
+  const displayMessages = useMemo(() => {
+    if (activeTab !== "applicants" || !selectedApplicant) return messages;
+    const hasCard = messages.some(
+      (m) =>
+        m.from === "application_selected" || m.from === "application_rejected",
+    );
+    if (hasCard) return messages;
+
+    const status = selectedApplicant.applicationStatus;
+    if (status !== "selected" && status !== "rejected") return messages;
+
+    if (syntheticCardRef.current.roomId !== selectedApplicant.id) {
+      if (messages.length === 0) return messages;
+      syntheticCardRef.current = {
+        roomId: selectedApplicant.id,
+        insertAt: messages.length,
+      };
+    }
+
+    const insertAt = Math.min(
+      syntheticCardRef.current.insertAt,
+      messages.length,
+    );
+    const card =
+      status === "selected"
+        ? {
+            id: "__synthetic_selected__",
+            from: "application_selected" as const,
+            text: "",
+            applicationData: {
+              postTitle: confirmedPostTitle,
+              postId: selectedApplicant.postId,
+              sitterId: selectedApplicant.sitterId ?? "",
+              sentByMe: isOwnerOfSelectedRoom,
+            },
+          }
+        : {
+            id: "__synthetic_rejected__",
+            from: "application_rejected" as const,
+            text: "",
+            applicationData: {
+              postTitle: "",
+              postId: "",
+              sitterId: "",
+              sentByMe: isOwnerOfSelectedRoom,
+            },
+          };
+
+    return [...messages.slice(0, insertAt), card, ...messages.slice(insertAt)];
+  }, [
+    messages,
+    activeTab,
+    selectedApplicant,
+    confirmedPostTitle,
+    isOwnerOfSelectedRoom,
+  ]);
 
   return (
     <div className="h-screen overflow-hidden flex flex-col">
@@ -744,54 +866,38 @@ function ChatPageContent({
                     </button>
                   </div>
                 )}
-                {messages.map((msg) => (
+                {displayMessages.map((msg) => (
                   <MessageBubble
                     key={msg.id}
                     msg={msg}
                     senderInitial={mobileRoomInitial}
                     senderProfileImage={mobileRoomProfileImage}
+                    onPaymentRequest={handlePayNow}
+                    isPaymentPending={payingNow || isPaymentPending}
+                    isPaymentPaid={paymentState?.paid ?? false}
+                    onPostClick={
+                      selectedApplicant?.postId
+                        ? () =>
+                            router.push(`/board/${selectedApplicant.postId}`)
+                        : selectedRoom?.sitterId
+                          ? () =>
+                              router.push(
+                                `/petsitters/${selectedRoom.sitterId}`,
+                              )
+                          : undefined
+                    }
+                    onBook={
+                      selectedApplicant?.sitterId
+                        ? () =>
+                            router.push(
+                              `/petsitters/${selectedApplicant.sitterId}/book`,
+                            )
+                        : undefined
+                    }
                   />
                 ))}
               </div>
             </div>
-
-            {(showConfirmationCard ||
-              showSitterConfirmationCard ||
-              showOwnerRejectionCard ||
-              showSitterRejectionCard) && (
-              <div className="px-4 pt-2 pb-1 bg-orange-50 shrink-0">
-                {showConfirmationCard && (
-                  <ConfirmationCard
-                    postTitle={confirmedPostTitle}
-                    sitterInitial={selectedApplicant?.initial ?? ""}
-                    sitterProfileImage={selectedApplicant?.profileImage}
-                    onPostClick={() => {
-                      if (selectedApplicant?.postId)
-                        router.push(`/board/${selectedApplicant.postId}`);
-                    }}
-                    onBook={() => {
-                      if (selectedApplicant?.sitterId)
-                        router.push(
-                          `/petsitters/${selectedApplicant.sitterId}/book`,
-                        );
-                    }}
-                  />
-                )}
-                {showSitterConfirmationCard && (
-                  <SitterConfirmationCard
-                    postTitle={confirmedPostTitle}
-                    ownerInitial={selectedApplicant?.initial ?? ""}
-                    ownerProfileImage={selectedApplicant?.profileImage}
-                    onPostClick={() => {
-                      if (selectedApplicant?.postId)
-                        router.push(`/board/${selectedApplicant.postId}`);
-                    }}
-                  />
-                )}
-                {showOwnerRejectionCard && <OwnerRejectionCard />}
-                {showSitterRejectionCard && <SitterRejectionCard />}
-              </div>
-            )}
 
             {/* 지원자 거절/확정 버튼 */}
             {showApplicantActions && (
@@ -1075,7 +1181,7 @@ function ChatPageContent({
                       </button>
                     </div>
                   )}
-                  {messages.map((msg) => (
+                  {displayMessages.map((msg) => (
                     <MessageBubble
                       key={msg.id}
                       msg={msg}
@@ -1089,50 +1195,34 @@ function ChatPageContent({
                           ? (selectedRoom?.profileImage ?? null)
                           : (selectedApplicant?.profileImage ?? null)
                       }
+                      onPaymentRequest={handlePayNow}
+                      isPaymentPending={payingNow || isPaymentPending}
+                      isPaymentPaid={paymentState?.paid ?? false}
+                      onPostClick={
+                        selectedApplicant?.postId
+                          ? () =>
+                              router.push(`/board/${selectedApplicant.postId}`)
+                          : selectedRoom?.sitterId
+                            ? () =>
+                                router.push(
+                                  `/petsitters/${selectedRoom.sitterId}`,
+                                )
+                            : undefined
+                      }
+                      onBook={
+                        selectedApplicant?.sitterId
+                          ? () =>
+                              router.push(
+                                `/petsitters/${selectedApplicant.sitterId}/book`,
+                              )
+                          : undefined
+                      }
                     />
                   ))}
 
                   <div ref={messagesEndRef} />
                 </div>
               </ScrollArea>
-
-              {(showConfirmationCard ||
-                showSitterConfirmationCard ||
-                showOwnerRejectionCard ||
-                showSitterRejectionCard) && (
-                <div className="px-8 pt-3 pb-1 shrink-0">
-                  {showConfirmationCard && (
-                    <ConfirmationCard
-                      postTitle={confirmedPostTitle}
-                      sitterInitial={selectedApplicant?.initial ?? ""}
-                      sitterProfileImage={selectedApplicant?.profileImage}
-                      onPostClick={() => {
-                        if (selectedApplicant?.postId)
-                          router.push(`/board/${selectedApplicant.postId}`);
-                      }}
-                      onBook={() => {
-                        if (selectedApplicant?.sitterId)
-                          router.push(
-                            `/petsitters/${selectedApplicant.sitterId}/book`,
-                          );
-                      }}
-                    />
-                  )}
-                  {showSitterConfirmationCard && (
-                    <SitterConfirmationCard
-                      postTitle={confirmedPostTitle}
-                      ownerInitial={selectedApplicant?.initial ?? ""}
-                      ownerProfileImage={selectedApplicant?.profileImage}
-                      onPostClick={() => {
-                        if (selectedApplicant?.postId)
-                          router.push(`/board/${selectedApplicant.postId}`);
-                      }}
-                    />
-                  )}
-                  {showOwnerRejectionCard && <OwnerRejectionCard />}
-                  {showSitterRejectionCard && <SitterRejectionCard />}
-                </div>
-              )}
 
               {plusMenuOpen && (
                 <ChatPlusPanel
@@ -1226,6 +1316,7 @@ function ChatPageContent({
       <CustomModalPayment
         open={paymentModalOpen}
         onClose={() => setPaymentModalOpen(false)}
+        onSubmit={handlePaymentSubmit}
       />
 
       <CareRecordModal

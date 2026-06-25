@@ -8,13 +8,17 @@
  *    메시지 전송 시 채널로 broadcast하고, 상대방은 broadcast 구독으로 수신.
  *    채팅방이 바뀌거나 컴포넌트가 사라지면 해당 구독을 해제함.
  */
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { createClient } from "@/utils/supabase/client";
 import type { RealtimeChannel } from "@supabase/supabase-js";
-import type { Message } from "@/components/common/chat/chat_components";
+import type { Message, PaymentData, ApplicationData } from "@/components/common/chat/chat_components";
 
 const SYSTEM_MSG_PREFIX = "__system__:";
 const IMAGE_MSG_PREFIX = "__image__:";
+const PAYMENT_REQUEST_PREFIX = "__payment_request__:";
+const PAYMENT_COMPLETE_PREFIX = "__payment_complete__:";
+const APPLICATION_SELECTED_PREFIX = "__application_selected__:";
+const APPLICATION_REJECTED_PREFIX = "__application_rejected__";
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString("ko-KR", {
@@ -47,11 +51,89 @@ function toMessage(m: MessageApiItem, userId: string): Message {
       time: m.created_at ? formatTime(m.created_at) : "",
     };
   }
+  if (m.content.startsWith(PAYMENT_REQUEST_PREFIX)) {
+    try {
+      const data = JSON.parse(
+        m.content.slice(PAYMENT_REQUEST_PREFIX.length),
+      ) as PaymentData;
+      return {
+        id: m.id,
+        from: "payment_request" as const,
+        text: "",
+        paymentData: { ...data, sentByMe: m.sender_id === userId },
+      };
+    } catch {
+      return { id: m.id, from: "divider", text: "결제 요청" };
+    }
+  }
+  if (m.content.startsWith(PAYMENT_COMPLETE_PREFIX)) {
+    try {
+      const data = JSON.parse(
+        m.content.slice(PAYMENT_COMPLETE_PREFIX.length),
+      ) as { amount: number };
+      return {
+        id: m.id,
+        from: "payment_complete" as const,
+        text: "",
+        paymentData: { amount: data.amount, reason: "", deadline: "" },
+      };
+    } catch {
+      return { id: m.id, from: "divider", text: "결제 완료" };
+    }
+  }
+  if (m.content.startsWith(APPLICATION_SELECTED_PREFIX)) {
+    try {
+      const data = JSON.parse(
+        m.content.slice(APPLICATION_SELECTED_PREFIX.length),
+      ) as ApplicationData;
+      return {
+        id: m.id,
+        from: "application_selected" as const,
+        text: "",
+        applicationData: { ...data, sentByMe: m.sender_id === userId },
+      };
+    } catch {
+      return { id: m.id, from: "divider", text: "선택 확정" };
+    }
+  }
+  if (m.content.startsWith(APPLICATION_REJECTED_PREFIX)) {
+    return {
+      id: m.id,
+      from: "application_rejected" as const,
+      text: "",
+      applicationData: { postTitle: "", postId: "", sitterId: "", sentByMe: m.sender_id === userId },
+    };
+  }
   return {
     id: m.id,
     from: m.sender_id === userId ? "me" : "other",
     text: m.content,
     time: m.created_at ? formatTime(m.created_at) : "",
+  };
+}
+
+export interface PaymentStateInfo {
+  amount: number;
+  reason: string;
+  deadline: string;
+  paid: boolean;
+  sentByMe: boolean;
+}
+
+function derivePaymentState(messages: Message[]): PaymentStateInfo | null {
+  const reqIdx = messages.findLastIndex((m) => m.from === "payment_request");
+  if (reqIdx === -1) return null;
+  const completeIdx = messages.findLastIndex(
+    (m) => m.from === "payment_complete",
+  );
+  const paid = completeIdx > reqIdx;
+  const data = messages[reqIdx].paymentData!;
+  return {
+    amount: data.amount,
+    reason: data.reason,
+    deadline: data.deadline,
+    paid,
+    sentByMe: data.sentByMe ?? false,
   };
 }
 
@@ -140,6 +222,8 @@ export function useChatMessages(
     });
   }
 
+  const paymentState = useMemo(() => derivePaymentState(messages), [messages]);
+
   async function loadMore() {
     if (!nextCursor || !activeRoomId || !userId || loadingMore) return;
     setLoadingMore(true);
@@ -163,5 +247,5 @@ export function useChatMessages(
     }
   }
 
-  return { messages, addMessage, broadcastMessage, broadcastConfirmation, loadMore, hasMore, loadingMore };
+  return { messages, addMessage, broadcastMessage, broadcastConfirmation, loadMore, hasMore, loadingMore, paymentState };
 }
