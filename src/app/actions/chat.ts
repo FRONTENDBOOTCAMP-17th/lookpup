@@ -157,6 +157,7 @@ const PAYMENT_REQUEST_PREFIX = "__payment_request__:";
 const PAYMENT_COMPLETE_PREFIX = "__payment_complete__:";
 const APPLICATION_SELECTED_PREFIX = "__application_selected__:";
 const APPLICATION_REJECTED_PREFIX = "__application_rejected__";
+const RESERVATION_CANCELED_PREFIX = "__reservation_canceled__";
 
 export async function sendImageMessage(roomId: string, imageUrl: string) {
   const user = await getAuthUser();
@@ -351,6 +352,61 @@ export async function sendPaymentCompleteMessage(
   return { data: message };
 }
 
+export async function sendAutoPaymentRequestMessage(
+  roomId: string,
+  data: { amount: number; reason: string; deadline: string; costItems?: { id: string; name: string; amount: string; description: string }[] },
+) {
+  const user = await getAuthUser();
+  if (!user) {
+    return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
+  }
+
+  const db = createServiceClient();
+
+  const { data: room } = await db
+    .from("chat_rooms")
+    .select("id, owner_id, sitters!inner(user_id)")
+    .eq("id", roomId)
+    .single();
+
+  if (!room) {
+    return { error: { code: "NOT_FOUND", message: "채팅방을 찾을 수 없습니다." } };
+  }
+
+  if (room.owner_id !== user.id) {
+    return { error: { code: "FORBIDDEN", message: "보호자만 이 작업을 할 수 있습니다." } };
+  }
+
+  const sitterUserId = room.sitters.user_id;
+  const now = new Date().toISOString();
+  const content = `${PAYMENT_REQUEST_PREFIX}${JSON.stringify(data)}`;
+
+  const { data: message, error } = await db
+    .from("messages")
+    .insert({ room_id: roomId, sender_id: sitterUserId, content })
+    .select()
+    .single();
+
+  if (error) {
+    return { error: { code: "INTERNAL_ERROR", message: error.message } };
+  }
+
+  await db
+    .from("chat_rooms")
+    .update({ last_message: "결제 요청", last_message_at: now })
+    .eq("id", roomId);
+
+  await createNotification({
+    userId: user.id,
+    type: "message",
+    title: "결제 요청이 도착했어요",
+    content: `${data.amount.toLocaleString("ko-KR")}원 결제 요청이 왔어요.`,
+    linkUrl: `/chat?roomId=${roomId}`,
+  });
+
+  return { data: message };
+}
+
 export async function sendApplicationSelectedMessage(
   roomId: string,
   data: { postTitle: string; postId: string; sitterId: string },
@@ -404,6 +460,33 @@ export async function sendApplicationRejectedMessage(roomId: string) {
   await db
     .from("chat_rooms")
     .update({ last_message: "지원 거절", last_message_at: now })
+    .eq("id", roomId);
+
+  return { data: message };
+}
+
+export async function sendReservationCanceledMessage(roomId: string) {
+  const user = await getAuthUser();
+  if (!user) {
+    return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
+  }
+
+  const db = createServiceClient();
+  const now = new Date().toISOString();
+
+  const { data: message, error } = await db
+    .from("messages")
+    .insert({ room_id: roomId, sender_id: user.id, content: RESERVATION_CANCELED_PREFIX })
+    .select()
+    .single();
+
+  if (error) {
+    return { error: { code: "INTERNAL_ERROR", message: error.message } };
+  }
+
+  await db
+    .from("chat_rooms")
+    .update({ last_message: "예약 취소", last_message_at: now })
     .eq("id", roomId);
 
   return { data: message };

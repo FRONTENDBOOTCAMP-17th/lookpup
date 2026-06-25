@@ -19,6 +19,7 @@ const PAYMENT_REQUEST_PREFIX = "__payment_request__:";
 const PAYMENT_COMPLETE_PREFIX = "__payment_complete__:";
 const APPLICATION_SELECTED_PREFIX = "__application_selected__:";
 const APPLICATION_REJECTED_PREFIX = "__application_rejected__";
+const RESERVATION_CANCELED_PREFIX = "__reservation_canceled__";
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString("ko-KR", {
@@ -102,6 +103,14 @@ function toMessage(m: MessageApiItem, userId: string): Message {
       from: "application_rejected" as const,
       text: "",
       applicationData: { postTitle: "", postId: "", sitterId: "", sentByMe: m.sender_id === userId },
+    };
+  }
+  if (m.content.startsWith(RESERVATION_CANCELED_PREFIX)) {
+    return {
+      id: m.id,
+      from: "reservation_canceled" as const,
+      text: "",
+      sentByMe: m.sender_id === userId,
     };
   }
   return {

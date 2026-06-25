@@ -14,7 +14,7 @@ import {
   ClipboardList,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
-import { getReservationById } from "@/app/actions/reservations";
+import { getReservationById, cancelReservationAndNotify } from "@/app/actions/reservations";
 import { getCareRecordsByReservationId, type CareRecord } from "@/app/actions/care-records";
 import { CARE_RECORD_TYPES } from "@/components/common/chat/CareRecordModal";
 import {
@@ -200,6 +200,9 @@ export default function BookingDetailPage() {
   const [notFound, setNotFound] = useState(false);
   const [reviewWritten, setReviewWritten] = useState(false);
   const [careRecords, setCareRecords] = useState<CareRecord[]>([]);
+  const [canceling, setCanceling] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+  const [cancelConfirm, setCancelConfirm] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -422,9 +425,55 @@ export default function BookingDetailPage() {
 
           {/* 예약 취소 버튼 - 요청/확정 상태일 때만 표시 */}
           {(booking.status === "pending" || booking.status === "confirmed") && (
-            <button className="w-full h-12 rounded-xl border border-orange-100 text-gray-500 text-sm font-medium hover:border-red-300 hover:text-red-500 transition-colors">
-              예약 취소
-            </button>
+            <>
+              {cancelError && (
+                <p className="text-xs text-red-500 text-center">{cancelError}</p>
+              )}
+              {cancelConfirm ? (
+                <div className="flex flex-col gap-2">
+                  <p className="text-sm text-center text-gray-500">
+                    정말 예약을 취소할까요? 되돌릴 수 없습니다.
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setCancelConfirm(false)}
+                      disabled={canceling}
+                      className="flex-1 h-12 rounded-xl border border-orange-100 text-gray-500 text-sm font-medium hover:bg-orange-50 transition-colors disabled:opacity-50"
+                    >
+                      돌아가기
+                    </button>
+                    <button
+                      onClick={async () => {
+                        setCanceling(true);
+                        setCancelError(null);
+                        const res = await cancelReservationAndNotify(booking.id);
+                        setCanceling(false);
+                        if (res.error) {
+                          setCancelError(res.error.message);
+                          setCancelConfirm(false);
+                          return;
+                        }
+                        setBooking((prev) =>
+                          prev ? { ...prev, status: "cancelled" } : prev,
+                        );
+                        setCancelConfirm(false);
+                      }}
+                      disabled={canceling}
+                      className="flex-1 h-12 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors disabled:opacity-50"
+                    >
+                      {canceling ? "처리 중..." : "취소 확인"}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => { setCancelConfirm(true); setCancelError(null); }}
+                  className="w-full h-12 rounded-xl border border-orange-100 text-gray-500 text-sm font-medium hover:border-red-300 hover:text-red-500 transition-colors"
+                >
+                  예약 취소
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>

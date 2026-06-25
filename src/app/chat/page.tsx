@@ -39,6 +39,7 @@ import {
   markRoomRead,
   sendSystemMessage,
   sendPaymentRequestMessage,
+  sendAutoPaymentRequestMessage,
   sendPaymentCompleteMessage,
   sendApplicationSelectedMessage,
   sendApplicationRejectedMessage,
@@ -212,7 +213,7 @@ function ChatPageContent({
             const d = new Date(Date.now() + 24 * 60 * 60 * 1000);
             const pad = (n: number) => String(n).padStart(2, "0");
             const deadline = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-            const payResult = await sendPaymentRequestMessage(newRoomId, {
+            const payResult = await sendAutoPaymentRequestMessage(newRoomId, {
               amount: overrides.totalPrice,
               reason: confirmedPostTitle || "펫시팅 서비스",
               deadline,

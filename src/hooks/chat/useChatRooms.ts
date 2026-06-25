@@ -48,6 +48,7 @@ const PAYMENT_REQUEST_PREFIX = "__payment_request__:";
 const PAYMENT_COMPLETE_PREFIX = "__payment_complete__:";
 const APPLICATION_SELECTED_PREFIX = "__application_selected__:";
 const APPLICATION_REJECTED_PREFIX = "__application_rejected__";
+const RESERVATION_CANCELED_PREFIX = "__reservation_canceled__";
 
 function formatPreview(content: string): string {
   if (content.startsWith(SYSTEM_MSG_PREFIX)) return content.slice(SYSTEM_MSG_PREFIX.length);
@@ -56,6 +57,7 @@ function formatPreview(content: string): string {
   if (content.startsWith(PAYMENT_COMPLETE_PREFIX)) return "결제 완료";
   if (content.startsWith(APPLICATION_SELECTED_PREFIX)) return "선택 확정";
   if (content.startsWith(APPLICATION_REJECTED_PREFIX)) return "지원 거절";
+  if (content.startsWith(RESERVATION_CANCELED_PREFIX)) return "예약 취소";
   return content;
 }
 

@@ -86,12 +86,14 @@ export type Message = {
     | "payment_request"
     | "payment_complete"
     | "application_selected"
-    | "application_rejected";
+    | "application_rejected"
+    | "reservation_canceled";
   text: string;
   imageUrl?: string;
   time?: string;
   paymentData?: PaymentData;
   applicationData?: ApplicationData;
+  sentByMe?: boolean;
 };
 
 // 우측 상단 상태 배지
@@ -419,6 +421,9 @@ export function MessageBubble({
     if (msg.applicationData?.sentByMe) return <OwnerRejectionCard />;
     return <SitterRejectionCard />;
   }
+  if (msg.from === "reservation_canceled") {
+    return <ReservationCanceledCard sentByMe={msg.sentByMe ?? false} />;
+  }
   if (msg.from === "payment_request") {
     const data = msg.paymentData;
     if (!data) return null;
@@ -733,6 +738,34 @@ export function SitterRejectionCard() {
             </p>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// 예약 취소 안내 카드
+export function ReservationCanceledCard({ sentByMe }: { sentByMe: boolean }) {
+  return (
+    <div className="flex justify-end">
+      <div className="w-[318px] p-4 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col">
+        <div className="flex items-start gap-2.5">
+          <div className="w-9 h-9 bg-red-50 rounded-full flex items-center justify-center shrink-0">
+            <XCircle size={18} className="text-red-500" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-red-800 text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
+              예약 취소
+            </span>
+            <span className="text-[#111827] text-sm leading-5 mt-0.5">
+              {sentByMe ? "예약을 취소했습니다." : "예약이 취소되었습니다."}
+            </span>
+          </div>
+        </div>
+        <p className="pt-3 text-[#6B7280] text-xs leading-5">
+          {sentByMe
+            ? "취소된 예약은 되돌릴 수 없습니다."
+            : "상대방이 예약을 취소했습니다."}
+        </p>
       </div>
     </div>
   );
