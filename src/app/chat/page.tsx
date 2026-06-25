@@ -577,8 +577,14 @@ function ChatPageContent({
     const status = selectedApplicant.applicationStatus;
     if (status !== "selected" && status !== "rejected") return messages;
 
-    if (syntheticCardRef.current.roomId !== selectedApplicant.id) {
-      if (messages.length === 0) return messages;
+    if (
+      syntheticCardRef.current.roomId !== selectedApplicant.id ||
+      messages.length === 0
+    ) {
+      if (messages.length === 0) {
+        syntheticCardRef.current = { roomId: null, insertAt: 0 };
+        return messages;
+      }
       syntheticCardRef.current = {
         roomId: selectedApplicant.id,
         insertAt: messages.length,
