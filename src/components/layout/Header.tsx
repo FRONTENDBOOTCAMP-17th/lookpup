@@ -67,6 +67,9 @@ function relativeTime(iso: string) {
   return `${Math.floor(h / 24)}일 전`;
 }
 
+const HOVER_CARD_CLS =
+  "bg-white border border-[#ffe9d6] rounded-xl ring-0 shadow-[0px_4px_20px_0px_rgba(232,116,42,0.15)]";
+
 const NAV_ITEMS = [
   { href: "/petsitters", label: "펫시터 찾기" },
   { href: "/board", label: "구인게시판" },
@@ -234,10 +237,10 @@ export default function Header() {
                   <HoverCardContent
                     align="end"
                     sideOffset={8}
-                    className="w-80 p-0 bg-white border border-orange-100 rounded-xl shadow-[0px_4px_20px_0px_rgba(232,116,42,0.15)] overflow-hidden"
+                    className={`w-80 p-0 overflow-hidden ${HOVER_CARD_CLS}`}
                   >
                     {/* 헤더 */}
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-orange-100">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-[#ffe9d6]">
                       <span className="text-stone-900 text-sm font-semibold">알림</span>
                       {unreadCount > 0 && (
                         <button
@@ -265,7 +268,7 @@ export default function Header() {
                               type="button"
                               onClick={() => handleNotifClick(notif)}
                               className={`w-full text-left px-4 py-3 flex items-start gap-3 hover:bg-orange-50/50 transition-colors ${
-                                i < notifications.length - 1 ? "border-b border-orange-50" : ""
+                                i < notifications.length - 1 ? "border-b border-[#ffe9d6]" : ""
                               } ${notif.is_read ? "opacity-70" : ""}`}
                             >
                               <div className={`w-8 h-8 ${bg} rounded-lg flex items-center justify-center shrink-0 mt-0.5`}>
@@ -287,7 +290,7 @@ export default function Header() {
                       )}
                     </div>
                     {/* 전체 알림 보기 */}
-                    <div className="border-t border-orange-100">
+                    <div className="border-t border-[#ffe9d6]">
                       <Link
                         href="/notifications"
                         className="flex items-center justify-center gap-1 py-3 text-xs text-orange-500 font-medium hover:bg-orange-50 transition-colors"
@@ -313,7 +316,7 @@ export default function Header() {
                   <HoverCardContent
                     align="end"
                     sideOffset={8}
-                    className="w-44 p-1 bg-white border border-[#ffe9d6] rounded-xl ring-0 shadow-[0px_4px_20px_0px_rgba(232,116,42,0.15)]"
+                    className={`w-44 p-1 ${HOVER_CARD_CLS}`}
                   >
                     <button
                       type="button"
