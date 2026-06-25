@@ -17,12 +17,19 @@ import {
   ApplicantPostGroup,
   ConfirmationCard,
   SitterConfirmationCard,
+  OwnerRejectionCard,
+  SitterRejectionCard,
   type Applicant,
 } from "@/components/common/chat/chat_components";
 import { CustomModal } from "@/components/common/CustomModal";
 import { CustomModalPayment } from "@/components/common/CustomModalPayment";
-import CareRecordModal, { type CareRecordPayload } from "@/components/common/chat/CareRecordModal";
-import { createCareRecord, getInProgressReservationByOwnerAndSitter } from "@/app/actions/care-records";
+import CareRecordModal, {
+  type CareRecordPayload,
+} from "@/components/common/chat/CareRecordModal";
+import {
+  createCareRecord,
+  getInProgressReservationByOwnerAndSitter,
+} from "@/app/actions/care-records";
 import {
   sendMessage,
   sendImageMessage,
@@ -102,11 +109,6 @@ function ChatPageContent({
         return;
       }
       rejectApplicant(id);
-      const sysResult = await sendSystemMessage(id, "지원이 거절되었습니다.");
-      if (sysResult.data && id === activeRoomId) {
-        addMessage(sysResult.data);
-        broadcastMessage(sysResult.data);
-      }
     } catch {
       setApplicationActionError("오류가 발생했습니다. 다시 시도해주세요.");
     } finally {
@@ -332,10 +334,12 @@ function ChatPageContent({
   );
 
   const filteredRooms = rooms.filter(
-    (r) => !searchQuery || r.name.toLowerCase().includes(searchQuery.toLowerCase()),
+    (r) =>
+      !searchQuery || r.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
   const filteredApplicants = applicants.filter(
-    (a) => !searchQuery || a.name.toLowerCase().includes(searchQuery.toLowerCase()),
+    (a) =>
+      !searchQuery || a.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
   const filteredPosts = posts.filter((p) =>
     filteredApplicants.some((a) => a.postId === p.id),
@@ -364,7 +368,10 @@ function ChatPageContent({
         setDeleteError(result.error);
         return;
       }
-      if (pendingDelete.type === "room" && selectedRoomId === pendingDelete.id) {
+      if (
+        pendingDelete.type === "room" &&
+        selectedRoomId === pendingDelete.id
+      ) {
         setSelectedRoomId(null);
         setMobileChatView("list");
       }
@@ -477,6 +484,18 @@ function ChatPageContent({
     selectedApplicantId !== null &&
     selectedApplicant?.applicationStatus === "selected" &&
     !isOwnerOfSelectedRoom;
+
+  const showOwnerRejectionCard =
+    activeTab === "applicants" &&
+    selectedApplicantId !== null &&
+    isOwnerOfSelectedRoom &&
+    rejectedIds.has(selectedApplicantId);
+
+  const showSitterRejectionCard =
+    activeTab === "applicants" &&
+    selectedApplicantId !== null &&
+    !isOwnerOfSelectedRoom &&
+    rejectedIds.has(selectedApplicantId);
 
   const confirmedPostTitle = selectedApplicant
     ? (posts.find((p) => p.id === selectedApplicant.postId)?.title ?? "")
@@ -625,7 +644,11 @@ function ChatPageContent({
               >
                 <ChevronLeft size={24} className="text-stone-900" />
               </button>
-              <Avatar initial={mobileRoomInitial} src={mobileRoomProfileImage} size="sm" />
+              <Avatar
+                initial={mobileRoomInitial}
+                src={mobileRoomProfileImage}
+                size="sm"
+              />
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm text-stone-900 truncate">
                   {mobileRoomName}
@@ -702,7 +725,7 @@ function ChatPageContent({
             {/* 메시지 영역 */}
             <div
               ref={mobileScrollRef}
-              className="flex-1 min-h-0 overflow-y-auto"
+              className="flex-1 min-h-0 overflow-y-auto bg-orange-50"
             >
               <div
                 className="px-4 py-4 flex flex-col gap-4"
@@ -729,6 +752,14 @@ function ChatPageContent({
                     senderProfileImage={mobileRoomProfileImage}
                   />
                 ))}
+              </div>
+            </div>
+
+            {(showConfirmationCard ||
+              showSitterConfirmationCard ||
+              showOwnerRejectionCard ||
+              showSitterRejectionCard) && (
+              <div className="px-4 pt-2 pb-1 bg-orange-50 shrink-0">
                 {showConfirmationCard && (
                   <ConfirmationCard
                     postTitle={confirmedPostTitle}
@@ -740,7 +771,9 @@ function ChatPageContent({
                     }}
                     onBook={() => {
                       if (selectedApplicant?.sitterId)
-                        router.push(`/petsitters/${selectedApplicant.sitterId}/book`);
+                        router.push(
+                          `/petsitters/${selectedApplicant.sitterId}/book`,
+                        );
                     }}
                   />
                 )}
@@ -755,8 +788,10 @@ function ChatPageContent({
                     }}
                   />
                 )}
+                {showOwnerRejectionCard && <OwnerRejectionCard />}
+                {showSitterRejectionCard && <SitterRejectionCard />}
               </div>
-            </div>
+            )}
 
             {/* 지원자 거절/확정 버튼 */}
             {showApplicantActions && (
@@ -835,7 +870,8 @@ function ChatPageContent({
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.nativeEvent.isComposing) handleSend();
+                      if (e.key === "Enter" && !e.nativeEvent.isComposing)
+                        handleSend();
                     }}
                     placeholder="메시지를 입력하세요"
                     className="flex-1 h-11 px-4 bg-orange-50 rounded-2xl text-sm text-stone-900 placeholder-stone-900/50 outline-none"
@@ -928,7 +964,9 @@ function ChatPageContent({
                 <ApplicantPostGroup
                   key={post.id}
                   post={post}
-                  applicants={filteredApplicants.filter((a) => a.postId === post.id)}
+                  applicants={filteredApplicants.filter(
+                    (a) => a.postId === post.id,
+                  )}
                   isCollapsed={collapsedPosts.has(post.id)}
                   isOwner={
                     applicants.find((a) => a.postId === post.id)?.ownerId ===
@@ -1053,6 +1091,16 @@ function ChatPageContent({
                       }
                     />
                   ))}
+
+                  <div ref={messagesEndRef} />
+                </div>
+              </ScrollArea>
+
+              {(showConfirmationCard ||
+                showSitterConfirmationCard ||
+                showOwnerRejectionCard ||
+                showSitterRejectionCard) && (
+                <div className="px-8 pt-3 pb-1 shrink-0">
                   {showConfirmationCard && (
                     <ConfirmationCard
                       postTitle={confirmedPostTitle}
@@ -1064,7 +1112,9 @@ function ChatPageContent({
                       }}
                       onBook={() => {
                         if (selectedApplicant?.sitterId)
-                          router.push(`/petsitters/${selectedApplicant.sitterId}/book`);
+                          router.push(
+                            `/petsitters/${selectedApplicant.sitterId}/book`,
+                          );
                       }}
                     />
                   )}
@@ -1079,10 +1129,10 @@ function ChatPageContent({
                       }}
                     />
                   )}
-
-                  <div ref={messagesEndRef} />
+                  {showOwnerRejectionCard && <OwnerRejectionCard />}
+                  {showSitterRejectionCard && <SitterRejectionCard />}
                 </div>
-              </ScrollArea>
+              )}
 
               {plusMenuOpen && (
                 <ChatPlusPanel
@@ -1149,7 +1199,9 @@ function ChatPageContent({
         <ApplicantProfilePopup
           applicant={profilePopupApplicant}
           onClose={() => setProfilePopupApplicant(null)}
-          cardVariant={profilePopupApplicant.ownerId === userId ? "sitter" : "owner"}
+          cardVariant={
+            profilePopupApplicant.ownerId === userId ? "sitter" : "owner"
+          }
         />
       )}
 
@@ -1192,7 +1244,9 @@ function ChatPageInner() {
   const initialTab =
     searchParams.get("tab") === "applicants" ? "applicants" : "one_on_one";
   const initialRoomId = searchParams.get("roomId");
-  return <ChatPageContent initialTab={initialTab} initialRoomId={initialRoomId} />;
+  return (
+    <ChatPageContent initialTab={initialTab} initialRoomId={initialRoomId} />
+  );
 }
 
 export default function ChatPage() {

@@ -7,6 +7,7 @@ import {
   Plus,
   MoreVertical,
   X,
+  XCircle,
   CreditCard,
   ClipboardList,
   Camera,
@@ -564,6 +565,65 @@ export function SitterConfirmationCard({
         <p className="pt-3 text-[#6B7280] text-xs leading-relaxed">
           작성자의 확인 여부에 따라 예약이 늦어질 수 있습니다.
         </p>
+      </div>
+    </div>
+  );
+}
+
+// 지원 거절 안내 카드 (보호자용)
+export function OwnerRejectionCard() {
+  return (
+    <div className="flex justify-end">
+      <div className="w-[318px] p-4 bg-white rounded-2xl outline-[1.11px] outline-[#FFE9D6] outline-offset-[-1.11px] flex flex-col">
+        <div className="flex items-start gap-2.5">
+          <div className="w-9 h-9 bg-red-50 rounded-full flex items-center justify-center shrink-0">
+            <XCircle size={18} className="text-red-500" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-red-800 text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
+              지원 거절
+            </span>
+            <span className="text-[#111827] text-sm leading-5 mt-0.5">
+              지원을 거절했습니다.
+            </span>
+          </div>
+        </div>
+        <p className="pt-3 text-[#6B7280] text-xs leading-5">
+          아쉽게도 이번 지원은 거절되었습니다.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// 지원 거절 안내 카드 (펫시터용)
+export function SitterRejectionCard() {
+  return (
+    <div className="flex justify-end">
+      <div className="w-[318px] p-4 bg-white rounded-2xl outline-[1.11px] outline-[#FFE9D6] outline-offset-[-1.11px] flex flex-col">
+        <div className="flex items-start gap-2.5">
+          <div className="w-9 h-9 bg-red-50 rounded-full flex items-center justify-center shrink-0">
+            <XCircle size={18} className="text-red-500" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-red-800 text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
+              지원 거절
+            </span>
+            <span className="text-[#111827] text-sm leading-5 mt-0.5">
+              지원이 거절되었습니다.
+            </span>
+          </div>
+        </div>
+        <p className="pt-3 text-[#6B7280] text-xs leading-5">
+          아쉽게도 이번 지원은 거절되었습니다.
+        </p>
+        <div className="pt-3">
+          <div className="pt-1 border-t border-[#FEE2E2]">
+            <p className="text-[#F87171] text-[11px] leading-[17.6px]">
+              다른 구인글에 지원해보세요.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
