@@ -668,6 +668,8 @@ function ChatPageContent({
     const status = selectedApplicant.applicationStatus;
     if (status !== "selected" && status !== "rejected") return messages;
 
+    if (hasMore) return messages;
+
     if (
       syntheticCardRef.current.roomId !== selectedApplicant.id ||
       messages.length === 0
@@ -714,6 +716,7 @@ function ChatPageContent({
     return [...messages.slice(0, insertAt), card, ...messages.slice(insertAt)];
   }, [
     messages,
+    hasMore,
     activeTab,
     selectedApplicant,
     confirmedPostTitle,
