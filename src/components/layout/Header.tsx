@@ -21,6 +21,10 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { useUserStore } from "@/store/userStore";
+import {
+  loadNotificationPrefs,
+  getNotificationCategory,
+} from "@/lib/notificationPrefs";
 
 const NAV_ITEMS = [
   { href: "/petsitters", label: "펫시터 찾기" },
@@ -41,7 +45,26 @@ export default function Header() {
     fetch("/api/notifications?limit=1")
       .then((res) => res.json())
       .then((json) => {
-        if (json.data) setUnreadCount(json.data.unread_total ?? 0);
+        if (!json.data) return;
+
+        const prefs = loadNotificationPrefs();
+        if (!prefs.all) {
+          setUnreadCount(0);
+          return;
+        }
+
+        const unreadByType = json.data.unread_by_type ?? {};
+        const filteredTotal = Object.entries(unreadByType).reduce(
+          (sum, [type, count]) => {
+            const category = getNotificationCategory(type);
+            // 매핑되지 않은 타입은 설정과 무관하게 항상 카운트(놓치면 안 되는 알림 보호)
+            if (category && !prefs[category]) return sum;
+            return sum + (count as number);
+          },
+          0,
+        );
+
+        setUnreadCount(filteredTotal);
       })
       .catch(() => {});
   };

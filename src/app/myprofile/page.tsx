@@ -41,7 +41,7 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { signOut } from "@/app/actions/auth";
-import { updateOwnerLocation, getOwnerLocation } from "@/app/actions/users";
+import { updateOwnerLocation } from "@/app/actions/users";
 import {
   coordToRegion,
   searchAddressList,
@@ -49,27 +49,12 @@ import {
   type AddressSuggestion,
 } from "@/utils/kakaoGeocode";
 
-const OWNER_LOCATION_STORAGE_KEY = "lookpup_owner_location";
-
 interface OwnerLocationData {
   address: string;
   detailAddress: string;
   lat: number;
   lng: number;
   dong: string;
-}
-
-function parseStoredLocation(raw: string | null): OwnerLocationData | null {
-  if (!raw) return null;
-  try {
-    const parsed = JSON.parse(raw);
-    if (parsed && typeof parsed === "object" && parsed.dong && parsed.lat) {
-      return { detailAddress: "", ...parsed } as OwnerLocationData;
-    }
-  } catch {
-    // 좌표 없는 구 포맷은 무효
-  }
-  return null;
 }
 
 interface MenuItem {
@@ -299,7 +284,7 @@ function SitterActions() {
 
 export default function MyProfilePage() {
   const router = useRouter();
-  const { user, sitter, isLoading } = useUserStore();
+  const { user, sitter, isLoading, setUser } = useUserStore();
   const isSitter = user?.role === "both" || user?.role === "admin";
 
   useEffect(() => {
@@ -311,23 +296,22 @@ export default function MyProfilePage() {
   const [userType, setUserType] = useState<"owner" | "sitter">("owner");
   const [selectedMenu, setSelectedMenu] = useState("profile");
   const [ownerLocationData, setOwnerLocationData] =
-    useState<OwnerLocationData | null>(() => {
-      if (typeof window === "undefined") return null;
-      return parseStoredLocation(
-        localStorage.getItem(OWNER_LOCATION_STORAGE_KEY),
-      );
-    });
+    useState<OwnerLocationData | null>(null);
 
-  // 마운트 시 DB 위치 불러오기 (localStorage 없으면 DB 폴백)
+  // 전역 유저 스토어(UserProvider가 앱 진입 시 미리 채워둠)의 위치 정보를 그대로 반영
   useEffect(() => {
-    getOwnerLocation().then(({ data }) => {
-      if (!data) return;
-      setOwnerLocationData((prev) => {
-        if (prev) return prev; // localStorage 값이 있으면 유지
-        return { address: data.address, detailAddress: "", lat: data.lat, lng: data.lng, dong: data.dong };
-      });
+    if (!user?.address || user.latitude == null || user.longitude == null) {
+      setOwnerLocationData(null);
+      return;
+    }
+    setOwnerLocationData({
+      address: user.address,
+      detailAddress: "",
+      lat: user.latitude,
+      lng: user.longitude,
+      dong: user.displayArea || user.address,
     });
-  }, []);
+  }, [user?.address, user?.latitude, user?.longitude, user?.displayArea]);
 
   // 위치 수정 모달
   const [showLocationEditModal, setShowLocationEditModal] = useState(false);
@@ -487,8 +471,21 @@ export default function MyProfilePage() {
       detailAddress: detailInput.trim(),
     };
     setOwnerLocationData(data);
-    localStorage.setItem(OWNER_LOCATION_STORAGE_KEY, JSON.stringify(data));
-    updateOwnerLocation({ address: pendingLocation.address, lat: pendingLocation.lat, lng: pendingLocation.lng, dong: pendingLocation.dong });
+    updateOwnerLocation({
+      address: pendingLocation.address,
+      lat: pendingLocation.lat,
+      lng: pendingLocation.lng,
+      dong: pendingLocation.dong,
+    });
+    if (user) {
+      setUser({
+        ...user,
+        address: pendingLocation.address,
+        displayArea: pendingLocation.dong,
+        latitude: pendingLocation.lat,
+        longitude: pendingLocation.lng,
+      });
+    }
     setShowLocationEditModal(false);
     setLocationInput("");
     setDetailInput("");
