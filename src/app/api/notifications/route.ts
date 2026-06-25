@@ -44,14 +44,20 @@ export async function GET(request: NextRequest) {
   if (isReadParam !== null) query = query.eq("is_read", isReadParam === "true");
   if (cursorCreatedAt) query = query.lt("created_at", cursorCreatedAt);
 
-  const [{ data, error }, { count: unreadTotal }] = await Promise.all([
-    query,
-    db
-      .from("notifications")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id)
-      .eq("is_read", false),
-  ]);
+  const [{ data, error }, { count: unreadTotal }, { data: unreadTypeRows }] =
+    await Promise.all([
+      query,
+      db
+        .from("notifications")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("is_read", false),
+      db
+        .from("notifications")
+        .select("type")
+        .eq("user_id", user.id)
+        .eq("is_read", false),
+    ]);
 
   if (error) {
     return NextResponse.json(
@@ -64,7 +70,18 @@ export async function GET(request: NextRequest) {
   const items = hasMore ? data.slice(0, limit) : data;
   const nextCursor = hasMore ? items[items.length - 1].id : null;
 
+  // 알림 설정 토글(클라이언트 localStorage)에서 타입별로 배지 카운트를 거르기 위한 분포
+  const unreadByType: Record<string, number> = {};
+  for (const row of unreadTypeRows ?? []) {
+    unreadByType[row.type] = (unreadByType[row.type] ?? 0) + 1;
+  }
+
   return NextResponse.json({
-    data: { notifications: items, unread_total: unreadTotal ?? 0, next_cursor: nextCursor },
+    data: {
+      notifications: items,
+      unread_total: unreadTotal ?? 0,
+      unread_by_type: unreadByType,
+      next_cursor: nextCursor,
+    },
   });
 }

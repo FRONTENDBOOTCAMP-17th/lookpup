@@ -30,6 +30,41 @@ export async function updateProfile(profileImage: string | null) {
   return { data };
 }
 
+export async function updateUserInfo(info: {
+  fullName: string;
+  phoneNumber: string;
+  birthdate: string | null;
+}) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
+  }
+
+  const db = createServiceClient();
+
+  const { data, error } = await db
+    .from("users")
+    .update({
+      full_name: info.fullName,
+      phone_number: info.phoneNumber,
+      birthdate: info.birthdate,
+    })
+    .eq("id", user.id)
+    .is("deleted_at", null)
+    .select("id, email, full_name, phone_number, address, birthdate, profile_image, role, is_verified")
+    .single();
+
+  if (error) {
+    return { error: { code: "INTERNAL_ERROR", message: error.message } };
+  }
+
+  return { data };
+}
+
 export async function restoreUser() {
   const supabase = await createClient();
   const {
