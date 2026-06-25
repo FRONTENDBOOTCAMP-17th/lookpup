@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
 
 const PRIVACY_LINKS: Record<string, string> = {
   개인정보처리방침: "/privacy",
@@ -202,6 +203,8 @@ export default function TermsPage() {
           </div>
         </div>
       </div>
+
+      <Footer />
     </div>
   );
 }
