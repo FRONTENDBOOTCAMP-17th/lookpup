@@ -378,7 +378,7 @@ type MessageBubbleProps = {
   isPaymentPending?: boolean;
   isPaymentPaid?: boolean;
   onPostClick?: () => void;
-  onBook?: () => void;
+  onGoToChat?: () => void;
 };
 
 export function MessageBubble({
@@ -389,7 +389,7 @@ export function MessageBubble({
   isPaymentPending,
   isPaymentPaid,
   onPostClick,
-  onBook,
+  onGoToChat,
 }: MessageBubbleProps) {
   if (msg.from === "application_selected") {
     const data = msg.applicationData;
@@ -401,7 +401,7 @@ export function MessageBubble({
           sitterInitial={senderInitial}
           sitterProfileImage={senderProfileImage}
           onPostClick={onPostClick}
-          onBook={onBook ?? (() => {})}
+          onGoToChat={onGoToChat ?? (() => {})}
         />
       );
     }
@@ -411,6 +411,7 @@ export function MessageBubble({
         ownerInitial={senderInitial}
         ownerProfileImage={senderProfileImage}
         onPostClick={onPostClick}
+        onGoToChat={onGoToChat}
       />
     );
   }
@@ -553,7 +554,7 @@ type ConfirmationCardProps = {
   postTitle: string;
   sitterInitial: string;
   sitterProfileImage?: string | null;
-  onBook: () => void;
+  onGoToChat: () => void;
   onPostClick?: () => void;
 };
 
@@ -561,7 +562,7 @@ export function ConfirmationCard({
   postTitle,
   sitterInitial,
   sitterProfileImage,
-  onBook,
+  onGoToChat,
   onPostClick,
 }: ConfirmationCardProps) {
   return (
@@ -569,10 +570,10 @@ export function ConfirmationCard({
       <div className="w-[318px] p-4 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col">
         <div className="flex flex-col">
           <span className="text-[#6B7280] text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
-            선택 확정
+            예약 확정
           </span>
           <span className="text-[#281A0E] text-sm leading-5 mt-0.5">
-            펫시터가 선택되었습니다. 지금 예약해보세요!
+            예약이 완료되었습니다!<br />1:1 채팅에서 결제를 진행해주세요.
           </span>
         </div>
         <div className="py-3">
@@ -603,22 +604,23 @@ export function ConfirmationCard({
         </div>
         <button
           type="button"
-          onClick={onBook}
+          onClick={onGoToChat}
           className="w-full h-10 rounded-xl outline-[1.11px] outline-orange-500 outline-offset-[-1.11px] text-orange-500 text-sm font-medium hover:bg-orange-50 transition-colors"
         >
-          예약하기
+          1:1 채팅으로 이동
         </button>
       </div>
     </div>
   );
 }
 
-// 선택 확정 대기 카드 (펫시터용)
+// 선택 확정 안내 카드 (펫시터용)
 type SitterConfirmationCardProps = {
   postTitle: string;
   ownerInitial: string;
   ownerProfileImage?: string | null;
   onPostClick?: () => void;
+  onGoToChat?: () => void;
 };
 
 export function SitterConfirmationCard({
@@ -626,19 +628,20 @@ export function SitterConfirmationCard({
   ownerInitial,
   ownerProfileImage,
   onPostClick,
+  onGoToChat,
 }: SitterConfirmationCardProps) {
   return (
     <div className="flex justify-end">
       <div className="w-[318px] p-4 bg-orange-100 rounded-2xl outline-[1.11px] outline-orange-400 outline-offset-[-1.11px] flex flex-col">
         <div className="flex flex-col">
           <span className="text-orange-500 text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
-            선택 확정
+            예약 확정
           </span>
           <span className="text-[#281A0E] text-sm leading-5 mt-0.5">
-            예약을 기다리고 있어요
+            예약이 완료되었습니다!<br />1:1 채팅에서 결제 내용을 확인해주세요.
           </span>
         </div>
-        <div className="pt-3">
+        <div className="pt-3 pb-3">
           <button
             type="button"
             onClick={onPostClick}
@@ -664,9 +667,13 @@ export function SitterConfirmationCard({
             </span>
           </button>
         </div>
-        <p className="pt-3 text-[#6B7280] text-xs leading-relaxed">
-          작성자의 확인 여부에 따라 예약이 늦어질 수 있습니다.
-        </p>
+        <button
+          type="button"
+          onClick={onGoToChat}
+          className="w-full h-10 rounded-xl outline-[1.11px] outline-orange-500 outline-offset-[-1.11px] text-orange-500 text-sm font-medium hover:bg-orange-50 transition-colors"
+        >
+          1:1 채팅으로 이동
+        </button>
       </div>
     </div>
   );

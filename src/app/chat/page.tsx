@@ -45,7 +45,15 @@ import {
 } from "@/app/actions/chat";
 import { usePortOne } from "@/hooks/usePortOne";
 import { uploadToCloudinary } from "@/utils/cloudinary";
-import { updateApplicationByRoom } from "@/app/actions/applications";
+import {
+  updateApplicationByRoom,
+  getRequestDetailsForReservation,
+} from "@/app/actions/applications";
+import { findOrCreateRoom } from "@/app/actions/chat";
+import {
+  ReservationConfirmModal,
+  type ReservationDetails,
+} from "@/components/common/chat/ReservationConfirmModal";
 import { useChatRooms } from "@/hooks/chat/useChatRooms";
 import { useRequest } from "@/hooks/chat/useRequest";
 import { useChatMessages } from "@/hooks/chat/useChatMessages";
@@ -82,6 +90,12 @@ function ChatPageContent({
   >(null);
   const [actioningId, setActioningId] = useState<string | null>(null);
 
+  const [reservationModalOpen, setReservationModalOpen] = useState(false);
+  const [reservationModalLoading, setReservationModalLoading] = useState(false);
+  const [reservationDetails, setReservationDetails] =
+    useState<ReservationDetails | null>(null);
+  const [pendingConfirmId, setPendingConfirmId] = useState<string | null>(null);
+
   const activeRoomId =
     activeTab === "one_on_one" ? selectedRoomId : selectedApplicantId;
 
@@ -100,7 +114,7 @@ function ChatPageContent({
 
   const {
     rejectedIds,
-    confirmedId,
+    confirmedIds,
     rejectApplicant,
     confirmApplicant,
     getApplicantBadge,
@@ -130,12 +144,43 @@ function ChatPageContent({
     }
   }
 
-  async function handleConfirmApplicant(id: string) {
+  async function handleConfirmClick(id: string) {
     if (actioningId) return;
+    setPendingConfirmId(id);
+    setReservationDetails(null);
+    setReservationModalOpen(true);
+    setReservationModalLoading(true);
+    try {
+      const result = await getRequestDetailsForReservation(id);
+      if ("error" in result && result.error) {
+        setApplicationActionError(result.error.message);
+        setReservationModalOpen(false);
+        return;
+      }
+      if ("data" in result) {
+        setReservationDetails(result.data);
+      }
+    } catch {
+      setApplicationActionError("오류가 발생했습니다. 다시 시도해주세요.");
+      setReservationModalOpen(false);
+    } finally {
+      setReservationModalLoading(false);
+    }
+  }
+
+  async function handleConfirmApplicant(overrides: {
+    startDatetime: string | null;
+    endDatetime: string | null;
+    totalPrice: number | null;
+    location: string | null;
+  }) {
+    const id = pendingConfirmId;
+    if (!id || actioningId) return;
+    setReservationModalOpen(false);
     setActioningId(id);
     setApplicationActionError(null);
     try {
-      const result = await updateApplicationByRoom(id, "selected");
+      const result = await updateApplicationByRoom(id, "selected", overrides);
       if (result.error) {
         setApplicationActionError(result.error.message);
         return;
@@ -154,10 +199,44 @@ function ChatPageContent({
         broadcastMessage(msgResult.data);
         updatePreview(id, "선택 확정", msgResult.data.created_at ?? "");
       }
+
+      if (selectedApplicant?.sitterId) {
+        const roomResult = await findOrCreateRoom({
+          sitter_id: selectedApplicant.sitterId,
+          room_type: "direct",
+        });
+        if ("data" in roomResult && roomResult.data) {
+          const newRoomId = roomResult.data.room_id;
+
+          if (overrides.totalPrice && overrides.totalPrice > 0) {
+            const d = new Date(Date.now() + 24 * 60 * 60 * 1000);
+            const pad = (n: number) => String(n).padStart(2, "0");
+            const deadline = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            const payResult = await sendPaymentRequestMessage(newRoomId, {
+              amount: overrides.totalPrice,
+              reason: confirmedPostTitle || "펫시팅 서비스",
+              deadline,
+            });
+            if (payResult.data) {
+              updatePreview(
+                newRoomId,
+                "결제 요청",
+                payResult.data.created_at ?? "",
+              );
+            }
+          }
+
+          setActiveTab("one_on_one");
+          setSelectedRoomId(newRoomId);
+          setSelectedApplicantId(null);
+          setMobileChatView("room");
+        }
+      }
     } catch {
       setApplicationActionError("오류가 발생했습니다. 다시 시도해주세요.");
     } finally {
       setActioningId(null);
+      setPendingConfirmId(null);
     }
   }
 
@@ -218,7 +297,12 @@ function ChatPageContent({
     type: string;
     amount: number;
     reason: string;
-    costItems?: { id: string; name: string; amount: string; description: string }[];
+    costItems?: {
+      id: string;
+      name: string;
+      amount: string;
+      description: string;
+    }[];
   }) {
     if (!activeRoomId) return;
     const d = new Date(Date.now() + 24 * 60 * 60 * 1000);
@@ -482,14 +566,19 @@ function ChatPageContent({
       return { label: "진행중", className: "bg-orange-50 text-orange-500" };
     if (selectedApplicantId !== null && rejectedIds.has(selectedApplicantId))
       return { label: "거절됨", className: "bg-stone-100 text-stone-500" };
-    if (confirmedId === selectedApplicantId)
+    if (
+      confirmedIds.get(selectedApplicant?.postId ?? "") === selectedApplicantId
+    )
       return { label: "선택됨", className: "bg-green-50 text-green-700" };
     return { label: "채팅중", className: "bg-orange-50 text-orange-500" };
   }
 
   function getHeaderSub() {
     if (activeTab === "one_on_one") return selectedRoom?.sub ?? "";
-    if (confirmedId === selectedApplicantId) return "구인글 채팅 · 선택됨";
+    if (
+      confirmedIds.get(selectedApplicant?.postId ?? "") === selectedApplicantId
+    )
+      return "구인글 채팅 · 선택됨";
     if (selectedApplicantId !== null && rejectedIds.has(selectedApplicantId))
       return "구인글 채팅 · 거절됨";
     return "구인글 채팅 · 지원자";
@@ -550,8 +639,8 @@ function ChatPageContent({
     selectedApplicantId !== null &&
     isOwnerOfSelectedRoom &&
     !rejectedIds.has(selectedApplicantId) &&
-    confirmedId !== selectedApplicantId &&
-    confirmedId === null;
+    confirmedIds.get(selectedApplicant?.postId ?? "") !== selectedApplicantId &&
+    !confirmedIds.has(selectedApplicant?.postId ?? "");
 
   const isRejectedApplicant =
     activeTab === "applicants" &&
@@ -745,12 +834,12 @@ function ChatPageContent({
                       }
                       selectedApplicantId={selectedApplicantId}
                       rejectedIds={rejectedIds}
-                      confirmedId={confirmedId}
+                      confirmedId={confirmedIds.get(post.id) ?? null}
                       editMode={editMode}
                       onToggle={() => togglePostCollapse(post.id)}
                       onDelete={handleDeleteApplicant}
                       onReject={handleRejectApplicant}
-                      onConfirm={handleConfirmApplicant}
+                      onConfirm={handleConfirmClick}
                       onSelect={(id) => {
                         setSelectedApplicantId(id);
                         setMobileChatView("room");
@@ -894,14 +983,11 @@ function ChatPageContent({
                               )
                           : undefined
                     }
-                    onBook={
-                      selectedApplicant?.sitterId
-                        ? () =>
-                            router.push(
-                              `/petsitters/${selectedApplicant.sitterId}/book`,
-                            )
-                        : undefined
-                    }
+                    onGoToChat={() => {
+                      setActiveTab("one_on_one");
+                      setSelectedApplicantId(null);
+                      setMobileChatView("list");
+                    }}
                   />
                 ))}
               </div>
@@ -924,7 +1010,7 @@ function ChatPageContent({
                     거절
                   </button>
                   <button
-                    onClick={() => handleConfirmApplicant(selectedApplicantId!)}
+                    onClick={() => handleConfirmClick(selectedApplicantId!)}
                     disabled={!!actioningId}
                     className="flex-1 py-2 text-sm text-white bg-orange-500 rounded-xl hover:bg-orange-600 transition-colors font-medium disabled:opacity-50"
                   >
@@ -1088,12 +1174,12 @@ function ChatPageContent({
                   }
                   selectedApplicantId={selectedApplicantId}
                   rejectedIds={rejectedIds}
-                  confirmedId={confirmedId}
+                  confirmedId={confirmedIds.get(post.id) ?? null}
                   editMode={editMode}
                   onToggle={() => togglePostCollapse(post.id)}
                   onDelete={handleDeleteApplicant}
                   onReject={handleRejectApplicant}
-                  onConfirm={handleConfirmApplicant}
+                  onConfirm={handleConfirmClick}
                   onSelect={setSelectedApplicantId}
                   onAvatarClick={openApplicantProfile}
                   getApplicantBadge={getApplicantBadge}
@@ -1217,14 +1303,10 @@ function ChatPageContent({
                                 )
                             : undefined
                       }
-                      onBook={
-                        selectedApplicant?.sitterId
-                          ? () =>
-                              router.push(
-                                `/petsitters/${selectedApplicant.sitterId}/book`,
-                              )
-                          : undefined
-                      }
+                      onGoToChat={() => {
+                        setActiveTab("one_on_one");
+                        setSelectedApplicantId(null);
+                      }}
                     />
                   ))}
 
@@ -1333,6 +1415,23 @@ function ChatPageContent({
         serviceType="care"
         reservationId={selectedRoom?.reservationId ?? undefined}
         onSubmit={handleCareRecordSubmit}
+      />
+
+      <ReservationConfirmModal
+        open={reservationModalOpen}
+        sitterName={
+          pendingConfirmId
+            ? (applicants.find((a) => a.id === pendingConfirmId)?.name ?? "")
+            : ""
+        }
+        details={reservationDetails}
+        loading={reservationModalLoading}
+        confirming={!!actioningId}
+        onClose={() => {
+          setReservationModalOpen(false);
+          setPendingConfirmId(null);
+        }}
+        onConfirm={handleConfirmApplicant}
       />
     </div>
   );
