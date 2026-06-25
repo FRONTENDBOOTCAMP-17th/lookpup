@@ -556,7 +556,7 @@ export function ConfirmationCard({
 }: ConfirmationCardProps) {
   return (
     <div className="flex justify-end">
-      <div className="w-[318px] p-4 bg-white rounded-2xl outline-[1.11px] outline-[#FFE9D6] outline-offset-[-1.11px] flex flex-col">
+      <div className="w-[318px] p-4 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col">
         <div className="flex flex-col">
           <span className="text-[#6B7280] text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
             선택 확정
@@ -569,9 +569,9 @@ export function ConfirmationCard({
           <button
             type="button"
             onClick={onPostClick}
-            className="w-full flex items-center gap-3 px-3 py-2.5 bg-[#FFF4EC] rounded-xl hover:bg-orange-100 transition-colors text-left"
+            className="w-full flex items-center gap-3 px-3 py-2.5 bg-orange-100 rounded-xl hover:bg-orange-200 transition-colors text-left"
           >
-            <div className="w-10 h-10 rounded-lg bg-[#FFE9D6] shrink-0 overflow-hidden flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-orange-200 shrink-0 overflow-hidden flex items-center justify-center">
               {sitterProfileImage ? (
                 <Image
                   src={sitterProfileImage}
@@ -594,7 +594,7 @@ export function ConfirmationCard({
         <button
           type="button"
           onClick={onBook}
-          className="w-full h-10 rounded-xl outline-[1.11px] outline-[#E8742A] outline-offset-[-1.11px] text-[#E8742A] text-sm font-medium hover:bg-orange-50 transition-colors"
+          className="w-full h-10 rounded-xl outline-[1.11px] outline-orange-500 outline-offset-[-1.11px] text-orange-500 text-sm font-medium hover:bg-orange-50 transition-colors"
         >
           예약하기
         </button>
@@ -619,9 +619,9 @@ export function SitterConfirmationCard({
 }: SitterConfirmationCardProps) {
   return (
     <div className="flex justify-end">
-      <div className="w-[318px] p-4 bg-[#FFF4EC] rounded-2xl outline-[1.11px] outline-[#F5A468] outline-offset-[-1.11px] flex flex-col">
+      <div className="w-[318px] p-4 bg-orange-100 rounded-2xl outline-[1.11px] outline-orange-400 outline-offset-[-1.11px] flex flex-col">
         <div className="flex flex-col">
-          <span className="text-[#E8742A] text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
+          <span className="text-orange-500 text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
             선택 확정
           </span>
           <span className="text-[#281A0E] text-sm leading-5 mt-0.5">
@@ -632,9 +632,9 @@ export function SitterConfirmationCard({
           <button
             type="button"
             onClick={onPostClick}
-            className="w-full flex items-center gap-3 px-3 py-2.5 bg-[#FFE9D6] rounded-xl hover:bg-orange-200 transition-colors text-left"
+            className="w-full flex items-center gap-3 px-3 py-2.5 bg-orange-200 rounded-xl hover:bg-orange-300 transition-colors text-left"
           >
-            <div className="w-10 h-10 rounded-lg bg-[#FFD4B0] shrink-0 overflow-hidden flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-orange-300 shrink-0 overflow-hidden flex items-center justify-center">
               {ownerProfileImage ? (
                 <Image
                   src={ownerProfileImage}
@@ -666,7 +666,7 @@ export function SitterConfirmationCard({
 export function OwnerRejectionCard() {
   return (
     <div className="flex justify-end">
-      <div className="w-[318px] p-4 bg-white rounded-2xl outline-[1.11px] outline-[#FFE9D6] outline-offset-[-1.11px] flex flex-col">
+      <div className="w-[318px] p-4 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col">
         <div className="flex items-start gap-2.5">
           <div className="w-9 h-9 bg-red-50 rounded-full flex items-center justify-center shrink-0">
             <XCircle size={18} className="text-red-500" />
@@ -692,7 +692,7 @@ export function OwnerRejectionCard() {
 export function SitterRejectionCard() {
   return (
     <div className="flex justify-end">
-      <div className="w-[318px] p-4 bg-white rounded-2xl outline-[1.11px] outline-[#FFE9D6] outline-offset-[-1.11px] flex flex-col">
+      <div className="w-[318px] p-4 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col">
         <div className="flex items-start gap-2.5">
           <div className="w-9 h-9 bg-red-50 rounded-full flex items-center justify-center shrink-0">
             <XCircle size={18} className="text-red-500" />
@@ -710,8 +710,8 @@ export function SitterRejectionCard() {
           아쉽게도 이번 지원은 거절되었습니다.
         </p>
         <div className="pt-3">
-          <div className="pt-1 border-t border-[#FEE2E2]">
-            <p className="text-[#F87171] text-[11px] leading-[17.6px]">
+          <div className="pt-1 border-t border-red-200">
+            <p className="text-red-400 text-[11px] leading-[17.6px]">
               다른 구인글에 지원해보세요.
             </p>
           </div>
@@ -936,7 +936,7 @@ export function PaymentRequestCard({
 }: PaymentRequestCardProps) {
   return (
     <div className="flex justify-end">
-      <div className="w-79.5 p-4 bg-white rounded-2xl outline-[1.11px] outline-[#FFE9D6] outline-offset-[-1.11px] flex flex-col gap-3">
+      <div className="w-[318px] p-4 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col gap-3">
         <div className="flex flex-col">
           <span className="text-[#6B7280] text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
             결제 요청
@@ -953,9 +953,9 @@ export function PaymentRequestCard({
           type="button"
           onClick={onPostClick}
           disabled={!onPostClick}
-          className="w-full flex items-center gap-3 px-3 py-2.5 bg-[#FFF4EC] rounded-xl text-left transition-colors enabled:hover:bg-orange-100 disabled:cursor-default"
+          className="w-full flex items-center gap-3 px-3 py-2.5 bg-orange-100 rounded-xl text-left transition-colors enabled:hover:bg-orange-200 disabled:cursor-default"
         >
-          <div className="w-10 h-10 rounded-lg bg-[#FFE9D6] shrink-0 overflow-hidden flex items-center justify-center">
+          <div className="w-10 h-10 rounded-lg bg-orange-200 shrink-0 overflow-hidden flex items-center justify-center">
             {otherProfileImage ? (
               <Image
                 src={otherProfileImage}
@@ -978,7 +978,7 @@ export function PaymentRequestCard({
         <div className="flex flex-col gap-1.5">
           <div className="flex justify-between items-center">
             <span className="text-[#6B7280] text-xs">요청 금액</span>
-            <span className="text-[#E8742A] text-xs">
+            <span className="text-orange-500 text-xs">
               {amount.toLocaleString("ko-KR")} P
             </span>
           </div>
@@ -991,7 +991,7 @@ export function PaymentRequestCard({
         {paid ? (
           <button
             disabled
-            className="w-full h-10 rounded-xl bg-[#FFF8F3] outline-[1.11px] outline-[#FFE9D6] outline-offset-[-1.11px] text-[#F5A468] text-sm cursor-default"
+            className="w-full h-10 rounded-xl bg-orange-50 outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] text-orange-400 text-sm cursor-default"
           >
             완료되었어요
           </button>
@@ -1000,7 +1000,7 @@ export function PaymentRequestCard({
             type="button"
             onClick={onPay}
             disabled={isPaying}
-            className="w-full h-10 rounded-xl outline-[1.11px] outline-[#E8742A] outline-offset-[-1.11px] text-[#E8742A] text-sm hover:bg-orange-50 transition-colors disabled:opacity-50"
+            className="w-full h-10 rounded-xl outline-[1.11px] outline-orange-500 outline-offset-[-1.11px] text-orange-500 text-sm hover:bg-orange-50 transition-colors disabled:opacity-50"
           >
             {isPaying ? "결제 중..." : "결제하기"}
           </button>
@@ -1028,8 +1028,8 @@ export function SitterPaymentRequestCard({
 }: SitterPaymentRequestCardProps) {
   return (
     <div className="flex justify-end">
-      <div className="w-[318px] p-4 bg-[#FFF4EC] rounded-2xl outline-[1.11px] outline-[#F5A468] outline-offset-[-1.11px] flex flex-col">
-        <span className="text-[#E8742A] text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
+      <div className="w-[318px] p-4 bg-orange-100 rounded-2xl outline-[1.11px] outline-orange-400 outline-offset-[-1.11px] flex flex-col">
+        <span className="text-orange-500 text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
           결제 요청
         </span>
         <span className="text-[#281A0E] text-sm leading-5 mt-0.5">
@@ -1039,9 +1039,9 @@ export function SitterPaymentRequestCard({
           type="button"
           onClick={onPostClick}
           disabled={!onPostClick}
-          className="mt-3 w-full flex items-center gap-3 px-3 py-2.5 bg-[#FFE9D6] rounded-xl text-left transition-colors enabled:hover:bg-orange-200 disabled:cursor-default"
+          className="mt-3 w-full flex items-center gap-3 px-3 py-2.5 bg-orange-200 rounded-xl text-left transition-colors enabled:hover:bg-orange-300 disabled:cursor-default"
         >
-          <div className="w-10 h-10 rounded-lg bg-[#FFD4B0] shrink-0 overflow-hidden flex items-center justify-center">
+          <div className="w-10 h-10 rounded-lg bg-orange-300 shrink-0 overflow-hidden flex items-center justify-center">
             {otherProfileImage ? (
               <Image
                 src={otherProfileImage}
@@ -1063,7 +1063,7 @@ export function SitterPaymentRequestCard({
         <div className="mt-3 flex flex-col gap-1.5">
           <div className="flex justify-between items-center">
             <span className="text-[#6B7280] text-xs">요청 금액</span>
-            <span className="text-[#E8742A] text-xs font-medium">
+            <span className="text-orange-500 text-xs font-medium">
               {amount.toLocaleString("ko-KR")} P
             </span>
           </div>
@@ -1084,7 +1084,7 @@ type PaymentCompleteCardProps = {
 export function PaymentCompleteCard({ amount }: PaymentCompleteCardProps) {
   return (
     <div className="flex justify-end">
-      <div className="w-[318px] p-4 bg-white rounded-2xl outline-[1.11px] outline-[#FFE9D6] outline-offset-[-1.11px] flex flex-col gap-3">
+      <div className="w-[318px] p-4 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col gap-3">
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 bg-[#ECFDF5] rounded-full flex items-center justify-center shrink-0">
             <CheckCircle size={18} className="text-[#10B981]" />
@@ -1099,14 +1099,14 @@ export function PaymentCompleteCard({ amount }: PaymentCompleteCardProps) {
           </div>
         </div>
 
-        <div className="w-full px-3 py-2 bg-[#FFF4EC] rounded-xl outline-[1.11px] outline-[#FFE9D6] outline-offset-[-1.11px] flex justify-between items-center">
+        <div className="w-full px-3 py-2 bg-orange-100 rounded-xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex justify-between items-center">
           <span className="text-[#6B7280] text-xs">결제 금액</span>
-          <span className="text-[#E8742A] text-sm font-bold">
+          <span className="text-orange-500 text-sm font-bold">
             {amount.toLocaleString("ko-KR")}원
           </span>
         </div>
 
-        <div className="pt-3 border-t border-[#FFE9D6]">
+        <div className="pt-3 border-t border-orange-200">
           <p className="text-[#9CA3AF] text-[11px] leading-[17.6px]">
             봐주개가 결제 금액을 안전하게 보관하고 있어요. 예약 완료 후
             펫시터에게 지급됩니다.

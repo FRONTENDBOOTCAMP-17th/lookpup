@@ -84,14 +84,14 @@ export function CustomModalPayment({
       <div
         role="dialog"
         aria-modal="true"
-        className="relative w-[calc(100%-32px)] max-w-130 bg-white rounded-[20px] shadow-[0px_20px_60px_0px_rgba(232,116,42,0.20)] flex flex-col max-h-[90dvh]"
+        className="relative w-[calc(100%-32px)] max-w-130 bg-white rounded-[20px] shadow-[0px_20px_60px_0px_rgba(249,115,22,0.30)] flex flex-col max-h-[90dvh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* 헤더 */}
-        <div className="px-6 pt-6 pb-4 border-b border-[#FFE9D6] flex items-center justify-between shrink-0">
+        <div className="px-6 pt-6 pb-4 border-b border-orange-200 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 bg-[#FFF0E8] rounded-xl flex items-center justify-center shrink-0">
-              <CreditCard size={18} className="text-[#E8742A]" />
+            <div className="w-9 h-9 bg-orange-100 rounded-xl flex items-center justify-center shrink-0">
+              <CreditCard size={18} className="text-orange-500" />
             </div>
             <div>
               <p className="text-[#281A0E] text-lg font-bold leading-[22.5px]">
@@ -128,21 +128,21 @@ export function CustomModalPayment({
                     onClick={() => setRequestType(value)}
                     className={`flex-1 p-4 rounded-xl flex items-start gap-3 text-left transition-colors ${
                       selected
-                        ? "bg-[#FFF0E8] outline-[1.11px] outline-[#E8742A]"
-                        : "bg-white outline-[1.11px] outline-[#FFE9D6] hover:bg-orange-50"
+                        ? "bg-orange-100 outline-[1.11px] outline-orange-500"
+                        : "bg-white outline-[1.11px] outline-orange-200 hover:bg-orange-50"
                     }`}
                   >
                     <div
                       className="mt-0.5 shrink-0 w-5 h-5 rounded-full flex items-center justify-center outline-[1.11px] outline-offset-[-1.11px] transition-colors"
-                      style={{ outlineColor: selected ? "#E8742A" : "#D1D5DB" }}
+                      style={{ outlineColor: selected ? "#f97316" : "#D1D5DB" }}
                     >
                       {selected && (
-                        <div className="w-2.5 h-2.5 rounded-full bg-[#E8742A]" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-orange-500" />
                       )}
                     </div>
                     <div>
                       <p
-                        className={`text-sm font-semibold leading-5 ${selected ? "text-[#E8742A]" : "text-[#281A0E]"}`}
+                        className={`text-sm font-semibold leading-5 ${selected ? "text-orange-500" : "text-[#281A0E]"}`}
                       >
                         {label}
                       </p>
@@ -166,7 +166,7 @@ export function CustomModalPayment({
                 value={amount}
                 onChange={(e) => handleAmountChange(e.target.value)}
                 placeholder="20,000"
-                className="w-full h-13.5 pl-4 pr-10 rounded-xl outline outline-[#FFE9D6] outline-offset-[-1.11px] text-[15px] text-[#281A0E] placeholder-[rgba(40,26,14,0.50)] focus:outline-[#E8742A] transition-colors"
+                className="w-full h-13.5 pl-4 pr-10 rounded-xl outline outline-orange-200 outline-offset-[-1.11px] text-[15px] text-[#281A0E] placeholder-[rgba(40,26,14,0.50)] focus:outline-orange-500 transition-colors"
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-gray-500">
                 원
@@ -194,7 +194,7 @@ export function CustomModalPayment({
                 "추가 비용이 발생한 이유를 작성해주세요.\n예) 산책 시간 연장 30분\n예) 추가 목욕 서비스 제공"
               }
               rows={4}
-              className="w-full px-4 py-3.5 rounded-xl outline outline-[#FFE9D6] outline-offset-[-1.11px] text-[15px] text-[#281A0E] placeholder-[rgba(40,26,14,0.50)] resize-none focus:outline-[#E8742A] transition-colors leading-relaxed"
+              className="w-full px-4 py-3.5 rounded-xl outline outline-orange-200 outline-offset-[-1.11px] text-[15px] text-[#281A0E] placeholder-[rgba(40,26,14,0.50)] resize-none focus:outline-orange-500 transition-colors leading-relaxed"
             />
           </div>
 
@@ -208,32 +208,32 @@ export function CustomModalPayment({
             </div>
             <button
               type="button"
-              className="w-full h-10.5 rounded-xl outline outline-[#FFE9D6] outline-offset-[-1.11px] flex items-center justify-center gap-2 hover:bg-orange-50 transition-colors"
+              className="w-full h-10.5 rounded-xl outline outline-orange-200 outline-offset-[-1.11px] flex items-center justify-center gap-2 hover:bg-orange-100 transition-colors"
             >
-              <Plus size={15} className="text-[#E8742A]" />
-              <span className="text-[#E8742A] text-sm font-medium">
+              <Plus size={15} className="text-orange-500" />
+              <span className="text-orange-500 text-sm font-medium">
                 항목 추가
               </span>
             </button>
           </div>
 
           {/* 총 요청 금액 */}
-          <div className="bg-[#FFF8F3] rounded-2xl outline outline-[#FFE9D6] outline-offset-[-1.11px] px-5 py-5 flex items-center justify-between">
-            <span className="text-gray-500 text-sm font-semibold">
+          <div className="bg-orange-50 rounded-2xl border border-orange-200 px-5 py-5 flex items-center justify-between">
+            <span className="text-orange-900 text-sm font-semibold">
               총 요청 금액
             </span>
-            <span className="text-[#E8742A] text-2xl font-bold">
+            <span className="text-orange-500 text-2xl font-bold">
               {total ? total.toLocaleString("ko-KR") + "원" : "—"}
             </span>
           </div>
         </div>
 
         {/* 푸터 */}
-        <div className="px-6 pt-4 pb-6 border-t border-[#FFE9D6] flex gap-3 shrink-0">
+        <div className="px-6 pt-4 pb-6 border-t border-orange-200 flex gap-3 shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 h-13 rounded-xl outline outline-[#FFE9D6] outline-offset-[-1.11px] text-gray-500 text-[15px] font-semibold hover:bg-gray-50 transition-colors"
+            className="flex-1 h-13 rounded-xl border border-orange-200 text-orange-500 text-[15px] font-semibold hover:bg-orange-50 transition-colors"
           >
             취소
           </button>
@@ -241,7 +241,7 @@ export function CustomModalPayment({
             type="button"
             onClick={handleSubmit}
             disabled={!total || !reason.trim()}
-            className="flex-1 h-13 rounded-xl bg-[#E8742A] flex items-center justify-center gap-2 text-white text-[15px] font-semibold hover:bg-orange-600 transition-colors disabled:opacity-40 disabled:cursor-default"
+            className="flex-1 h-13 rounded-xl bg-orange-500 flex items-center justify-center gap-2 text-white text-[15px] font-semibold hover:bg-orange-600 transition-colors disabled:opacity-40 disabled:cursor-default"
           >
             <CreditCard size={17} className="text-white" />
             결제 요청 보내기
