@@ -65,6 +65,7 @@ export type PaymentData = {
   amount: number;
   reason: string;
   deadline: string;
+  postId?: string;
   sentByMe?: boolean;
   costItems?: CostItem[];
 };
@@ -578,7 +579,9 @@ export function ConfirmationCard({
             예약 확정
           </span>
           <span className="text-[#281A0E] text-sm leading-5 mt-0.5">
-            예약이 완료되었습니다!<br />1:1 채팅에서 결제를 진행해주세요.
+            예약이 완료되었습니다!
+            <br />
+            1:1 채팅에서 결제를 진행해주세요.
           </span>
         </div>
         <div className="py-3">
@@ -643,7 +646,9 @@ export function SitterConfirmationCard({
             예약 확정
           </span>
           <span className="text-[#281A0E] text-sm leading-5 mt-0.5">
-            예약이 완료되었습니다!<br />1:1 채팅에서 결제 내용을 확인해주세요.
+            예약이 완료되었습니다!
+            <br />
+            1:1 채팅에서 결제 내용을 확인해주세요.
           </span>
         </div>
         <div className="pt-3 pb-3">
@@ -1001,31 +1006,32 @@ export function PaymentRequestCard({
           </span>
         </div>
 
-        <button
-          type="button"
-          onClick={onPostClick}
-          disabled={!onPostClick}
-          className="w-full flex items-center gap-3 px-3 py-2.5 bg-orange-100 rounded-xl text-left transition-colors enabled:hover:bg-orange-200 disabled:cursor-default"
-        >
-          <div className="w-10 h-10 rounded-lg bg-orange-200 shrink-0 overflow-hidden flex items-center justify-center">
-            {otherProfileImage ? (
-              <Image
-                src={otherProfileImage}
-                alt=""
-                width={40}
-                height={40}
-                className="object-cover w-full h-full"
-              />
-            ) : (
-              <span className="text-sm font-semibold text-orange-500">
-                {otherInitial}
-              </span>
-            )}
-          </div>
-          <span className="text-[#374151] text-sm leading-5 truncate flex-1">
-            {reason}
-          </span>
-        </button>
+        {onPostClick && (
+          <button
+            type="button"
+            onClick={onPostClick}
+            className="w-full flex items-center gap-3 px-3 py-2.5 bg-orange-100 rounded-xl text-left transition-colors hover:bg-orange-200"
+          >
+            <div className="w-10 h-10 rounded-lg bg-orange-200 shrink-0 overflow-hidden flex items-center justify-center">
+              {otherProfileImage ? (
+                <Image
+                  src={otherProfileImage}
+                  alt=""
+                  width={40}
+                  height={40}
+                  className="object-cover w-full h-full"
+                />
+              ) : (
+                <span className="text-sm font-semibold text-orange-500">
+                  {otherInitial}
+                </span>
+              )}
+            </div>
+            <span className="text-[#374151] text-sm leading-5 truncate flex-1">
+              {reason}
+            </span>
+          </button>
+        )}
 
         {costItems && costItems.length > 0 && (
           <div className="flex flex-col gap-1 px-1">
@@ -1040,7 +1046,10 @@ export function PaymentRequestCard({
                       {item.name}
                     </span>
                     <span className="text-orange-500 text-xs font-medium">
-                      {Number(item.amount.replace(/,/g, "")).toLocaleString("ko-KR")}원
+                      {Number(item.amount.replace(/,/g, "")).toLocaleString(
+                        "ko-KR",
+                      )}
+                      원
                     </span>
                   </div>
                   {item.description && (
@@ -1059,7 +1068,7 @@ export function PaymentRequestCard({
           <div className="flex justify-between items-center">
             <span className="text-[#6B7280] text-xs">요청 금액</span>
             <span className="text-orange-500 text-xs">
-              {amount.toLocaleString("ko-KR")} P
+              {amount.toLocaleString("ko-KR")} 원
             </span>
           </div>
           <div className="flex justify-between items-center">
@@ -1117,31 +1126,32 @@ export function SitterPaymentRequestCard({
         <span className="text-[#281A0E] text-sm leading-5 mt-0.5">
           결제가 요청되었습니다.
         </span>
-        <button
-          type="button"
-          onClick={onPostClick}
-          disabled={!onPostClick}
-          className="mt-3 w-full flex items-center gap-3 px-3 py-2.5 bg-orange-200 rounded-xl text-left transition-colors enabled:hover:bg-orange-300 disabled:cursor-default"
-        >
-          <div className="w-10 h-10 rounded-lg bg-orange-300 shrink-0 overflow-hidden flex items-center justify-center">
-            {otherProfileImage ? (
-              <Image
-                src={otherProfileImage}
-                alt=""
-                width={40}
-                height={40}
-                className="object-cover w-full h-full"
-              />
-            ) : (
-              <span className="text-sm font-semibold text-orange-500">
-                {otherInitial}
-              </span>
-            )}
-          </div>
-          <span className="text-[#374151] text-sm leading-5 truncate flex-1">
-            {reason}
-          </span>
-        </button>
+        {onPostClick && (
+          <button
+            type="button"
+            onClick={onPostClick}
+            className="mt-3 w-full flex items-center gap-3 px-3 py-2.5 bg-orange-200 rounded-xl text-left transition-colors hover:bg-orange-300"
+          >
+            <div className="w-10 h-10 rounded-lg bg-orange-300 shrink-0 overflow-hidden flex items-center justify-center">
+              {otherProfileImage ? (
+                <Image
+                  src={otherProfileImage}
+                  alt=""
+                  width={40}
+                  height={40}
+                  className="object-cover w-full h-full"
+                />
+              ) : (
+                <span className="text-sm font-semibold text-orange-500">
+                  {otherInitial}
+                </span>
+              )}
+            </div>
+            <span className="text-[#374151] text-sm leading-5 truncate flex-1">
+              {reason}
+            </span>
+          </button>
+        )}
 
         {costItems && costItems.length > 0 && (
           <div className="mt-3 flex flex-col gap-1 px-1">
@@ -1156,7 +1166,10 @@ export function SitterPaymentRequestCard({
                       {item.name}
                     </span>
                     <span className="text-orange-500 text-xs font-medium">
-                      {Number(item.amount.replace(/,/g, "")).toLocaleString("ko-KR")}원
+                      {Number(item.amount.replace(/,/g, "")).toLocaleString(
+                        "ko-KR",
+                      )}
+                      원
                     </span>
                   </div>
                   {item.description && (
@@ -1175,7 +1188,7 @@ export function SitterPaymentRequestCard({
           <div className="flex justify-between items-center">
             <span className="text-[#6B7280] text-xs">요청 금액</span>
             <span className="text-orange-500 text-xs font-medium">
-              {amount.toLocaleString("ko-KR")} P
+              {amount.toLocaleString("ko-KR")} 원
             </span>
           </div>
         </div>

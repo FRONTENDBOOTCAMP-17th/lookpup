@@ -85,6 +85,7 @@ function ChatPageContent({
   const mobileScrollRef = useRef<HTMLDivElement>(null);
   const isLoadMoreRef = useRef(false);
   const scrollAnchorRef = useRef<number | null>(null);
+  const prevApplicantStatusRef = useRef<string | null | undefined>(null);
 
   const [applicationActionError, setApplicationActionError] = useState<
     string | null
@@ -96,6 +97,7 @@ function ChatPageContent({
   const [reservationDetails, setReservationDetails] =
     useState<ReservationDetails | null>(null);
   const [pendingConfirmId, setPendingConfirmId] = useState<string | null>(null);
+  const [messagesRefreshKey, setMessagesRefreshKey] = useState(0);
 
   const activeRoomId =
     activeTab === "one_on_one" ? selectedRoomId : selectedApplicantId;
@@ -189,10 +191,14 @@ function ChatPageContent({
       confirmApplicant(id);
       updateApplicantStatus(id, "selected");
       broadcastConfirmation();
+      const confirmingApplicant = applicants.find((a) => a.id === id);
+      const postTitle = confirmingApplicant
+        ? (posts.find((p) => p.id === confirmingApplicant.postId)?.title ?? "")
+        : "";
       const appData = {
-        postTitle: confirmedPostTitle,
-        postId: selectedApplicant?.postId ?? "",
-        sitterId: selectedApplicant?.sitterId ?? "",
+        postTitle,
+        postId: confirmingApplicant?.postId ?? "",
+        sitterId: confirmingApplicant?.sitterId ?? "",
       };
       const msgResult = await sendApplicationSelectedMessage(id, appData);
       if (msgResult.data) {
@@ -201,9 +207,9 @@ function ChatPageContent({
         updatePreview(id, "선택 확정", msgResult.data.created_at ?? "");
       }
 
-      if (selectedApplicant?.sitterId) {
+      if (confirmingApplicant?.sitterId) {
         const roomResult = await findOrCreateRoom({
-          sitter_id: selectedApplicant.sitterId,
+          sitter_id: confirmingApplicant.sitterId,
           room_type: "direct",
         });
         if ("data" in roomResult && roomResult.data) {
@@ -215,8 +221,9 @@ function ChatPageContent({
             const deadline = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
             const payResult = await sendAutoPaymentRequestMessage(newRoomId, {
               amount: overrides.totalPrice,
-              reason: confirmedPostTitle || "펫시팅 서비스",
+              reason: postTitle || "펫시팅 서비스",
               deadline,
+              postId: confirmingApplicant?.postId,
             });
             if (payResult.data) {
               updatePreview(
@@ -250,7 +257,7 @@ function ChatPageContent({
     hasMore,
     loadingMore,
     paymentState,
-  } = useChatMessages(activeRoomId, userId);
+  } = useChatMessages(activeRoomId, userId, messagesRefreshKey);
 
   const { requestPayment, isPending: isPaymentPending } = usePortOne();
   const [payingNow, setPayingNow] = useState(false);
@@ -504,6 +511,20 @@ function ChatPageContent({
     (a) => a.id === selectedApplicantId,
   );
 
+  useEffect(() => {
+    const currentStatus = selectedApplicant?.applicationStatus;
+    const prevStatus = prevApplicantStatusRef.current;
+    prevApplicantStatusRef.current = currentStatus;
+
+    if (
+      prevStatus !== "selected" &&
+      currentStatus === "selected" &&
+      selectedApplicantId
+    ) {
+      setMessagesRefreshKey((k) => k + 1);
+    }
+  }, [selectedApplicant?.applicationStatus, selectedApplicantId]);
+
   const filteredRooms = rooms.filter(
     (r) =>
       !searchQuery || r.name.toLowerCase().includes(searchQuery.toLowerCase()),
@@ -659,12 +680,34 @@ function ChatPageContent({
   });
 
   const displayMessages = useMemo(() => {
+    const fillPostTitles = (msgs: typeof messages) =>
+      msgs.map((msg) => {
+        if (
+          msg.from === "application_selected" &&
+          msg.applicationData &&
+          !msg.applicationData.postTitle &&
+          msg.applicationData.postId
+        ) {
+          const post = posts.find((p) => p.id === msg.applicationData!.postId);
+          if (post) {
+            return {
+              ...msg,
+              applicationData: {
+                ...msg.applicationData,
+                postTitle: post.title,
+              },
+            };
+          }
+        }
+        return msg;
+      });
+
     if (activeTab !== "applicants" || !selectedApplicant) return messages;
     const hasCard = messages.some(
       (m) =>
         m.from === "application_selected" || m.from === "application_rejected",
     );
-    if (hasCard) return messages;
+    if (hasCard) return fillPostTitles(messages);
 
     const status = selectedApplicant.applicationStatus;
     if (status !== "selected" && status !== "rejected") return messages;
@@ -714,7 +757,11 @@ function ChatPageContent({
             },
           };
 
-    return [...messages.slice(0, insertAt), card, ...messages.slice(insertAt)];
+    return fillPostTitles([
+      ...messages.slice(0, insertAt),
+      card,
+      ...messages.slice(insertAt),
+    ]);
   }, [
     messages,
     hasMore,
@@ -722,6 +769,7 @@ function ChatPageContent({
     selectedApplicant,
     confirmedPostTitle,
     isOwnerOfSelectedRoom,
+    posts,
   ]);
 
   return (
@@ -967,33 +1015,33 @@ function ChatPageContent({
                     </button>
                   </div>
                 )}
-                {displayMessages.map((msg) => (
-                  <MessageBubble
-                    key={msg.id}
-                    msg={msg}
-                    senderInitial={mobileRoomInitial}
-                    senderProfileImage={mobileRoomProfileImage}
-                    onPaymentRequest={handlePayNow}
-                    isPaymentPending={payingNow || isPaymentPending}
-                    isPaymentPaid={paymentState?.paid ?? false}
-                    onPostClick={
-                      selectedApplicant?.postId
-                        ? () =>
-                            router.push(`/board/${selectedApplicant.postId}`)
-                        : selectedRoom?.sitterId
-                          ? () =>
-                              router.push(
-                                `/petsitters/${selectedRoom.sitterId}`,
-                              )
+                {displayMessages.map((msg) => {
+                  const postId =
+                    msg.applicationData?.postId ||
+                    msg.paymentData?.postId ||
+                    selectedApplicant?.postId;
+                  return (
+                    <MessageBubble
+                      key={msg.id}
+                      msg={msg}
+                      senderInitial={mobileRoomInitial}
+                      senderProfileImage={mobileRoomProfileImage}
+                      onPaymentRequest={handlePayNow}
+                      isPaymentPending={payingNow || isPaymentPending}
+                      isPaymentPaid={paymentState?.paid ?? false}
+                      onPostClick={
+                        postId
+                          ? () => router.push(`/board/${postId}`)
                           : undefined
-                    }
-                    onGoToChat={() => {
-                      setActiveTab("one_on_one");
-                      setSelectedApplicantId(null);
-                      setMobileChatView("list");
-                    }}
-                  />
-                ))}
+                      }
+                      onGoToChat={() => {
+                        setActiveTab("one_on_one");
+                        setSelectedApplicantId(null);
+                        setMobileChatView("list");
+                      }}
+                    />
+                  );
+                })}
               </div>
             </div>
 
@@ -1279,40 +1327,40 @@ function ChatPageContent({
                       </button>
                     </div>
                   )}
-                  {displayMessages.map((msg) => (
-                    <MessageBubble
-                      key={msg.id}
-                      msg={msg}
-                      senderInitial={
-                        activeTab === "one_on_one"
-                          ? (selectedRoom?.initial ?? "")
-                          : (selectedApplicant?.initial ?? "")
-                      }
-                      senderProfileImage={
-                        activeTab === "one_on_one"
-                          ? (selectedRoom?.profileImage ?? null)
-                          : (selectedApplicant?.profileImage ?? null)
-                      }
-                      onPaymentRequest={handlePayNow}
-                      isPaymentPending={payingNow || isPaymentPending}
-                      isPaymentPaid={paymentState?.paid ?? false}
-                      onPostClick={
-                        selectedApplicant?.postId
-                          ? () =>
-                              router.push(`/board/${selectedApplicant.postId}`)
-                          : selectedRoom?.sitterId
-                            ? () =>
-                                router.push(
-                                  `/petsitters/${selectedRoom.sitterId}`,
-                                )
+                  {displayMessages.map((msg) => {
+                    const postId =
+                      msg.applicationData?.postId ||
+                      msg.paymentData?.postId ||
+                      selectedApplicant?.postId;
+                    return (
+                      <MessageBubble
+                        key={msg.id}
+                        msg={msg}
+                        senderInitial={
+                          activeTab === "one_on_one"
+                            ? (selectedRoom?.initial ?? "")
+                            : (selectedApplicant?.initial ?? "")
+                        }
+                        senderProfileImage={
+                          activeTab === "one_on_one"
+                            ? (selectedRoom?.profileImage ?? null)
+                            : (selectedApplicant?.profileImage ?? null)
+                        }
+                        onPaymentRequest={handlePayNow}
+                        isPaymentPending={payingNow || isPaymentPending}
+                        isPaymentPaid={paymentState?.paid ?? false}
+                        onPostClick={
+                          postId
+                            ? () => router.push(`/board/${postId}`)
                             : undefined
-                      }
-                      onGoToChat={() => {
-                        setActiveTab("one_on_one");
-                        setSelectedApplicantId(null);
-                      }}
-                    />
-                  ))}
+                        }
+                        onGoToChat={() => {
+                          setActiveTab("one_on_one");
+                          setSelectedApplicantId(null);
+                        }}
+                      />
+                    );
+                  })}
 
                   <div ref={messagesEndRef} />
                 </div>

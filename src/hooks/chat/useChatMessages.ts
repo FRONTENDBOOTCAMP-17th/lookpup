@@ -11,7 +11,11 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { createClient } from "@/utils/supabase/client";
 import type { RealtimeChannel } from "@supabase/supabase-js";
-import type { Message, PaymentData, ApplicationData } from "@/components/common/chat/chat_components";
+import type {
+  Message,
+  PaymentData,
+  ApplicationData,
+} from "@/components/common/chat/chat_components";
 
 const SYSTEM_MSG_PREFIX = "__system__:";
 const IMAGE_MSG_PREFIX = "__image__:";
@@ -102,7 +106,12 @@ function toMessage(m: MessageApiItem, userId: string): Message {
       id: m.id,
       from: "application_rejected" as const,
       text: "",
-      applicationData: { postTitle: "", postId: "", sitterId: "", sentByMe: m.sender_id === userId },
+      applicationData: {
+        postTitle: "",
+        postId: "",
+        sitterId: "",
+        sentByMe: m.sender_id === userId,
+      },
     };
   }
   if (m.content.startsWith(RESERVATION_CANCELED_PREFIX)) {
@@ -149,14 +158,13 @@ function derivePaymentState(messages: Message[]): PaymentStateInfo | null {
 export function useChatMessages(
   activeRoomId: string | null,
   userId: string | null,
+  refreshKey?: number,
 ) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const channelRef = useRef<RealtimeChannel | null>(null);
-
-  // 방이 바뀌면 상태 초기화 후 최신 메시지 로드
   useEffect(() => {
     if (!activeRoomId || !userId) return;
 
@@ -166,7 +174,9 @@ export function useChatMessages(
 
     const controller = new AbortController();
 
-    fetch(`/api/chat/rooms/${activeRoomId}/messages`, { signal: controller.signal })
+    fetch(`/api/chat/rooms/${activeRoomId}/messages`, {
+      signal: controller.signal,
+    })
       .then((res) => {
         if (!res.ok) throw new Error("메시지를 불러오지 못했습니다");
         return res.json();
@@ -187,7 +197,7 @@ export function useChatMessages(
       });
 
     return () => controller.abort();
-  }, [activeRoomId, userId]);
+  }, [activeRoomId, userId, refreshKey]);
 
   // Realtime broadcast 구독
   useEffect(() => {
@@ -199,7 +209,10 @@ export function useChatMessages(
       .on("broadcast", { event: "new_message" }, ({ payload }) => {
         const m = payload as MessageApiItem;
         if (m.sender_id === userId) return;
-        setMessages((prev) => [...prev, toMessage(m, userId)]);
+        setMessages((prev) => {
+          if (prev.some((msg) => msg.id === m.id)) return prev;
+          return [...prev, toMessage(m, userId)];
+        });
       })
       .subscribe();
 
@@ -208,6 +221,36 @@ export function useChatMessages(
     return () => {
       supabase.removeChannel(channel);
       channelRef.current = null;
+    };
+  }, [activeRoomId, userId]);
+
+  useEffect(() => {
+    if (!activeRoomId || !userId) return;
+
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`room-db-${activeRoomId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `room_id=eq.${activeRoomId}`,
+        },
+        (payload) => {
+          const m = payload.new as MessageApiItem;
+          if (m.sender_id === userId) return;
+          setMessages((prev) => {
+            if (prev.some((msg) => msg.id === m.id)) return prev;
+            return [...prev, toMessage(m, userId)];
+          });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
     };
   }, [activeRoomId, userId]);
 
@@ -256,5 +299,14 @@ export function useChatMessages(
     }
   }
 
-  return { messages, addMessage, broadcastMessage, broadcastConfirmation, loadMore, hasMore, loadingMore, paymentState };
+  return {
+    messages,
+    addMessage,
+    broadcastMessage,
+    broadcastConfirmation,
+    loadMore,
+    hasMore,
+    loadingMore,
+    paymentState,
+  };
 }

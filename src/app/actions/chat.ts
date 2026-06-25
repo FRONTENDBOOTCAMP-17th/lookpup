@@ -354,7 +354,7 @@ export async function sendPaymentCompleteMessage(
 
 export async function sendAutoPaymentRequestMessage(
   roomId: string,
-  data: { amount: number; reason: string; deadline: string; costItems?: { id: string; name: string; amount: string; description: string }[] },
+  data: { amount: number; reason: string; deadline: string; postId?: string; costItems?: { id: string; name: string; amount: string; description: string }[] },
 ) {
   const user = await getAuthUser();
   if (!user) {
