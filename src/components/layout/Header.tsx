@@ -1,19 +1,25 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Bell,
+  Calendar,
+  CheckCircle,
   ChevronRight,
+  ClipboardList,
+  FileText,
   LogOut,
   Menu,
   MessageSquare,
   User,
   X,
+  XCircle,
 } from "lucide-react";
 import { signOut } from "@/app/actions/auth";
+import { markAllNotificationsRead, markNotificationRead } from "@/app/actions/notifications";
 import { createClient } from "@/utils/supabase/client";
 import {
   HoverCard,
@@ -21,6 +27,45 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { useUserStore } from "@/store/userStore";
+
+type Notification = {
+  id: string;
+  type: string;
+  title: string;
+  content: string;
+  is_read: boolean;
+  link_url: string | null;
+  created_at: string;
+};
+
+function getNotifIcon(type: string) {
+  switch (type) {
+    case "application":
+      return { icon: <Calendar size={14} className="text-orange-500" />, bg: "bg-orange-50" };
+    case "application_selected":
+      return { icon: <CheckCircle size={14} className="text-green-700" />, bg: "bg-green-100" };
+    case "application_rejected":
+      return { icon: <XCircle size={14} className="text-red-500" />, bg: "bg-red-50" };
+    case "care_record":
+      return { icon: <ClipboardList size={14} className="text-teal-600" />, bg: "bg-teal-50" };
+    case "message":
+      return { icon: <MessageSquare size={14} className="text-sky-600" />, bg: "bg-sky-100" };
+    case "review":
+      return { icon: <FileText size={14} className="text-purple-800" />, bg: "bg-pink-100" };
+    default:
+      return { icon: <Bell size={14} className="text-orange-500" />, bg: "bg-orange-50" };
+  }
+}
+
+function relativeTime(iso: string) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return "방금 전";
+  if (m < 60) return `${m}분 전`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}시간 전`;
+  return `${Math.floor(h / 24)}일 전`;
+}
 
 const NAV_ITEMS = [
   { href: "/petsitters", label: "펫시터 찾기" },
@@ -35,6 +80,8 @@ export default function Header() {
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const { user, isLoggedIn, isLoading, clearUser } = useUserStore();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [, startTransition] = useTransition();
   const userId = user?.id;
 
   const fetchUnreadCount = () => {
@@ -44,6 +91,33 @@ export default function Header() {
         if (json.data) setUnreadCount(json.data.unread_total ?? 0);
       })
       .catch(() => {});
+  };
+
+  const fetchNotifications = () => {
+    fetch("/api/notifications?limit=5")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.data) {
+          setNotifications(json.data.notifications ?? []);
+          setUnreadCount(json.data.unread_total ?? 0);
+        }
+      })
+      .catch(() => {});
+  };
+
+  const handleMarkAllRead = () => {
+    startTransition(async () => {
+      await markAllNotificationsRead();
+      fetchNotifications();
+    });
+  };
+
+  const handleNotifClick = (notif: Notification) => {
+    startTransition(async () => {
+      if (!notif.is_read) await markNotificationRead(notif.id);
+      if (notif.link_url) router.push(notif.link_url);
+      fetchNotifications();
+    });
   };
 
   useEffect(() => {
@@ -142,18 +216,88 @@ export default function Header() {
             {isLoading ? null : isLoggedIn ? (
               <div className="flex items-center gap-2 shrink-0">
                 {/* 알림 */}
-                <Link
-                  href="/notifications"
-                  aria-label="알림 보기"
-                  className="relative p-2 rounded-full hover:bg-orange-50 transition-colors"
-                >
-                  <Bell size={20} className="text-gray-500" strokeWidth={1.8} />
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 size-4 bg-red-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold leading-4">
-                      {unreadCount}
-                    </span>
-                  )}
-                </Link>
+                <HoverCard openDelay={120} closeDelay={150} onOpenChange={(open) => { if (open) fetchNotifications(); }}>
+                  <HoverCardTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label="알림 보기"
+                      className="relative p-2 rounded-full hover:bg-orange-50 transition-colors"
+                    >
+                      <Bell size={20} className="text-gray-500" strokeWidth={1.8} />
+                      {unreadCount > 0 && (
+                        <span className="absolute -top-0.5 -right-0.5 size-4 bg-red-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold leading-4">
+                          {unreadCount}
+                        </span>
+                      )}
+                    </button>
+                  </HoverCardTrigger>
+                  <HoverCardContent
+                    align="end"
+                    sideOffset={8}
+                    className="w-80 p-0 bg-white border border-orange-100 rounded-xl shadow-[0px_4px_20px_0px_rgba(232,116,42,0.15)] overflow-hidden"
+                  >
+                    {/* 헤더 */}
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-orange-100">
+                      <span className="text-stone-900 text-sm font-semibold">알림</span>
+                      {unreadCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={handleMarkAllRead}
+                          className="text-xs text-orange-500 hover:text-orange-600 transition-colors"
+                        >
+                          모두 읽음 처리
+                        </button>
+                      )}
+                    </div>
+                    {/* 알림 목록 */}
+                    <div className="max-h-72 overflow-y-auto">
+                      {notifications.length === 0 ? (
+                        <div className="py-8 flex flex-col items-center gap-2 text-gray-400">
+                          <Bell size={24} strokeWidth={1.5} />
+                          <p className="text-xs">새로운 알림이 없습니다</p>
+                        </div>
+                      ) : (
+                        notifications.map((notif, i) => {
+                          const { icon, bg } = getNotifIcon(notif.type);
+                          return (
+                            <button
+                              key={notif.id}
+                              type="button"
+                              onClick={() => handleNotifClick(notif)}
+                              className={`w-full text-left px-4 py-3 flex items-start gap-3 hover:bg-orange-50/50 transition-colors ${
+                                i < notifications.length - 1 ? "border-b border-orange-50" : ""
+                              } ${notif.is_read ? "opacity-70" : ""}`}
+                            >
+                              <div className={`w-8 h-8 ${bg} rounded-lg flex items-center justify-center shrink-0 mt-0.5`}>
+                                {icon}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className={`text-xs leading-4 truncate ${notif.is_read ? "text-gray-500" : "text-stone-900 font-medium"}`}>
+                                  {notif.title}
+                                </p>
+                                <p className="text-xs text-gray-400 leading-4 mt-0.5 truncate">{notif.content}</p>
+                                <p className="text-[10px] text-gray-300 mt-1">{relativeTime(notif.created_at)}</p>
+                              </div>
+                              {!notif.is_read && (
+                                <span className="w-1.5 h-1.5 bg-orange-500 rounded-full shrink-0 mt-1.5" />
+                              )}
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+                    {/* 전체 알림 보기 */}
+                    <div className="border-t border-orange-100">
+                      <Link
+                        href="/notifications"
+                        className="flex items-center justify-center gap-1 py-3 text-xs text-orange-500 font-medium hover:bg-orange-50 transition-colors"
+                      >
+                        전체 알림 보기
+                        <ChevronRight size={12} strokeWidth={2} />
+                      </Link>
+                    </div>
+                  </HoverCardContent>
+                </HoverCard>
 
                 {/* 아바타 + HoverCard 드롭다운 */}
                 <HoverCard openDelay={80} closeDelay={100}>
