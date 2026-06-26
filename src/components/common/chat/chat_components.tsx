@@ -834,6 +834,7 @@ type ChatInputProps = {
   showPlusButton: boolean;
   plusOpen?: boolean;
   onPlusToggle?: () => void;
+  disabled?: boolean;
 };
 
 export function ChatInput({
@@ -843,6 +844,7 @@ export function ChatInput({
   showPlusButton,
   plusOpen,
   onPlusToggle,
+  disabled,
 }: ChatInputProps) {
   return (
     <div className="p-6 bg-white border-t border-orange-100 shrink-0">
@@ -870,7 +872,8 @@ export function ChatInput({
         />
         <button
           onClick={onSend}
-          className="w-12 h-12 bg-orange-500 hover:bg-orange-600 rounded-xl flex items-center justify-center transition-colors"
+          disabled={disabled}
+          className="w-12 h-12 bg-orange-500 hover:bg-orange-600 rounded-xl flex items-center justify-center transition-colors disabled:opacity-50"
         >
           <Send size={18} className="text-white" />
         </button>

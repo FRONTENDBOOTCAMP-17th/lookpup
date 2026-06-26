@@ -650,6 +650,7 @@ function ChatPageContent({
   const headerBadge = getHeaderBadge();
 
   const isCurrentUserSitter =
+    userId !== null &&
     activeTab === "one_on_one" &&
     selectedRoom !== undefined &&
     selectedRoom.ownerId !== null &&
@@ -803,6 +804,7 @@ function ChatPageContent({
                     onClick={() => {
                       setActiveTab(tab);
                       setEditMode(false);
+                      setMobileChatView("list");
                     }}
                     className={`flex-1 py-2 text-sm font-medium border-b-2 transition-colors ${
                       activeTab === tab
@@ -1413,6 +1415,7 @@ function ChatPageContent({
                     showPlusButton={true}
                     plusOpen={plusMenuOpen}
                     onPlusToggle={() => setPlusMenuOpen((v) => !v)}
+                    disabled={sending}
                   />
                 </>
               )}
