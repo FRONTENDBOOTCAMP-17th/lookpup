@@ -85,6 +85,7 @@ function ChatPageContent({
   const mobileScrollRef = useRef<HTMLDivElement>(null);
   const isLoadMoreRef = useRef(false);
   const scrollAnchorRef = useRef<number | null>(null);
+  const desktopScrollAnchorRef = useRef<number | null>(null);
   const prevApplicantStatusRef = useRef<string | null | undefined>(null);
 
   const [applicationActionError, setApplicationActionError] = useState<
@@ -276,6 +277,14 @@ function ChatPageContent({
       if (scrollAnchorRef.current !== null && mobileEl) {
         mobileEl.scrollTop += mobileEl.scrollHeight - scrollAnchorRef.current;
         scrollAnchorRef.current = null;
+      } else {
+        const viewport = messagesEndRef.current?.closest(
+          "[data-radix-scroll-area-viewport]",
+        ) as HTMLElement | null;
+        if (viewport && desktopScrollAnchorRef.current !== null) {
+          viewport.scrollTop += viewport.scrollHeight - desktopScrollAnchorRef.current;
+          desktopScrollAnchorRef.current = null;
+        }
       }
       return;
     }
@@ -296,6 +305,11 @@ function ChatPageContent({
     const mobileEl = mobileScrollRef.current;
     if (mobileEl && mobileEl.offsetParent !== null) {
       scrollAnchorRef.current = mobileEl.scrollHeight;
+    } else {
+      const viewport = messagesEndRef.current?.closest(
+        "[data-radix-scroll-area-viewport]",
+      ) as HTMLElement | null;
+      if (viewport) desktopScrollAnchorRef.current = viewport.scrollHeight;
     }
     isLoadMoreRef.current = true;
     loadMore();
@@ -313,18 +327,26 @@ function ChatPageContent({
     }[];
   }) {
     if (!activeRoomId) return;
-    const d = new Date(Date.now() + 24 * 60 * 60 * 1000);
-    const deadline = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-    const result = await sendPaymentRequestMessage(activeRoomId, {
-      amount: data.amount,
-      reason: data.reason,
-      deadline,
-      costItems: data.costItems,
-    });
-    if (result.data) {
-      addMessage(result.data);
-      broadcastMessage(result.data);
-      updatePreview(activeRoomId, "결제 요청", result.data.created_at ?? "");
+    try {
+      const d = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      const deadline = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+      const result = await sendPaymentRequestMessage(activeRoomId, {
+        amount: data.amount,
+        reason: data.reason,
+        deadline,
+        costItems: data.costItems,
+      });
+      if (result.error) {
+        setSendError(result.error.message);
+        return;
+      }
+      if (result.data) {
+        addMessage(result.data);
+        broadcastMessage(result.data);
+        updatePreview(activeRoomId, "결제 요청", result.data.created_at ?? "");
+      }
+    } catch {
+      setSendError("결제 요청 전송에 실패했습니다. 다시 시도해주세요.");
     }
   }
 
@@ -387,6 +409,8 @@ function ChatPageContent({
         );
       }
       setInput("");
+    } catch {
+      setSendError("메시지 전송에 실패했습니다. 다시 시도해주세요.");
     } finally {
       setSending(false);
     }
@@ -612,20 +636,33 @@ function ChatPageContent({
   function getReportUrl() {
     const isOneOnOne = activeTab === "one_on_one";
     const isUserSitter = isOneOnOne && selectedRoom?.sitterId === userId;
-    const targetName = isOneOnOne
-      ? (selectedRoom?.name ?? "")
-      : (selectedApplicant?.name ?? "");
+    const isUserSitterInApplicants =
+      !isOneOnOne && selectedApplicant?.sitterId === userId;
+    const isReportingOwner = isUserSitter || isUserSitterInApplicants;
+
     const targetId = isOneOnOne
       ? isUserSitter
         ? (selectedRoom?.ownerId ?? "")
         : (selectedRoom?.sitterId ?? "")
-      : (selectedApplicant?.sitterId ?? "");
+      : isUserSitterInApplicants
+        ? (selectedApplicant?.ownerId ?? "")
+        : (selectedApplicant?.sitterId ?? "");
 
-    const role = isUserSitter ? "보호자" : "펫시터";
-    const service = getHeaderSub();
+    // Applicant 타입에 보호자 이름/이미지가 없으므로 펫시터가 보호자를
+    // 신고할 때는 name/image를 전달하지 않는다 (신고 페이지에서 targetId로 조회)
+    const targetName = isOneOnOne
+      ? (selectedRoom?.name ?? "")
+      : isUserSitterInApplicants
+        ? ""
+        : (selectedApplicant?.name ?? "");
     const targetImage = isOneOnOne
       ? (selectedRoom?.profileImage ?? null)
-      : (selectedApplicant?.profileImage ?? null);
+      : isUserSitterInApplicants
+        ? null
+        : (selectedApplicant?.profileImage ?? null);
+
+    const role = isReportingOwner ? "보호자" : "펫시터";
+    const service = getHeaderSub();
     const params = new URLSearchParams();
     if (targetId) params.set("targetId", targetId);
     if (targetName) params.set("targetName", targetName);
