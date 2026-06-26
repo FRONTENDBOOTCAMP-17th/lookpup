@@ -342,19 +342,22 @@ function ChatPageContent({
       },
       {
         onSuccess: async () => {
-          const result = await sendPaymentCompleteMessage(activeRoomId, {
-            amount: paymentState.amount,
-          });
-          if (result.data) {
-            addMessage(result.data);
-            broadcastMessage(result.data);
-            updatePreview(
-              activeRoomId,
-              "결제 완료",
-              result.data.created_at ?? "",
-            );
+          try {
+            const result = await sendPaymentCompleteMessage(activeRoomId, {
+              amount: paymentState.amount,
+            });
+            if (result.data) {
+              addMessage(result.data);
+              broadcastMessage(result.data);
+              updatePreview(
+                activeRoomId,
+                "결제 완료",
+                result.data.created_at ?? "",
+              );
+            }
+          } finally {
+            setPayingNow(false);
           }
-          setPayingNow(false);
         },
         onFail: () => {
           setPayingNow(false);
