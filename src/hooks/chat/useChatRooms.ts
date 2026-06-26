@@ -193,14 +193,12 @@ export function useChatRooms(activeRoomId: string | null) {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "messages" },
         (payload) => {
-          const { room_id, sender_id, content, created_at } = payload.new as {
+          const { room_id, content, created_at } = payload.new as {
             room_id: string;
-            sender_id: string;
             content: string;
             created_at: string;
           };
 
-          if (sender_id !== userIdRef.current) return;
           if (!myRoomIdsRef.current.has(room_id)) return;
           updateRoomPreview(room_id, formatPreview(content), created_at);
         },
