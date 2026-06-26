@@ -813,6 +813,29 @@ function ChatPageContent({
     posts,
   ]);
 
+  function withDateSeparators(msgs: typeof displayMessages) {
+    const result: typeof displayMessages = [];
+    let lastDateKey: string | null = null;
+    for (const msg of msgs) {
+      if (msg.rawDate) {
+        const d = new Date(msg.rawDate);
+        const key = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+        if (key !== lastDateKey) {
+          const label = d.toLocaleDateString("ko-KR", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+            weekday: "long",
+          });
+          result.push({ id: `__date_${key}__`, from: "date_separator", text: label });
+          lastDateKey = key;
+        }
+      }
+      result.push(msg);
+    }
+    return result;
+  }
+
   return (
     <div className="h-screen overflow-hidden flex flex-col">
       <Header />
@@ -1057,7 +1080,7 @@ function ChatPageContent({
                     </button>
                   </div>
                 )}
-                {displayMessages.map((msg) => {
+                {withDateSeparators(displayMessages).map((msg) => {
                   const postId =
                     msg.applicationData?.postId ||
                     msg.paymentData?.postId ||
@@ -1369,7 +1392,7 @@ function ChatPageContent({
                       </button>
                     </div>
                   )}
-                  {displayMessages.map((msg) => {
+                  {withDateSeparators(displayMessages).map((msg) => {
                     const postId =
                       msg.applicationData?.postId ||
                       msg.paymentData?.postId ||

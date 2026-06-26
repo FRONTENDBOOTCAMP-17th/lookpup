@@ -84,6 +84,7 @@ export type Message = {
     | "me"
     | "other"
     | "divider"
+    | "date_separator"
     | "payment_request"
     | "payment_complete"
     | "application_selected"
@@ -92,6 +93,7 @@ export type Message = {
   text: string;
   imageUrl?: string;
   time?: string;
+  rawDate?: string;
   paymentData?: PaymentData;
   applicationData?: ApplicationData;
   sentByMe?: boolean;
@@ -457,6 +459,15 @@ export function MessageBubble({
   }
   if (msg.from === "payment_complete") {
     return <PaymentCompleteCard amount={msg.paymentData?.amount ?? 0} />;
+  }
+  if (msg.from === "date_separator") {
+    return (
+      <div className="flex items-center gap-3 py-1">
+        <div className="flex-1 h-px bg-stone-200" />
+        <span className="text-xs text-stone-400 shrink-0">{msg.text}</span>
+        <div className="flex-1 h-px bg-stone-200" />
+      </div>
+    );
   }
   if (msg.from === "divider") {
     return (

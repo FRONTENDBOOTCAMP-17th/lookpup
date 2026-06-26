@@ -54,6 +54,7 @@ function toMessage(m: MessageApiItem, userId: string): Message {
       text: "",
       imageUrl: m.content.slice(IMAGE_MSG_PREFIX.length),
       time: m.created_at ? formatTime(m.created_at) : "",
+      rawDate: m.created_at ?? undefined,
     };
   }
   if (m.content.startsWith(PAYMENT_REQUEST_PREFIX)) {
@@ -66,6 +67,7 @@ function toMessage(m: MessageApiItem, userId: string): Message {
         from: "payment_request" as const,
         text: "",
         paymentData: { ...data, sentByMe: m.sender_id === userId },
+        rawDate: m.created_at ?? undefined,
       };
     } catch {
       return { id: m.id, from: "divider", text: "결제 요청" };
@@ -81,6 +83,7 @@ function toMessage(m: MessageApiItem, userId: string): Message {
         from: "payment_complete" as const,
         text: "",
         paymentData: { amount: data.amount, reason: "", deadline: "" },
+        rawDate: m.created_at ?? undefined,
       };
     } catch {
       return { id: m.id, from: "divider", text: "결제 완료" };
@@ -96,6 +99,7 @@ function toMessage(m: MessageApiItem, userId: string): Message {
         from: "application_selected" as const,
         text: "",
         applicationData: { ...data, sentByMe: m.sender_id === userId },
+        rawDate: m.created_at ?? undefined,
       };
     } catch {
       return { id: m.id, from: "divider", text: "선택 확정" };
@@ -112,6 +116,7 @@ function toMessage(m: MessageApiItem, userId: string): Message {
         sitterId: "",
         sentByMe: m.sender_id === userId,
       },
+      rawDate: m.created_at ?? undefined,
     };
   }
   if (m.content.startsWith(RESERVATION_CANCELED_PREFIX)) {
@@ -120,6 +125,7 @@ function toMessage(m: MessageApiItem, userId: string): Message {
       from: "reservation_canceled" as const,
       text: "",
       sentByMe: m.sender_id === userId,
+      rawDate: m.created_at ?? undefined,
     };
   }
   return {
@@ -127,6 +133,7 @@ function toMessage(m: MessageApiItem, userId: string): Message {
     from: m.sender_id === userId ? "me" : "other",
     text: m.content,
     time: m.created_at ? formatTime(m.created_at) : "",
+    rawDate: m.created_at ?? undefined,
   };
 }
 
