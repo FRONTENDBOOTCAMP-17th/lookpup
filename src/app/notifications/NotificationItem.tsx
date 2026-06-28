@@ -70,7 +70,7 @@ export function NotificationItem({ id, type, title, content, time, isRead, linkU
       role="button"
       tabIndex={0}
       onKeyDown={(e) => e.key === "Enter" && !isPending && handleClick()}
-      className={`relative px-5 py-4 flex items-start gap-3 transition-colors ${
+      className={`relative px-5 py-4 flex items-start gap-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-400 first:rounded-t-2xl last:rounded-b-2xl ${
         !last ? "border-b border-orange-100" : ""
       } ${isRead ? "bg-white/60" : "bg-white"} ${
         isPending ? "opacity-50 cursor-wait" : "hover:bg-orange-50/40 cursor-pointer"
