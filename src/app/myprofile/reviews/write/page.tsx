@@ -942,10 +942,12 @@ function ReviewWriteContent() {
     setIsSubmitting(true);
     setSubmitError(null);
 
-    let image_url: string | undefined;
+    let image_urls: string[] = [];
     if (photos.length > 0) {
       try {
-        image_url = await uploadToCloudinary(photos[0].file, "reviews/photos");
+        image_urls = await Promise.all(
+          photos.map((p) => uploadToCloudinary(p.file, "reviews/photos")),
+        );
       } catch {
         setSubmitError("사진 업로드에 실패했습니다.");
         setIsSubmitting(false);
@@ -957,7 +959,7 @@ function ReviewWriteContent() {
       reservation_id: reservationId,
       rating: reviewData.overallRating,
       content: reviewData.content,
-      image_url,
+      image_urls,
     });
 
     setIsSubmitting(false);
