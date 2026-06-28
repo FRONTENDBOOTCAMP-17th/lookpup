@@ -58,8 +58,6 @@ export function NotificationItem({ id, type, title, content, time, isRead, linkU
       }
       if (linkUrl) {
         router.push(linkUrl);
-      } else {
-        router.refresh();
       }
     });
   }
