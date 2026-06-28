@@ -334,7 +334,7 @@ export default function Header() {
                       aria-label="계정 메뉴 열기"
                       className="ml-1 size-9 rounded-full bg-gradient-to-br from-orange-500 to-orange-300 flex items-center justify-center text-white text-sm font-bold leading-5 hover:ring-2 hover:ring-orange-200 transition cursor-pointer"
                     >
-                      {user?.fullName?.charAt(0) ?? "?"}
+                      {user?.profileImage ? <Image src={user.profileImage} alt="" width={36} height={36} className="rounded-full object-cover" /> : user?.fullName?.charAt(0) ?? "?"}
                     </button>
                   </HoverCardTrigger>
                   <HoverCardContent
@@ -456,7 +456,7 @@ export default function Header() {
                     aria-label="마이페이지로 이동"
                     className="hidden min-[480px]:flex size-8 rounded-full bg-gradient-to-br from-orange-500 to-orange-300 items-center justify-center text-white text-sm font-bold leading-5"
                   >
-                    {user?.fullName?.charAt(0) ?? "?"}
+                    {user?.profileImage ? <Image src={user.profileImage} alt="" width={32} height={32} className="rounded-full object-cover" /> : user?.fullName?.charAt(0) ?? "?"}
                   </Link>
                 </>
               )}
@@ -491,7 +491,7 @@ export default function Header() {
                   onClick={closeMobileMenu}
                   className="size-11 rounded-full bg-gradient-to-br from-orange-500 to-orange-300 flex items-center justify-center text-white text-base font-bold leading-6 shrink-0"
                 >
-                  {user?.fullName?.charAt(0) ?? "?"}
+                  {user?.profileImage ? <Image src={user.profileImage} alt="" width={44} height={44} className="rounded-full object-cover" /> : user?.fullName?.charAt(0) ?? "?"}
                 </Link>
 
                 <div className="flex-1 min-w-0">

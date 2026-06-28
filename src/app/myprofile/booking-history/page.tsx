@@ -15,7 +15,10 @@ import {
 import Header from "@/components/layout/Header";
 import Avatar from "@/components/ui/Avatar";
 import { CustomModal } from "@/components/common/CustomModal";
-import { getMyReservations, updateReservation } from "@/app/actions/reservations";
+import {
+  getMyReservations,
+  updateReservation,
+} from "@/app/actions/reservations";
 
 type BookingStatus =
   | "pending"
@@ -40,7 +43,6 @@ interface Booking {
   price: number;
   reviewWritten?: boolean;
 }
-
 
 // 상태 설정
 
@@ -299,7 +301,9 @@ export default function BookingHistoryPage() {
     if (!cancelingId) return;
     await updateReservation(cancelingId, { status: "canceled" });
     setCancelingId(null);
-    getMyReservations().then(({ data }) => setBookings((data ?? []) as Booking[]));
+    getMyReservations().then(({ data }) =>
+      setBookings((data ?? []) as Booking[]),
+    );
   };
 
   const filtered = bookings.filter((b) => {
@@ -382,7 +386,9 @@ export default function BookingHistoryPage() {
 
         {/* 카드 목록 */}
         {loading ? (
-          <div className="flex justify-center py-20 text-sm text-gray-500">불러오는 중...</div>
+          <div className="flex justify-center py-20 text-sm text-gray-500">
+            불러오는 중...
+          </div>
         ) : paged.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20">
             <div className="w-16 h-16 bg-white border border-orange-100 rounded-full flex items-center justify-center mb-4">
@@ -393,7 +399,7 @@ export default function BookingHistoryPage() {
             </p>
             <p className="text-sm text-gray-500">새로운 예약을 만들어보세요</p>
             <Link
-              href="/search"
+              href="/petsitters"
               className="mt-6 px-6 py-3 bg-[#E8742A] text-white rounded-xl text-sm font-semibold hover:bg-[#D4621A] transition-colors"
             >
               펫시터 찾기
