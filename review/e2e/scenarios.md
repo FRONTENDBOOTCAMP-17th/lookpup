@@ -1,7 +1,46 @@
 # lookpup(봐주개) E2E 시나리오
 
-리뷰 전용 데일리 E2E. 로그인은 OAuth(카카오/구글)만 있어 자동화 불가 → 공개 페이지 렌더 위주.
+리뷰 전용 데일리 E2E. 앱 로그인은 OAuth(카카오/구글)뿐이라, **앱 코드 무변경 테스트 전용 로그인**(`review/e2e/auth-setup.cjs` — service-role로 세션 발급)으로 로그인 후 동선을 검증한다.
 실행: `cd review/e2e && npx playwright test tests/lookpup-daily.spec.ts --reporter=line`
+
+## 역할 모델 (2026-06-25 확인)
+
+- 역할은 `users.role` 단일 컬럼: `owner`(반려인·기본) / `both`(펫시터 겸 반려인) / `admin`. **펫시터가 되어도 `role`은 `sitter`가 아니라 `both`**.
+- 판별 기준이 **이원화**: UI는 `role`(`both`/`admin`)로, 서버 권한은 **`sitters` 테이블에 본인 행이 있는지**로 게이팅(예약 수락·케어기록·지원). 둘이 어긋날 수 있어 등록 직후 토글 노출을 꼭 확인.
+- **펫시터 등록**: `/sitter-register` 제출 → `is_verified=true` 필수(미인증이면 거부) → `sitters` 행 insert + `services` insert + `users.role='both'` 승격.
+- **관리자 UI 없음**(미구현) — 리뷰·삭제 권한에서 `role==='admin'`만 참조. 관리자 시나리오는 넣지 않는다.
+- 역할 계정 시드: 반려인(owner)은 테스트 로그인 그대로. 펫시터는 service-role로 `is_verified=true` 세팅 + `sitters`/`services` 행 + `role='both'`로 만들어 둔다.
+- 펫시터의 "받은 예약 수락"엔 별도 페이지가 없고 **`/chat` 안에서** 수락/케어기록을 처리한다.
+
+## 역할별 시나리오 (2026-06-25 재구성 — "쓰는 순서대로")
+
+### [반려인] — 예약을 거는 쪽
+| ID | 시나리오 | 단계 → 기대 |
+| -- | -------- | ----------- |
+| LO1 | 비로그인 메인→검색→상세 | `/` → `/petsitters` → `/petsitters/[id]`. 예약 버튼은 로그인 유도 |
+| LO2 | 가입·로그인 | 테스트 로그인 → `/myprofile`, role=owner라 보호자/펫시터 토글 **안 보임** |
+| LO3 | 펫 등록 | `/pet-register` → `/myprofile/mypets`에 노출 |
+| LO4 | 직접 예약+결제 | `/petsitters/[id]/book` 날짜·펫·서비스 → `/payment` → `reservations.status=pending`, `/myprofile/booking-history` "대기" |
+| LO5 | 구인글 작성 | `/board/write` 제출 → `/board/[id]` 노출, `requests.status=open` |
+| LO6 | 예약 취소 | `/myprofile/booking-history/[id]` pending 취소 → `cancelled` |
+
+### [펫시터] — 예약을 받는 쪽  (사전: is_verified + sitters 행 + role='both')
+| ID | 시나리오 | 단계 → 기대 |
+| -- | -------- | ----------- |
+| LS1 | 펫시터 등록 | `/sitter-register` 3스텝 제출 → `sitters` 행 + role=both, `/myprofile`에 토글 등장. (미인증 계정 제출 시 "본인인증 후" 에러 — 네거티브) |
+| LS2 | 펫시터 프로필 | `/myprofile/sitter-profile` 소개·서비스·지도 |
+| LS3 | 구인글 지원 | `/board/[id]`(LO5 글) → 지원 → `applications` 생성 + 채팅방. (owner 계정으로 같은 버튼은 `/sitter-register`로 리다이렉트 — 확인) |
+| LS4 | 정산 | `/myprofile/earnings` 렌더 |
+
+### [연결 시나리오] — 반려인 → 펫시터 (한 흐름)
+| ID | 시나리오 | 단계 → 기대 |
+| -- | -------- | ----------- |
+| LX1 | 구인 매칭 풀사이클 | (LO5 글) → (LS3 지원) → 반려인 `/chat` "확정"(`updateApplication selected` → reservations 생성 + `requests.status=matched`) → 펫시터 `/chat` 수락→진행 → 케어기록 작성(`care_records`) → 반려인 `/myprofile/booking-history/[id]` 확인 → 리뷰 |
+| LX2 | 직접예약 수락 | (LO4 예약) → 펫시터 `/chat` 수락→진행→완료 → 반려인 내역 상태 반영 |
+
+### 같이 볼 점
+- `sitter-register` 페이지 자체엔 진입 가드가 없어 미로그인도 폼을 채울 수 있고 제출 시에만 막힘 — 네거티브 시나리오로.
+- `/api/reservations/route.ts:74` — `role=sitter` 미지정 시 `sitter_id.in.()` 빈 IN 절 오류 가능. 받은 예약 호출 시 `role=sitter` 명시 확인.
 
 ## 시나리오 표 (living)
 
@@ -15,6 +54,16 @@
 | L6a | 이용약관 | `/terms` | desktop 1280 | 신규 추가 |
 | L6b | 개인정보 | `/privacy` | desktop 1280 | 신규 추가 |
 | L7 | 회원탈퇴 렌더 | `/myprofile/settings/withdraw` | desktop 1280 | 동작은 로그인 필요, 렌더만 |
+
+## 발견 (2026-06-25) — 역할별 라이브 E2E (반려인 / 펫시터)
+
+테스트 로그인(`auth-setup.cjs`) 재작성: service-role `generateLink(magiclink)`→`verifyOtp`로 세션 발급 → `@supabase/ssr` `createServerClient`로 쿠키 직렬화(형식·청크를 라이브러리에 위임) → `.auth/owner.json` storageState. dev 3300. `tests/lookpup-role.spec.ts`(신규). 캡처 `review/images/2026-06-25/lookpup-{owner,sitter}-*`. 리뷰계정(id 9b917e39)의 `users.role`을 owner↔both로 바꿔(sitters 행 임시 생성 후 삭제) 토글 차이 실측. **끝나고 role=owner·sitters 행 삭제로 원복 완료.**
+
+- **[칭찬] 역할 구분(반려인/펫시터)이 화면에 또렷하다.** 같은 계정에서 role=owner면 `/myprofile` 사이드바가 바로 "내 프로필"로 시작(토글 없음), role=both면 사이드바 상단에 **`보호자 | 펫시터` 토글**이 노출됨. UI 게이팅(role 기반)이 의도대로 동작.
+- **[칭찬] 테스트 로그인 정상 복구.** OAuth 전용이라 자동화 불가했던 로그인을, 앱 코드 무변경으로 세션 주입해 해결(`auth-setup.cjs`). owner·sitter 모두 `/myprofile`·`/myprofile/sitter-profile` 로그인 유지(로그인 페이지로 안 튕김).
+- **[제안] 이미 펫시터인데도 `/myprofile` 하단 "펫시터로 활동하기"(추가 수입 만들기) CTA가 그대로 노출.** role=both 사용자에겐 숨기거나 "펫시터 프로필 관리"로 바꾸는 게 자연스럽다(사소한 UI 불일치).
+- (참고) 펫시터의 "받은 예약 수락/케어기록"은 별도 페이지가 아니라 `/chat` 안에서 일어나므로, 매칭 풀사이클(LX1)은 두 계정·실데이터 쓰기가 필요해 이번엔 UI 게이팅까지만 확인(예약·결제 실데이터는 DB 오염 방지로 보류).
+- service_role REST 접근 정상(시드·정리 가능). `auth-setup.cjs`는 전달 대상, 세션 파일 `.auth/`는 `.git/info/exclude`로 제외 확인.
 
 ## 발견 (2026-06-16)
 
