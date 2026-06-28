@@ -785,7 +785,7 @@ export type Database = {
           content: string
           created_at: string | null
           id: string
-          image_url: string | null
+          image_urls: string[] | null
           owner_id: string
           rating: number
           reservation_id: string
@@ -796,7 +796,7 @@ export type Database = {
           content: string
           created_at?: string | null
           id?: string
-          image_url?: string | null
+          image_urls?: string[] | null
           owner_id: string
           rating: number
           reservation_id: string
@@ -807,7 +807,7 @@ export type Database = {
           content?: string
           created_at?: string | null
           id?: string
-          image_url?: string | null
+          image_urls?: string[] | null
           owner_id?: string
           rating?: number
           reservation_id?: string
@@ -1063,13 +1063,6 @@ export type Database = {
           rating: number
           service_radius_km: number
           service_types: string[]
-        }[]
-      }
-      get_unread_counts: {
-        Args: { my_id: string; room_ids: string[] }
-        Returns: {
-          count: number
-          room_id: string
         }[]
       }
     }
