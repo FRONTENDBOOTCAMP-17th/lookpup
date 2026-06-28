@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import UserProvider from "@/components/providers/UserProvider";
+import NotificationToaster from "@/components/providers/NotificationToaster";
+import { Toaster } from "@/components/ui/sonner";
 
 const pretendard = localFont({
   src: [
@@ -29,6 +31,8 @@ export default function RootLayout({
     <html lang="ko" className={`h-full ${pretendard.variable}`}>
       <body className="min-h-full flex flex-col antialiased">
           <UserProvider>{children}</UserProvider>
+          <NotificationToaster />
+          <Toaster position="top-center" richColors closeButton />
         </body>
     </html>
   );
