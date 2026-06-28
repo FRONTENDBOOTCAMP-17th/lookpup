@@ -45,7 +45,7 @@ function getNotificationIcon(type: string): { icon: React.ReactNode; iconBg: str
 
 export function NotificationItem({ id, type, title, content, time, isRead, linkUrl, last }: Props) {
   const router = useRouter();
-  const [, startTransition] = useTransition();
+  const [isPending, startTransition] = useTransition();
   const { icon, iconBg } = getNotificationIcon(type);
 
   function handleClick() {
@@ -66,13 +66,15 @@ export function NotificationItem({ id, type, title, content, time, isRead, linkU
 
   return (
     <div
-      onClick={handleClick}
+      onClick={!isPending ? handleClick : undefined}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => e.key === "Enter" && handleClick()}
-      className={`relative px-5 py-4 flex items-start gap-3 hover:bg-orange-50/40 transition-colors cursor-pointer ${
+      onKeyDown={(e) => e.key === "Enter" && !isPending && handleClick()}
+      className={`relative px-5 py-4 flex items-start gap-3 transition-colors ${
         !last ? "border-b border-orange-100" : ""
-      } ${isRead ? "bg-white/60" : "bg-white"}`}
+      } ${isRead ? "bg-white/60" : "bg-white"} ${
+        isPending ? "opacity-50 cursor-wait" : "hover:bg-orange-50/40 cursor-pointer"
+      }`}
     >
       <div
         className={`w-10 h-10 ${iconBg} rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
