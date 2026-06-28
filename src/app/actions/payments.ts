@@ -13,6 +13,25 @@ async function getAuthUser() {
   return user;
 }
 
+export async function getAcceptedReservationBySitter(sitterId: string) {
+  const user = await getAuthUser();
+  if (!user) return null;
+
+  const db = createServiceClient();
+
+  const { data } = await db
+    .from("reservations")
+    .select("id")
+    .eq("owner_id", user.id)
+    .eq("sitter_id", sitterId)
+    .eq("status", "accepted")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  return data?.id ?? null;
+}
+
 export async function createPayment(
   reservationId: string,
   payMethod: "CARD" | "VIRTUAL_ACCOUNT" | "TRANSFER",
@@ -27,7 +46,7 @@ export async function createPayment(
   const { data: reservation } = await db
     .from("reservations")
     .select(
-      `id, owner_id, total_price, status,
+      `id, owner_id, sitter_id, total_price, status,
        sitters!inner(users!inner(full_name))`,
     )
     .eq("id", reservationId)
@@ -74,6 +93,8 @@ export async function createPayment(
   const { error } = await db.from("payments").insert({
     reservation_id: reservationId,
     payment_id: paymentId,
+    owner_id: user.id,
+    sitter_id: (reservation as unknown as { sitter_id: string }).sitter_id,
     amount,
     pay_method: payMethod,
     fee_rate: FEE_RATE,

@@ -266,6 +266,8 @@ export async function updateApplication(
     }
   }
 
+  let reservationId: string | null = null;
+
   if (input.status === "selected") {
     if (requestRow.status !== "open") {
       return {
@@ -299,6 +301,8 @@ export async function updateApplication(
         error: { code: "INTERNAL_ERROR", message: reservationError.message },
       };
     }
+
+    reservationId = reservation.id;
 
     type RequestRow = { pet_id?: string | null };
     const pet_id = (requestRow as RequestRow).pet_id;
@@ -380,7 +384,7 @@ export async function updateApplication(
     }
   }
 
-  return { data };
+  return { data, reservationId };
 }
 
 export async function updateApplicationByRoom(
