@@ -16,14 +16,15 @@ import type {
   PaymentData,
   ApplicationData,
 } from "@/components/common/chat/chat_components";
-
-const SYSTEM_MSG_PREFIX = "__system__:";
-const IMAGE_MSG_PREFIX = "__image__:";
-const PAYMENT_REQUEST_PREFIX = "__payment_request__:";
-const PAYMENT_COMPLETE_PREFIX = "__payment_complete__:";
-const APPLICATION_SELECTED_PREFIX = "__application_selected__:";
-const APPLICATION_REJECTED_PREFIX = "__application_rejected__";
-const RESERVATION_CANCELED_PREFIX = "__reservation_canceled__";
+import {
+  SYSTEM_MSG_PREFIX,
+  IMAGE_MSG_PREFIX,
+  PAYMENT_REQUEST_PREFIX,
+  PAYMENT_COMPLETE_PREFIX,
+  APPLICATION_SELECTED_PREFIX,
+  APPLICATION_REJECTED_PREFIX,
+  RESERVATION_CANCELED_PREFIX,
+} from "@/lib/chatMessagePrefixes";
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString("ko-KR", {
@@ -54,6 +55,7 @@ function toMessage(m: MessageApiItem, userId: string): Message {
       text: "",
       imageUrl: m.content.slice(IMAGE_MSG_PREFIX.length),
       time: m.created_at ? formatTime(m.created_at) : "",
+      rawDate: m.created_at ?? undefined,
     };
   }
   if (m.content.startsWith(PAYMENT_REQUEST_PREFIX)) {
@@ -66,6 +68,7 @@ function toMessage(m: MessageApiItem, userId: string): Message {
         from: "payment_request" as const,
         text: "",
         paymentData: { ...data, sentByMe: m.sender_id === userId },
+        rawDate: m.created_at ?? undefined,
       };
     } catch {
       return { id: m.id, from: "divider", text: "결제 요청" };
@@ -81,6 +84,7 @@ function toMessage(m: MessageApiItem, userId: string): Message {
         from: "payment_complete" as const,
         text: "",
         paymentData: { amount: data.amount, reason: "", deadline: "" },
+        rawDate: m.created_at ?? undefined,
       };
     } catch {
       return { id: m.id, from: "divider", text: "결제 완료" };
@@ -96,6 +100,7 @@ function toMessage(m: MessageApiItem, userId: string): Message {
         from: "application_selected" as const,
         text: "",
         applicationData: { ...data, sentByMe: m.sender_id === userId },
+        rawDate: m.created_at ?? undefined,
       };
     } catch {
       return { id: m.id, from: "divider", text: "선택 확정" };
@@ -112,6 +117,7 @@ function toMessage(m: MessageApiItem, userId: string): Message {
         sitterId: "",
         sentByMe: m.sender_id === userId,
       },
+      rawDate: m.created_at ?? undefined,
     };
   }
   if (m.content.startsWith(RESERVATION_CANCELED_PREFIX)) {
@@ -120,6 +126,7 @@ function toMessage(m: MessageApiItem, userId: string): Message {
       from: "reservation_canceled" as const,
       text: "",
       sentByMe: m.sender_id === userId,
+      rawDate: m.created_at ?? undefined,
     };
   }
   return {
@@ -127,6 +134,7 @@ function toMessage(m: MessageApiItem, userId: string): Message {
     from: m.sender_id === userId ? "me" : "other",
     text: m.content,
     time: m.created_at ? formatTime(m.created_at) : "",
+    rawDate: m.created_at ?? undefined,
   };
 }
 

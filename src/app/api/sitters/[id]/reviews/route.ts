@@ -26,7 +26,7 @@ export async function GET(
   let query = db
     .from("reviews")
     .select(
-      `id, owner_id, rating, content, created_at,
+      `id, owner_id, rating, content, image_urls, created_at,
        users!inner(full_name, profile_image)`,
     )
     .eq("sitter_id", sitterId)
@@ -56,6 +56,7 @@ export async function GET(
       owner_profile_image: item.users.profile_image ?? null,
       rating: item.rating,
       content: item.content,
+      image_urls: item.image_urls ?? [],
       created_at: item.created_at,
     };
   });

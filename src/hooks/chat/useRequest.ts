@@ -2,7 +2,7 @@
  * 지원 목록에서의 거절 / 선택 확정 상태 관리.
  * useChatRooms의 applicants 참고.
  */
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import type { Applicant } from "@/components/common/chat/chat_components";
 
 export function useRequest(applicants: Applicant[]) {
@@ -10,20 +10,30 @@ export function useRequest(applicants: Applicant[]) {
   const [confirmedIds, setConfirmedIds] = useState<Map<string, string>>(
     new Map(),
   );
-  const initializedRef = useRef(false);
 
   useEffect(() => {
-    if (initializedRef.current || applicants.length === 0) return;
-    initializedRef.current = true;
+    if (applicants.length === 0) return;
 
-    const rejected = new Set<string>();
-    const confirmed = new Map<string, string>();
-    applicants.forEach((a) => {
-      if (a.applicationStatus === "rejected") rejected.add(a.id);
-      if (a.applicationStatus === "selected") confirmed.set(a.postId, a.id);
+    setRejectedIds((prev) => {
+      const toAdd = applicants.filter(
+        (a) => a.applicationStatus === "rejected" && !prev.has(a.id),
+      );
+      if (toAdd.length === 0) return prev;
+      const next = new Set(prev);
+      toAdd.forEach((a) => next.add(a.id));
+      return next;
     });
-    if (rejected.size > 0) setRejectedIds(rejected);
-    if (confirmed.size > 0) setConfirmedIds(confirmed);
+
+    setConfirmedIds((prev) => {
+      const toAdd = applicants.filter(
+        (a) =>
+          a.applicationStatus === "selected" && prev.get(a.postId) !== a.id,
+      );
+      if (toAdd.length === 0) return prev;
+      const next = new Map(prev);
+      toAdd.forEach((a) => next.set(a.postId, a.id));
+      return next;
+    });
   }, [applicants]);
 
   function rejectApplicant(id: string) {
