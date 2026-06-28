@@ -74,12 +74,17 @@ export function NotificationItem({ id, type, title, content, time, isRead, linkU
         isPending ? "opacity-50 cursor-wait" : "hover:bg-orange-50/40 cursor-pointer"
       }`}
     >
-      <div
-        className={`w-10 h-10 ${iconBg} rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
-          isRead ? "opacity-70" : ""
-        }`}
-      >
-        {icon}
+      <div className="relative shrink-0 mt-0.5">
+        <div
+          className={`w-10 h-10 ${iconBg} rounded-xl flex items-center justify-center ${
+            isRead ? "opacity-70" : ""
+          }`}
+        >
+          {icon}
+        </div>
+        {!isRead && (
+          <span className="absolute -left-3 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-orange-500 rounded-full" />
+        )}
       </div>
       <div className="flex-1 min-w-0">
         <p className={`text-sm leading-5 ${isRead ? "text-gray-500" : "text-stone-900 font-medium"}`}>
@@ -88,9 +93,6 @@ export function NotificationItem({ id, type, title, content, time, isRead, linkU
         <p className="text-xs text-gray-500 leading-4 mt-0.5 truncate">{content}</p>
         <p className="text-xs text-gray-400 leading-4 mt-1">{time}</p>
       </div>
-      {!isRead && (
-        <span className="absolute left-2 top-[43px] w-1.5 h-1.5 bg-orange-500 rounded-full" />
-      )}
     </div>
   );
 }
