@@ -66,7 +66,7 @@ export default async function NotificationsPage() {
       .from("notifications")
       .select("id, type, title, content, is_read, link_url, created_at, updated_at")
       .eq("user_id", user.id)
-      .order("updated_at", { ascending: false })
+      .order("updated_at", { ascending: false, nullsFirst: false })
       .limit(50);
     notifications = data ?? [];
   }
