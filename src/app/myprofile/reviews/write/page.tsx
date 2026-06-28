@@ -51,6 +51,8 @@ const SERVICE_TYPE_LABELS: Record<string, string> = {
   foster: "위탁돌봄",
 };
 
+const MAX_REVIEW_PHOTOS = 5;
+
 // 유틸
 
 function formatDateRange(start: string, end: string): string {
@@ -246,10 +248,12 @@ function PhotoUploadHScroll({
   photos,
   onAdd,
   onRemove,
+  maxPhotos = MAX_REVIEW_PHOTOS,
 }: {
   photos: string[];
   onAdd: (file: File) => void;
   onRemove: (idx: number) => void;
+  maxPhotos?: number;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -260,8 +264,8 @@ function PhotoUploadHScroll({
     e.target.value = "";
   };
 
-  const canAdd = photos.length < 5;
-  const emptySlots = Math.max(0, 5 - photos.length);
+  const canAdd = photos.length < maxPhotos;
+  const emptySlots = Math.max(0, maxPhotos - photos.length);
 
   return (
     <div className="flex flex-wrap gap-3">
@@ -398,6 +402,7 @@ function DesktopReviewView({
   booking,
   bookingLoading,
   isSubmitting,
+  photoError,
 }: {
   reviewData: ReviewState;
   setReviewData: React.Dispatch<React.SetStateAction<ReviewState>>;
@@ -409,6 +414,7 @@ function DesktopReviewView({
   booking: BookingDisplayInfo | null;
   bookingLoading: boolean;
   isSubmitting: boolean;
+  photoError: string | null;
 }) {
   const toggleTag = (tag: string) => {
     setReviewData((prev) => ({
@@ -539,17 +545,20 @@ function DesktopReviewView({
           <span className="text-xs px-2 py-0.5 bg-orange-50 border border-orange-100 rounded-full text-gray-500">
             선택
           </span>
-          <span className="ml-auto text-xs text-gray-500">최대 5장</span>
+          <span className="ml-auto text-xs text-gray-500">최대 {MAX_REVIEW_PHOTOS}장</span>
         </div>
         <PhotoUploadSlots
           photos={photos}
           onAdd={onAddPhoto}
           onRemove={onRemovePhoto}
-          maxPhotos={5}
+          maxPhotos={MAX_REVIEW_PHOTOS}
           columns={4}
           slotWidth={129}
           slotHeight={136}
         />
+        {photoError && (
+          <p className="text-sm text-red-500 mt-3">{photoError}</p>
+        )}
       </div>
 
       {/* 안내 문구 */}
@@ -737,6 +746,7 @@ function MobileScreen2({
   onLater,
   onSubmit,
   isSubmitting,
+  photoError,
 }: {
   reviewData: ReviewState;
   setReviewData: React.Dispatch<React.SetStateAction<ReviewState>>;
@@ -746,6 +756,7 @@ function MobileScreen2({
   onLater: () => void;
   onSubmit: () => void;
   isSubmitting: boolean;
+  photoError: string | null;
 }) {
   const canSubmit = reviewData.content.length >= 10;
 
@@ -783,13 +794,17 @@ function MobileScreen2({
           <span className="text-xs px-2 py-0.5 bg-orange-50 border border-orange-100 rounded-full text-gray-500">
             선택
           </span>
-          <span className="ml-auto text-xs text-gray-500">최대 5장</span>
+          <span className="ml-auto text-xs text-gray-500">최대 {MAX_REVIEW_PHOTOS}장</span>
         </div>
         <PhotoUploadHScroll
           photos={photos}
           onAdd={onAddPhoto}
           onRemove={onRemovePhoto}
+          maxPhotos={MAX_REVIEW_PHOTOS}
         />
+        {photoError && (
+          <p className="text-sm text-red-500 mt-2">{photoError}</p>
+        )}
       </div>
 
       {/* 안내 문구 */}
@@ -831,6 +846,7 @@ function ReviewWriteContent() {
 
   const [mobileScreen, setMobileScreen] = useState<1 | 2>(1);
   const [photos, setPhotos] = useState<{ file: File; previewUrl: string }[]>([]);
+  const [photoError, setPhotoError] = useState<string | null>(null);
   const photosRef = useRef(photos);
   photosRef.current = photos;
   const [showSubmitModal, setShowSubmitModal] = useState(false);
@@ -882,12 +898,22 @@ function ReviewWriteContent() {
       });
   }, [reservationId]);
 
-  const addPhoto = (file: File) =>
+  const addPhoto = (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      setPhotoError("이미지 파일만 첨부할 수 있어요.");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setPhotoError("사진은 10MB 이하만 첨부할 수 있어요.");
+      return;
+    }
+    setPhotoError(null);
     setPhotos((prev) =>
-      prev.length < 5
+      prev.length < MAX_REVIEW_PHOTOS
         ? [...prev, { file, previewUrl: URL.createObjectURL(file) }]
         : prev,
     );
+  };
   const removePhoto = (idx: number) =>
     setPhotos((prev) => {
       URL.revokeObjectURL(prev[idx].previewUrl);
@@ -952,11 +978,9 @@ function ReviewWriteContent() {
           <span className="flex-1 text-center font-semibold text-stone-900 pr-8">
             후기 작성
           </span>
-          {mobileScreen === 2 && (
-            <span className="absolute right-5 text-xs text-gray-500 font-medium">
-              2 / 2
-            </span>
-          )}
+          <span className="absolute right-5 text-xs text-gray-500 font-medium">
+            {mobileScreen} / 2
+          </span>
         </div>
       </div>
 
@@ -1001,6 +1025,7 @@ function ReviewWriteContent() {
           onSubmit={() => setShowSubmitModal(true)}
           onLater={() => router.back()}
           isSubmitting={isSubmitting}
+          photoError={photoError}
         />
       </div>
 
@@ -1009,7 +1034,10 @@ function ReviewWriteContent() {
           <MobileScreen1
             reviewData={reviewData}
             setReviewData={setReviewData}
-            onNext={() => setMobileScreen(2)}
+            onNext={() => {
+              setMobileScreen(2);
+              window.scrollTo(0, 0);
+            }}
             booking={booking}
             bookingLoading={bookingLoading}
           />
@@ -1023,6 +1051,7 @@ function ReviewWriteContent() {
             onLater={() => router.back()}
             onSubmit={() => setShowSubmitModal(true)}
             isSubmitting={isSubmitting}
+            photoError={photoError}
           />
         )}
       </div>
