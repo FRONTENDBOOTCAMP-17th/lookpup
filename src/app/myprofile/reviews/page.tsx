@@ -45,9 +45,7 @@ function StarRating({ rating }: { rating: number }) {
           key={star}
           size={14}
           className={
-            star <= rating
-              ? "fill-yellow-400 text-yellow-400"
-              : "text-gray-300"
+            star <= rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
           }
         />
       ))}
@@ -209,6 +207,7 @@ export default function ReviewsPage() {
   const [writtenError, setWrittenError] = useState<string | null>(null);
   const [receivedError, setReceivedError] = useState<string | null>(null);
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
+  const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -223,7 +222,12 @@ export default function ReviewsPage() {
   }, []);
 
   useEffect(() => {
-    if (activeTab !== "written" || writtenFetchedRef.current || writtenReviews !== null) return;
+    if (
+      activeTab !== "written" ||
+      writtenFetchedRef.current ||
+      writtenReviews !== null
+    )
+      return;
     writtenFetchedRef.current = true;
     const controller = new AbortController();
     fetch("/api/reviews/myreview", { signal: controller.signal })
@@ -249,7 +253,12 @@ export default function ReviewsPage() {
   }, [activeTab]);
 
   useEffect(() => {
-    if (activeTab !== "received" || receivedFetchedRef.current || receivedReviews !== null) return;
+    if (
+      activeTab !== "received" ||
+      receivedFetchedRef.current ||
+      receivedReviews !== null
+    )
+      return;
     if (sitterId === undefined) return;
 
     receivedFetchedRef.current = true;
@@ -286,6 +295,7 @@ export default function ReviewsPage() {
 
   const handleDeleteWritten = (id: string) => {
     setWrittenReviews((prev) => (prev ? prev.filter((r) => r.id !== id) : []));
+    setShowDeleteSuccess(true);
   };
 
   const handleLoadMoreReceived = async () => {
@@ -462,7 +472,9 @@ export default function ReviewsPage() {
                 받은 후기가 없어요
               </p>
               <p className="text-sm text-gray-500">
-                펫시터로 활동하면 후기를 받을 수 있어요
+                {sitterId === null
+                  ? "펫시터로 등록하면 후기를 받을 수 있어요"
+                  : "펫시터로 활동하고 첫 후기를 받아보세요"}
               </p>
             </div>
           ) : (
@@ -488,6 +500,15 @@ export default function ReviewsPage() {
           ))
         )}
       </div>
+
+      <CustomModal
+        open={showDeleteSuccess}
+        type="success"
+        title="후기가 삭제되었습니다."
+        confirmText="확인"
+        onClose={() => setShowDeleteSuccess(false)}
+        onConfirm={() => setShowDeleteSuccess(false)}
+      />
     </div>
   );
 }
