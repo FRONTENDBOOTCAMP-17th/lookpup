@@ -80,7 +80,9 @@ export default function SitterProfileCard({
             </div>
             <div className="flex items-center gap-1 mb-1">
               <MapPin size={12} className="text-gray-400" />
-              <span className="text-xs text-gray-500">{p.location}</span>
+              <span className={`text-xs ${p.location ? "text-gray-500" : "text-gray-300"}`}>
+                {p.location || "위치 미등록"}
+              </span>
             </div>
             {isSitterCard && (
               <div className="flex items-center gap-1">

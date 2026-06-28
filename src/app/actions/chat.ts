@@ -3,6 +3,15 @@
 import { createClient } from "@/utils/supabase/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { createNotification } from "@/lib/notificationHelpers";
+import {
+  SYSTEM_MSG_PREFIX,
+  IMAGE_MSG_PREFIX,
+  PAYMENT_REQUEST_PREFIX,
+  PAYMENT_COMPLETE_PREFIX,
+  APPLICATION_SELECTED_PREFIX,
+  APPLICATION_REJECTED_PREFIX,
+  RESERVATION_CANCELED_PREFIX,
+} from "@/lib/chatMessagePrefixes";
 
 async function getAuthUser() {
   const supabase = await createClient();
@@ -151,13 +160,6 @@ export async function sendMessage(roomId: string, content: string) {
   return { data: message };
 }
 
-const SYSTEM_MSG_PREFIX = "__system__:";
-const IMAGE_MSG_PREFIX = "__image__:";
-const PAYMENT_REQUEST_PREFIX = "__payment_request__:";
-const PAYMENT_COMPLETE_PREFIX = "__payment_complete__:";
-const APPLICATION_SELECTED_PREFIX = "__application_selected__:";
-const APPLICATION_REJECTED_PREFIX = "__application_rejected__";
-const RESERVATION_CANCELED_PREFIX = "__reservation_canceled__";
 
 export async function sendImageMessage(roomId: string, imageUrl: string) {
   const user = await getAuthUser();

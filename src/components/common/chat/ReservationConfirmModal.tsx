@@ -111,6 +111,7 @@ export function ReservationConfirmModal({
   const [endDt, setEndDt] = useState("");
   const [price, setPrice] = useState("");
   const [location, setLocation] = useState("");
+  const [snapshot, setSnapshot] = useState({ startDt: "", endDt: "", price: "", location: "" });
 
   useEffect(() => setMounted(true), []);
 
@@ -295,7 +296,13 @@ export function ReservationConfirmModal({
             <>
               <button
                 type="button"
-                onClick={() => setEditMode(false)}
+                onClick={() => {
+                  setStartDt(snapshot.startDt);
+                  setEndDt(snapshot.endDt);
+                  setPrice(snapshot.price);
+                  setLocation(snapshot.location);
+                  setEditMode(false);
+                }}
                 className="flex-1 h-11 rounded-[10px] bg-white outline outline-1 outline-offset-[-1px] outline-orange-500 text-orange-500 text-sm font-medium transition-colors hover:bg-orange-50"
               >
                 취소
@@ -312,7 +319,10 @@ export function ReservationConfirmModal({
             <>
               <button
                 type="button"
-                onClick={() => setEditMode(true)}
+                onClick={() => {
+                  setSnapshot({ startDt, endDt, price, location });
+                  setEditMode(true);
+                }}
                 disabled={!details || confirming}
                 className={cn(
                   "flex-1 h-11 rounded-[10px] bg-white outline outline-1 outline-offset-[-1px] outline-orange-500 text-orange-500 text-sm font-medium transition-colors hover:bg-orange-50",

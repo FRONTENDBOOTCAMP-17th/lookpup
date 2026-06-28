@@ -9,7 +9,6 @@ import {
   Suspense,
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createClient } from "@/utils/supabase/client";
 import { Search, ChevronLeft, MoreVertical, Send, Plus } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Avatar from "@/components/ui/Avatar";
@@ -59,6 +58,12 @@ import { useChatRooms } from "@/hooks/chat/useChatRooms";
 import { useRequest } from "@/hooks/chat/useRequest";
 import { useChatMessages } from "@/hooks/chat/useChatMessages";
 
+function getPaymentDeadline() {
+  const d = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
 function ChatPageContent({
   initialTab,
   initialRoomId,
@@ -80,11 +85,11 @@ function ChatPageContent({
   const [input, setInput] = useState("");
   const [sendError, setSendError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const mobileScrollRef = useRef<HTMLDivElement>(null);
   const isLoadMoreRef = useRef(false);
   const scrollAnchorRef = useRef<number | null>(null);
+  const desktopScrollAnchorRef = useRef<number | null>(null);
   const prevApplicantStatusRef = useRef<string | null | undefined>(null);
 
   const [applicationActionError, setApplicationActionError] = useState<
@@ -108,6 +113,7 @@ function ChatPageContent({
     posts,
     loading,
     error,
+    userId,
     deleteRoom,
     deleteApplicant,
     markRoomAsRead,
@@ -216,9 +222,7 @@ function ChatPageContent({
           const newRoomId = roomResult.data.room_id;
 
           if (overrides.totalPrice && overrides.totalPrice > 0) {
-            const d = new Date(Date.now() + 24 * 60 * 60 * 1000);
-            const pad = (n: number) => String(n).padStart(2, "0");
-            const deadline = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            const deadline = getPaymentDeadline();
             const payResult = await sendAutoPaymentRequestMessage(newRoomId, {
               amount: overrides.totalPrice,
               reason: postTitle || "펫시팅 서비스",
@@ -276,6 +280,14 @@ function ChatPageContent({
       if (scrollAnchorRef.current !== null && mobileEl) {
         mobileEl.scrollTop += mobileEl.scrollHeight - scrollAnchorRef.current;
         scrollAnchorRef.current = null;
+      } else {
+        const viewport = messagesEndRef.current?.closest(
+          "[data-radix-scroll-area-viewport]",
+        ) as HTMLElement | null;
+        if (viewport && desktopScrollAnchorRef.current !== null) {
+          viewport.scrollTop += viewport.scrollHeight - desktopScrollAnchorRef.current;
+          desktopScrollAnchorRef.current = null;
+        }
       }
       return;
     }
@@ -296,6 +308,11 @@ function ChatPageContent({
     const mobileEl = mobileScrollRef.current;
     if (mobileEl && mobileEl.offsetParent !== null) {
       scrollAnchorRef.current = mobileEl.scrollHeight;
+    } else {
+      const viewport = messagesEndRef.current?.closest(
+        "[data-radix-scroll-area-viewport]",
+      ) as HTMLElement | null;
+      if (viewport) desktopScrollAnchorRef.current = viewport.scrollHeight;
     }
     isLoadMoreRef.current = true;
     loadMore();
@@ -313,18 +330,25 @@ function ChatPageContent({
     }[];
   }) {
     if (!activeRoomId) return;
-    const d = new Date(Date.now() + 24 * 60 * 60 * 1000);
-    const deadline = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-    const result = await sendPaymentRequestMessage(activeRoomId, {
-      amount: data.amount,
-      reason: data.reason,
-      deadline,
-      costItems: data.costItems,
-    });
-    if (result.data) {
-      addMessage(result.data);
-      broadcastMessage(result.data);
-      updatePreview(activeRoomId, "결제 요청", result.data.created_at ?? "");
+    try {
+      const deadline = getPaymentDeadline();
+      const result = await sendPaymentRequestMessage(activeRoomId, {
+        amount: data.amount,
+        reason: data.reason,
+        deadline,
+        costItems: data.costItems,
+      });
+      if (result.error) {
+        setSendError(result.error.message);
+        return;
+      }
+      if (result.data) {
+        addMessage(result.data);
+        broadcastMessage(result.data);
+        updatePreview(activeRoomId, "결제 요청", result.data.created_at ?? "");
+      }
+    } catch {
+      setSendError("결제 요청 전송에 실패했습니다. 다시 시도해주세요.");
     }
   }
 
@@ -342,19 +366,22 @@ function ChatPageContent({
       },
       {
         onSuccess: async () => {
-          const result = await sendPaymentCompleteMessage(activeRoomId, {
-            amount: paymentState.amount,
-          });
-          if (result.data) {
-            addMessage(result.data);
-            broadcastMessage(result.data);
-            updatePreview(
-              activeRoomId,
-              "결제 완료",
-              result.data.created_at ?? "",
-            );
+          try {
+            const result = await sendPaymentCompleteMessage(activeRoomId, {
+              amount: paymentState.amount,
+            });
+            if (result.data) {
+              addMessage(result.data);
+              broadcastMessage(result.data);
+              updatePreview(
+                activeRoomId,
+                "결제 완료",
+                result.data.created_at ?? "",
+              );
+            }
+          } finally {
+            setPayingNow(false);
           }
-          setPayingNow(false);
         },
         onFail: () => {
           setPayingNow(false);
@@ -384,6 +411,8 @@ function ChatPageContent({
         );
       }
       setInput("");
+    } catch {
+      setSendError("메시지 전송에 실패했습니다. 다시 시도해주세요.");
     } finally {
       setSending(false);
     }
@@ -422,14 +451,6 @@ function ChatPageContent({
       setSendingPhoto(false);
     }
   }
-
-  // 로그인 유저 ID 가져오기
-  useEffect(() => {
-    const supabase = createClient();
-    supabase.auth
-      .getUser()
-      .then(({ data }) => setUserId(data.user?.id ?? null));
-  }, []);
 
   const [mobileChatView, setMobileChatView] = useState<"list" | "room">("list");
   const [searchQuery, setSearchQuery] = useState("");
@@ -609,20 +630,33 @@ function ChatPageContent({
   function getReportUrl() {
     const isOneOnOne = activeTab === "one_on_one";
     const isUserSitter = isOneOnOne && selectedRoom?.sitterId === userId;
-    const targetName = isOneOnOne
-      ? (selectedRoom?.name ?? "")
-      : (selectedApplicant?.name ?? "");
+    const isUserSitterInApplicants =
+      !isOneOnOne && selectedApplicant?.sitterId === userId;
+    const isReportingOwner = isUserSitter || isUserSitterInApplicants;
+
     const targetId = isOneOnOne
       ? isUserSitter
         ? (selectedRoom?.ownerId ?? "")
         : (selectedRoom?.sitterId ?? "")
-      : (selectedApplicant?.sitterId ?? "");
+      : isUserSitterInApplicants
+        ? (selectedApplicant?.ownerId ?? "")
+        : (selectedApplicant?.sitterId ?? "");
 
-    const role = isUserSitter ? "보호자" : "펫시터";
-    const service = getHeaderSub();
+    // Applicant 타입에 보호자 이름/이미지가 없으므로 펫시터가 보호자를
+    // 신고할 때는 name/image를 전달하지 않는다 (신고 페이지에서 targetId로 조회)
+    const targetName = isOneOnOne
+      ? (selectedRoom?.name ?? "")
+      : isUserSitterInApplicants
+        ? ""
+        : (selectedApplicant?.name ?? "");
     const targetImage = isOneOnOne
       ? (selectedRoom?.profileImage ?? null)
-      : (selectedApplicant?.profileImage ?? null);
+      : isUserSitterInApplicants
+        ? null
+        : (selectedApplicant?.profileImage ?? null);
+
+    const role = isReportingOwner ? "보호자" : "펫시터";
+    const service = getHeaderSub();
     const params = new URLSearchParams();
     if (targetId) params.set("targetId", targetId);
     if (targetName) params.set("targetName", targetName);
@@ -647,6 +681,7 @@ function ChatPageContent({
   const headerBadge = getHeaderBadge();
 
   const isCurrentUserSitter =
+    userId !== null &&
     activeTab === "one_on_one" &&
     selectedRoom !== undefined &&
     selectedRoom.ownerId !== null &&
@@ -772,6 +807,29 @@ function ChatPageContent({
     posts,
   ]);
 
+  function withDateSeparators(msgs: typeof displayMessages) {
+    const result: typeof displayMessages = [];
+    let lastDateKey: string | null = null;
+    for (const msg of msgs) {
+      if (msg.rawDate) {
+        const d = new Date(msg.rawDate);
+        const key = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+        if (key !== lastDateKey) {
+          const label = d.toLocaleDateString("ko-KR", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+            weekday: "long",
+          });
+          result.push({ id: `__date_${key}__`, from: "date_separator", text: label });
+          lastDateKey = key;
+        }
+      }
+      result.push(msg);
+    }
+    return result;
+  }
+
   return (
     <div className="h-screen overflow-hidden flex flex-col">
       <Header />
@@ -800,6 +858,7 @@ function ChatPageContent({
                     onClick={() => {
                       setActiveTab(tab);
                       setEditMode(false);
+                      setMobileChatView("list");
                     }}
                     className={`flex-1 py-2 text-sm font-medium border-b-2 transition-colors ${
                       activeTab === tab
@@ -1015,7 +1074,7 @@ function ChatPageContent({
                     </button>
                   </div>
                 )}
-                {displayMessages.map((msg) => {
+                {withDateSeparators(displayMessages).map((msg) => {
                   const postId =
                     msg.applicationData?.postId ||
                     msg.paymentData?.postId ||
@@ -1327,7 +1386,7 @@ function ChatPageContent({
                       </button>
                     </div>
                   )}
-                  {displayMessages.map((msg) => {
+                  {withDateSeparators(displayMessages).map((msg) => {
                     const postId =
                       msg.applicationData?.postId ||
                       msg.paymentData?.postId ||
@@ -1410,6 +1469,7 @@ function ChatPageContent({
                     showPlusButton={true}
                     plusOpen={plusMenuOpen}
                     onPlusToggle={() => setPlusMenuOpen((v) => !v)}
+                    disabled={sending}
                   />
                 </>
               )}
