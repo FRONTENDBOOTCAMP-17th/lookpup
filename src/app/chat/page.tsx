@@ -9,7 +9,6 @@ import {
   Suspense,
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createClient } from "@/utils/supabase/client";
 import { Search, ChevronLeft, MoreVertical, Send, Plus } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Avatar from "@/components/ui/Avatar";
@@ -59,6 +58,12 @@ import { useChatRooms } from "@/hooks/chat/useChatRooms";
 import { useRequest } from "@/hooks/chat/useRequest";
 import { useChatMessages } from "@/hooks/chat/useChatMessages";
 
+function getPaymentDeadline() {
+  const d = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
 function ChatPageContent({
   initialTab,
   initialRoomId,
@@ -80,7 +85,6 @@ function ChatPageContent({
   const [input, setInput] = useState("");
   const [sendError, setSendError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const mobileScrollRef = useRef<HTMLDivElement>(null);
   const isLoadMoreRef = useRef(false);
@@ -109,6 +113,7 @@ function ChatPageContent({
     posts,
     loading,
     error,
+    userId,
     deleteRoom,
     deleteApplicant,
     markRoomAsRead,
@@ -217,9 +222,7 @@ function ChatPageContent({
           const newRoomId = roomResult.data.room_id;
 
           if (overrides.totalPrice && overrides.totalPrice > 0) {
-            const d = new Date(Date.now() + 24 * 60 * 60 * 1000);
-            const pad = (n: number) => String(n).padStart(2, "0");
-            const deadline = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            const deadline = getPaymentDeadline();
             const payResult = await sendAutoPaymentRequestMessage(newRoomId, {
               amount: overrides.totalPrice,
               reason: postTitle || "펫시팅 서비스",
@@ -328,8 +331,7 @@ function ChatPageContent({
   }) {
     if (!activeRoomId) return;
     try {
-      const d = new Date(Date.now() + 24 * 60 * 60 * 1000);
-      const deadline = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+      const deadline = getPaymentDeadline();
       const result = await sendPaymentRequestMessage(activeRoomId, {
         amount: data.amount,
         reason: data.reason,
@@ -449,14 +451,6 @@ function ChatPageContent({
       setSendingPhoto(false);
     }
   }
-
-  // 로그인 유저 ID 가져오기
-  useEffect(() => {
-    const supabase = createClient();
-    supabase.auth
-      .getUser()
-      .then(({ data }) => setUserId(data.user?.id ?? null));
-  }, []);
 
   const [mobileChatView, setMobileChatView] = useState<"list" | "room">("list");
   const [searchQuery, setSearchQuery] = useState("");
