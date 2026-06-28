@@ -850,7 +850,7 @@ function MobileScreen2({
 function ReviewWriteContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const reservationId = searchParams.get("reservation_id");
+  const reservationId = searchParams.get("bookingId");
 
   const [booking, setBooking] = useState<BookingDisplayInfo | null>(null);
   const [bookingLoading, setBookingLoading] = useState(true);
