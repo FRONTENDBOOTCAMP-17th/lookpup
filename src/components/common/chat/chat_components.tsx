@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import {
   Star,
@@ -537,9 +537,39 @@ export function ApplicantProfilePopup({
   onClose,
   cardVariant = "sitter",
 }: ApplicantProfilePopupProps) {
-  const profile: SitterProfile = {
+  const [fetchedProfile, setFetchedProfile] = useState<SitterProfile | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(false);
+
+  useEffect(() => {
+    if (cardVariant !== "sitter" || !applicant.sitterId) return;
+    setLoadingProfile(true);
+    fetch(`/api/sitters/${applicant.sitterId}`)
+      .then((res) => res.json())
+      .then(({ data }) => {
+        if (!data) return;
+        setFetchedProfile({
+          name: data.full_name,
+          initial: data.full_name?.charAt(0) ?? "",
+          src: data.profile_image,
+          verified: data.is_verified ?? false,
+          location: data.available_area ?? "",
+          rating: data.rating,
+          reviewCount: data.review_count ?? 0,
+          services:
+            data.services?.map(
+              (s: { service_type: string }) => s.service_type,
+            ) ?? [],
+          career: data.career ?? "",
+        });
+      })
+      .catch(() => {})
+      .finally(() => setLoadingProfile(false));
+  }, [applicant.sitterId, cardVariant]);
+
+  const profile: SitterProfile = fetchedProfile ?? {
     name: applicant.name,
     initial: applicant.initial,
+    src: applicant.profileImage,
     verified: false,
     location: applicant.location ?? "",
     rating: applicant.rating,
@@ -560,7 +590,16 @@ export function ApplicantProfilePopup({
         >
           <X size={16} className="text-gray-400" />
         </button>
-        <SitterProfileCard profile={profile} variant={cardVariant} />
+        {loadingProfile ? (
+          <div className="bg-white border border-orange-100 rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.08)] overflow-hidden">
+            <div className="h-2 bg-gradient-to-r from-orange-500 to-orange-300" />
+            <div className="p-8 flex items-center justify-center">
+              <p className="text-stone-400 text-sm">불러오는 중...</p>
+            </div>
+          </div>
+        ) : (
+          <SitterProfileCard profile={profile} variant={cardVariant} />
+        )}
       </div>
     </div>
   );
