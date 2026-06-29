@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import { MapPin, Star, LocateFixed, ChevronRight } from "lucide-react";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { MapPin, Star, LocateFixed, ChevronRight, X } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Avatar from "@/components/ui/Avatar";
 import Pill from "@/components/ui/Pill";
@@ -10,7 +10,7 @@ import KakaoMap from "@/components/KakaoMap";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import SearchFilterBar from "@/components/common/SearchFilterBar";
 import { calculateDistanceKm, formatDistance } from "@/utils/distance";
-import { searchPlaceToCoord, coordToRegion } from "@/utils/kakaoGeocode";
+import { coordToRegion, searchAreaList, searchPlaceList, searchAddressToCoord, searchPlaceToCoord, type LocationSuggestion } from "@/utils/kakaoGeocode";
 import { supabase } from "@/lib/supabase";
 import { createClient } from "@/utils/supabase/client";
 import { getOwnerLocation } from "@/app/actions/users";
@@ -124,14 +124,123 @@ function PetsitterCard({ sitter, isSelected, distance, onClick, onConfirm }: Pet
   );
 }
 
-export default function PetsittersPage() {
+function PetsittersContent() {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const urlDistrict = searchParams.get("district") ?? "";
+  const urlDong = searchParams.get("dong") ?? "";
+  const urlCity = searchParams.get("city") ?? "";
+
+  const areaLabel = [urlCity, urlDistrict, urlDong].filter(Boolean).join(" ");
+  const hasAreaFilter = !!(urlDistrict || urlDong);
+
+  // ── 지역 검색 자동완성 상태 ──────────────────────────────────
+  const [areaQuery, setAreaQuery] = useState(areaLabel);
+  const [areaSuggestions, setAreaSuggestions] = useState<LocationSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const areaSearchRef = useRef<HTMLDivElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 항목 선택 직후 debounce 재실행으로 드롭다운이 다시 열리는 것을 방지
+  const justSelectedRef = useRef(false);
+  // 장소 선택으로 URL 파라미터를 직접 제거할 때 입력창 동기화 스킵
+  const skipSyncRef = useRef(false);
+
+  // 뒤로가기/앞으로가기로 URL이 바뀌면 입력창도 동기화
+  // 단, 장소 선택으로 직접 파라미터를 제거한 경우는 스킵
+  useEffect(() => {
+    if (skipSyncRef.current) {
+      skipSyncRef.current = false;
+      return;
+    }
+    setAreaQuery(areaLabel);
+  }, [areaLabel]);
+
+  // 입력값 변경 시 자동완성 요청 (300ms debounce)
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    const q = areaQuery.trim();
+    if (q.length < 2 || q === areaLabel) {
+      setAreaSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    debounceRef.current = setTimeout(async () => {
+      if (justSelectedRef.current) {
+        justSelectedRef.current = false;
+        return;
+      }
+      // 지역(구/동)과 장소(역, 대학교 등) 동시 검색
+      const [areaResults, placeResults] = await Promise.all([
+        searchAreaList(q),
+        searchPlaceList(q),
+      ]);
+      // 지역 결과 우선, 장소 결과 뒤에
+      const combined: LocationSuggestion[] = [...areaResults, ...placeResults];
+      setAreaSuggestions(combined);
+      setShowSuggestions(combined.length > 0);
+    }, 300);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [areaQuery]);
+
+  // 드롭다운 외부 클릭 시 닫기
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (areaSearchRef.current && !areaSearchRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  function pushAreaParams(district: string, dong: string, city = "") {
+    const params = new URLSearchParams(searchParams.toString());
+    if (city) params.set("city", city); else params.delete("city");
+    if (district) params.set("district", district); else params.delete("district");
+    if (dong) params.set("dong", dong); else params.delete("dong");
+    router.push(`${pathname}?${params.toString()}`);
+  }
+
+  function clearAreaFilter() {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("city");
+    params.delete("district");
+    params.delete("dong");
+    router.push(`${pathname}?${params.toString()}`);
+    setAreaQuery("");
+  }
+
+  function selectAreaSuggestion(suggestion: LocationSuggestion) {
+    justSelectedRef.current = true;
+    setShowSuggestions(false);
+    setAreaQuery(suggestion.label);
+    setBasePosition({ lat: suggestion.lat, lng: suggestion.lng });
+    setBaseLabel(suggestion.label);
+
+    if (suggestion.type === 'area') {
+      pushAreaParams(suggestion.district, suggestion.dong, suggestion.city);
+    } else {
+      // 장소 선택 → URL 지역 파라미터만 제거 (입력창은 유지)
+      skipSyncRef.current = true;
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("city");
+      params.delete("district");
+      params.delete("dong");
+      router.push(`${pathname}?${params.toString()}`);
+    }
+  }
+
+  // ── 시터 목록 ────────────────────────────────────────────────
   const [sitters, setSitters] = useState<Sitter[]>([]);
   const [activeFilter, setActiveFilter] = useState<Filter>("전체");
-  const [searchQuery, setSearchQuery] = useState("");
   const [selectedSitterId, setSelectedSitterId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption | null>(null);
 
+  // ── 위치(거리 계산용) ─────────────────────────────────────────
   const [basePosition, setBasePosition] = useState(DEFAULT_CENTER);
   const [baseLabel, setBaseLabel] = useState("강남역");
   const [locationLoading, setLocationLoading] = useState(false);
@@ -141,6 +250,31 @@ export default function PetsittersPage() {
 
   const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
+  // URL에 지역 파라미터가 있을 때 지도를 해당 위치로 초기화
+  // Kakao SDK 로드 완료 후 실행 (타이밍 문제 방지)
+  useEffect(() => {
+    if (!urlDistrict) return;
+    const query = [urlCity, urlDistrict, urlDong].filter(Boolean).join(" ");
+
+    async function run() {
+      const result = await searchAddressToCoord(query) ?? await searchPlaceToCoord(query);
+      if (result) setBasePosition({ lat: result.lat, lng: result.lng });
+    }
+
+    if (window.kakao?.maps?.load) {
+      window.kakao.maps.load(run);
+    } else {
+      const id = setInterval(() => {
+        if (window.kakao?.maps?.load) {
+          clearInterval(id);
+          window.kakao.maps.load(run);
+        }
+      }, 100);
+      return () => clearInterval(id);
+    }
+  }, [urlCity, urlDistrict, urlDong]);
+
+  // URL 지역 파라미터 변경 시 DB에서 필터링된 데이터 조회
   useEffect(() => {
     type SitterRow = {
       id: string;
@@ -155,7 +289,10 @@ export default function PetsittersPage() {
     };
 
     async function fetchSitters() {
-      const { data, error } = await supabase.rpc("get_petsitters_for_map");
+      const { data, error } = await supabase.rpc("get_petsitters_filtered", {
+        p_district: urlDistrict || null,
+        p_dong: urlDong || null,
+      });
 
       if (error || !data) return;
 
@@ -184,10 +321,11 @@ export default function PetsittersPage() {
         });
 
       setSitters(mapped);
+      setSelectedSitterId(null);
     }
 
     fetchSitters();
-  }, []);
+  }, [urlDistrict, urlDong]);
 
   // 위치 동의 여부 확인
   useEffect(() => {
@@ -197,12 +335,13 @@ export default function PetsittersPage() {
       const { data: { user } } = await browserClient.auth.getUser();
 
       if (!user) {
-        // 비로그인: localStorage 기반으로 체크
-        const localConsent = localStorage.getItem("location_consent");
-        if (localConsent !== "true") {
-          setShowLocationModal(true);
-        } else {
-          requestLocationSilently();
+        if (!urlDistrict) {
+          const localConsent = localStorage.getItem("location_consent");
+          if (localConsent !== "true") {
+            setShowLocationModal(true);
+          } else {
+            requestLocationSilently();
+          }
         }
         return;
       }
@@ -216,9 +355,9 @@ export default function PetsittersPage() {
         .single();
 
       if (data?.location_consent) {
-        requestLocationSilently();
+        if (!urlDistrict) requestLocationSilently();
       } else {
-        setShowLocationModal(true);
+        if (!urlDistrict) setShowLocationModal(true);
       }
     }
 
@@ -231,7 +370,6 @@ export default function PetsittersPage() {
       return;
     }
 
-    // 브라우저 권한 상태 사전 확인
     if (navigator.permissions) {
       const status = await navigator.permissions.query({ name: "geolocation" });
       if (status.state === "denied") {
@@ -261,7 +399,6 @@ export default function PetsittersPage() {
       },
       async (err) => {
         setLocationLoading(false);
-        // GPS 실패 시 DB 저장 위치 폴백 시도
         const { data: saved } = await getOwnerLocation();
         if (saved) {
           setBasePosition({ lat: saved.lat, lng: saved.lng });
@@ -284,9 +421,7 @@ export default function PetsittersPage() {
     const card = cardRefs.current.get(selectedSitterId);
     if (!card) return;
 
-    const viewport = card.closest<HTMLElement>(
-      '[data-slot="scroll-area-viewport"]',
-    );
+    const viewport = card.closest<HTMLElement>('[data-slot="scroll-area-viewport"]');
     if (!viewport) {
       card.scrollIntoView({ behavior: "smooth", block: "nearest" });
       return;
@@ -300,25 +435,9 @@ export default function PetsittersPage() {
     });
   }, [selectedSitterId]);
 
-  // 검색어로 장소 검색 → 지도 중심 이동 (500ms debounce)
-  useEffect(() => {
-    const q = searchQuery.trim();
-    if (!q) return;
-    const timer = setTimeout(() => {
-      searchPlaceToCoord(q).then((result) => {
-        if (result) {
-          setBasePosition({ lat: result.lat, lng: result.lng });
-          setBaseLabel(result.addressName);
-        }
-      });
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
-
   async function requestLocation() {
     setShowLocationModal(false);
 
-    // 동의 저장
     const browserClient = createClient();
     if (currentUserId) {
       await browserClient
@@ -344,11 +463,9 @@ export default function PetsittersPage() {
     .filter((s) => {
       const matchFilter =
         activeFilter === "전체" ? true : s.services.includes(activeFilter);
+      // 지역 필터가 없을 때만 입력값으로 이름 검색
       const matchSearch =
-        searchQuery === "" ||
-        s.name.includes(searchQuery) ||
-        s.district.includes(searchQuery) ||
-        s.neighborhood.includes(searchQuery);
+        hasAreaFilter || areaQuery === "" || s.name.includes(areaQuery);
       return matchFilter && matchSearch;
     })
     .sort((a, b) => {
@@ -358,6 +475,12 @@ export default function PetsittersPage() {
       if (sortBy === "높은 가격순") return b.price - a.price;
       return a.distanceKm - b.distanceKm;
     });
+
+  const listHeading = hasAreaFilter
+    ? `${areaLabel} 펫시터 · ${filtered.length}명`
+    : sortBy
+    ? `${sortBy} · ${filtered.length}명`
+    : `${baseLabel} 기준 가까운 순 · ${filtered.length}명`;
 
   return (
     <>
@@ -434,26 +557,92 @@ export default function PetsittersPage() {
 
           {/* 리스트 패널 */}
           <div className="flex-1 md:flex-none w-full md:w-153.5 bg-white flex flex-col overflow-hidden">
-            <div className="p-4 md:p-6 border-b border-orange-100 shrink-0">
+            <div className="p-4 md:p-6 border-b border-orange-100 shrink-0 flex flex-col gap-3">
+
+              {/* 지역 검색 자동완성 */}
+              <div ref={areaSearchRef} className="relative">
+                <div className="flex items-center gap-2 px-3 md:px-4 py-3 bg-orange-50 rounded-xl">
+                  <MapPin size={16} className="text-orange-400 shrink-0" />
+                  <input
+                    type="text"
+                    placeholder="지역 또는 펫시터 이름 검색"
+                    value={areaQuery}
+                    onChange={(e) => setAreaQuery(e.target.value)}
+                    onFocus={() => areaSuggestions.length > 0 && setShowSuggestions(true)}
+                    className="flex-1 min-w-0 bg-transparent text-sm md:text-base text-stone-900 placeholder:text-stone-900/50 outline-none"
+                  />
+                  {areaQuery && (
+                    <button
+                      onClick={clearAreaFilter}
+                      aria-label="지역 검색 초기화"
+                      className="text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      <X size={15} />
+                    </button>
+                  )}
+                </div>
+
+                {/* 자동완성 드롭다운 */}
+                {showSuggestions && areaSuggestions.length > 0 && (
+                  <ul className="absolute z-50 top-full mt-1 w-full bg-white border border-orange-100 rounded-xl shadow-lg overflow-hidden">
+                    {areaSuggestions.map((s, i) => (
+                      <li key={i}>
+                        <button
+                          type="button"
+                          onClick={() => selectAreaSuggestion(s)}
+                          className="w-full text-left px-4 py-3 hover:bg-orange-50 transition-colors border-b border-orange-50 last:border-0 flex items-center gap-3"
+                        >
+                          <MapPin size={14} className="text-orange-400 shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-stone-900 font-medium truncate">
+                              {s.label}
+                            </p>
+                            <p className="text-xs text-gray-400 truncate">
+                              {s.type === 'area' ? s.city : s.address}
+                            </p>
+                          </div>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              {/* 서비스 필터 + 정렬 */}
               <SearchFilterBar
-                placeholder="지역, 동 이름, 펫시터 검색"
                 filters={FILTERS}
                 activeFilter={activeFilter}
                 onFilterChange={(f) => setActiveFilter(f as Filter)}
-                searchQuery={searchQuery}
-                onSearchChange={setSearchQuery}
+                searchQuery=""
+                onSearchChange={() => {}}
                 sortOptions={SORT_OPTIONS}
                 sortBy={sortBy}
                 onSortChange={(v) => setSortBy(v as SortOption)}
+                hideSearch
               />
+
+              {/* 선택된 지역 필터 칩 */}
+              {hasAreaFilter && (
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 bg-orange-50 border border-orange-200 text-orange-600 rounded-full px-3 py-1 text-sm font-medium">
+                    <MapPin size={12} />
+                    <span>{areaLabel}</span>
+                    <button
+                      onClick={clearAreaFilter}
+                      aria-label="지역 필터 초기화"
+                      className="ml-0.5 hover:text-orange-800 transition-colors"
+                    >
+                      <X size={13} />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             <ScrollArea className="flex-1 min-h-0">
               <div className="p-4 md:p-6">
                 <p className="text-stone-900 text-lg font-semibold mb-4">
-                  {sortBy
-                    ? `${sortBy} · ${filtered.length}명`
-                    : `${baseLabel} 기준 가까운 순 · ${filtered.length}명`}
+                  {listHeading}
                 </p>
                 <div className="flex flex-col gap-4">
                   {filtered.map((sitter) => (
@@ -473,6 +662,24 @@ export default function PetsittersPage() {
                       />
                     </div>
                   ))}
+                  {filtered.length === 0 && (
+                    <div className="flex flex-col items-center gap-2 py-16 text-gray-400">
+                      <MapPin size={32} className="text-orange-200" />
+                      <p className="text-sm">
+                        {hasAreaFilter
+                          ? `${areaLabel}에 등록된 펫시터가 없어요`
+                          : "조건에 맞는 펫시터가 없어요"}
+                      </p>
+                      {hasAreaFilter && (
+                        <button
+                          onClick={clearAreaFilter}
+                          className="mt-1 text-orange-500 text-sm font-medium underline underline-offset-2"
+                        >
+                          전체 지역 보기
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </ScrollArea>
@@ -480,5 +687,13 @@ export default function PetsittersPage() {
         </div>
       </main>
     </>
+  );
+}
+
+export default function PetsittersPage() {
+  return (
+    <Suspense>
+      <PetsittersContent />
+    </Suspense>
   );
 }

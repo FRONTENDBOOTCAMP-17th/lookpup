@@ -15,6 +15,7 @@ interface SearchFilterBarProps {
   sortOptions?: readonly string[];
   sortBy?: string | null;
   onSortChange?: (sort: string) => void;
+  hideSearch?: boolean;
 }
 
 /**
@@ -32,6 +33,7 @@ export default function SearchFilterBar({
   sortOptions,
   sortBy,
   onSortChange,
+  hideSearch = false,
 }: SearchFilterBarProps) {
   const [isSortOpen, setIsSortOpen] = useState(false);
   const sortRef = useRef<HTMLDivElement>(null);
@@ -48,21 +50,23 @@ export default function SearchFilterBar({
 
   return (
     <div className={`flex flex-col gap-4 ${className}`}>
-      {/* 검색 입력창 */}
+      {/* 검색 입력창 + 필터 버튼 */}
       <div className="flex gap-2 md:gap-3">
-        <div className="flex-1 flex items-center gap-2 px-3 md:px-4 py-3 bg-orange-50 rounded-xl min-w-0">
-          <Search className="w-4 h-4 md:w-5 md:h-5 text-gray-400 shrink-0" />
-          <input
-            type="text"
-            placeholder={placeholder}
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="flex-1 min-w-0 bg-transparent text-sm md:text-base text-stone-900 placeholder:text-stone-900/50 outline-none"
-          />
-        </div>
+        {!hideSearch && (
+          <div className="flex-1 flex items-center gap-2 px-3 md:px-4 py-3 bg-orange-50 rounded-xl min-w-0">
+            <Search className="w-4 h-4 md:w-5 md:h-5 text-gray-400 shrink-0" />
+            <input
+              type="text"
+              placeholder={placeholder}
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              className="flex-1 min-w-0 bg-transparent text-sm md:text-base text-stone-900 placeholder:text-stone-900/50 outline-none"
+            />
+          </div>
+        )}
 
-        {/* 필터 버튼 */}
-        <div ref={sortRef} className="relative shrink-0">
+        {/* 정렬 버튼 */}
+        <div ref={sortRef} className="relative shrink-0 ml-auto">
           <button
             onClick={() => sortOptions && setIsSortOpen((prev) => !prev)}
             className={`flex items-center gap-1.5 px-3 md:px-4 py-3 rounded-xl font-medium transition-colors ${
