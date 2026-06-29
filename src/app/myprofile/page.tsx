@@ -18,7 +18,6 @@ import {
   FileText,
   Settings,
   HelpCircle,
-  LogOut,
   Star,
   Wallet,
   MessageCircle,
@@ -40,7 +39,6 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
-import { signOut } from "@/app/actions/auth";
 import { updateOwnerLocation } from "@/app/actions/users";
 import {
   coordToRegion,
@@ -806,16 +804,6 @@ export default function MyProfilePage() {
                     />
                   ))}
                 </nav>
-
-                <div className="mt-4 pt-4 border-t border-orange-100">
-                  <button
-                    onClick={signOut}
-                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-500 hover:bg-orange-50 transition-colors"
-                  >
-                    <LogOut size={16} className="text-gray-500" />
-                    <span className="text-sm font-medium">로그아웃</span>
-                  </button>
-                </div>
               </div>
             </div>
 
@@ -870,22 +858,23 @@ export default function MyProfilePage() {
                     </div>
                   </div>
 
-                  {/* 펫시터 등록 CTA */}
-                  {userType === "owner" && (
-                    <Link href="/sitter-register">
-                      <div className="bg-gradient-to-r from-orange-500 to-stone-600 rounded-2xl p-7 flex items-center justify-between hover:opacity-90 transition-opacity">
-                        <div>
-                          <h3 className="font-bold text-white text-lg mb-1">
-                            펫시터로 활동하기
-                          </h3>
-                          <p className="text-white/80 text-sm">
-                            추가 수입을 만들어보세요
-                          </p>
+                  {/* 펫시터 등록 CTA — 이미 등록된 펫시터에게는 숨김 */}
+                  {userType === "owner" &&
+                    (isSitter ? null : (
+                      <Link href="/sitter-register">
+                        <div className="bg-gradient-to-r from-orange-500 to-stone-600 rounded-2xl p-7 flex items-center justify-between hover:opacity-90 transition-opacity">
+                          <div>
+                            <h3 className="font-bold text-white text-lg mb-1">
+                              펫시터로 활동하기
+                            </h3>
+                            <p className="text-white/80 text-sm">
+                              추가 수입을 만들어보세요
+                            </p>
+                          </div>
+                          <ChevronRight size={32} className="text-white" />
                         </div>
-                        <ChevronRight size={32} className="text-white" />
-                      </div>
-                    </Link>
-                  )}
+                      </Link>
+                    ))}
                 </div>
               )}
             </div>
@@ -931,39 +920,26 @@ export default function MyProfilePage() {
           })}
         </div>
 
-        {/* 펫시터 등록 CTA */}
-        {userType === "owner" && (
-          <Link href="/sitter-register">
-            <div className="bg-gradient-to-r from-orange-500 to-stone-600 rounded-2xl p-5 mb-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-white font-semibold text-sm mb-0.5">
-                    펫시터로 활동하기
-                  </h4>
-                  <p className="text-xs text-white/80">
-                    추가 수입을 만들어보세요
-                  </p>
+        {/* 펫시터 등록 CTA — 이미 등록된 펫시터에게는 숨김 */}
+        {userType === "owner" &&
+          (isSitter ? null : (
+            <Link href="/sitter-register">
+              <div className="bg-gradient-to-r from-orange-500 to-stone-600 rounded-2xl p-5 mb-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-white font-semibold text-sm mb-0.5">
+                      펫시터로 활동하기
+                    </h4>
+                    <p className="text-xs text-white/80">
+                      추가 수입을 만들어보세요
+                    </p>
+                  </div>
+                  <ChevronRight size={28} className="text-white" />
                 </div>
-                <ChevronRight size={28} className="text-white" />
               </div>
-            </div>
-          </Link>
-        )}
+            </Link>
+          ))}
 
-        {/* 로그아웃 */}
-        <div className="pb-24">
-          <button
-            onClick={signOut}
-            className="w-full bg-white border border-orange-100 rounded-2xl px-4 py-3.5 flex items-center gap-4 shadow-sm"
-          >
-            <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center">
-              <LogOut size={20} className="text-gray-500" />
-            </div>
-            <span className="flex-1 text-left text-sm font-medium text-gray-500">
-              로그아웃
-            </span>
-          </button>
-        </div>
       </div>
     </div>
   );

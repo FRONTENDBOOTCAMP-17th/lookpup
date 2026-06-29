@@ -123,7 +123,10 @@ export default function BoardEditPage() {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        router.push("/auth/login");
+        return;
+      }
 
       // 기존 구인글 데이터 조회 (pre-fill용)
       const result = await fetch(`/api/requests/${id}`).then((res) =>
