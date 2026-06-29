@@ -115,7 +115,7 @@ export default function WithdrawPage() {
           <button
             type="button"
             onClick={() => router.back()}
-            className="p-1 -ml-1"
+            className="w-10 h-10 rounded-xl border border-[#FFE9D6] flex items-center justify-center hover:bg-[#FFF8F3] transition-colors shrink-0"
           >
             <ChevronLeft size={20} className="text-[#281A0E]" />
           </button>

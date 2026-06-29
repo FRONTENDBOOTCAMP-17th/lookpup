@@ -15,6 +15,11 @@ import {
   coordToRegion,
   type AddressSuggestion,
 } from "@/utils/kakaoGeocode";
+import {
+  loadNotificationPrefs,
+  saveNotificationPrefs,
+  type NotificationCategory,
+} from "@/lib/notificationPrefs";
 
 interface PendingAddress {
   address: string;
@@ -30,26 +35,30 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "notifications", label: "알림 설정" },
 ];
 
-const NOTIFICATION_ITEMS = [
+const NOTIFICATION_ITEMS: {
+  id: NotificationCategory;
+  label: string;
+  description: string;
+}[] = [
   {
+    id: "reservation",
     label: "예약 알림",
     description: "예약 확정, 변경, 취소 알림을 받습니다",
-    enabled: true,
   },
   {
+    id: "chat",
     label: "채팅 메시지",
     description: "새로운 메시지가 도착하면 알림을 받습니다",
-    enabled: true,
   },
   {
+    id: "review",
     label: "리뷰 알림",
     description: "새로운 리뷰가 등록되면 알림을 받습니다",
-    enabled: true,
   },
   {
+    id: "marketing",
     label: "마케팅 알림",
     description: "이벤트 및 프로모션 소식을 받습니다",
-    enabled: false,
   },
 ];
 
@@ -59,7 +68,9 @@ export default function SettingsPage() {
   const setUser = useUserStore((s) => s.setUser);
 
   const [activeTab, setActiveTab] = useState<Tab>("notifications");
-  const [notifications, setNotifications] = useState(NOTIFICATION_ITEMS);
+  const [notificationPrefs, setNotificationPrefs] = useState(
+    loadNotificationPrefs(),
+  );
   const [showSaveModal, setShowSaveModal] = useState(false);
 
   const [fullName, setFullName] = useState("");
@@ -129,12 +140,12 @@ export default function SettingsPage() {
     setPendingAddress({ address: s.addressName, lat: s.lat, lng: s.lng, dong });
   };
 
-  const toggleNotification = (index: number) => {
-    setNotifications((prev) =>
-      prev.map((item, i) =>
-        i === index ? { ...item, enabled: !item.enabled } : item,
-      ),
-    );
+  const toggleNotification = (id: NotificationCategory) => {
+    setNotificationPrefs((prev) => {
+      const next = { ...prev, [id]: !prev[id] };
+      saveNotificationPrefs(next);
+      return next;
+    });
   };
 
   const handleSave = async () => {
@@ -410,9 +421,9 @@ export default function SettingsPage() {
                   알림 설정
                 </h2>
                 <div className="flex flex-col gap-4">
-                  {notifications.map((item, index) => (
+                  {NOTIFICATION_ITEMS.map((item) => (
                     <div
-                      key={item.label}
+                      key={item.id}
                       className="w-full p-4 bg-[#FFF8F3] rounded-xl flex justify-between items-center gap-4"
                     >
                       <div className="flex flex-col gap-1">
@@ -424,8 +435,8 @@ export default function SettingsPage() {
                         </p>
                       </div>
                       <Switch
-                        checked={item.enabled}
-                        onCheckedChange={() => toggleNotification(index)}
+                        checked={notificationPrefs[item.id]}
+                        onCheckedChange={() => toggleNotification(item.id)}
                       />
                     </div>
                   ))}

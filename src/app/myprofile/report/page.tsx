@@ -187,7 +187,7 @@ export default function ReportPage() {
           <button
             type="button"
             onClick={() => router.back()}
-            className="p-1 -ml-1"
+            className="w-10 h-10 rounded-xl border border-orange-100 flex items-center justify-center hover:bg-orange-50 transition-colors shrink-0"
           >
             <ChevronLeft size={20} className="text-stone-900" />
           </button>
