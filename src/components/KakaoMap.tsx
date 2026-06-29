@@ -226,7 +226,7 @@ export default function KakaoMap({
 
         const content = document.createElement("div");
         content.innerHTML = `
-          <div style="
+          <div onclick="window.location.href='/petsitters/${id}'" style="
             padding: 8px 10px;
             background: white;
             border: 1px solid #FFE9D6;
@@ -236,12 +236,14 @@ export default function KakaoMap({
             font-size: 13px;
             white-space: nowrap;
             margin-bottom: 8px;
+            cursor: pointer;
           ">
             <strong>${name ?? ""}</strong>
             <div style="color:#6B7280; font-size:12px; margin-top:2px;">
               ${district ?? ""} ${neighborhood ?? ""}
             </div>
             ${distanceRow}
+            <div style="color:#f97316; font-size:11px; margin-top:4px;">예약하기 →</div>
           </div>
         `;
 

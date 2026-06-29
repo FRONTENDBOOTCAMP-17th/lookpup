@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { MapPin, Star, LocateFixed } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Avatar from "@/components/ui/Avatar";
@@ -61,11 +60,12 @@ interface PetsitterCardProps {
   sitter: Sitter;
   isSelected: boolean;
   distance: number;
+  onClick: () => void;
 }
 
-function PetsitterCard({ sitter, isSelected, distance }: PetsitterCardProps) {
+function PetsitterCard({ sitter, isSelected, distance, onClick }: PetsitterCardProps) {
   return (
-    <Link href={`/petsitters/${sitter.id}`} className="block">
+    <div onClick={onClick} className="block">
       <div
         className={`w-full p-5 bg-white rounded-2xl border flex flex-col gap-0 transition-all cursor-pointer ${
           isSelected
@@ -114,7 +114,7 @@ function PetsitterCard({ sitter, isSelected, distance }: PetsitterCardProps) {
           </span>
         </div>
       </div>
-    </Link>
+    </div>
   );
 }
 
@@ -344,10 +344,7 @@ export default function PetsittersPage() {
         s.name.includes(searchQuery) ||
         s.district.includes(searchQuery) ||
         s.neighborhood.includes(searchQuery);
-      // 펫시터가 반경 정보를 가지고 있으면 보호자 위치가 반경 안에 있을 때만 표시
-      const matchRadius =
-        !s.serviceRadiusKm || s.distanceKm <= s.serviceRadiusKm;
-      return matchFilter && matchSearch && matchRadius;
+      return matchFilter && matchSearch;
     })
     .sort((a, b) => {
       if (sortBy === "평점순") return b.rating - a.rating;
@@ -466,6 +463,7 @@ export default function PetsittersPage() {
                         sitter={sitter}
                         isSelected={selectedSitterId === sitter.id}
                         distance={sitter.distanceKm}
+                        onClick={() => setSelectedSitterId(sitter.id)}
                       />
                     </div>
                   ))}
