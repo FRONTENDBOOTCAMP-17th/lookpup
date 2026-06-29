@@ -209,7 +209,10 @@ function ChatPageContent({
 
   async function handleDeleteReservationRequest(id: string) {
     const result = await deleteReservationRequest(id);
-    if (result.error) setDeleteError(result.error);
+    if (result.error) {
+      setSendError(result.error);
+      return;
+    }
     if (selectedReservationRequestId === id) {
       setSelectedReservationRequestId(null);
       setMobileChatView("list");
@@ -961,32 +964,37 @@ function ChatPageContent({
   }
 
   function getReportUrl() {
-    const isOneOnOne = activeTab === "one_on_one";
-    const isUserSitter = isOneOnOne && selectedRoom?.sitterId === userId;
-    const isUserSitterInApplicants =
-      !isOneOnOne && selectedApplicant?.sitterId === userId;
-    const isReportingOwner = isUserSitter || isUserSitterInApplicants;
+    let targetId = "";
+    let targetName = "";
+    let targetImage: string | null = null;
+    let role = "펫시터";
 
-    const targetId = isOneOnOne
-      ? isUserSitter
+    if (activeTab === "one_on_one") {
+      const isUserSitter = selectedRoom?.sitterId === userId;
+      targetId = isUserSitter
         ? (selectedRoom?.ownerId ?? "")
-        : (selectedRoom?.sitterId ?? "")
-      : isUserSitterInApplicants
+        : (selectedRoom?.sitterId ?? "");
+      targetName = selectedRoom?.name ?? "";
+      targetImage = selectedRoom?.profileImage ?? null;
+      role = isUserSitter ? "보호자" : "펫시터";
+    } else if (activeTab === "reservations") {
+      const isUserOwner = selectedReservationRequest?.ownerId === userId;
+      targetId = isUserOwner
+        ? (selectedReservationRequest?.sitterId ?? "")
+        : (selectedReservationRequest?.ownerId ?? "");
+      targetName = selectedReservationRequest?.name ?? "";
+      targetImage = selectedReservationRequest?.profileImage ?? null;
+      role = isUserOwner ? "펫시터" : "보호자";
+    } else {
+      const isUserSitter = selectedApplicant?.sitterId === userId;
+      targetId = isUserSitter
         ? (selectedApplicant?.ownerId ?? "")
         : (selectedApplicant?.sitterId ?? "");
+      targetName = isUserSitter ? "" : (selectedApplicant?.name ?? "");
+      targetImage = isUserSitter ? null : (selectedApplicant?.profileImage ?? null);
+      role = isUserSitter ? "보호자" : "펫시터";
+    }
 
-    const targetName = isOneOnOne
-      ? (selectedRoom?.name ?? "")
-      : isUserSitterInApplicants
-        ? ""
-        : (selectedApplicant?.name ?? "");
-    const targetImage = isOneOnOne
-      ? (selectedRoom?.profileImage ?? null)
-      : isUserSitterInApplicants
-        ? null
-        : (selectedApplicant?.profileImage ?? null);
-
-    const role = isReportingOwner ? "보호자" : "펫시터";
     const service = getHeaderSub();
     const params = new URLSearchParams();
     if (targetId) params.set("targetId", targetId);
