@@ -70,14 +70,21 @@ type RequestRow = {
   reservations: Array<{ status: string }>;
 };
 
-// DB 데이터를 기존 Post 형태로 변환 (PostCard 재사용을 위해)
 function toPost(r: RequestRow): Post {
   const pet = r.pets;
   const selected = r.applications.find((a) => a.status === "selected");
+  // 예약이 최종 완료된 경우 requests.status(matched)보다 reservations.status(completed)를 우선 반영
+  const reservationCompleted = r.reservations.some(
+    (res) => res.status === "completed",
+  );
+  const effectiveStatus: PostStatus =
+    reservationCompleted && r.status === "matched"
+      ? "completed"
+      : (r.status as PostStatus);
   return {
     id: r.id,
     title: r.title,
-    status: r.status as PostStatus,
+    status: effectiveStatus,
     petName: pet ? `${pet.name} (${pet.animal_type})` : "(반려동물 없음)",
     serviceType: REQUEST_TYPE_MAP[r.request_type] ?? r.request_type,
     date: formatPeriod(r.start_datetime, r.end_datetime),
