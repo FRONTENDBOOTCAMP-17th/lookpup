@@ -36,6 +36,8 @@ type Props = {
   details: ReservationDetails | null;
   loading?: boolean;
   confirming?: boolean;
+  hideEdit?: boolean;
+  confirmLabel?: string;
   onClose: () => void;
   onConfirm: (overrides: ReservationOverrides) => void;
 };
@@ -101,6 +103,8 @@ export function ReservationConfirmModal({
   details,
   loading = false,
   confirming = false,
+  hideEdit = false,
+  confirmLabel = "예약 확정",
   onClose,
   onConfirm,
 }: Props) {
@@ -317,20 +321,22 @@ export function ReservationConfirmModal({
             </>
           ) : (
             <>
-              <button
-                type="button"
-                onClick={() => {
-                  setSnapshot({ startDt, endDt, price, location });
-                  setEditMode(true);
-                }}
-                disabled={!details || confirming}
-                className={cn(
-                  "flex-1 h-11 rounded-[10px] bg-white outline outline-1 outline-offset-[-1px] outline-orange-500 text-orange-500 text-sm font-medium transition-colors hover:bg-orange-50",
-                  "disabled:opacity-50 disabled:cursor-not-allowed"
-                )}
-              >
-                수정
-              </button>
+              {!hideEdit && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSnapshot({ startDt, endDt, price, location });
+                    setEditMode(true);
+                  }}
+                  disabled={!details || confirming}
+                  className={cn(
+                    "flex-1 h-11 rounded-[10px] bg-white outline outline-1 outline-offset-[-1px] outline-orange-500 text-orange-500 text-sm font-medium transition-colors hover:bg-orange-50",
+                    "disabled:opacity-50 disabled:cursor-not-allowed"
+                  )}
+                >
+                  수정
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => onConfirm(buildOverrides())}
@@ -340,7 +346,7 @@ export function ReservationConfirmModal({
                   "disabled:opacity-50 disabled:cursor-not-allowed"
                 )}
               >
-                {confirming ? "처리 중..." : "예약 확정"}
+                {confirming ? "처리 중..." : confirmLabel}
               </button>
             </>
           )}

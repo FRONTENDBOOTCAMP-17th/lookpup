@@ -1242,3 +1242,53 @@ export async function rejectReservationRequest(reservationId: string) {
 
   return { data: { ok: true } };
 }
+
+export async function getReservationRequestDetails(reservationId: string) {
+  const user = await getAuthUser();
+  if (!user)
+    return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
+
+  const db = createServiceClient();
+
+  type ServiceRow = { title: string | null; service_type: string | null };
+  type PetRow = {
+    name: string;
+    animal_type: string | null;
+    breed: string | null;
+  } | null;
+  type ItemRow = { pets: PetRow };
+
+  const { data: reservation } = await db
+    .from("reservations")
+    .select(
+      "start_datetime, end_datetime, total_price, services(title, service_type), reservation_items(pets(name, animal_type, breed))",
+    )
+    .eq("id", reservationId)
+    .single();
+
+  if (!reservation)
+    return {
+      error: { code: "NOT_FOUND", message: "예약 정보를 찾을 수 없습니다." },
+    };
+
+  const rawService = reservation.services;
+  const service = (
+    Array.isArray(rawService) ? rawService[0] : rawService
+  ) as ServiceRow | null;
+  const items = (reservation.reservation_items as ItemRow[]) ?? [];
+  const firstPet = items[0]?.pets ?? null;
+
+  return {
+    data: {
+      title: service?.title ?? service?.service_type ?? "예약 서비스",
+      startDatetime: reservation.start_datetime,
+      endDatetime: reservation.end_datetime,
+      requestType: service?.service_type ?? null,
+      location: null,
+      totalPrice: reservation.total_price,
+      petName: firstPet?.name ?? null,
+      petAnimalType: firstPet?.animal_type ?? null,
+      petBreed: firstPet?.breed ?? null,
+    },
+  };
+}

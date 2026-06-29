@@ -55,6 +55,7 @@ import {
   acceptReservationRequest,
   rejectReservationRequest,
   sitterStartService,
+  getReservationRequestDetails,
 } from "@/app/actions/reservations";
 import {
   ServiceCompleteModal,
@@ -125,6 +126,12 @@ function ChatPageContent({
   const [reservationDetails, setReservationDetails] =
     useState<ReservationDetails | null>(null);
   const [pendingConfirmId, setPendingConfirmId] = useState<string | null>(null);
+
+  const [acceptModalOpen, setAcceptModalOpen] = useState(false);
+  const [acceptModalLoading, setAcceptModalLoading] = useState(false);
+  const [acceptDetails, setAcceptDetails] = useState<ReservationDetails | null>(null);
+  const [pendingAcceptRoomId, setPendingAcceptRoomId] = useState<string | null>(null);
+
   const [messagesRefreshKey, setMessagesRefreshKey] = useState(0);
 
   const activeRoomId =
@@ -165,6 +172,27 @@ function ChatPageContent({
   async function handleAcceptReservation(roomId: string) {
     const rr = reservationRequests.find((r) => r.id === roomId);
     if (!rr?.reservationId || actioningId) return;
+    setPendingAcceptRoomId(roomId);
+    setAcceptDetails(null);
+    setAcceptModalOpen(true);
+    setAcceptModalLoading(true);
+    try {
+      const result = await getReservationRequestDetails(rr.reservationId);
+      if ("data" in result) {
+        setAcceptDetails(result.data ?? null);
+      }
+    } catch {
+      // 에러 시에도 모달은 유지 (details=null이면 "정보를 불러오지 못했습니다" 표시)
+    } finally {
+      setAcceptModalLoading(false);
+    }
+  }
+
+  async function handleAcceptConfirm() {
+    const roomId = pendingAcceptRoomId;
+    const rr = roomId ? reservationRequests.find((r) => r.id === roomId) : null;
+    if (!rr?.reservationId || actioningId) return;
+    setAcceptModalOpen(false);
     setActioningId(roomId);
     setApplicationActionError(null);
     try {
@@ -185,6 +213,7 @@ function ChatPageContent({
       setApplicationActionError("오류가 발생했습니다. 다시 시도해주세요.");
     } finally {
       setActioningId(null);
+      setPendingAcceptRoomId(null);
     }
   }
 
@@ -2061,6 +2090,25 @@ function ChatPageContent({
           setPendingConfirmId(null);
         }}
         onConfirm={handleConfirmApplicant}
+      />
+
+      <ReservationConfirmModal
+        open={acceptModalOpen}
+        sitterName={
+          pendingAcceptRoomId
+            ? (reservationRequests.find((rr) => rr.id === pendingAcceptRoomId)?.name ?? "")
+            : ""
+        }
+        details={acceptDetails}
+        loading={acceptModalLoading}
+        confirming={!!actioningId}
+        hideEdit
+        confirmLabel="수락"
+        onClose={() => {
+          setAcceptModalOpen(false);
+          setPendingAcceptRoomId(null);
+        }}
+        onConfirm={() => { void handleAcceptConfirm(); }}
       />
 
       <ServiceCompleteModal
