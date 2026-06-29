@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Search, SlidersHorizontal } from "lucide-react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import type { ReactNode } from "react";
 
 interface SearchFilterBarProps {
   placeholder?: string;
@@ -16,6 +17,8 @@ interface SearchFilterBarProps {
   sortBy?: string | null;
   onSortChange?: (sort: string) => void;
   hideSearch?: boolean;
+  hideSort?: boolean;
+  rightAction?: ReactNode;
 }
 
 /**
@@ -34,6 +37,8 @@ export default function SearchFilterBar({
   sortBy,
   onSortChange,
   hideSearch = false,
+  hideSort = false,
+  rightAction,
 }: SearchFilterBarProps) {
   const [isSortOpen, setIsSortOpen] = useState(false);
   const sortRef = useRef<HTMLDivElement>(null);
@@ -51,7 +56,7 @@ export default function SearchFilterBar({
   return (
     <div className={`flex flex-col gap-4 ${className}`}>
       {/* 검색 입력창 + 필터 버튼 */}
-      <div className="flex gap-2 md:gap-3">
+      {(!hideSearch || !hideSort) && <div className="flex gap-2 md:gap-3">
         {!hideSearch && (
           <div className="flex-1 flex items-center gap-2 px-3 md:px-4 py-3 bg-orange-50 rounded-xl min-w-0">
             <Search className="w-4 h-4 md:w-5 md:h-5 text-gray-400 shrink-0" />
@@ -65,43 +70,47 @@ export default function SearchFilterBar({
           </div>
         )}
 
-        {/* 정렬 버튼 */}
-        <div ref={sortRef} className="relative shrink-0 ml-auto">
-          <button
-            onClick={() => sortOptions && setIsSortOpen((prev) => !prev)}
-            className={`flex items-center gap-1.5 px-3 md:px-4 py-3 rounded-xl font-medium transition-colors ${
-              sortBy
-                ? "bg-orange-500 text-white"
-                : "bg-orange-50 text-stone-900 hover:bg-orange-100"
-            }`}
-          >
-            <SlidersHorizontal className="w-4 h-4 md:w-5 md:h-5" />
-            <span className="text-sm hidden sm:inline">필터</span>
-          </button>
+        {/* 정렬 버튼 or 커스텀 액션 */}
+        {!hideSort && (rightAction ? (
+          <div className="shrink-0 ml-auto">{rightAction}</div>
+        ) : (
+          <div ref={sortRef} className="relative shrink-0 ml-auto">
+            <button
+              onClick={() => sortOptions && setIsSortOpen((prev) => !prev)}
+              className={`flex items-center gap-1.5 px-3 md:px-4 py-3 rounded-xl font-medium transition-colors ${
+                sortBy
+                  ? "bg-orange-500 text-white"
+                  : "bg-orange-50 text-stone-900 hover:bg-orange-100"
+              }`}
+            >
+              <SlidersHorizontal className="w-4 h-4 md:w-5 md:h-5" />
+              <span className="text-sm hidden sm:inline">필터</span>
+            </button>
 
-          {isSortOpen && sortOptions && (
-            <ul className="absolute right-0 mt-2 w-36 bg-white border border-orange-100 rounded-xl shadow-lg z-50 overflow-hidden">
-              {sortOptions.map((option) => (
-                <li key={option}>
-                  <button
-                    onClick={() => {
-                      onSortChange?.(option);
-                      setIsSortOpen(false);
-                    }}
-                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-orange-50 ${
-                      sortBy === option
-                        ? "text-orange-500 font-semibold bg-orange-50"
-                        : "text-stone-700"
-                    }`}
-                  >
-                    {option}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </div>
+            {isSortOpen && sortOptions && (
+              <ul className="absolute right-0 mt-2 w-36 bg-white border border-orange-100 rounded-xl shadow-lg z-50 overflow-hidden">
+                {sortOptions.map((option) => (
+                  <li key={option}>
+                    <button
+                      onClick={() => {
+                        onSortChange?.(option);
+                        setIsSortOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-orange-50 ${
+                        sortBy === option
+                          ? "text-orange-500 font-semibold bg-orange-50"
+                          : "text-stone-700"
+                      }`}
+                    >
+                      {option}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ))}
+      </div>}
 
       {/* 필터 탭 */}
       <ScrollArea className="w-full">

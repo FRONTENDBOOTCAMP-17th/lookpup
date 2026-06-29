@@ -18,13 +18,6 @@ import { getOwnerLocation } from "@/app/actions/users";
 const FILTERS = ["전체", "방문돌봄", "위탁돌봄", "산책"] as const;
 type Filter = (typeof FILTERS)[number];
 
-const SORT_OPTIONS = [
-  "평점순",
-  "리뷰 많은 순",
-  "낮은 가격순",
-  "높은 가격순",
-] as const;
-type SortOption = (typeof SORT_OPTIONS)[number];
 
 const SERVICE_TYPE_MAP: Record<string, string> = {
   walk: "산책",
@@ -238,7 +231,6 @@ function PetsittersContent() {
   const [sitters, setSitters] = useState<Sitter[]>([]);
   const [activeFilter, setActiveFilter] = useState<Filter>("전체");
   const [selectedSitterId, setSelectedSitterId] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<SortOption | null>(null);
 
   // ── 위치(거리 계산용) ─────────────────────────────────────────
   const [basePosition, setBasePosition] = useState(DEFAULT_CENTER);
@@ -468,18 +460,10 @@ function PetsittersContent() {
         hasAreaFilter || areaQuery === "" || s.name.includes(areaQuery);
       return matchFilter && matchSearch;
     })
-    .sort((a, b) => {
-      if (sortBy === "평점순") return b.rating - a.rating;
-      if (sortBy === "리뷰 많은 순") return b.reviewCount - a.reviewCount;
-      if (sortBy === "낮은 가격순") return a.price - b.price;
-      if (sortBy === "높은 가격순") return b.price - a.price;
-      return a.distanceKm - b.distanceKm;
-    });
+    .sort((a, b) => a.distanceKm - b.distanceKm);
 
   const listHeading = hasAreaFilter
     ? `${areaLabel} 펫시터 · ${filtered.length}명`
-    : sortBy
-    ? `${sortBy} · ${filtered.length}명`
     : `${baseLabel} 기준 가까운 순 · ${filtered.length}명`;
 
   return (
@@ -556,69 +540,79 @@ function PetsittersContent() {
           </div>
 
           {/* 리스트 패널 */}
-          <div className="flex-1 md:flex-none w-full md:w-153.5 bg-white flex flex-col overflow-hidden">
-            <div className="p-4 md:p-6 border-b border-orange-100 shrink-0 flex flex-col gap-3">
+          <div className="flex-1 md:flex-none w-full md:w-[520px] bg-white flex flex-col overflow-hidden">
+            <div className="p-4 md:p-5 border-b border-orange-100 shrink-0 flex flex-col gap-3">
 
-              {/* 지역 검색 자동완성 */}
-              <div ref={areaSearchRef} className="relative">
-                <div className="flex items-center gap-2 px-3 md:px-4 py-3 bg-orange-50 rounded-xl">
-                  <MapPin size={16} className="text-orange-400 shrink-0" />
-                  <input
-                    type="text"
-                    placeholder="지역 또는 펫시터 이름 검색"
-                    value={areaQuery}
-                    onChange={(e) => setAreaQuery(e.target.value)}
-                    onFocus={() => areaSuggestions.length > 0 && setShowSuggestions(true)}
-                    className="flex-1 min-w-0 bg-transparent text-sm md:text-base text-stone-900 placeholder:text-stone-900/50 outline-none"
-                  />
-                  {areaQuery && (
-                    <button
-                      onClick={clearAreaFilter}
-                      aria-label="지역 검색 초기화"
-                      className="text-gray-400 hover:text-gray-600 transition-colors"
-                    >
-                      <X size={15} />
-                    </button>
+              {/* 지역 검색바 + 내 위치 버튼 */}
+              <div className="flex gap-2">
+                <div ref={areaSearchRef} className="relative flex-1 min-w-0">
+                  <div className="flex items-center gap-2 px-3 md:px-4 py-3 bg-orange-50 rounded-xl">
+                    <MapPin size={16} className="text-orange-400 shrink-0" />
+                    <input
+                      type="text"
+                      placeholder="지역 또는 펫시터 이름 검색"
+                      value={areaQuery}
+                      onChange={(e) => setAreaQuery(e.target.value)}
+                      onFocus={() => areaSuggestions.length > 0 && setShowSuggestions(true)}
+                      className="flex-1 min-w-0 bg-transparent text-sm md:text-base text-stone-900 placeholder:text-stone-900/50 outline-none"
+                    />
+                    {areaQuery && (
+                      <button
+                        onClick={clearAreaFilter}
+                        aria-label="지역 검색 초기화"
+                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                      >
+                        <X size={15} />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* 자동완성 드롭다운 */}
+                  {showSuggestions && areaSuggestions.length > 0 && (
+                    <ul className="absolute z-50 top-full mt-1 w-full bg-white border border-orange-100 rounded-xl shadow-lg overflow-hidden">
+                      {areaSuggestions.map((s, i) => (
+                        <li key={i}>
+                          <button
+                            type="button"
+                            onClick={() => selectAreaSuggestion(s)}
+                            className="w-full text-left px-4 py-3 hover:bg-orange-50 transition-colors border-b border-orange-50 last:border-0 flex items-center gap-3"
+                          >
+                            <MapPin size={14} className="text-orange-400 shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-stone-900 font-medium truncate">
+                                {s.label}
+                              </p>
+                              <p className="text-xs text-gray-400 truncate">
+                                {s.type === 'area' ? s.city : s.address}
+                              </p>
+                            </div>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
                   )}
                 </div>
 
-                {/* 자동완성 드롭다운 */}
-                {showSuggestions && areaSuggestions.length > 0 && (
-                  <ul className="absolute z-50 top-full mt-1 w-full bg-white border border-orange-100 rounded-xl shadow-lg overflow-hidden">
-                    {areaSuggestions.map((s, i) => (
-                      <li key={i}>
-                        <button
-                          type="button"
-                          onClick={() => selectAreaSuggestion(s)}
-                          className="w-full text-left px-4 py-3 hover:bg-orange-50 transition-colors border-b border-orange-50 last:border-0 flex items-center gap-3"
-                        >
-                          <MapPin size={14} className="text-orange-400 shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm text-stone-900 font-medium truncate">
-                              {s.label}
-                            </p>
-                            <p className="text-xs text-gray-400 truncate">
-                              {s.type === 'area' ? s.city : s.address}
-                            </p>
-                          </div>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                {/* 내 위치 버튼 */}
+                <button
+                  onClick={requestLocation}
+                  className="shrink-0 flex items-center gap-1.5 px-3 py-3 rounded-xl bg-orange-50 text-stone-900 hover:bg-orange-100 transition-colors"
+                  title="내 위치로 지도 이동"
+                >
+                  <LocateFixed className="w-4 h-4 md:w-5 md:h-5 text-orange-500" />
+                  <span className="text-sm hidden sm:inline font-medium">내 위치</span>
+                </button>
               </div>
 
-              {/* 서비스 필터 + 정렬 */}
+              {/* 서비스 필터 탭 */}
               <SearchFilterBar
                 filters={FILTERS}
                 activeFilter={activeFilter}
                 onFilterChange={(f) => setActiveFilter(f as Filter)}
                 searchQuery=""
                 onSearchChange={() => {}}
-                sortOptions={SORT_OPTIONS}
-                sortBy={sortBy}
-                onSortChange={(v) => setSortBy(v as SortOption)}
                 hideSearch
+                hideSort
               />
 
               {/* 선택된 지역 필터 칩 */}
