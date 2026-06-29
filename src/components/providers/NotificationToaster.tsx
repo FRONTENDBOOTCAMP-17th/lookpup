@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { createClient } from "@/utils/supabase/client";
 import { useUserStore } from "@/store/userStore";
+import { loadNotificationPrefs, getNotificationCategory } from "@/lib/notificationPrefs";
 
 /**
  * 새 알림(notifications INSERT/UPDATE) 수신 시 토스트로 띄우는 전역 컴포넌트.
@@ -46,6 +47,11 @@ export default function NotificationToaster() {
           };
           // 읽음 처리 등 안 읽은 새 알림이 아닌 변경은 토스트하지 않음
           if (row.is_read) return;
+          // 설정에서 끈 카테고리는 토스트하지 않음(매핑 안 된 타입은 항상 노출)
+          const prefs = loadNotificationPrefs();
+          if (!prefs.all) return;
+          const category = getNotificationCategory(row.type);
+          if (category && !prefs[category]) return;
           // 채팅 화면을 보고 있을 때는 채팅 알림만 토스트하지 않음
           const isChatType =
             row.type === "message" || row.type === "chat_message";

@@ -119,7 +119,6 @@ interface Post {
   sitterName?: string;
 }
 
-
 const STATUS_CONFIG: Record<
   PostStatus,
   { label: string; badgeBg: string; badgeText: string }
@@ -146,7 +145,7 @@ const STATUS_CONFIG: Record<
     badgeText: "text-gray-500",
   },
   canceled: {
-    label: "취소됨",
+    label: "취소",
     badgeBg: "bg-red-100",
     badgeText: "text-red-500",
   },
@@ -155,11 +154,11 @@ const STATUS_CONFIG: Record<
 const TABS: { id: TabId; label: string }[] = [
   { id: "all", label: "전체" },
   { id: "open", label: "모집중" },
-  { id: "matched", label: "예약완료" },
   // 진행중: 현재는 reservations.status === 'in_progress'로 구분 예정, 탭은 유지
   { id: "in-progress", label: "진행중" },
+  { id: "matched", label: "예약완료" },
   { id: "completed", label: "완료" },
-  { id: "canceled", label: "취소됨" },
+  { id: "canceled", label: "취소" },
 ];
 
 function formatPrice(price: number) {
@@ -353,7 +352,8 @@ export default function PostsManagePage() {
     activeTab === "all" ? posts : posts.filter((p) => p.status === activeTab);
 
   const sorted = [...filtered].sort(
-    (a, b) => new Date(b.createdAtRaw).getTime() - new Date(a.createdAtRaw).getTime(),
+    (a, b) =>
+      new Date(b.createdAtRaw).getTime() - new Date(a.createdAtRaw).getTime(),
   );
 
   const confirmDelete = async () => {
@@ -404,7 +404,10 @@ export default function PostsManagePage() {
       <div className="flex-1 w-full max-w-[820px] mx-auto px-6 pt-6 pb-10">
         {/* 헤더 */}
         <div className="hidden md:flex items-center gap-3 mb-2">
-          <button onClick={() => router.back()} className="p-1 -ml-1">
+          <button
+            onClick={() => router.back()}
+            className="w-10 h-10 rounded-xl border border-[#FFE9D6] flex items-center justify-center hover:bg-[#FFF8F3] transition-colors shrink-0"
+          >
             <ChevronLeft size={20} className="text-stone-900" />
           </button>
           <div>
@@ -477,7 +480,9 @@ export default function PostsManagePage() {
         {/* 게시글 목록 */}
         <div className="flex flex-col gap-3">
           {postsLoading ? (
-            <div className="py-20 text-center text-gray-400 text-sm">불러오는 중...</div>
+            <div className="py-20 text-center text-gray-400 text-sm">
+              불러오는 중...
+            </div>
           ) : sorted.length === 0 ? (
             <div className="py-20 text-center text-gray-400 text-sm">
               게시글이 없습니다.
