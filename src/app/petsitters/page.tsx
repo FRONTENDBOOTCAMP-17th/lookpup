@@ -45,7 +45,6 @@ interface Sitter {
   services: string[];
   lat: number;
   lng: number;
-  serviceRadiusKm: number | null;
 }
 
 function parseArea(area: string | null): { district: string; neighborhood: string } {
@@ -149,7 +148,6 @@ export default function PetsittersPage() {
       display_area: string | null;
       latitude: number | null;
       longitude: number | null;
-      service_radius_km: number | null;
       base_price: number | null;
       rating: number | null;
       full_name: string | null;
@@ -182,7 +180,6 @@ export default function PetsittersPage() {
             services: [...new Set(serviceTypes)],
             lat: parseFloat(String(row.latitude)),
             lng: parseFloat(String(row.longitude)),
-            serviceRadiusKm: row.service_radius_km ?? null,
           };
         });
 
