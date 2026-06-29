@@ -416,33 +416,44 @@ export function MessageBubble({
   if (msg.from === "application_selected") {
     const data = msg.applicationData;
     if (!data) return null;
-    if (data.sentByMe) {
-      return (
-        <ConfirmationCard
-          postTitle={data.postTitle}
-          sitterInitial={senderInitial}
-          sitterProfileImage={senderProfileImage}
-          onPostClick={onPostClick}
-          onGoToChat={onGoToChat ?? (() => {})}
-        />
-      );
-    }
     return (
-      <SitterConfirmationCard
-        postTitle={data.postTitle}
-        ownerInitial={senderInitial}
-        ownerProfileImage={senderProfileImage}
-        onPostClick={onPostClick}
-        onGoToChat={onGoToChat}
-      />
+      <div>
+        {data.sentByMe ? (
+          <ConfirmationCard
+            postTitle={data.postTitle}
+            sitterInitial={senderInitial}
+            sitterProfileImage={senderProfileImage}
+            onPostClick={onPostClick}
+            onGoToChat={onGoToChat ?? (() => {})}
+          />
+        ) : (
+          <SitterConfirmationCard
+            postTitle={data.postTitle}
+            ownerInitial={senderInitial}
+            ownerProfileImage={senderProfileImage}
+            onPostClick={onPostClick}
+            onGoToChat={onGoToChat}
+          />
+        )}
+        {msg.time && <p className="text-right text-gray-500 text-xs pr-3 mt-1">{msg.time}</p>}
+      </div>
     );
   }
   if (msg.from === "application_rejected") {
-    if (msg.applicationData?.sentByMe) return <OwnerRejectionCard />;
-    return <SitterRejectionCard />;
+    return (
+      <div>
+        {msg.applicationData?.sentByMe ? <OwnerRejectionCard /> : <SitterRejectionCard />}
+        {msg.time && <p className="text-right text-gray-500 text-xs pr-3 mt-1">{msg.time}</p>}
+      </div>
+    );
   }
   if (msg.from === "reservation_canceled") {
-    return <ReservationCanceledCard sentByMe={msg.sentByMe ?? false} />;
+    return (
+      <div>
+        <ReservationCanceledCard sentByMe={msg.sentByMe ?? false} />
+        {msg.time && <p className="text-right text-gray-500 text-xs pr-3 mt-1">{msg.time}</p>}
+      </div>
+    );
   }
   if (msg.from === "service_complete") {
     if (msg.sentByMe) {
@@ -463,35 +474,42 @@ export function MessageBubble({
   if (msg.from === "payment_request") {
     const data = msg.paymentData;
     if (!data) return null;
-    if (data.sentByMe) {
-      return (
-        <SitterPaymentRequestCard
-          amount={data.amount}
-          reason={data.reason}
-          otherInitial={senderInitial}
-          otherProfileImage={senderProfileImage}
-          onPostClick={onPostClick}
-          costItems={data.costItems}
-        />
-      );
-    }
     return (
-      <PaymentRequestCard
-        amount={data.amount}
-        reason={data.reason}
-        deadline={data.deadline}
-        paid={isPaymentPaid ?? false}
-        onPay={onPaymentRequest ?? (() => {})}
-        isPaying={isPaymentPending ?? false}
-        otherInitial={senderInitial}
-        otherProfileImage={senderProfileImage}
-        onPostClick={onPostClick}
-        costItems={data.costItems}
-      />
+      <div>
+        {data.sentByMe ? (
+          <SitterPaymentRequestCard
+            amount={data.amount}
+            reason={data.reason}
+            otherInitial={senderInitial}
+            otherProfileImage={senderProfileImage}
+            onPostClick={onPostClick}
+            costItems={data.costItems}
+          />
+        ) : (
+          <PaymentRequestCard
+            amount={data.amount}
+            reason={data.reason}
+            deadline={data.deadline}
+            paid={isPaymentPaid ?? false}
+            onPay={onPaymentRequest ?? (() => {})}
+            isPaying={isPaymentPending ?? false}
+            otherInitial={senderInitial}
+            otherProfileImage={senderProfileImage}
+            onPostClick={onPostClick}
+            costItems={data.costItems}
+          />
+        )}
+        {msg.time && <p className="text-right text-gray-500 text-xs pr-3 mt-1">{msg.time}</p>}
+      </div>
     );
   }
   if (msg.from === "payment_complete") {
-    return <PaymentCompleteCard amount={msg.paymentData?.amount ?? 0} />;
+    return (
+      <div>
+        <PaymentCompleteCard amount={msg.paymentData?.amount ?? 0} />
+        {msg.time && <p className="text-right text-gray-500 text-xs pr-3 mt-1">{msg.time}</p>}
+      </div>
+    );
   }
   if (msg.from === "date_separator") {
     return (

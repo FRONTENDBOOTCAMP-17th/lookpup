@@ -70,6 +70,7 @@ function toMessage(m: MessageApiItem, userId: string): Message {
         from: "payment_request" as const,
         text: "",
         paymentData: { ...data, sentByMe: m.sender_id === userId },
+        time: m.created_at ? formatTime(m.created_at) : undefined,
         rawDate: m.created_at ?? undefined,
       };
     } catch {
@@ -86,6 +87,7 @@ function toMessage(m: MessageApiItem, userId: string): Message {
         from: "payment_complete" as const,
         text: "",
         paymentData: { amount: data.amount, reason: "", deadline: "" },
+        time: m.created_at ? formatTime(m.created_at) : undefined,
         rawDate: m.created_at ?? undefined,
       };
     } catch {
@@ -102,6 +104,7 @@ function toMessage(m: MessageApiItem, userId: string): Message {
         from: "application_selected" as const,
         text: "",
         applicationData: { ...data, sentByMe: m.sender_id === userId },
+        time: m.created_at ? formatTime(m.created_at) : undefined,
         rawDate: m.created_at ?? undefined,
       };
     } catch {
@@ -119,6 +122,7 @@ function toMessage(m: MessageApiItem, userId: string): Message {
         sitterId: "",
         sentByMe: m.sender_id === userId,
       },
+      time: m.created_at ? formatTime(m.created_at) : undefined,
       rawDate: m.created_at ?? undefined,
     };
   }
@@ -128,6 +132,7 @@ function toMessage(m: MessageApiItem, userId: string): Message {
       from: "reservation_canceled" as const,
       text: "",
       sentByMe: m.sender_id === userId,
+      time: m.created_at ? formatTime(m.created_at) : undefined,
       rawDate: m.created_at ?? undefined,
     };
   }
