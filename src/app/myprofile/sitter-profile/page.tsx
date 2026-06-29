@@ -6,6 +6,7 @@ import Image from "next/image";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import Avatar from "@/components/ui/Avatar";
+import SitterProfileCard from "@/components/sitter/SitterProfileCard";
 import KakaoMap from "@/components/KakaoMap";
 import Pill from "@/components/ui/Pill";
 import { MapPin, ChevronLeft, Eye } from "lucide-react";
@@ -174,43 +175,20 @@ export default function SitterProfilePreviewPage() {
 
       {/* 모바일 */}
       <div className="md:hidden flex flex-col bg-orange-50">
-        <div className="relative w-full h-44 bg-linear-to-br from-gray-100 to-gray-200">
+        <div className="px-5 pt-4">
           <button
             onClick={() => router.back()}
-            className="absolute top-4 left-4 w-9 h-9 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm"
+            className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-orange-100 transition-colors"
           >
             <ChevronLeft size={20} className="text-stone-900" />
           </button>
-          <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/30 to-transparent" aria-hidden="true" />
-          <div className="absolute bottom-4 left-4">
-            <div className="flex items-center gap-2 mb-0.5">
-              <h2 className="text-xl font-bold text-white">{user.fullName}</h2>
-              {user.isVerified && (
-                <span className="px-1.5 py-0.5 bg-orange-500 text-white text-[10px] font-medium rounded">인증</span>
-              )}
-            </div>
-            <div className="flex items-center gap-1 text-white/80">
-              <MapPin size={11} aria-hidden="true" />
-              <span className="text-sm">{sitter.availableArea}</span>
-            </div>
-          </div>
         </div>
 
-        <div className="px-5 py-3 bg-white flex items-center gap-1.5">
-          <StarRow size={13} />
-          <span className="text-sm font-bold text-stone-900">{sitter.rating.toFixed(1)}</span>
-          <span className="text-xs text-gray-400">({sitter.reviewCount})</span>
+        <div className="px-5 pt-3 pb-5">
+          <SitterProfileCard />
         </div>
 
-        <div className="flex flex-wrap gap-1.5 px-5 pb-3 bg-white">
-          {sitter.services.map((s) => (
-            <Pill key={s}>{s}</Pill>
-          ))}
-        </div>
-
-        <StatGrid stats={stats} className="px-5 pb-5 bg-white" />
-
-        <div className="bg-white border-b border-orange-100 px-5 sticky top-16 z-10">
+        <div className="bg-orange-50 border-b border-orange-100 px-5 sticky top-16 z-10">
           <div className="flex gap-6">
             {TABS.map((tab) => (
               <button
