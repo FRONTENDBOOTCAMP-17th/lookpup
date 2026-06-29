@@ -280,6 +280,14 @@ function ChatPageContent({
   const { requestPayment, isPending: isPaymentPending } = usePortOne();
   const [payingNow, setPayingNow] = useState(false);
 
+  // 각 payment_request 메시지의 결제 완료 여부를 개별 계산하기 위한 마지막 요청 ID
+  const lastPaymentReqId = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].from === "payment_request") return messages[i].id;
+    }
+    return null;
+  }, [messages]);
+
   useEffect(() => {
     if (!activeRoomId) return;
     markRoomAsRead(activeRoomId);
@@ -301,7 +309,8 @@ function ChatPageContent({
           "[data-radix-scroll-area-viewport]",
         ) as HTMLElement | null;
         if (viewport && desktopScrollAnchorRef.current !== null) {
-          viewport.scrollTop += viewport.scrollHeight - desktopScrollAnchorRef.current;
+          viewport.scrollTop +=
+            viewport.scrollHeight - desktopScrollAnchorRef.current;
           desktopScrollAnchorRef.current = null;
         }
       }
@@ -373,7 +382,7 @@ function ChatPageContent({
     setPayingNow(true);
 
     let portonePaymentId = `pay_${Date.now()}`;
-    let totalAmount = paymentState.amount;
+    let totalAmount = Number(paymentState.amount);
     let orderName = paymentState.reason || "펫시팅 서비스 결제";
 
     const reservationId =
@@ -383,15 +392,20 @@ function ChatPageContent({
         : null);
 
     if (reservationId) {
-      const payResult = await createPayment(reservationId, "CARD");
+      const payResult = await createPayment(reservationId, "CARD", totalAmount);
       if (payResult.error) {
         setSendError(payResult.error.message);
         setPayingNow(false);
         return;
       }
       portonePaymentId = payResult.data!.payment_id;
-      totalAmount = payResult.data!.amount;
       orderName = payResult.data!.order_name;
+    }
+
+    if (!totalAmount || totalAmount <= 0) {
+      setSendError("결제 금액이 올바르지 않습니다.");
+      setPayingNow(false);
+      return;
     }
 
     requestPayment(
@@ -961,7 +975,11 @@ function ChatPageContent({
             day: "numeric",
             weekday: "long",
           });
-          result.push({ id: `__date_${key}__`, from: "date_separator", text: label });
+          result.push({
+            id: `__date_${key}__`,
+            from: "date_separator",
+            text: label,
+          });
           lastDateKey = key;
         }
       }
@@ -1219,6 +1237,13 @@ function ChatPageContent({
                     msg.applicationData?.postId ||
                     msg.paymentData?.postId ||
                     selectedApplicant?.postId;
+                  // 메시지별 결제 완료 여부: 마지막 요청이면 파생 상태, 이전 요청이면 항상 true(비활성)
+                  const isThisPaymentPaid =
+                    msg.from === "payment_request"
+                      ? msg.id === lastPaymentReqId
+                        ? (paymentState?.paid ?? false)
+                        : true
+                      : false;
                   return (
                     <MessageBubble
                       key={msg.id}
@@ -1227,7 +1252,7 @@ function ChatPageContent({
                       senderProfileImage={mobileRoomProfileImage}
                       onPaymentRequest={handlePayNow}
                       isPaymentPending={payingNow || isPaymentPending}
-                      isPaymentPaid={paymentState?.paid ?? false}
+                      isPaymentPaid={isThisPaymentPaid}
                       onPostClick={
                         postId
                           ? () => router.push(`/board/${postId}`)
@@ -1546,6 +1571,13 @@ function ChatPageContent({
                       msg.applicationData?.postId ||
                       msg.paymentData?.postId ||
                       selectedApplicant?.postId;
+                    // 메시지별 결제 완료 여부: 마지막 요청이면 파생 상태, 이전 요청이면 항상 true(비활성)
+                    const isThisPaymentPaid =
+                      msg.from === "payment_request"
+                        ? msg.id === lastPaymentReqId
+                          ? (paymentState?.paid ?? false)
+                          : true
+                        : false;
                     return (
                       <MessageBubble
                         key={msg.id}
@@ -1562,7 +1594,7 @@ function ChatPageContent({
                         }
                         onPaymentRequest={handlePayNow}
                         isPaymentPending={payingNow || isPaymentPending}
-                        isPaymentPaid={paymentState?.paid ?? false}
+                        isPaymentPaid={isThisPaymentPaid}
                         onPostClick={
                           postId
                             ? () => router.push(`/board/${postId}`)

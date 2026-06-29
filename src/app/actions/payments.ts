@@ -35,6 +35,7 @@ export async function getAcceptedReservationBySitter(sitterId: string) {
 export async function createPayment(
   reservationId: string,
   payMethod: "CARD" | "VIRTUAL_ACCOUNT" | "TRANSFER",
+  requestedAmount?: number,
 ) {
   const user = await getAuthUser();
   if (!user) {
@@ -83,7 +84,12 @@ export async function createPayment(
     return { error: { code: "CONFLICT", message: "이미 결제된 예약입니다." } };
   }
 
-  const amount = reservation.total_price;
+  const amount = requestedAmount ?? reservation.total_price;
+
+  if (!amount || amount <= 0) {
+    return { error: { code: "INVALID_AMOUNT", message: "예약 금액이 올바르지 않습니다." } };
+  }
+
   const platformFee = Math.floor(amount * FEE_RATE);
   const settleAmount = amount - platformFee;
 
