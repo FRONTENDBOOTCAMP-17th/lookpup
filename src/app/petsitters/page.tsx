@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MapPin, Star, LocateFixed } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { MapPin, Star, LocateFixed, ChevronRight } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Avatar from "@/components/ui/Avatar";
 import Pill from "@/components/ui/Pill";
@@ -61,11 +62,12 @@ interface PetsitterCardProps {
   isSelected: boolean;
   distance: number;
   onClick: () => void;
+  onConfirm: () => void;
 }
 
-function PetsitterCard({ sitter, isSelected, distance, onClick }: PetsitterCardProps) {
+function PetsitterCard({ sitter, isSelected, distance, onClick, onConfirm }: PetsitterCardProps) {
   return (
-    <div onClick={onClick} className="block">
+    <div onClick={isSelected ? onConfirm : onClick} className="block">
       <div
         className={`w-full p-5 bg-white rounded-2xl border flex flex-col gap-0 transition-all cursor-pointer ${
           isSelected
@@ -80,6 +82,11 @@ function PetsitterCard({ sitter, isSelected, distance, onClick }: PetsitterCardP
               <span className="text-stone-900 text-base font-semibold">
                 {sitter.name}
               </span>
+              {isSelected && (
+                <span className="flex items-center gap-0.5 text-orange-500 text-sm font-semibold">
+                  예약하기 <ChevronRight size={15} />
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-1 mt-1">
               <MapPin size={14} className="text-gray-400" />
@@ -119,6 +126,7 @@ function PetsitterCard({ sitter, isSelected, distance, onClick }: PetsitterCardP
 }
 
 export default function PetsittersPage() {
+  const router = useRouter();
   const [sitters, setSitters] = useState<Sitter[]>([]);
   const [activeFilter, setActiveFilter] = useState<Filter>("전체");
   const [searchQuery, setSearchQuery] = useState("");
@@ -464,6 +472,7 @@ export default function PetsittersPage() {
                         isSelected={selectedSitterId === sitter.id}
                         distance={sitter.distanceKm}
                         onClick={() => setSelectedSitterId(sitter.id)}
+                        onConfirm={() => router.push(`/petsitters/${sitter.id}`)}
                       />
                     </div>
                   ))}
