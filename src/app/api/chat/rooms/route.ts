@@ -82,6 +82,23 @@ export async function GET() {
     });
   }
 
+  const reservationRequestRooms = rooms.filter(
+    (r) => r.room_type === "reservation_request",
+  );
+  const reservationStatusMap = new Map<string, string>();
+  if (reservationRequestRooms.length > 0) {
+    const reservationIds = reservationRequestRooms
+      .map((r) => r.reservation_id)
+      .filter(Boolean) as string[];
+    const { data: reservations } = await db
+      .from("reservations")
+      .select("id, status")
+      .in("id", reservationIds);
+    (reservations ?? []).forEach((r) => {
+      reservationStatusMap.set(r.id, r.status);
+    });
+  }
+
   const roomIds = rooms.map((r) => r.id);
   const { data: unreadData } = await db
     .rpc("get_unread_counts", { room_ids: roomIds, my_id: user.id });
@@ -117,6 +134,10 @@ export async function GET() {
         room.room_type === "request" && room.request_id && room.sitter_id
           ? (applicationStatusMap.get(`${room.request_id}-${room.sitter_id}`) ??
             null)
+          : null,
+      reservation_status:
+        room.room_type === "reservation_request" && room.reservation_id
+          ? (reservationStatusMap.get(room.reservation_id) ?? null)
           : null,
       last_message: room.last_message ?? null,
       last_message_at: room.last_message_at ?? null,

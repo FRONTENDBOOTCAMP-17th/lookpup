@@ -16,6 +16,8 @@ import type {
   PaymentData,
   ApplicationData,
   ServiceCompleteData,
+  ReservationRequestData,
+  ReservationAcceptedData,
 } from "@/components/common/chat/chat_components";
 import {
   SYSTEM_MSG_PREFIX,
@@ -27,6 +29,9 @@ import {
   RESERVATION_CANCELED_PREFIX,
   SERVICE_COMPLETE_PREFIX,
   SERVICE_START_PREFIX,
+  RESERVATION_REQUEST_PREFIX,
+  RESERVATION_ACCEPTED_PREFIX,
+  RESERVATION_REJECTED_PREFIX,
 } from "@/lib/chatMessagePrefixes";
 
 function formatTime(iso: string): string {
@@ -168,6 +173,47 @@ function toMessage(m: MessageApiItem, userId: string): Message {
       text: "",
       sentByMe: m.sender_id === userId,
       serviceStartData,
+      rawDate: m.created_at ?? undefined,
+    };
+  }
+  if (m.content.startsWith(RESERVATION_REQUEST_PREFIX)) {
+    try {
+      const data = JSON.parse(
+        m.content.slice(RESERVATION_REQUEST_PREFIX.length),
+      ) as ReservationRequestData;
+      return {
+        id: m.id,
+        from: "reservation_request" as const,
+        text: "",
+        reservationRequestData: { ...data, sentByMe: m.sender_id === userId },
+        rawDate: m.created_at ?? undefined,
+      };
+    } catch {
+      return { id: m.id, from: "divider", text: "예약 요청" };
+    }
+  }
+  if (m.content.startsWith(RESERVATION_ACCEPTED_PREFIX)) {
+    try {
+      const data = JSON.parse(
+        m.content.slice(RESERVATION_ACCEPTED_PREFIX.length),
+      ) as ReservationAcceptedData;
+      return {
+        id: m.id,
+        from: "reservation_accepted" as const,
+        text: "",
+        reservationAcceptedData: { ...data, sentByMe: m.sender_id === userId },
+        rawDate: m.created_at ?? undefined,
+      };
+    } catch {
+      return { id: m.id, from: "divider", text: "예약 확정" };
+    }
+  }
+  if (m.content === RESERVATION_REJECTED_PREFIX) {
+    return {
+      id: m.id,
+      from: "reservation_rejected" as const,
+      text: "",
+      sentByMe: m.sender_id === userId,
       rawDate: m.created_at ?? undefined,
     };
   }
@@ -324,6 +370,14 @@ export function useChatMessages(
     });
   }
 
+  function broadcastReservationAccepted(roomId: string) {
+    channelRef.current?.send({
+      type: "broadcast",
+      event: "reservation_accepted",
+      payload: { room_id: roomId },
+    });
+  }
+
   const paymentState = useMemo(() => derivePaymentState(messages), [messages]);
 
   async function loadMore() {
@@ -354,6 +408,7 @@ export function useChatMessages(
     addMessage,
     broadcastMessage,
     broadcastConfirmation,
+    broadcastReservationAccepted,
     loadMore,
     hasMore,
     loadingMore,

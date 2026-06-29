@@ -4,6 +4,117 @@ import { createClient } from "@/utils/supabase/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import type { TablesUpdate } from "@/types/database.types";
 import { createNotification } from "@/lib/notificationHelpers";
+import {
+  RESERVATION_REQUEST_PREFIX,
+  RESERVATION_ACCEPTED_PREFIX,
+  RESERVATION_REJECTED_PREFIX,
+} from "@/lib/chatMessagePrefixes";
+
+const FEE_RATE = 0.05;
+
+interface BookingReservationInput {
+  sitter_id: string;
+  service_id: string;
+  pet_ids: string[];
+  start_datetime: string;
+  end_datetime: string;
+  total_price: number;
+  payment_id: string;
+  pay_method: string;
+  memo?: string | null;
+}
+
+export async function createBookingReservation(input: BookingReservationInput) {
+  const user = await getAuthUser();
+  if (!user) {
+    return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
+  }
+
+  if (!input.pet_ids.length) {
+    return {
+      error: { code: "VALIDATION_ERROR", message: "반려동물을 선택해주세요." },
+    };
+  }
+  if (input.total_price <= 0) {
+    return {
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "결제 금액이 올바르지 않습니다.",
+      },
+    };
+  }
+  if (new Date(input.start_datetime) >= new Date(input.end_datetime)) {
+    return {
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "종료일은 시작일 이후여야 합니다.",
+      },
+    };
+  }
+
+  const db = createServiceClient();
+
+  const { data: reservation, error: reservationError } = await db
+    .from("reservations")
+    .insert({
+      owner_id: user.id,
+      sitter_id: input.sitter_id,
+      service_id: input.service_id,
+      start_datetime: input.start_datetime,
+      end_datetime: input.end_datetime,
+      total_price: input.total_price,
+      status: "pending",
+      memo: input.memo ?? null,
+    })
+    .select()
+    .single();
+
+  if (reservationError) {
+    return {
+      error: { code: "INTERNAL_ERROR", message: reservationError.message },
+    };
+  }
+
+  const { error: itemsError } = await db.from("reservation_items").insert(
+    input.pet_ids.map((pet_id) => ({
+      reservation_id: reservation.id,
+      pet_id,
+    })),
+  );
+
+  if (itemsError) {
+    await db.from("reservations").delete().eq("id", reservation.id);
+    return { error: { code: "INTERNAL_ERROR", message: itemsError.message } };
+  }
+
+  const platformFee = Math.floor(input.total_price * FEE_RATE);
+
+  const { error: paymentError } = await db.from("payments").insert({
+    id: input.payment_id,
+    reservation_id: reservation.id,
+    owner_id: user.id,
+    sitter_id: input.sitter_id,
+    pay_method: input.pay_method,
+    amount: input.total_price,
+    fee_rate: FEE_RATE,
+    platform_fee: platformFee,
+    settle_amount: input.total_price - platformFee,
+    status: "ready",
+  });
+
+  if (paymentError) {
+    await db
+      .from("reservation_items")
+      .delete()
+      .eq("reservation_id", reservation.id);
+    await db.from("reservations").delete().eq("id", reservation.id);
+    return { error: { code: "INTERNAL_ERROR", message: paymentError.message } };
+  }
+
+  return {
+    data: { reservation_id: reservation.id, payment_id: input.payment_id },
+  };
+}
 
 interface ReservationInput {
   sitter_id: string;
@@ -107,14 +218,12 @@ export async function createReservation(input: ReservationInput) {
     return { error: { code: "INTERNAL_ERROR", message: error.message } };
   }
 
-  const { error: itemsError } = await db
-    .from("reservation_items")
-    .insert(
-      input.pet_ids.map((pet_id) => ({
-        reservation_id: reservation.id,
-        pet_id,
-      })),
-    );
+  const { error: itemsError } = await db.from("reservation_items").insert(
+    input.pet_ids.map((pet_id) => ({
+      reservation_id: reservation.id,
+      pet_id,
+    })),
+  );
 
   if (itemsError) {
     await db.from("reservations").delete().eq("id", reservation.id);
@@ -255,13 +364,11 @@ export async function cancelReservationAndNotify(
   if (!room) return result;
 
   const now = new Date().toISOString();
-  await db
-    .from("messages")
-    .insert({
-      room_id: room.id,
-      sender_id: user.id,
-      content: RESERVATION_CANCELED_PREFIX,
-    });
+  await db.from("messages").insert({
+    room_id: room.id,
+    sender_id: user.id,
+    content: RESERVATION_CANCELED_PREFIX,
+  });
   await db
     .from("chat_rooms")
     .update({ last_message: "예약 취소", last_message_at: now })
@@ -285,22 +392,28 @@ export async function getActiveReservationsForRoom(roomId: string) {
     .single();
 
   if (!room) {
-    return { error: { code: "NOT_FOUND", message: "채팅방을 찾을 수 없습니다." } };
+    return {
+      error: { code: "NOT_FOUND", message: "채팅방을 찾을 수 없습니다." },
+    };
   }
 
   type SittersRow = { user_id: string };
   const sittersRow = room.sitters as SittersRow;
   if (sittersRow.user_id !== user.id) {
-    return { error: { code: "FORBIDDEN", message: "펫시터만 조회할 수 있습니다." } };
+    return {
+      error: { code: "FORBIDDEN", message: "펫시터만 조회할 수 있습니다." },
+    };
   }
 
   const { data, error } = await db
     .from("reservations")
-    .select(`
+    .select(
+      `
       id, status, start_datetime, end_datetime, total_price,
       services(title, service_type),
       reservation_items(pets(name, animal_type))
-    `)
+    `,
+    )
     .eq("owner_id", room.owner_id)
     .eq("sitter_id", room.sitter_id)
     .in("status", ["accepted", "paid", "in_progress"])
@@ -311,7 +424,11 @@ export async function getActiveReservationsForRoom(roomId: string) {
     return { error: { code: "INTERNAL_ERROR", message: error.message } };
   }
 
-  console.log("[getActiveReservationsForRoom] found:", data?.length ?? 0, "reservations");
+  console.log(
+    "[getActiveReservationsForRoom] found:",
+    data?.length ?? 0,
+    "reservations",
+  );
 
   const SERVICE_TYPE_LABEL: Record<string, string> = {
     walk: "산책",
@@ -330,7 +447,9 @@ export async function getActiveReservationsForRoom(roomId: string) {
     const firstPet = items[0]?.pets;
     const serviceTitle =
       service?.title ||
-      (service?.service_type ? (SERVICE_TYPE_LABEL[service.service_type] ?? service.service_type) : null) ||
+      (service?.service_type
+        ? (SERVICE_TYPE_LABEL[service.service_type] ?? service.service_type)
+        : null) ||
       "펫시팅 서비스";
     return {
       id: r.id,
@@ -500,13 +619,25 @@ export async function ownerConfirmServiceComplete(reservationId: string) {
     .single();
 
   if (!reservation) {
-    return { error: { code: "NOT_FOUND", message: "예약을 찾을 수 없습니다." } };
+    return {
+      error: { code: "NOT_FOUND", message: "예약을 찾을 수 없습니다." },
+    };
   }
   if (reservation.owner_id !== user.id) {
-    return { error: { code: "FORBIDDEN", message: "보호자만 서비스 완료를 확인할 수 있습니다." } };
+    return {
+      error: {
+        code: "FORBIDDEN",
+        message: "보호자만 서비스 완료를 확인할 수 있습니다.",
+      },
+    };
   }
   if (!["accepted", "paid", "in_progress"].includes(reservation.status)) {
-    return { error: { code: "FORBIDDEN", message: "결제 완료 또는 진행 중인 서비스만 완료 처리할 수 있습니다." } };
+    return {
+      error: {
+        code: "FORBIDDEN",
+        message: "결제 완료 또는 진행 중인 서비스만 완료 처리할 수 있습니다.",
+      },
+    };
   }
 
   const now = new Date().toISOString();
@@ -724,4 +855,390 @@ export async function getReservationById(id: string) {
       reviewWritten: reviews.length > 0,
     },
   };
+}
+
+const SERVICE_TYPE_LABEL_MAP: Record<string, string> = {
+  walk: "산책",
+  care: "방문 돌봄",
+  hotel: "위탁 돌봄",
+  pickup: "픽업",
+};
+
+interface ReservationRequestInput {
+  sitter_id: string;
+  service_id: string;
+  pet_ids: string[];
+  start_datetime: string;
+  end_datetime: string;
+  memo?: string | null;
+}
+
+export async function createPetsitterReservationRequest(
+  input: ReservationRequestInput,
+) {
+  const user = await getAuthUser();
+  if (!user)
+    return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
+
+  if (!input.pet_ids.length)
+    return {
+      error: { code: "VALIDATION_ERROR", message: "반려동물을 선택해주세요." },
+    };
+
+  const now = new Date();
+  if (new Date(input.start_datetime) <= now)
+    return {
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "시작일은 오늘 이후여야 합니다.",
+      },
+    };
+  if (new Date(input.end_datetime) <= new Date(input.start_datetime))
+    return {
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "종료일은 시작일 이후여야 합니다.",
+      },
+    };
+
+  const db = createServiceClient();
+
+  const { data: existingRoom } = await db
+    .from("chat_rooms")
+    .select("id")
+    .eq("owner_id", user.id)
+    .eq("sitter_id", input.sitter_id)
+    .eq("room_type", "reservation_request")
+    .maybeSingle();
+
+  if (existingRoom)
+    return {
+      error: {
+        code: "CONFLICT",
+        message: "이미 해당 펫시터에게 예약 요청을 보냈습니다.",
+      },
+    };
+
+  const { data: service } = await db
+    .from("services")
+    .select("id, sitter_id, price, title, service_type, is_active")
+    .eq("id", input.service_id)
+    .single();
+
+  if (!service)
+    return {
+      error: { code: "NOT_FOUND", message: "서비스를 찾을 수 없습니다." },
+    };
+  if (service.sitter_id !== input.sitter_id)
+    return {
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "해당 시터의 서비스가 아닙니다.",
+      },
+    };
+  if (!service.is_active)
+    return {
+      error: { code: "FORBIDDEN", message: "비활성화된 서비스입니다." },
+    };
+  if (!service.price || service.price <= 0)
+    return {
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "서비스 가격이 설정되지 않았습니다.",
+      },
+    };
+
+  const { data: reservation, error: reservationError } = await db
+    .from("reservations")
+    .insert({
+      owner_id: user.id,
+      sitter_id: input.sitter_id,
+      service_id: input.service_id,
+      start_datetime: input.start_datetime,
+      end_datetime: input.end_datetime,
+      total_price: service.price,
+      status: "pending",
+      memo: input.memo ?? null,
+    })
+    .select()
+    .single();
+
+  if (reservationError)
+    return {
+      error: { code: "INTERNAL_ERROR", message: reservationError.message },
+    };
+
+  const { error: itemsError } = await db.from("reservation_items").insert(
+    input.pet_ids.map((pet_id) => ({
+      reservation_id: reservation.id,
+      pet_id,
+    })),
+  );
+
+  if (itemsError) {
+    await db.from("reservations").delete().eq("id", reservation.id);
+    return { error: { code: "INTERNAL_ERROR", message: itemsError.message } };
+  }
+
+  const { data: room, error: roomError } = await db
+    .from("chat_rooms")
+    .insert({
+      room_type: "reservation_request",
+      owner_id: user.id,
+      sitter_id: input.sitter_id,
+      reservation_id: reservation.id,
+    })
+    .select("id")
+    .single();
+
+  if (roomError) {
+    await db
+      .from("reservation_items")
+      .delete()
+      .eq("reservation_id", reservation.id);
+    await db.from("reservations").delete().eq("id", reservation.id);
+    return { error: { code: "INTERNAL_ERROR", message: roomError.message } };
+  }
+
+  const { data: pets } = await db
+    .from("pets")
+    .select("name")
+    .in("id", input.pet_ids);
+  const petNames = (pets ?? []).map((p) => p.name);
+
+  type ServiceRow = { title: string | null; service_type: string | null };
+  const svc = service as unknown as ServiceRow;
+  const serviceTitle =
+    svc.title ||
+    SERVICE_TYPE_LABEL_MAP[svc.service_type ?? ""] ||
+    "펫시팅 서비스";
+
+  const msgNow = new Date().toISOString();
+  const msgContent = `${RESERVATION_REQUEST_PREFIX}${JSON.stringify({
+    reservationId: reservation.id,
+    serviceTitle,
+    startDatetime: input.start_datetime,
+    endDatetime: input.end_datetime,
+    totalPrice: service.price,
+    petNames,
+  })}`;
+
+  await db
+    .from("messages")
+    .insert({ room_id: room.id, sender_id: user.id, content: msgContent });
+  await db
+    .from("chat_rooms")
+    .update({ last_message: "예약 요청", last_message_at: msgNow })
+    .eq("id", room.id);
+
+  const { data: sitterProfile } = await db
+    .from("sitters")
+    .select("user_id")
+    .eq("id", input.sitter_id)
+    .single();
+
+  if (sitterProfile?.user_id) {
+    await createNotification({
+      userId: sitterProfile.user_id,
+      type: "reservation",
+      title: "새로운 예약 요청이 도착했어요",
+      content: "보호자가 예약을 요청했습니다. 확인해주세요.",
+      linkUrl: `/chat`,
+    });
+  }
+
+  return { data: { reservation_id: reservation.id, room_id: room.id } };
+}
+
+export async function acceptReservationRequest(reservationId: string) {
+  const user = await getAuthUser();
+  if (!user)
+    return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
+
+  const db = createServiceClient();
+
+  const { data: reservation } = await db
+    .from("reservations")
+    .select(
+      "id, owner_id, sitter_id, status, total_price, start_datetime, end_datetime",
+    )
+    .eq("id", reservationId)
+    .single();
+
+  if (!reservation)
+    return {
+      error: { code: "NOT_FOUND", message: "예약을 찾을 수 없습니다." },
+    };
+
+  const { data: sitterProfile } = await db
+    .from("sitters")
+    .select("id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (sitterProfile?.id !== reservation.sitter_id)
+    return {
+      error: { code: "FORBIDDEN", message: "펫시터만 처리할 수 있습니다." },
+    };
+
+  if (reservation.status !== "pending")
+    return {
+      error: {
+        code: "FORBIDDEN",
+        message: "대기 중인 예약만 수락할 수 있습니다.",
+      },
+    };
+
+  const { data: room } = await db
+    .from("chat_rooms")
+    .select("id")
+    .eq("reservation_id", reservationId)
+    .eq("room_type", "reservation_request")
+    .maybeSingle();
+
+  if (!room)
+    return {
+      error: { code: "NOT_FOUND", message: "채팅방을 찾을 수 없습니다." },
+    };
+
+  const now = new Date().toISOString();
+
+  const { error: reservationError } = await db
+    .from("reservations")
+    .update({ status: "accepted", accepted_at: now })
+    .eq("id", reservationId);
+
+  if (reservationError)
+    return {
+      error: { code: "INTERNAL_ERROR", message: reservationError.message },
+    };
+
+  // 이미 같은 owner+sitter 간 direct 룸이 있으면 그걸 재사용
+  const { data: existingDirectRoom } = await db
+    .from("chat_rooms")
+    .select("id")
+    .eq("owner_id", reservation.owner_id)
+    .eq("sitter_id", reservation.sitter_id)
+    .eq("room_type", "direct")
+    .maybeSingle();
+
+  let directRoomId: string;
+  if (existingDirectRoom) {
+    await db
+      .from("chat_rooms")
+      .update({ reservation_id: reservationId })
+      .eq("id", existingDirectRoom.id);
+    await db.from("chat_rooms").delete().eq("id", room.id);
+    directRoomId = existingDirectRoom.id;
+  } else {
+    await db.from("chat_rooms").update({ room_type: "direct" }).eq("id", room.id);
+    directRoomId = room.id;
+  }
+
+  const msgContent = `${RESERVATION_ACCEPTED_PREFIX}${JSON.stringify({
+    reservationId,
+    totalPrice: reservation.total_price,
+    startDatetime: reservation.start_datetime,
+    endDatetime: reservation.end_datetime,
+  })}`;
+
+  await db
+    .from("messages")
+    .insert({ room_id: directRoomId, sender_id: user.id, content: msgContent });
+  await db
+    .from("chat_rooms")
+    .update({ last_message: "예약 확정", last_message_at: now })
+    .eq("id", directRoomId);
+
+  await createNotification({
+    userId: reservation.owner_id,
+    type: "reservation",
+    title: "예약이 확정되었어요!",
+    content: "펫시터가 예약을 수락했습니다. 채팅에서 결제를 진행해주세요.",
+    linkUrl: `/chat?roomId=${directRoomId}`,
+  });
+
+  return { data: { room_id: directRoomId } };
+}
+
+export async function rejectReservationRequest(reservationId: string) {
+  const user = await getAuthUser();
+  if (!user)
+    return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
+
+  const db = createServiceClient();
+
+  const { data: reservation } = await db
+    .from("reservations")
+    .select("id, owner_id, sitter_id, status")
+    .eq("id", reservationId)
+    .single();
+
+  if (!reservation)
+    return {
+      error: { code: "NOT_FOUND", message: "예약을 찾을 수 없습니다." },
+    };
+
+  const { data: sitterProfile } = await db
+    .from("sitters")
+    .select("id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (sitterProfile?.id !== reservation.sitter_id)
+    return {
+      error: { code: "FORBIDDEN", message: "펫시터만 처리할 수 있습니다." },
+    };
+
+  if (reservation.status !== "pending")
+    return {
+      error: {
+        code: "FORBIDDEN",
+        message: "대기 중인 예약만 거절할 수 있습니다.",
+      },
+    };
+
+  const { data: room } = await db
+    .from("chat_rooms")
+    .select("id")
+    .eq("reservation_id", reservationId)
+    .eq("room_type", "reservation_request")
+    .maybeSingle();
+
+  if (!room)
+    return {
+      error: { code: "NOT_FOUND", message: "채팅방을 찾을 수 없습니다." },
+    };
+
+  const now = new Date().toISOString();
+
+  const { error: reservationError } = await db
+    .from("reservations")
+    .update({ status: "canceled", canceled_at: now })
+    .eq("id", reservationId);
+
+  if (reservationError)
+    return {
+      error: { code: "INTERNAL_ERROR", message: reservationError.message },
+    };
+
+  await db.from("messages").insert({
+    room_id: room.id,
+    sender_id: user.id,
+    content: RESERVATION_REJECTED_PREFIX,
+  });
+  await db
+    .from("chat_rooms")
+    .update({ last_message: "예약 거절", last_message_at: now })
+    .eq("id", room.id);
+
+  await createNotification({
+    userId: reservation.owner_id,
+    type: "reservation",
+    title: "예약 요청이 거절되었어요",
+    content: "펫시터가 예약 요청을 거절했습니다.",
+    linkUrl: `/chat`,
+  });
+
+  return { data: { ok: true } };
 }

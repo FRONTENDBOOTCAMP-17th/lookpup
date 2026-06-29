@@ -12,7 +12,7 @@ import { DateRange } from "react-day-picker";
 import { format, differenceInDays, startOfDay } from "date-fns";
 import { ko } from "date-fns/locale";
 import { useBookingStore } from "@/store/bookingStore";
-import { findOrCreateRoom } from "@/app/actions/chat";
+import { createPetsitterReservationRequest } from "@/app/actions/reservations";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import RangePicker from "@/components/ui/RangePicker";
@@ -459,12 +459,12 @@ function StepCompleteContent({
       </div>
 
       <h1 className="text-stone-900 text-2xl sm:text-3xl font-bold mb-3 text-center">
-        예약이 완료되었습니다!
+        예약 요청이 전송되었습니다!
       </h1>
       <p className="text-gray-500 text-sm sm:text-base text-center leading-6 mb-8">
-        펫시터에게 예약 알림이 전송되었습니다.
+        펫시터가 요청을 확인 후 수락하면 예약이 확정됩니다.
         <br />
-        채팅으로 자세한 사항을 상담하세요.
+        채팅에서 진행 상황을 확인하세요.
       </p>
 
       <div className="w-full max-w-sm sm:max-w-[384px] bg-white rounded-2xl border border-orange-100 p-4 sm:p-5 mb-8">
@@ -623,26 +623,20 @@ export default function BookPage() {
     const startDt = buildISO(dateRange!.from!, startTime || "00:00");
     const endDt = buildISO(dateRange!.to ?? dateRange!.from!, endTime || "23:59");
 
-    const res = await fetch("/api/reservations", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        sitter_id: petsitter.id,
-        service_id: service.id,
-        pet_ids: petIds,
-        start_datetime: startDt,
-        end_datetime: endDt,
-        memo: note || null,
-      }),
+    const result = await createPetsitterReservationRequest({
+      sitter_id: petsitter.id,
+      service_id: service.id,
+      pet_ids: petIds,
+      start_datetime: startDt,
+      end_datetime: endDt,
+      memo: note || null,
     });
 
     setIsSubmitting(false);
-    if (!res.ok) return;
+    if (result.error) return;
 
     setStep(4);
-    findOrCreateRoom({ sitter_id: petsitter.id, room_type: "direct" })
-      .then((result) => { if (result.data) setChatRoomId(result.data.room_id); })
-      .catch(() => {});
+    if (result.data) setChatRoomId(result.data.room_id);
   }
 
   return (

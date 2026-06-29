@@ -55,6 +55,20 @@ export type Applicant = {
   completedJobs?: string;
 };
 
+export type ReservationRequest = {
+  id: string;
+  sitterId: string | null;
+  ownerId: string | null;
+  reservationId: string | null;
+  name: string;
+  initial: string;
+  profileImage?: string | null;
+  preview: string;
+  time: string;
+  unread: number;
+  reservationStatus: string | null;
+};
+
 export type CostItem = {
   id: string;
   name: string;
@@ -87,6 +101,24 @@ export type ServiceCompleteData = {
   totalPrice?: number;
 };
 
+export type ReservationRequestData = {
+  reservationId: string;
+  serviceTitle: string;
+  startDatetime: string;
+  endDatetime: string;
+  totalPrice: number;
+  petNames: string[];
+  sentByMe?: boolean;
+};
+
+export type ReservationAcceptedData = {
+  reservationId: string;
+  totalPrice: number;
+  startDatetime?: string;
+  endDatetime?: string;
+  sentByMe?: boolean;
+};
+
 // 채팅창 메시지
 export type Message = {
   id: string;
@@ -101,6 +133,9 @@ export type Message = {
     | "application_rejected"
     | "reservation_canceled"
     | "service_complete"
+    | "reservation_request"
+    | "reservation_accepted"
+    | "reservation_rejected"
     | "service_start";
   text: string;
   imageUrl?: string;
@@ -110,6 +145,8 @@ export type Message = {
   applicationData?: ApplicationData;
   serviceCompleteData?: ServiceCompleteData;
   serviceStartData?: ServiceCompleteData;
+  reservationRequestData?: ReservationRequestData;
+  reservationAcceptedData?: ReservationAcceptedData;
   sentByMe?: boolean;
 };
 
@@ -418,6 +455,43 @@ export function MessageBubble({
   isServiceConfirmed,
   isServiceConfirming,
 }: MessageBubbleProps) {
+  if (msg.from === "service_start") {
+    if (isCurrentUserSitter && msg.sentByMe) {
+      return <SitterServiceStartCard data={msg.serviceStartData} />;
+    }
+    return (
+      <ServiceStartCard
+        otherInitial={senderInitial}
+        otherProfileImage={senderProfileImage}
+        data={msg.serviceStartData}
+      />
+    );
+  }
+  if (msg.from === "reservation_request") {
+    const data = msg.reservationRequestData;
+    if (!data) return null;
+    return (
+      <ReservationRequestMessageCard
+        data={data}
+        senderInitial={senderInitial}
+        senderProfileImage={senderProfileImage}
+      />
+    );
+  }
+  if (msg.from === "reservation_accepted") {
+    const data = msg.reservationAcceptedData;
+    if (!data) return null;
+    return (
+      <ReservationAcceptedMessageCard
+        data={data}
+        senderInitial={senderInitial}
+        senderProfileImage={senderProfileImage}
+      />
+    );
+  }
+  if (msg.from === "reservation_rejected") {
+    return <ReservationRejectedMessageCard sentByMe={msg.sentByMe ?? false} />;
+  }
   if (msg.from === "application_selected") {
     const data = msg.applicationData;
     if (!data) return null;
@@ -473,18 +547,6 @@ export function MessageBubble({
         otherInitial={senderInitial}
         otherProfileImage={senderProfileImage}
         data={msg.serviceCompleteData}
-      />
-    );
-  }
-  if (msg.from === "service_start") {
-    if (isCurrentUserSitter && msg.sentByMe) {
-      return <SitterServiceStartCard data={msg.serviceStartData} />;
-    }
-    return (
-      <ServiceStartCard
-        otherInitial={senderInitial}
-        otherProfileImage={senderProfileImage}
-        data={msg.serviceStartData}
       />
     );
   }
@@ -1098,6 +1160,126 @@ export function ApplicantPostGroup({
   );
 }
 
+// 예약 목록 카드 (펫시터 찾기 직접 예약)
+type ReservationRequestCardProps = {
+  reservationRequest: ReservationRequest;
+  isSelected: boolean;
+  editMode: boolean;
+  isSitter: boolean;
+  actioningId: string | null;
+  onSelect: (id: string) => void;
+  onReject: (id: string) => void;
+  onAccept: (id: string) => void;
+  onDelete: (id: string) => void;
+};
+
+export function ReservationRequestCard({
+  reservationRequest: rr,
+  isSelected,
+  editMode,
+  isSitter,
+  actioningId,
+  onSelect,
+  onReject,
+  onAccept,
+  onDelete,
+}: ReservationRequestCardProps) {
+  const isPending = rr.reservationStatus === "pending";
+  const isAccepted = rr.reservationStatus === "accepted";
+  const isCanceled = rr.reservationStatus === "canceled";
+  const isActioning = actioningId === rr.id;
+
+  return (
+    <div
+      onClick={() => {
+        if (!editMode) onSelect(rr.id);
+      }}
+      className={`flex items-center border-b border-orange-100 transition-colors ${
+        !editMode ? "cursor-pointer" : ""
+      } ${isSelected && !editMode ? "bg-orange-50" : "hover:bg-stone-50"} ${
+        isCanceled ? "opacity-50" : ""
+      }`}
+    >
+      {editMode && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(rr.id);
+          }}
+          className="ml-5 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center shrink-0"
+        >
+          <Trash2 size={12} className="text-white" />
+        </button>
+      )}
+      <div className="px-5 py-4 flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-1">
+          <Avatar initial={rr.initial} src={rr.profileImage} size="sm" />
+          <span className="text-sm font-semibold text-stone-900 flex-1 truncate">
+            {rr.name}
+          </span>
+          {isPending && !isSitter && (
+            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-orange-50 text-orange-400 shrink-0">
+              대기 중
+            </span>
+          )}
+          {isPending && isSitter && (
+            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-50 text-blue-500 shrink-0">
+              요청 도착
+            </span>
+          )}
+          {isAccepted && (
+            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-green-50 text-green-600 shrink-0">
+              확정됨
+            </span>
+          )}
+          {isCanceled && (
+            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-stone-100 text-stone-400 shrink-0">
+              거절됨
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-1.5 mb-2.5">
+          {rr.unread > 0 && (
+            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-green-50 text-green-700 shrink-0">
+              {rr.unread}
+            </span>
+          )}
+          <span className="text-xs text-gray-400 ml-auto shrink-0">
+            {rr.time}
+          </span>
+        </div>
+        <p className="text-xs text-gray-400 truncate mb-3">
+          &quot;{rr.preview}&quot;
+        </p>
+        {isPending && isSitter && !editMode && (
+          <div className="flex gap-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onReject(rr.id);
+              }}
+              disabled={isActioning}
+              className="flex-1 py-1.5 text-xs text-gray-500 border border-stone-200 rounded-lg hover:bg-stone-50 disabled:opacity-40 disabled:cursor-default transition-colors"
+            >
+              거절
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onAccept(rr.id);
+              }}
+              disabled={isActioning}
+              className="flex-1 py-1.5 text-xs text-white bg-orange-500 rounded-lg hover:bg-orange-600 disabled:opacity-40 disabled:cursor-default transition-colors font-medium"
+            >
+              수락
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // 결제 요청 카드 (보호자용 - 결제하기 버튼 포함)
 type PaymentRequestCardProps = {
   amount: number;
@@ -1693,3 +1875,198 @@ export function PaymentCompleteCard({ amount }: PaymentCompleteCardProps) {
     </div>
   );
 }
+
+// 예약 요청 메시지 카드
+type ReservationRequestMessageCardProps = {
+  data: ReservationRequestData;
+  senderInitial: string;
+  senderProfileImage?: string | null;
+};
+
+export function ReservationRequestMessageCard({
+  data,
+  senderInitial,
+  senderProfileImage,
+}: ReservationRequestMessageCardProps) {
+  const inner = (
+    <div
+      className={`w-79.5 p-4 rounded-2xl flex flex-col gap-2 ${
+        data.sentByMe
+          ? "bg-orange-100 outline-[1.11px] outline-orange-400 outline-offset-[-1.11px]"
+          : "bg-white outline-[1.11px] outline-orange-200 outline-offset-[-1.11px]"
+      }`}
+    >
+      <div>
+        <span
+          className={`text-[10px] font-bold uppercase tracking-[0.3px] leading-4 ${
+            data.sentByMe ? "text-orange-500" : "text-[#6B7280]"
+          }`}
+        >
+          예약 요청
+        </span>
+        <p className="text-[#281A0E] text-sm leading-5 mt-0.5">
+          {data.sentByMe ? "예약을 요청했습니다." : "예약 요청이 도착했어요."}
+        </p>
+      </div>
+      <div
+        className={`flex flex-col gap-1.5 px-3 py-2.5 rounded-xl ${
+          data.sentByMe ? "bg-orange-200" : "bg-orange-50"
+        }`}
+      >
+        <div className="flex justify-between items-center">
+          <span className="text-[#6B7280] text-xs shrink-0">서비스</span>
+          <span className="text-[#374151] text-xs font-medium">
+            {data.serviceTitle}
+          </span>
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="text-[#6B7280] text-xs shrink-0">날짜</span>
+          <span className="text-[#374151] text-xs">
+            {formatServiceDate(data.startDatetime)}
+            {data.endDatetime
+              ? ` ~ ${formatServiceDate(data.endDatetime)}`
+              : ""}
+          </span>
+        </div>
+        {data.petNames.length > 0 && (
+          <div className="flex justify-between items-center">
+            <span className="text-[#6B7280] text-xs shrink-0">반려동물</span>
+            <span className="text-[#374151] text-xs">
+              {data.petNames.join(", ")}
+            </span>
+          </div>
+        )}
+        <div className="flex justify-between items-center">
+          <span className="text-[#6B7280] text-xs shrink-0">금액</span>
+          <span className="text-orange-500 text-xs font-medium">
+            {data.totalPrice.toLocaleString("ko-KR")}원
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (data.sentByMe) {
+    return <div className="flex justify-end">{inner}</div>;
+  }
+  return (
+    <div className="flex items-start gap-3">
+      <Avatar initial={senderInitial} src={senderProfileImage} size="sm" />
+      {inner}
+    </div>
+  );
+}
+
+// 예약 확정 메시지 카드
+type ReservationAcceptedMessageCardProps = {
+  data: ReservationAcceptedData;
+  senderInitial: string;
+  senderProfileImage?: string | null;
+};
+
+export function ReservationAcceptedMessageCard({
+  data,
+  senderInitial,
+  senderProfileImage,
+}: ReservationAcceptedMessageCardProps) {
+  const inner = (
+    <div
+      className={`w-79.5 p-4 rounded-2xl flex flex-col gap-2 ${
+        data.sentByMe
+          ? "bg-orange-100 outline-[1.11px] outline-orange-400 outline-offset-[-1.11px]"
+          : "bg-white outline-[1.11px] outline-orange-200 outline-offset-[-1.11px]"
+      }`}
+    >
+      <div className="flex items-center gap-2.5">
+        <div className="w-9 h-9 bg-[#ECFDF5] rounded-full flex items-center justify-center shrink-0">
+          <CheckCircle size={18} className="text-[#10B981]" />
+        </div>
+        <div>
+          <span
+            className={`text-[10px] font-bold uppercase tracking-[0.3px] leading-4 ${
+              data.sentByMe ? "text-orange-500" : "text-[#065F46]"
+            }`}
+          >
+            예약 확정
+          </span>
+          <p className="text-[#281A0E] text-sm leading-5 mt-0.5">
+            {data.sentByMe
+              ? "예약을 수락했습니다."
+              : "예약이 확정되었어요!"}
+          </p>
+        </div>
+      </div>
+      <div
+        className={`flex flex-col gap-1.5 px-3 py-2.5 rounded-xl ${
+          data.sentByMe ? "bg-orange-200" : "bg-orange-50"
+        }`}
+      >
+        {data.startDatetime && (
+          <div className="flex justify-between items-center">
+            <span className="text-[#6B7280] text-xs shrink-0">날짜</span>
+            <span className="text-[#374151] text-xs">
+              {formatServiceDate(data.startDatetime)}
+              {data.endDatetime
+                ? ` ~ ${formatServiceDate(data.endDatetime)}`
+                : ""}
+            </span>
+          </div>
+        )}
+        <div className="flex justify-between items-center">
+          <span className="text-[#6B7280] text-xs shrink-0">금액</span>
+          <span className="text-orange-500 text-xs font-medium">
+            {data.totalPrice.toLocaleString("ko-KR")}원
+          </span>
+        </div>
+      </div>
+      {!data.sentByMe && (
+        <p className="text-[#6B7280] text-xs leading-relaxed">
+          채팅에서 결제를 진행해주세요.
+        </p>
+      )}
+    </div>
+  );
+
+  if (data.sentByMe) {
+    return <div className="flex justify-end">{inner}</div>;
+  }
+  return (
+    <div className="flex items-start gap-3">
+      <Avatar initial={senderInitial} src={senderProfileImage} size="sm" />
+      {inner}
+    </div>
+  );
+}
+
+// 예약 거절 메시지 카드
+export function ReservationRejectedMessageCard({
+  sentByMe,
+}: {
+  sentByMe: boolean;
+}) {
+  return (
+    <div className={sentByMe ? "flex justify-end" : ""}>
+      <div className="w-79.5 p-4 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col">
+        <div className="flex items-start gap-2.5">
+          <div className="w-9 h-9 bg-red-50 rounded-full flex items-center justify-center shrink-0">
+            <XCircle size={18} className="text-red-500" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-red-800 text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
+              예약 거절
+            </span>
+            <span className="text-[#111827] text-sm leading-5 mt-0.5">
+              {sentByMe ? "예약 요청을 거절했습니다." : "예약 요청이 거절되었습니다."}
+            </span>
+          </div>
+        </div>
+        <p className="pt-3 text-[#6B7280] text-xs leading-5">
+          {sentByMe
+            ? "거절된 예약은 되돌릴 수 없습니다."
+            : "다른 펫시터에게 예약을 요청해보세요."}
+        </p>
+      </div>
+    </div>
+  );
+}
+
