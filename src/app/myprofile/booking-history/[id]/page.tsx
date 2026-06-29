@@ -11,9 +11,23 @@ import {
   ChevronLeft,
   FileText,
   BadgeCheck,
+  ClipboardList,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
-import { getReservationById } from "@/app/actions/reservations";
+import { getReservationById, cancelReservationAndNotify } from "@/app/actions/reservations";
+import { getCareRecordsByReservationId, type CareRecord } from "@/app/actions/care-records";
+import { CARE_RECORD_TYPES } from "@/components/common/chat/CareRecordModal";
+import {
+  Timeline,
+  TimelineItem,
+  TimelineConnector,
+  TimelineDot,
+  TimelineContent,
+  TimelineHeader,
+  TimelineTitle,
+  TimelineDescription,
+  TimelineTime,
+} from "@/components/ui/timeline";
 
 type BookingStatus =
   | "pending"
@@ -76,17 +90,17 @@ function ReviewSection({
     return (
       <div className="bg-white border-2 border-[#E8742A] rounded-2xl p-6">
         <div className="flex items-start gap-4">
-          <div className="w-10 h-10 bg-[#FFF0E8] rounded-xl flex items-center justify-center shrink-0">
-            <Star size={20} className="text-[#E8742A]" />
+          <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center shrink-0">
+            <Star size={20} className="text-orange-500" />
           </div>
           <div className="flex-1">
-            <p className="font-semibold text-[#281A0E] mb-1">후기를 남겨주세요</p>
-            <p className="text-sm text-[#6B7280]">소중한 경험을 다른 보호자와 공유해주세요</p>
+            <p className="font-semibold text-stone-900 mb-1">후기를 남겨주세요</p>
+            <p className="text-sm text-gray-500">소중한 경험을 다른 보호자와 공유해주세요</p>
           </div>
         </div>
         <button
           onClick={onWrite}
-          className="w-full mt-5 h-12 rounded-xl bg-[#E8742A] text-white font-semibold hover:bg-[#D4621A] transition-colors"
+          className="w-full mt-5 h-12 rounded-xl bg-orange-500 text-white font-semibold hover:bg-orange-600 transition-colors"
         >
           후기 작성하기
         </button>
@@ -95,17 +109,85 @@ function ReviewSection({
   }
 
   return (
-    <div className="bg-white border border-[#FFE9D6] rounded-2xl p-6 shadow-[0_2px_12px_rgba(232,116,42,0.06)]">
+    <div className="bg-white border border-orange-100 rounded-2xl p-6 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)]">
       <div className="flex items-center gap-2 mb-4">
-        <FileText size={18} className="text-[#6B7280]" />
-        <span className="font-semibold text-[#281A0E]">작성한 후기</span>
+        <FileText size={18} className="text-gray-500" />
+        <span className="font-semibold text-stone-900">작성한 후기</span>
       </div>
       <div className="flex items-center gap-1 mb-3">
         {[1, 2, 3, 4, 5].map((s) => (
           <Star key={s} size={16} className="fill-yellow-400 text-yellow-400" />
         ))}
-        <span className="text-sm text-[#6B7280] ml-1">5.0</span>
+        <span className="text-sm text-gray-500 ml-1">5.0</span>
       </div>
+    </div>
+  );
+}
+
+function CareRecordTimeline({ records }: { records: CareRecord[] }) {
+  return (
+    <div className="bg-white border border-orange-100 rounded-2xl px-6 py-5 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)]">
+      <div className="flex items-center gap-2 mb-5">
+        <ClipboardList size={18} className="text-orange-500" />
+        <h3 className="text-sm font-semibold text-stone-900">돌봄 기록</h3>
+        {records.length > 0 && (
+          <span className="ml-auto text-xs text-orange-500 font-semibold bg-orange-50 px-2 py-0.5 rounded-full">
+            {records.length}건
+          </span>
+        )}
+      </div>
+
+      {records.length === 0 ? (
+        <p className="text-sm text-gray-500 text-center py-4">아직 등록된 돌봄 기록이 없어요</p>
+      ) : (
+        <Timeline>
+          {records.map((record, index) => {
+            const config = CARE_RECORD_TYPES.find((t) => t.type === record.type);
+            const emoji = config?.emoji ?? "📋";
+            const dt = new Date(record.created_at);
+            const timeStr = dt.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
+            const dateStr = dt.toLocaleDateString("ko-KR", { month: "long", day: "numeric" });
+            const isLast = index === records.length - 1;
+
+            return (
+              <TimelineItem key={record.id}>
+                {!isLast && (
+                  <TimelineConnector className="bg-orange-100" />
+                )}
+                <TimelineDot className="bg-orange-50 border-orange-100 text-base">
+                  {emoji}
+                </TimelineDot>
+                <TimelineContent>
+                  <TimelineHeader>
+                    <TimelineTitle className="text-stone-900">{record.title}</TimelineTitle>
+                    <span className="text-xs text-white bg-orange-500 px-2 py-0.5 rounded-full leading-none">
+                      {record.status_text}
+                    </span>
+                  </TimelineHeader>
+                  <TimelineTime className="text-gray-500">{dateStr} {timeStr}</TimelineTime>
+                  {record.content && (
+                    <TimelineDescription className="text-gray-500 mt-0.5">
+                      {record.content}
+                    </TimelineDescription>
+                  )}
+                  {record.image_urls.length > 0 && (
+                    <div className="flex gap-2 mt-2 flex-wrap">
+                      {record.image_urls.map((url, i) => (
+                        <img
+                          key={i}
+                          src={url}
+                          alt={`돌봄 사진 ${i + 1}`}
+                          className="w-20 h-20 object-cover rounded-xl border border-orange-100"
+                        />
+                      ))}
+                    </div>
+                  )}
+                </TimelineContent>
+              </TimelineItem>
+            );
+          })}
+        </Timeline>
+      )}
     </div>
   );
 }
@@ -117,6 +199,10 @@ export default function BookingDetailPage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [reviewWritten, setReviewWritten] = useState(false);
+  const [careRecords, setCareRecords] = useState<CareRecord[]>([]);
+  const [canceling, setCanceling] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+  const [cancelConfirm, setCancelConfirm] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -129,22 +215,40 @@ export default function BookingDetailPage() {
       }
       setLoading(false);
     });
+    getCareRecordsByReservationId(id).then((res) => {
+      if ("data" in res && res.data) {
+        setCareRecords(res.data);
+      }
+    });
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+
+    const fetch = () =>
+      getCareRecordsByReservationId(id).then((res) => {
+        if ("data" in res && res.data) setCareRecords(res.data);
+      });
+
+    fetch();
+    const interval = setInterval(fetch, 5000);
+    return () => clearInterval(interval);
   }, [id]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FFF8F3] flex items-center justify-center">
-        <p className="text-sm text-[#6B7280]">불러오는 중...</p>
+      <div className="min-h-screen bg-orange-50 flex items-center justify-center">
+        <p className="text-sm text-gray-500">불러오는 중...</p>
       </div>
     );
   }
 
   if (notFound || !booking) {
     return (
-      <div className="min-h-screen bg-[#FFF8F3] flex items-center justify-center">
+      <div className="min-h-screen bg-orange-50 flex items-center justify-center">
         <div className="text-center">
-          <p className="font-semibold text-[#281A0E] mb-2">예약 정보를 찾을 수 없어요</p>
-          <button onClick={() => router.back()} className="text-sm text-[#E8742A] underline">
+          <p className="font-semibold text-stone-900 mb-2">예약 정보를 찾을 수 없어요</p>
+          <button onClick={() => router.back()} className="text-sm text-orange-500 underline">
             돌아가기
           </button>
         </div>
@@ -155,16 +259,16 @@ export default function BookingDetailPage() {
   const status = STATUS_CONFIG[booking.status];
 
   return (
-    <div className="min-h-screen bg-[#FFF8F3]">
+    <div className="min-h-screen bg-orange-50">
       <Header />
 
       {/* 모바일 헤더 */}
-      <div className="md:hidden sticky top-16 z-50 bg-white border-b border-[#FFE9D6]">
+      <div className="md:hidden sticky top-16 z-50 bg-white border-b border-orange-100">
         <div className="h-14 px-5 flex items-center gap-3">
           <button onClick={() => router.back()} className="p-1 -ml-1">
-            <ChevronLeft size={24} className="text-[#281A0E]" />
+            <ChevronLeft size={24} className="text-stone-900" />
           </button>
-          <span className="flex-1 font-semibold text-[#281A0E]">예약 상세</span>
+          <span className="flex-1 font-semibold text-stone-900">예약 상세</span>
         </div>
       </div>
 
@@ -173,26 +277,25 @@ export default function BookingDetailPage() {
         <div className="hidden md:flex items-center gap-4 mb-8">
           <button
             onClick={() => router.back()}
-            className="w-10 h-10 rounded-xl border border-[#FFE9D6] flex items-center justify-center hover:bg-[#FFF8F3] transition-colors shrink-0"
+            className="w-10 h-10 rounded-xl border border-orange-100 flex items-center justify-center hover:bg-orange-50 transition-colors shrink-0"
           >
-            <ChevronLeft size={20} className="text-[#281A0E]" />
+            <ChevronLeft size={20} className="text-stone-900" />
           </button>
           <div>
-            <h2 className="text-2xl font-bold text-[#281A0E]">예약 상세</h2>
-            <p className="text-sm text-[#6B7280] mt-1">{booking.bookingNo}</p>
+            <h2 className="text-2xl font-bold text-stone-900">예약 상세</h2>
+            <p className="text-sm text-gray-500 mt-1">{booking.bookingNo}</p>
           </div>
         </div>
 
         <div className="flex flex-col gap-4">
           {/* 상태 요약 카드 */}
-          <div className="bg-white border border-[#FFE9D6] rounded-2xl px-6 py-5 shadow-[0_2px_12px_rgba(232,116,42,0.06)]">
+          <div className="bg-white border border-orange-100 rounded-2xl px-6 py-5 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)]">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <span
-                  className="text-xs font-semibold px-3 py-1 rounded-full"
+                  className="text-xs font-semibold px-3 py-1 rounded-full text-stone-900"
                   style={{
-                    background: SERVICE_BADGE_COLOR[booking.serviceType] ?? "#FFF0E8",
-                    color: "#281A0E",
+                    background: SERVICE_BADGE_COLOR[booking.serviceType] ?? "#FFF7ED",
                   }}
                 >
                   {booking.serviceType}
@@ -208,29 +311,29 @@ export default function BookingDetailPage() {
                   {status.label}
                 </span>
               </div>
-              <span className="font-bold text-[#E8742A]">
+              <span className="font-bold text-orange-500">
                 {booking.price.toLocaleString()}원
               </span>
             </div>
             <div className="space-y-2">
-              <div className="flex items-center gap-3 text-sm text-[#6B7280]">
-                <Calendar size={15} className="text-[#E8742A] shrink-0" />
+              <div className="flex items-center gap-3 text-sm text-gray-500">
+                <Calendar size={15} className="text-orange-500 shrink-0" />
                 <span>{booking.date}</span>
               </div>
-              <div className="flex items-center gap-3 text-sm text-[#6B7280]">
-                <Clock size={15} className="text-[#E8742A] shrink-0" />
+              <div className="flex items-center gap-3 text-sm text-gray-500">
+                <Clock size={15} className="text-orange-500 shrink-0" />
                 <span>{booking.time}</span>
               </div>
-              <div className="flex items-center gap-3 text-sm text-[#6B7280]">
-                <MapPin size={15} className="text-[#E8742A] shrink-0" />
+              <div className="flex items-center gap-3 text-sm text-gray-500">
+                <MapPin size={15} className="text-orange-500 shrink-0" />
                 <span>{booking.location}</span>
               </div>
             </div>
           </div>
 
           {/* 반려동물 정보 */}
-          <div className="bg-white border border-[#FFE9D6] rounded-2xl px-6 py-5 shadow-[0_2px_12px_rgba(232,116,42,0.06)]">
-            <h3 className="text-sm font-semibold text-[#6B7280] mb-4">반려동물 정보</h3>
+          <div className="bg-white border border-orange-100 rounded-2xl px-6 py-5 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)]">
+            <h3 className="text-sm font-semibold text-gray-500 mb-4">반려동물 정보</h3>
             <div className="flex items-center gap-4">
               <div
                 className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shrink-0"
@@ -240,37 +343,37 @@ export default function BookingDetailPage() {
               </div>
               <div className="grid grid-cols-2 gap-x-8 gap-y-2 flex-1">
                 <div>
-                  <p className="text-xs text-[#6B7280]">이름</p>
-                  <p className="text-sm font-semibold text-[#281A0E]">{booking.pet.name}</p>
+                  <p className="text-xs text-gray-500">이름</p>
+                  <p className="text-sm font-semibold text-stone-900">{booking.pet.name}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-[#6B7280]">품종</p>
-                  <p className="text-sm font-semibold text-[#281A0E]">{booking.pet.breed}</p>
+                  <p className="text-xs text-gray-500">품종</p>
+                  <p className="text-sm font-semibold text-stone-900">{booking.pet.breed}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-[#6B7280]">나이</p>
-                  <p className="text-sm font-semibold text-[#281A0E]">{booking.pet.age}살</p>
+                  <p className="text-xs text-gray-500">나이</p>
+                  <p className="text-sm font-semibold text-stone-900">{booking.pet.age}살</p>
                 </div>
                 <div>
-                  <p className="text-xs text-[#6B7280]">몸무게</p>
-                  <p className="text-sm font-semibold text-[#281A0E]">{booking.pet.weight}kg</p>
+                  <p className="text-xs text-gray-500">몸무게</p>
+                  <p className="text-sm font-semibold text-stone-900">{booking.pet.weight}kg</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* 펫시터 정보 */}
-          <div className="bg-white border border-[#FFE9D6] rounded-2xl px-6 py-5 shadow-[0_2px_12px_rgba(232,116,42,0.06)]">
-            <h3 className="text-sm font-semibold text-[#6B7280] mb-4">펫시터 정보</h3>
+          <div className="bg-white border border-orange-100 rounded-2xl px-6 py-5 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)]">
+            <h3 className="text-sm font-semibold text-gray-500 mb-4">펫시터 정보</h3>
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-[#FFF0E8] rounded-full border border-[#FFE9D6] flex items-center justify-center shrink-0">
-                <span className="text-[#E8742A] text-lg font-semibold">
+              <div className="w-12 h-12 bg-orange-50 rounded-full border border-orange-100 flex items-center justify-center shrink-0">
+                <span className="text-orange-500 text-lg font-semibold">
                   {booking.sitter.name[0]}
                 </span>
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="font-semibold text-[#281A0E]">{booking.sitter.name}</span>
+                  <span className="font-semibold text-stone-900">{booking.sitter.name}</span>
                   {booking.sitter.certified && (
                     <span className="flex items-center gap-1 text-xs text-[#1976D2] bg-[#E3F2FD] px-2 py-0.5 rounded-full">
                       <BadgeCheck size={11} />
@@ -281,7 +384,7 @@ export default function BookingDetailPage() {
                 <div className="flex items-center gap-1">
                   <Star size={12} className="fill-yellow-400 text-yellow-400" />
                   <span className="text-sm font-semibold">{booking.sitter.rating}</span>
-                  <span className="text-xs text-[#6B7280]">({booking.sitter.reviewCount}건)</span>
+                  <span className="text-xs text-gray-500">({booking.sitter.reviewCount}건)</span>
                 </div>
               </div>
               {(booking.status === "in-progress" ||
@@ -289,7 +392,7 @@ export default function BookingDetailPage() {
                 booking.status === "pending") && (
                 <button
                   onClick={() => router.push("/chat")}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-[#FFF0E8] text-[#E8742A] rounded-xl text-sm font-semibold hover:bg-[#FFE4D0] transition-colors shrink-0"
+                  className="flex items-center gap-2 px-4 py-2.5 bg-orange-50 text-orange-500 rounded-xl text-sm font-semibold hover:bg-orange-100 transition-colors shrink-0"
                 >
                   <MessageCircle size={15} />
                   채팅
@@ -299,13 +402,16 @@ export default function BookingDetailPage() {
           </div>
 
           {/* 결제 정보 */}
-          <div className="bg-white border border-[#FFE9D6] rounded-2xl px-6 py-5 shadow-[0_2px_12px_rgba(232,116,42,0.06)]">
-            <h3 className="text-sm font-semibold text-[#6B7280] mb-4">결제 정보</h3>
+          <div className="bg-white border border-orange-100 rounded-2xl px-6 py-5 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)]">
+            <h3 className="text-sm font-semibold text-gray-500 mb-4">결제 정보</h3>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-[#281A0E]">서비스 금액</span>
-              <span className="font-bold text-[#E8742A]">{booking.price.toLocaleString()}원</span>
+              <span className="text-sm text-stone-900">서비스 금액</span>
+              <span className="font-bold text-orange-500">{booking.price.toLocaleString()}원</span>
             </div>
           </div>
+
+          {/* 돌봄 기록 타임라인 */}
+          <CareRecordTimeline records={careRecords} />
 
           {/* 후기 섹션 - 완료 상태일 때만 표시 */}
           {booking.status === "completed" && (
@@ -319,9 +425,55 @@ export default function BookingDetailPage() {
 
           {/* 예약 취소 버튼 - 요청/확정 상태일 때만 표시 */}
           {(booking.status === "pending" || booking.status === "confirmed") && (
-            <button className="w-full h-12 rounded-xl border border-[#FFE9D6] text-[#6B7280] text-sm font-medium hover:border-red-300 hover:text-red-500 transition-colors">
-              예약 취소
-            </button>
+            <>
+              {cancelError && (
+                <p className="text-xs text-red-500 text-center">{cancelError}</p>
+              )}
+              {cancelConfirm ? (
+                <div className="flex flex-col gap-2">
+                  <p className="text-sm text-center text-gray-500">
+                    정말 예약을 취소할까요? 되돌릴 수 없습니다.
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setCancelConfirm(false)}
+                      disabled={canceling}
+                      className="flex-1 h-12 rounded-xl border border-orange-100 text-gray-500 text-sm font-medium hover:bg-orange-50 transition-colors disabled:opacity-50"
+                    >
+                      돌아가기
+                    </button>
+                    <button
+                      onClick={async () => {
+                        setCanceling(true);
+                        setCancelError(null);
+                        const res = await cancelReservationAndNotify(booking.id);
+                        setCanceling(false);
+                        if (res.error) {
+                          setCancelError(res.error.message);
+                          setCancelConfirm(false);
+                          return;
+                        }
+                        setBooking((prev) =>
+                          prev ? { ...prev, status: "cancelled" } : prev,
+                        );
+                        setCancelConfirm(false);
+                      }}
+                      disabled={canceling}
+                      className="flex-1 h-12 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors disabled:opacity-50"
+                    >
+                      {canceling ? "처리 중..." : "취소 확인"}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => { setCancelConfirm(true); setCancelError(null); }}
+                  className="w-full h-12 rounded-xl border border-orange-100 text-gray-500 text-sm font-medium hover:border-red-300 hover:text-red-500 transition-colors"
+                >
+                  예약 취소
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>

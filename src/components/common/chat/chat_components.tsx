@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import {
   Star,
@@ -7,10 +7,12 @@ import {
   Plus,
   MoreVertical,
   X,
+  XCircle,
   CreditCard,
   ClipboardList,
   Camera,
   ChevronDown,
+  CheckCircle,
 } from "lucide-react";
 import Avatar from "@/components/ui/Avatar";
 import SitterProfileCard, {
@@ -20,7 +22,9 @@ import SitterProfileCard, {
 // 1:1 채팅의 각 목록
 export type ChatRoom = {
   id: string;
+  ownerId: string | null;
   sitterId: string | null;
+  reservationId: string | null;
   name: string;
   initial: string;
   profileImage?: string | null;
@@ -50,13 +54,49 @@ export type Applicant = {
   completedJobs?: string;
 };
 
+export type CostItem = {
+  id: string;
+  name: string;
+  amount: string;
+  description: string;
+};
+
+export type PaymentData = {
+  amount: number;
+  reason: string;
+  deadline: string;
+  postId?: string;
+  sentByMe?: boolean;
+  costItems?: CostItem[];
+};
+
+export type ApplicationData = {
+  postTitle: string;
+  postId: string;
+  sitterId: string;
+  sentByMe?: boolean;
+};
+
 // 채팅창 메시지
 export type Message = {
   id: string;
-  from: "me" | "other" | "divider";
+  from:
+    | "me"
+    | "other"
+    | "divider"
+    | "date_separator"
+    | "payment_request"
+    | "payment_complete"
+    | "application_selected"
+    | "application_rejected"
+    | "reservation_canceled";
   text: string;
   imageUrl?: string;
   time?: string;
+  rawDate?: string;
+  paymentData?: PaymentData;
+  applicationData?: ApplicationData;
+  sentByMe?: boolean;
 };
 
 // 우측 상단 상태 배지
@@ -339,13 +379,96 @@ type MessageBubbleProps = {
   msg: Message;
   senderInitial: string;
   senderProfileImage?: string | null;
+  onPaymentRequest?: () => void;
+  isPaymentPending?: boolean;
+  isPaymentPaid?: boolean;
+  onPostClick?: () => void;
+  onGoToChat?: () => void;
 };
 
 export function MessageBubble({
   msg,
   senderInitial,
   senderProfileImage,
+  onPaymentRequest,
+  isPaymentPending,
+  isPaymentPaid,
+  onPostClick,
+  onGoToChat,
 }: MessageBubbleProps) {
+  if (msg.from === "application_selected") {
+    const data = msg.applicationData;
+    if (!data) return null;
+    if (data.sentByMe) {
+      return (
+        <ConfirmationCard
+          postTitle={data.postTitle}
+          sitterInitial={senderInitial}
+          sitterProfileImage={senderProfileImage}
+          onPostClick={onPostClick}
+          onGoToChat={onGoToChat ?? (() => {})}
+        />
+      );
+    }
+    return (
+      <SitterConfirmationCard
+        postTitle={data.postTitle}
+        ownerInitial={senderInitial}
+        ownerProfileImage={senderProfileImage}
+        onPostClick={onPostClick}
+        onGoToChat={onGoToChat}
+      />
+    );
+  }
+  if (msg.from === "application_rejected") {
+    if (msg.applicationData?.sentByMe) return <OwnerRejectionCard />;
+    return <SitterRejectionCard />;
+  }
+  if (msg.from === "reservation_canceled") {
+    return <ReservationCanceledCard sentByMe={msg.sentByMe ?? false} />;
+  }
+  if (msg.from === "payment_request") {
+    const data = msg.paymentData;
+    if (!data) return null;
+    if (data.sentByMe) {
+      return (
+        <SitterPaymentRequestCard
+          amount={data.amount}
+          reason={data.reason}
+          otherInitial={senderInitial}
+          otherProfileImage={senderProfileImage}
+          onPostClick={onPostClick}
+          costItems={data.costItems}
+        />
+      );
+    }
+    return (
+      <PaymentRequestCard
+        amount={data.amount}
+        reason={data.reason}
+        deadline={data.deadline}
+        paid={isPaymentPaid ?? false}
+        onPay={onPaymentRequest ?? (() => {})}
+        isPaying={isPaymentPending ?? false}
+        otherInitial={senderInitial}
+        otherProfileImage={senderProfileImage}
+        onPostClick={onPostClick}
+        costItems={data.costItems}
+      />
+    );
+  }
+  if (msg.from === "payment_complete") {
+    return <PaymentCompleteCard amount={msg.paymentData?.amount ?? 0} />;
+  }
+  if (msg.from === "date_separator") {
+    return (
+      <div className="flex items-center gap-3 py-1">
+        <div className="flex-1 h-px bg-stone-200" />
+        <span className="text-xs text-stone-400 shrink-0">{msg.text}</span>
+        <div className="flex-1 h-px bg-stone-200" />
+      </div>
+    );
+  }
   if (msg.from === "divider") {
     return (
       <div className="flex justify-center">
@@ -414,10 +537,40 @@ export function ApplicantProfilePopup({
   onClose,
   cardVariant = "sitter",
 }: ApplicantProfilePopupProps) {
-  const profile: SitterProfile = {
+  const [fetchedProfile, setFetchedProfile] = useState<SitterProfile | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(false);
+
+  useEffect(() => {
+    if (cardVariant !== "sitter" || !applicant.sitterId) return;
+    setLoadingProfile(true);
+    fetch(`/api/sitters/${applicant.sitterId}`)
+      .then((res) => res.json())
+      .then(({ data }) => {
+        if (!data) return;
+        setFetchedProfile({
+          name: data.full_name,
+          initial: data.full_name?.charAt(0) ?? "",
+          src: data.profile_image,
+          verified: data.is_verified ?? false,
+          location: data.available_area ?? "",
+          rating: data.rating,
+          reviewCount: data.review_count ?? 0,
+          services:
+            data.services?.map(
+              (s: { service_type: string }) => s.service_type,
+            ) ?? [],
+          career: data.career ?? "",
+        });
+      })
+      .catch(() => {})
+      .finally(() => setLoadingProfile(false));
+  }, [applicant.sitterId, cardVariant]);
+
+  const profile: SitterProfile = fetchedProfile ?? {
     name: applicant.name,
     initial: applicant.initial,
-    verified: true,
+    src: applicant.profileImage,
+    verified: false,
     location: applicant.location ?? "",
     rating: applicant.rating,
     reviewCount: applicant.reviewCount ?? 0,
@@ -437,7 +590,16 @@ export function ApplicantProfilePopup({
         >
           <X size={16} className="text-gray-400" />
         </button>
-        <SitterProfileCard profile={profile} variant={cardVariant} />
+        {loadingProfile ? (
+          <div className="bg-white border border-orange-100 rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.08)] overflow-hidden">
+            <div className="h-2 bg-gradient-to-r from-orange-500 to-orange-300" />
+            <div className="p-8 flex items-center justify-center">
+              <p className="text-stone-400 text-sm">불러오는 중...</p>
+            </div>
+          </div>
+        ) : (
+          <SitterProfileCard profile={profile} variant={cardVariant} />
+        )}
       </div>
     </div>
   );
@@ -448,7 +610,7 @@ type ConfirmationCardProps = {
   postTitle: string;
   sitterInitial: string;
   sitterProfileImage?: string | null;
-  onBook: () => void;
+  onGoToChat: () => void;
   onPostClick?: () => void;
 };
 
@@ -456,27 +618,29 @@ export function ConfirmationCard({
   postTitle,
   sitterInitial,
   sitterProfileImage,
-  onBook,
+  onGoToChat,
   onPostClick,
 }: ConfirmationCardProps) {
   return (
     <div className="flex justify-end">
-      <div className="w-79.5 p-4 bg-white rounded-2xl outline-[1.11px] outline-[#FFE9D6] outline-offset-[-1.11px] flex flex-col">
+      <div className="w-[318px] p-4 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col">
         <div className="flex flex-col">
           <span className="text-[#6B7280] text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
-            선택 확정
+            예약 확정
           </span>
           <span className="text-[#281A0E] text-sm leading-5 mt-0.5">
-            펫시터가 선택되었습니다. 지금 예약해보세요!
+            예약이 완료되었습니다!
+            <br />
+            1:1 채팅에서 결제를 진행해주세요.
           </span>
         </div>
         <div className="py-3">
           <button
             type="button"
             onClick={onPostClick}
-            className="w-full flex items-center gap-3 px-3 py-2.5 bg-[#FFF4EC] rounded-xl hover:bg-orange-100 transition-colors text-left"
+            className="w-full flex items-center gap-3 px-3 py-2.5 bg-orange-100 rounded-xl hover:bg-orange-200 transition-colors text-left"
           >
-            <div className="w-10 h-10 rounded-lg bg-[#FFE9D6] shrink-0 overflow-hidden flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-orange-200 shrink-0 overflow-hidden flex items-center justify-center">
               {sitterProfileImage ? (
                 <Image
                   src={sitterProfileImage}
@@ -498,22 +662,23 @@ export function ConfirmationCard({
         </div>
         <button
           type="button"
-          onClick={onBook}
-          className="w-full h-10 rounded-xl outline-[1.11px] outline-[#E8742A] outline-offset-[-1.11px] text-[#E8742A] text-sm font-medium hover:bg-orange-50 transition-colors"
+          onClick={onGoToChat}
+          className="w-full h-10 rounded-xl outline-[1.11px] outline-orange-500 outline-offset-[-1.11px] text-orange-500 text-sm font-medium hover:bg-orange-50 transition-colors"
         >
-          예약하기
+          1:1 채팅으로 이동
         </button>
       </div>
     </div>
   );
 }
 
-// 선택 확정 대기 카드 (펫시터용)
+// 선택 확정 안내 카드 (펫시터용)
 type SitterConfirmationCardProps = {
   postTitle: string;
   ownerInitial: string;
   ownerProfileImage?: string | null;
   onPostClick?: () => void;
+  onGoToChat?: () => void;
 };
 
 export function SitterConfirmationCard({
@@ -521,25 +686,28 @@ export function SitterConfirmationCard({
   ownerInitial,
   ownerProfileImage,
   onPostClick,
+  onGoToChat,
 }: SitterConfirmationCardProps) {
   return (
     <div className="flex justify-end">
-      <div className="w-[318px] p-4 bg-[#FFF4EC] rounded-2xl outline-[1.11px] outline-[#F5A468] outline-offset-[-1.11px] flex flex-col">
+      <div className="w-[318px] p-4 bg-orange-100 rounded-2xl outline-[1.11px] outline-orange-400 outline-offset-[-1.11px] flex flex-col">
         <div className="flex flex-col">
-          <span className="text-[#E8742A] text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
-            선택 확정
+          <span className="text-orange-500 text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
+            예약 확정
           </span>
           <span className="text-[#281A0E] text-sm leading-5 mt-0.5">
-            예약을 기다리고 있어요
+            예약이 완료되었습니다!
+            <br />
+            1:1 채팅에서 결제 내용을 확인해주세요.
           </span>
         </div>
-        <div className="pt-3">
+        <div className="pt-3 pb-3">
           <button
             type="button"
             onClick={onPostClick}
-            className="w-full flex items-center gap-3 px-3 py-2.5 bg-[#FFE9D6] rounded-xl hover:bg-orange-200 transition-colors text-left"
+            className="w-full flex items-center gap-3 px-3 py-2.5 bg-orange-200 rounded-xl hover:bg-orange-300 transition-colors text-left"
           >
-            <div className="w-10 h-10 rounded-lg bg-[#FFD4B0] shrink-0 overflow-hidden flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-orange-300 shrink-0 overflow-hidden flex items-center justify-center">
               {ownerProfileImage ? (
                 <Image
                   src={ownerProfileImage}
@@ -559,8 +727,99 @@ export function SitterConfirmationCard({
             </span>
           </button>
         </div>
-        <p className="pt-3 text-[#6B7280] text-xs leading-relaxed">
-          작성자의 확인 여부에 따라 예약이 늦어질 수 있습니다.
+        <button
+          type="button"
+          onClick={onGoToChat}
+          className="w-full h-10 rounded-xl outline-[1.11px] outline-orange-500 outline-offset-[-1.11px] text-orange-500 text-sm font-medium hover:bg-orange-50 transition-colors"
+        >
+          1:1 채팅으로 이동
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// 지원 거절 안내 카드 (보호자용)
+export function OwnerRejectionCard() {
+  return (
+    <div className="flex justify-end">
+      <div className="w-[318px] p-4 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col">
+        <div className="flex items-start gap-2.5">
+          <div className="w-9 h-9 bg-red-50 rounded-full flex items-center justify-center shrink-0">
+            <XCircle size={18} className="text-red-500" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-red-800 text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
+              지원 거절
+            </span>
+            <span className="text-[#111827] text-sm leading-5 mt-0.5">
+              지원을 거절했습니다.
+            </span>
+          </div>
+        </div>
+        <p className="pt-3 text-[#6B7280] text-xs leading-5">
+          아쉽게도 이번 지원은 거절되었습니다.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// 지원 거절 안내 카드 (펫시터용)
+export function SitterRejectionCard() {
+  return (
+    <div className="flex justify-end">
+      <div className="w-[318px] p-4 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col">
+        <div className="flex items-start gap-2.5">
+          <div className="w-9 h-9 bg-red-50 rounded-full flex items-center justify-center shrink-0">
+            <XCircle size={18} className="text-red-500" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-red-800 text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
+              지원 거절
+            </span>
+            <span className="text-[#111827] text-sm leading-5 mt-0.5">
+              지원이 거절되었습니다.
+            </span>
+          </div>
+        </div>
+        <p className="pt-3 text-[#6B7280] text-xs leading-5">
+          아쉽게도 이번 지원은 거절되었습니다.
+        </p>
+        <div className="pt-3">
+          <div className="pt-1 border-t border-red-200">
+            <p className="text-red-400 text-[11px] leading-[17.6px]">
+              다른 구인글에 지원해보세요.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 예약 취소 안내 카드
+export function ReservationCanceledCard({ sentByMe }: { sentByMe: boolean }) {
+  return (
+    <div className="flex justify-end">
+      <div className="w-[318px] p-4 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col">
+        <div className="flex items-start gap-2.5">
+          <div className="w-9 h-9 bg-red-50 rounded-full flex items-center justify-center shrink-0">
+            <XCircle size={18} className="text-red-500" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-red-800 text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
+              예약 취소
+            </span>
+            <span className="text-[#111827] text-sm leading-5 mt-0.5">
+              {sentByMe ? "예약을 취소했습니다." : "예약이 취소되었습니다."}
+            </span>
+          </div>
+        </div>
+        <p className="pt-3 text-[#6B7280] text-xs leading-5">
+          {sentByMe
+            ? "취소된 예약은 되돌릴 수 없습니다."
+            : "상대방이 예약을 취소했습니다."}
         </p>
       </div>
     </div>
@@ -625,6 +884,7 @@ type ChatInputProps = {
   showPlusButton: boolean;
   plusOpen?: boolean;
   onPlusToggle?: () => void;
+  disabled?: boolean;
 };
 
 export function ChatInput({
@@ -634,6 +894,7 @@ export function ChatInput({
   showPlusButton,
   plusOpen,
   onPlusToggle,
+  disabled,
 }: ChatInputProps) {
   return (
     <div className="p-6 bg-white border-t border-orange-100 shrink-0">
@@ -653,13 +914,16 @@ export function ChatInput({
           type="text"
           value={input}
           onChange={(e) => onChange(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && onSend?.()}
+          onKeyDown={(e) =>
+            e.key === "Enter" && !e.nativeEvent.isComposing && onSend?.()
+          }
           placeholder="메시지를 입력하세요"
           className="flex-1 h-14 px-5 py-4 bg-orange-50 rounded-2xl text-base text-stone-900 placeholder-stone-900/50 outline-none"
         />
         <button
           onClick={onSend}
-          className="w-12 h-12 bg-orange-500 hover:bg-orange-600 rounded-xl flex items-center justify-center transition-colors"
+          disabled={disabled}
+          className="w-12 h-12 bg-orange-500 hover:bg-orange-600 rounded-xl flex items-center justify-center transition-colors disabled:opacity-50"
         >
           <Send size={18} className="text-white" />
         </button>
@@ -750,6 +1014,282 @@ export function ApplicantPostGroup({
             onAvatarClick={onAvatarClick}
           />
         ))}
+    </div>
+  );
+}
+
+// 결제 요청 카드 (보호자용 - 결제하기 버튼 포함)
+type PaymentRequestCardProps = {
+  amount: number;
+  reason: string;
+  deadline: string;
+  paid: boolean;
+  onPay: () => void;
+  isPaying: boolean;
+  otherInitial: string;
+  otherProfileImage?: string | null;
+  onPostClick?: () => void;
+  costItems?: CostItem[];
+};
+
+export function PaymentRequestCard({
+  amount,
+  reason,
+  deadline,
+  paid,
+  onPay,
+  isPaying,
+  otherInitial,
+  otherProfileImage,
+  onPostClick,
+  costItems,
+}: PaymentRequestCardProps) {
+  return (
+    <div className="flex justify-end">
+      <div className="w-[318px] p-4 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col gap-3">
+        <div className="flex flex-col">
+          <span className="text-[#6B7280] text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
+            결제 요청
+          </span>
+          <span className="text-[#281A0E] text-sm leading-5 mt-0.5">
+            결제 요청이 도착했어요.
+          </span>
+          <span className="text-[#6B7280] text-xs mt-1 leading-[19.5px]">
+            완료될 때까지 봐주개가 결제 금액을 안전하게 보관해요.
+          </span>
+        </div>
+
+        {onPostClick && (
+          <button
+            type="button"
+            onClick={onPostClick}
+            className="w-full flex items-center gap-3 px-3 py-2.5 bg-orange-100 rounded-xl text-left transition-colors hover:bg-orange-200"
+          >
+            <div className="w-10 h-10 rounded-lg bg-orange-200 shrink-0 overflow-hidden flex items-center justify-center">
+              {otherProfileImage ? (
+                <Image
+                  src={otherProfileImage}
+                  alt=""
+                  width={40}
+                  height={40}
+                  className="object-cover w-full h-full"
+                />
+              ) : (
+                <span className="text-sm font-semibold text-orange-500">
+                  {otherInitial}
+                </span>
+              )}
+            </div>
+            <span className="text-[#374151] text-sm leading-5 truncate flex-1">
+              {reason}
+            </span>
+          </button>
+        )}
+
+        {costItems && costItems.length > 0 && (
+          <div className="flex flex-col gap-1 px-1">
+            <span className="text-[#6B7280] text-[10px] font-semibold uppercase tracking-[0.3px]">
+              비용 상세 내역
+            </span>
+            <div className="flex flex-col gap-1 mt-0.5">
+              {costItems.map((item) => (
+                <div key={item.id} className="flex flex-col">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#374151] text-xs font-medium">
+                      {item.name}
+                    </span>
+                    <span className="text-orange-500 text-xs font-medium">
+                      {Number(item.amount.replace(/,/g, "")).toLocaleString(
+                        "ko-KR",
+                      )}
+                      원
+                    </span>
+                  </div>
+                  {item.description && (
+                    <span className="text-[#9CA3AF] text-[10px] leading-4">
+                      {item.description}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="border-t border-orange-100 mt-1" />
+          </div>
+        )}
+
+        <div className="flex flex-col gap-1.5">
+          <div className="flex justify-between items-center">
+            <span className="text-[#6B7280] text-xs">요청 금액</span>
+            <span className="text-orange-500 text-xs">
+              {amount.toLocaleString("ko-KR")} 원
+            </span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-[#6B7280] text-xs">결제 기한</span>
+            <span className="text-[#374151] text-xs">{deadline}</span>
+          </div>
+        </div>
+
+        {paid ? (
+          <button
+            disabled
+            className="w-full h-10 rounded-xl bg-orange-50 outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] text-orange-400 text-sm cursor-default"
+          >
+            완료되었어요
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onPay}
+            disabled={isPaying}
+            className="w-full h-10 rounded-xl outline-[1.11px] outline-orange-500 outline-offset-[-1.11px] text-orange-500 text-sm hover:bg-orange-50 transition-colors disabled:opacity-50"
+          >
+            {isPaying ? "결제 중..." : "결제하기"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// 결제 요청 알림 카드 (펫시터용 - 내가 요청 보낸 쪽)
+type SitterPaymentRequestCardProps = {
+  amount: number;
+  reason: string;
+  otherInitial: string;
+  otherProfileImage?: string | null;
+  onPostClick?: () => void;
+  costItems?: CostItem[];
+};
+
+export function SitterPaymentRequestCard({
+  amount,
+  reason,
+  otherInitial,
+  otherProfileImage,
+  onPostClick,
+  costItems,
+}: SitterPaymentRequestCardProps) {
+  return (
+    <div className="flex justify-end">
+      <div className="w-[318px] p-4 bg-orange-100 rounded-2xl outline-[1.11px] outline-orange-400 outline-offset-[-1.11px] flex flex-col">
+        <span className="text-orange-500 text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
+          결제 요청
+        </span>
+        <span className="text-[#281A0E] text-sm leading-5 mt-0.5">
+          결제가 요청되었습니다.
+        </span>
+        {onPostClick && (
+          <button
+            type="button"
+            onClick={onPostClick}
+            className="mt-3 w-full flex items-center gap-3 px-3 py-2.5 bg-orange-200 rounded-xl text-left transition-colors hover:bg-orange-300"
+          >
+            <div className="w-10 h-10 rounded-lg bg-orange-300 shrink-0 overflow-hidden flex items-center justify-center">
+              {otherProfileImage ? (
+                <Image
+                  src={otherProfileImage}
+                  alt=""
+                  width={40}
+                  height={40}
+                  className="object-cover w-full h-full"
+                />
+              ) : (
+                <span className="text-sm font-semibold text-orange-500">
+                  {otherInitial}
+                </span>
+              )}
+            </div>
+            <span className="text-[#374151] text-sm leading-5 truncate flex-1">
+              {reason}
+            </span>
+          </button>
+        )}
+
+        {costItems && costItems.length > 0 && (
+          <div className="mt-3 flex flex-col gap-1 px-1">
+            <span className="text-[#6B7280] text-[10px] font-semibold uppercase tracking-[0.3px]">
+              비용 상세 내역
+            </span>
+            <div className="flex flex-col gap-1 mt-0.5">
+              {costItems.map((item) => (
+                <div key={item.id} className="flex flex-col">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#374151] text-xs font-medium">
+                      {item.name}
+                    </span>
+                    <span className="text-orange-500 text-xs font-medium">
+                      {Number(item.amount.replace(/,/g, "")).toLocaleString(
+                        "ko-KR",
+                      )}
+                      원
+                    </span>
+                  </div>
+                  {item.description && (
+                    <span className="text-[#9CA3AF] text-[10px] leading-4">
+                      {item.description}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="border-t border-orange-300 mt-1" />
+          </div>
+        )}
+
+        <div className="mt-3 flex flex-col gap-1.5">
+          <div className="flex justify-between items-center">
+            <span className="text-[#6B7280] text-xs">요청 금액</span>
+            <span className="text-orange-500 text-xs font-medium">
+              {amount.toLocaleString("ko-KR")} 원
+            </span>
+          </div>
+        </div>
+        <p className="mt-3 text-[#6B7280] text-xs leading-relaxed">
+          보호자가 결제를 완료하면 알림을 드릴게요.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// 결제 완료 카드 (보호자 + 펫시터 모두)
+type PaymentCompleteCardProps = {
+  amount: number;
+};
+
+export function PaymentCompleteCard({ amount }: PaymentCompleteCardProps) {
+  return (
+    <div className="flex justify-end">
+      <div className="w-[318px] p-4 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 bg-[#ECFDF5] rounded-full flex items-center justify-center shrink-0">
+            <CheckCircle size={18} className="text-[#10B981]" />
+          </div>
+          <div>
+            <span className="text-[#065F46] text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
+              결제 완료
+            </span>
+            <p className="text-[#281A0E] text-sm leading-5 mt-0.5">
+              결제가 완료되었어요!
+            </p>
+          </div>
+        </div>
+
+        <div className="w-full px-3 py-2 bg-orange-100 rounded-xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex justify-between items-center">
+          <span className="text-[#6B7280] text-xs">결제 금액</span>
+          <span className="text-orange-500 text-sm font-bold">
+            {amount.toLocaleString("ko-KR")}원
+          </span>
+        </div>
+
+        <div className="pt-3 border-t border-orange-200">
+          <p className="text-[#9CA3AF] text-[11px] leading-[17.6px]">
+            봐주개가 결제 금액을 안전하게 보관하고 있어요. 예약 완료 후
+            펫시터에게 지급됩니다.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

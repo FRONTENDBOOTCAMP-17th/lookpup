@@ -13,13 +13,15 @@ async function getAuthUser() {
 
 async function recalculateSitterRating(sitterId: string) {
   const db = createServiceClient();
-  const { data: rows } = await db
+  const { data: rows, error } = await db
     .from("reviews")
     .select("rating")
     .eq("sitter_id", sitterId);
 
+  if (error) return;
+
   const avg =
-    rows && rows.length > 0
+    rows.length > 0
       ? rows.reduce((sum, r) => sum + r.rating, 0) / rows.length
       : 0;
 
@@ -41,11 +43,23 @@ export async function createReview(input: {
   }
 
   if (input.rating < 1 || input.rating > 5 || !Number.isInteger(input.rating)) {
-    return { error: { code: "VALIDATION_ERROR", message: "평점은 1~5 정수여야 합니다." } };
-  }
-  if (!input.content || input.content.length < 10 || input.content.length > 1000) {
     return {
-      error: { code: "VALIDATION_ERROR", message: "후기는 10자 이상 1000자 이하여야 합니다." },
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "평점은 1~5 점이어야 합니다.",
+      },
+    };
+  }
+  if (
+    !input.content ||
+    input.content.length < 10 ||
+    input.content.length > 1000
+  ) {
+    return {
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "후기는 10자 이상 1000자 이하여야 합니다.",
+      },
     };
   }
 
@@ -58,20 +72,36 @@ export async function createReview(input: {
     .single();
 
   if (!reservation) {
-    return { error: { code: "NOT_FOUND", message: "예약을 찾을 수 없습니다." } };
+    return {
+      error: { code: "NOT_FOUND", message: "예약을 찾을 수 없습니다." },
+    };
   }
   if (reservation.owner_id !== user.id) {
-    return { error: { code: "FORBIDDEN", message: "예약자만 후기를 작성할 수 있습니다." } };
+    return {
+      error: {
+        code: "FORBIDDEN",
+        message: "예약자만 후기를 작성할 수 있습니다.",
+      },
+    };
   }
   if (reservation.status !== "completed") {
-    return { error: { code: "FORBIDDEN", message: "완료된 예약에만 후기를 작성할 수 있습니다." } };
+    return {
+      error: {
+        code: "FORBIDDEN",
+        message: "완료된 예약에만 후기를 작성할 수 있습니다.",
+      },
+    };
   }
   if (reservation.completed_at) {
     const days =
-      (Date.now() - new Date(reservation.completed_at).getTime()) / (1000 * 60 * 60 * 24);
+      (Date.now() - new Date(reservation.completed_at).getTime()) /
+      (1000 * 60 * 60 * 24);
     if (days > 7) {
       return {
-        error: { code: "FORBIDDEN", message: "완료 후 7일 이내에만 후기를 작성할 수 있습니다." },
+        error: {
+          code: "FORBIDDEN",
+          message: "완료 후 7일 이내에만 후기를 작성할 수 있습니다.",
+        },
       };
     }
   }
@@ -83,7 +113,9 @@ export async function createReview(input: {
     .maybeSingle();
 
   if (existing) {
-    return { error: { code: "CONFLICT", message: "이미 후기를 작성했습니다." } };
+    return {
+      error: { code: "CONFLICT", message: "이미 후기를 작성했습니다." },
+    };
   }
 
   const { data: review, error } = await db
@@ -123,7 +155,9 @@ export async function deleteReview(id: string) {
     .single();
 
   if (!review) {
-    return { error: { code: "NOT_FOUND", message: "후기를 찾을 수 없습니다." } };
+    return {
+      error: { code: "NOT_FOUND", message: "후기를 찾을 수 없습니다." },
+    };
   }
 
   const { data: userRow } = await db

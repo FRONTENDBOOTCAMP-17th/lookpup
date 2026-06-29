@@ -8,13 +8,23 @@
  *    메시지 전송 시 채널로 broadcast하고, 상대방은 broadcast 구독으로 수신.
  *    채팅방이 바뀌거나 컴포넌트가 사라지면 해당 구독을 해제함.
  */
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { createClient } from "@/utils/supabase/client";
 import type { RealtimeChannel } from "@supabase/supabase-js";
-import type { Message } from "@/components/common/chat/chat_components";
-
-const SYSTEM_MSG_PREFIX = "__system__:";
-const IMAGE_MSG_PREFIX = "__image__:";
+import type {
+  Message,
+  PaymentData,
+  ApplicationData,
+} from "@/components/common/chat/chat_components";
+import {
+  SYSTEM_MSG_PREFIX,
+  IMAGE_MSG_PREFIX,
+  PAYMENT_REQUEST_PREFIX,
+  PAYMENT_COMPLETE_PREFIX,
+  APPLICATION_SELECTED_PREFIX,
+  APPLICATION_REJECTED_PREFIX,
+  RESERVATION_CANCELED_PREFIX,
+} from "@/lib/chatMessagePrefixes";
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString("ko-KR", {
@@ -27,7 +37,7 @@ export interface MessageApiItem {
   id: string;
   sender_id: string;
   content: string;
-  created_at: string;
+  created_at: string | null;
 }
 
 function toMessage(m: MessageApiItem, userId: string): Message {
@@ -44,28 +54,125 @@ function toMessage(m: MessageApiItem, userId: string): Message {
       from: m.sender_id === userId ? "me" : "other",
       text: "",
       imageUrl: m.content.slice(IMAGE_MSG_PREFIX.length),
-      time: formatTime(m.created_at),
+      time: m.created_at ? formatTime(m.created_at) : "",
+      rawDate: m.created_at ?? undefined,
+    };
+  }
+  if (m.content.startsWith(PAYMENT_REQUEST_PREFIX)) {
+    try {
+      const data = JSON.parse(
+        m.content.slice(PAYMENT_REQUEST_PREFIX.length),
+      ) as PaymentData;
+      return {
+        id: m.id,
+        from: "payment_request" as const,
+        text: "",
+        paymentData: { ...data, sentByMe: m.sender_id === userId },
+        rawDate: m.created_at ?? undefined,
+      };
+    } catch {
+      return { id: m.id, from: "divider", text: "결제 요청" };
+    }
+  }
+  if (m.content.startsWith(PAYMENT_COMPLETE_PREFIX)) {
+    try {
+      const data = JSON.parse(
+        m.content.slice(PAYMENT_COMPLETE_PREFIX.length),
+      ) as { amount: number };
+      return {
+        id: m.id,
+        from: "payment_complete" as const,
+        text: "",
+        paymentData: { amount: data.amount, reason: "", deadline: "" },
+        rawDate: m.created_at ?? undefined,
+      };
+    } catch {
+      return { id: m.id, from: "divider", text: "결제 완료" };
+    }
+  }
+  if (m.content.startsWith(APPLICATION_SELECTED_PREFIX)) {
+    try {
+      const data = JSON.parse(
+        m.content.slice(APPLICATION_SELECTED_PREFIX.length),
+      ) as ApplicationData;
+      return {
+        id: m.id,
+        from: "application_selected" as const,
+        text: "",
+        applicationData: { ...data, sentByMe: m.sender_id === userId },
+        rawDate: m.created_at ?? undefined,
+      };
+    } catch {
+      return { id: m.id, from: "divider", text: "선택 확정" };
+    }
+  }
+  if (m.content.startsWith(APPLICATION_REJECTED_PREFIX)) {
+    return {
+      id: m.id,
+      from: "application_rejected" as const,
+      text: "",
+      applicationData: {
+        postTitle: "",
+        postId: "",
+        sitterId: "",
+        sentByMe: m.sender_id === userId,
+      },
+      rawDate: m.created_at ?? undefined,
+    };
+  }
+  if (m.content.startsWith(RESERVATION_CANCELED_PREFIX)) {
+    return {
+      id: m.id,
+      from: "reservation_canceled" as const,
+      text: "",
+      sentByMe: m.sender_id === userId,
+      rawDate: m.created_at ?? undefined,
     };
   }
   return {
     id: m.id,
     from: m.sender_id === userId ? "me" : "other",
     text: m.content,
-    time: formatTime(m.created_at),
+    time: m.created_at ? formatTime(m.created_at) : "",
+    rawDate: m.created_at ?? undefined,
+  };
+}
+
+export interface PaymentStateInfo {
+  amount: number;
+  reason: string;
+  deadline: string;
+  paid: boolean;
+  sentByMe: boolean;
+}
+
+function derivePaymentState(messages: Message[]): PaymentStateInfo | null {
+  const reqIdx = messages.findLastIndex((m) => m.from === "payment_request");
+  if (reqIdx === -1) return null;
+  const completeIdx = messages.findLastIndex(
+    (m) => m.from === "payment_complete",
+  );
+  const paid = completeIdx > reqIdx;
+  const data = messages[reqIdx].paymentData!;
+  return {
+    amount: data.amount,
+    reason: data.reason,
+    deadline: data.deadline,
+    paid,
+    sentByMe: data.sentByMe ?? false,
   };
 }
 
 export function useChatMessages(
   activeRoomId: string | null,
   userId: string | null,
+  refreshKey?: number,
 ) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const channelRef = useRef<RealtimeChannel | null>(null);
-
-  // 방이 바뀌면 상태 초기화 후 최신 메시지 로드
   useEffect(() => {
     if (!activeRoomId || !userId) return;
 
@@ -75,7 +182,9 @@ export function useChatMessages(
 
     const controller = new AbortController();
 
-    fetch(`/api/chat/rooms/${activeRoomId}/messages`, { signal: controller.signal })
+    fetch(`/api/chat/rooms/${activeRoomId}/messages`, {
+      signal: controller.signal,
+    })
       .then((res) => {
         if (!res.ok) throw new Error("메시지를 불러오지 못했습니다");
         return res.json();
@@ -96,7 +205,7 @@ export function useChatMessages(
       });
 
     return () => controller.abort();
-  }, [activeRoomId, userId]);
+  }, [activeRoomId, userId, refreshKey]);
 
   // Realtime broadcast 구독
   useEffect(() => {
@@ -108,7 +217,10 @@ export function useChatMessages(
       .on("broadcast", { event: "new_message" }, ({ payload }) => {
         const m = payload as MessageApiItem;
         if (m.sender_id === userId) return;
-        setMessages((prev) => [...prev, toMessage(m, userId)]);
+        setMessages((prev) => {
+          if (prev.some((msg) => msg.id === m.id)) return prev;
+          return [...prev, toMessage(m, userId)];
+        });
       })
       .subscribe();
 
@@ -117,6 +229,36 @@ export function useChatMessages(
     return () => {
       supabase.removeChannel(channel);
       channelRef.current = null;
+    };
+  }, [activeRoomId, userId]);
+
+  useEffect(() => {
+    if (!activeRoomId || !userId) return;
+
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`room-db-${activeRoomId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `room_id=eq.${activeRoomId}`,
+        },
+        (payload) => {
+          const m = payload.new as MessageApiItem;
+          if (m.sender_id === userId) return;
+          setMessages((prev) => {
+            if (prev.some((msg) => msg.id === m.id)) return prev;
+            return [...prev, toMessage(m, userId)];
+          });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
     };
   }, [activeRoomId, userId]);
 
@@ -139,6 +281,8 @@ export function useChatMessages(
       payload: {},
     });
   }
+
+  const paymentState = useMemo(() => derivePaymentState(messages), [messages]);
 
   async function loadMore() {
     if (!nextCursor || !activeRoomId || !userId || loadingMore) return;
@@ -163,5 +307,14 @@ export function useChatMessages(
     }
   }
 
-  return { messages, addMessage, broadcastMessage, broadcastConfirmation, loadMore, hasMore, loadingMore };
+  return {
+    messages,
+    addMessage,
+    broadcastMessage,
+    broadcastConfirmation,
+    loadMore,
+    hasMore,
+    loadingMore,
+    paymentState,
+  };
 }

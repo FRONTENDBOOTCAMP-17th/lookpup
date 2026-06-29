@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
 
 type TitledItem = { title: string; text: string };
 type ArticleItem = string | TitledItem;
@@ -238,6 +239,8 @@ export default function PrivacyPage() {
           </div>
         </div>
       </div>
+
+      <Footer />
     </div>
   );
 }

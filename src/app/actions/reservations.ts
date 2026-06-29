@@ -2,6 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import type { TablesUpdate } from "@/types/database.types";
 
 const FEE_RATE = 0.05;
 
@@ -236,16 +237,11 @@ export async function updateReservation(
   }
 
   const now = new Date().toISOString();
-  const timestamps: Record<string, string> = {
-    accepted: "accepted_at",
-    completed: "completed_at",
-    canceled: "canceled_at",
-  };
 
-  const updatePayload: Record<string, unknown> = { status: input.status };
-  if (timestamps[input.status]) {
-    updatePayload[timestamps[input.status]] = now;
-  }
+  const updatePayload: TablesUpdate<"reservations"> = { status: input.status };
+  if (input.status === "accepted") updatePayload.accepted_at = now;
+  else if (input.status === "completed") updatePayload.completed_at = now;
+  else if (input.status === "canceled") updatePayload.canceled_at = now;
   if (input.status === "canceled" && input.cancel_reason) {
     updatePayload.cancel_reason = input.cancel_reason;
   }
@@ -262,6 +258,49 @@ export async function updateReservation(
   }
 
   return { data };
+}
+
+const RESERVATION_CANCELED_PREFIX = "__reservation_canceled__";
+
+export async function cancelReservationAndNotify(
+  id: string,
+  cancel_reason?: string | null,
+) {
+  const result = await updateReservation(id, { status: "canceled", cancel_reason });
+  if (result.error) return result;
+
+  const db = createServiceClient();
+  const user = await getAuthUser();
+  if (!user) return result;
+
+  const { data: reservation } = await db
+    .from("reservations")
+    .select("owner_id, sitter_id")
+    .eq("id", id)
+    .single();
+
+  if (!reservation) return result;
+
+  const { data: room } = await db
+    .from("chat_rooms")
+    .select("id")
+    .eq("owner_id", reservation.owner_id)
+    .eq("sitter_id", reservation.sitter_id)
+    .eq("room_type", "direct")
+    .maybeSingle();
+
+  if (!room) return result;
+
+  const now = new Date().toISOString();
+  await db
+    .from("messages")
+    .insert({ room_id: room.id, sender_id: user.id, content: RESERVATION_CANCELED_PREFIX });
+  await db
+    .from("chat_rooms")
+    .update({ last_message: "예약 취소", last_message_at: now })
+    .eq("id", room.id);
+
+  return { ...result, data: { ...result.data, chatRoomId: room.id } };
 }
 
 const STATUS_MAP: Record<string, string> = {
@@ -284,7 +323,7 @@ export async function getMyReservations() {
   const { data, error } = await db
     .from("reservations")
     .select(`
-      id, status, start_datetime, end_datetime, total_price, created_at,
+      id, status, start_datetime, end_datetime, total_price, created_at, sitter_id,
       services(title),
       sitters(available_area, rating, users(full_name)),
       reservation_items(pets(name, breed, animal_type)),
@@ -298,8 +337,8 @@ export async function getMyReservations() {
   const pad = (n: number) => String(n).padStart(2, "0");
 
   const bookings = (data ?? []).map((r) => {
-    const start = new Date(r.start_datetime);
-    const end = new Date(r.end_datetime);
+    const start = new Date(r.start_datetime ?? "");
+    const end = new Date(r.end_datetime ?? "");
     const created = new Date(r.created_at ?? "");
     const dateStr = `${created.getFullYear()}${pad(created.getMonth() + 1)}${pad(created.getDate())}`;
 
@@ -311,7 +350,7 @@ export async function getMyReservations() {
     const service = r.services as { title: string } | null;
     const items = (r.reservation_items as ItemRow[]) ?? [];
     const firstPet = items[0]?.pets;
-    const reviews = (r.reviews as { id: string }[]) ?? [];
+    const reviews = (r.reviews as unknown as { id: string }[] | null) ?? [];
 
     return {
       id: r.id,
@@ -320,6 +359,7 @@ export async function getMyReservations() {
       status: STATUS_MAP[r.status] ?? "pending",
       sitterName: sitter?.users?.full_name ?? "-",
       sitterRating: sitter?.rating ?? 0,
+      sitterId: (r as { sitter_id: string }).sitter_id,
       date: `${start.getFullYear()}년 ${start.getMonth() + 1}월 ${start.getDate()}일 (${DAYS[start.getDay()]})`,
       time: `${pad(start.getHours())}:${pad(start.getMinutes())} – ${pad(end.getHours())}:${pad(end.getMinutes())}`,
       location: sitter?.available_area ?? "-",
@@ -366,8 +406,8 @@ export async function getReservationById(id: string) {
   if (error || !r) return { error: { code: "NOT_FOUND", message: "예약 정보를 찾을 수 없습니다." } };
 
   const pad = (n: number) => String(n).padStart(2, "0");
-  const start = new Date(r.start_datetime);
-  const end = new Date(r.end_datetime);
+  const start = new Date(r.start_datetime ?? "");
+  const end = new Date(r.end_datetime ?? "");
   const created = new Date(r.created_at ?? "");
   const dateStr = `${created.getFullYear()}${pad(created.getMonth() + 1)}${pad(created.getDate())}`;
 
@@ -378,7 +418,7 @@ export async function getReservationById(id: string) {
   const service = r.services as { title: string } | null;
   const items = (r.reservation_items as { pets: PetRow }[]) ?? [];
   const firstPet = items[0]?.pets;
-  const reviews = (r.reviews as { id: string }[]) ?? [];
+  const reviews = (r.reviews as unknown as { id: string }[] | null) ?? [];
 
   const { count: reviewCount } = await db
     .from("reviews")

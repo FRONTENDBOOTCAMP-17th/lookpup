@@ -121,19 +121,6 @@ function formatRelativeTime(dateStr: string) {
   return `${Math.floor(diffH / 24)}일 전`;
 }
 
-// 주소를 자치구(구) 단위까지만 표시 (동/상세주소 제거). 구가 없으면 시/군까지.
-function toDistrict(location: string): string {
-  const parts = location.trim().split(/\s+/);
-  let guIdx = -1;
-  for (let i = 0; i < parts.length; i++) {
-    if (/구$/.test(parts[i])) guIdx = i;
-  }
-  if (guIdx >= 0) return parts.slice(0, guIdx + 1).join(" ");
-  const siGunIdx = parts.findIndex((p, i) => i > 0 && /[시군]$/.test(p));
-  if (siGunIdx >= 0) return parts.slice(0, siGunIdx + 1).join(" ");
-  return parts.slice(0, 2).join(" ");
-}
-
 function formatJoinDate(dateStr: string) {
   const d = new Date(dateStr);
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
@@ -280,12 +267,12 @@ export default function BoardDetailPage() {
 
       <main className="flex-1 bg-orange-50 min-h-screen">
         <div className="max-w-7xl mx-auto px-4 md:px-10 py-6 md:py-8">
+          {/* 목록으로 */}
+          <BackButton href="/board" className="mb-6" />
+
           <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
             {/* 왼쪽 메인 콘텐츠 */}
-            <div className="flex-1 min-w-0 flex flex-col gap-6">
-              {/* 목록으로 */}
-              <BackButton href="/board" />
-
+            <div className="w-full flex-1 min-w-0 flex flex-col gap-6">
               {/* 게시글 헤더 카드 */}
               <SectionCard className="overflow-hidden p-0 gap-0">
                 {/* 위치 지도 */}
@@ -445,7 +432,7 @@ export default function BoardDetailPage() {
                       {post.applications.map((app) => (
                         <div
                           key={app.id}
-                          className="flex items-start gap-3 p-4 bg-orange-50 rounded-lg"
+                          className="flex items-center gap-3 p-4 bg-orange-50 rounded-lg"
                         >
                           <Avatar
                             initial={app.sitters?.users?.full_name?.[0] ?? "?"}
@@ -512,7 +499,7 @@ export default function BoardDetailPage() {
                 <h3 className="text-stone-900 text-lg font-bold">
                   작성자 정보
                 </h3>
-                <div className="flex items-start gap-3">
+                <div className="flex items-center gap-3">
                   <Avatar
                     initial={post.users?.full_name?.[0] ?? "?"}
                     size="lg"
@@ -528,18 +515,6 @@ export default function BoardDetailPage() {
                           인증
                         </span>
                       )}
-                    </div>
-                    {/*
-                      작성자 동네: users 테이블에 주소/지역 컬럼이 없어 실연동 불가.
-                      임시로 작성자가 등록한 글의 주소(post.location)를 표시.
-                      → 처음 등록한 글 주소 기준으로 구현해 둠.
-                      추후 users에 region/address 컬럼 추가되면 그 값으로 교체 필요.
-                    */}
-                    <div className="flex items-center gap-1 mb-1">
-                      <MapPin className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                      <span className="text-gray-500 text-sm">
-                        {toDistrict(post.location)}
-                      </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-gray-500 text-xs">

@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
 
   const { data: payment } = await db
     .from("payments")
-    .select("id, reservation_id")
+    .select("id, reservation_id, amount")
     .eq("payment_id", paymentId)
     .maybeSingle();
 
@@ -66,6 +66,41 @@ export async function POST(request: NextRequest) {
   const now = new Date().toISOString();
 
   if (type === "Transaction.Paid") {
+    // PortOne API로 실제 결제 금액 검증
+    const portoneRes = await fetch(
+      `https://api.portone.io/payments/${paymentId}`,
+      {
+        headers: {
+          Authorization: `PortOne ${process.env.PORTONE_API_SECRET}`,
+        },
+        cache: "no-store",
+      },
+    );
+
+    if (!portoneRes.ok) {
+      return NextResponse.json(
+        { error: { code: "INTERNAL_ERROR", message: "PortOne 결제 조회 실패" } },
+        { status: 500 },
+      );
+    }
+
+    const portonePayment = await portoneRes.json() as {
+      status: string;
+      amount: { total: number };
+    };
+
+    // 실제 결제 금액이 DB 기대 금액과 다르면 위변조로 간주
+    if (
+      portonePayment.status !== "PAID" ||
+      portonePayment.amount.total !== payment.amount
+    ) {
+      await db.from("payments").update({ status: "failed" }).eq("id", payment.id);
+      return NextResponse.json(
+        { error: { code: "VALIDATION_ERROR", message: "결제 금액 불일치" } },
+        { status: 400 },
+      );
+    }
+
     await Promise.all([
       db.from("payments").update({ status: "paid", paid_at: now }).eq("id", payment.id),
       db.from("reservations").update({ status: "paid", paid_at: now }).eq("id", payment.reservation_id),

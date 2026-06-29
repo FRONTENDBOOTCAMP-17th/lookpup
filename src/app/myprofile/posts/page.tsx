@@ -103,8 +103,6 @@ type TabId =
   | "in-progress"
   | "completed"
   | "canceled";
-type SortType = "latest" | "status";
-
 interface Post {
   id: string;
   title: string;
@@ -307,7 +305,6 @@ export default function PostsManagePage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [postsLoading, setPostsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabId>("all");
-  const [sort, setSort] = useState<SortType>("latest");
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
   // 모바일 탭 가로 스크롤
@@ -355,21 +352,9 @@ export default function PostsManagePage() {
   const filtered =
     activeTab === "all" ? posts : posts.filter((p) => p.status === activeTab);
 
-  const sorted = [...filtered].sort((a, b) => {
-    if (sort === "status") {
-      const order: PostStatus[] = [
-        "open",
-        "matched",
-        "in-progress",
-        "completed",
-        "canceled",
-      ];
-      return order.indexOf(a.status) - order.indexOf(b.status);
-    }
-    return (
-      new Date(b.createdAtRaw).getTime() - new Date(a.createdAtRaw).getTime()
-    );
-  });
+  const sorted = [...filtered].sort(
+    (a, b) => new Date(b.createdAtRaw).getTime() - new Date(a.createdAtRaw).getTime(),
+  );
 
   const confirmDelete = async () => {
     if (!deleteTargetId) return;
@@ -484,24 +469,9 @@ export default function PostsManagePage() {
           </button>
         </div>
 
-        {/* 총 건수 + 정렬 */}
-        <div className="flex items-center justify-between mt-4 mb-3">
+        {/* 총 건수 */}
+        <div className="mt-4 mb-3">
           <span className="text-xs text-gray-400">총 {sorted.length}건</span>
-          <div className="flex gap-1">
-            {(["latest", "status"] as SortType[]).map((s) => (
-              <button
-                key={s}
-                onClick={() => setSort(s)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                  sort === s
-                    ? "bg-stone-900 text-white"
-                    : "text-gray-500 hover:bg-gray-100"
-                }`}
-              >
-                {s === "latest" ? "최신순" : "상태순"}
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* 게시글 목록 */}

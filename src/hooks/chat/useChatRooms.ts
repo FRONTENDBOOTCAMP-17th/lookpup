@@ -10,6 +10,15 @@ import type {
   ChatRoom,
   Applicant,
 } from "@/components/common/chat/chat_components";
+import {
+  SYSTEM_MSG_PREFIX,
+  IMAGE_MSG_PREFIX,
+  PAYMENT_REQUEST_PREFIX,
+  PAYMENT_COMPLETE_PREFIX,
+  APPLICATION_SELECTED_PREFIX,
+  APPLICATION_REJECTED_PREFIX,
+  RESERVATION_CANCELED_PREFIX,
+} from "@/lib/chatMessagePrefixes";
 
 function formatTime(iso: string | null): string {
   if (!iso) return "";
@@ -30,6 +39,7 @@ interface RoomApiItem {
   room_type: "direct" | "request";
   owner_id: string | null;
   sitter_id: string | null;
+  reservation_id: string | null;
   other_user_full_name: string | null;
   other_user_profile_image: string | null;
   last_message: string | null;
@@ -41,12 +51,14 @@ interface RoomApiItem {
   application_status: string | null;
 }
 
-const SYSTEM_MSG_PREFIX = "__system__:";
-const IMAGE_MSG_PREFIX = "__image__:";
-
 function formatPreview(content: string): string {
   if (content.startsWith(SYSTEM_MSG_PREFIX)) return content.slice(SYSTEM_MSG_PREFIX.length);
   if (content.startsWith(IMAGE_MSG_PREFIX)) return "사진";
+  if (content.startsWith(PAYMENT_REQUEST_PREFIX)) return "결제 요청";
+  if (content.startsWith(PAYMENT_COMPLETE_PREFIX)) return "결제 완료";
+  if (content.startsWith(APPLICATION_SELECTED_PREFIX)) return "선택 확정";
+  if (content.startsWith(APPLICATION_REJECTED_PREFIX)) return "지원 거절";
+  if (content.startsWith(RESERVATION_CANCELED_PREFIX)) return "예약 취소";
   return content;
 }
 
@@ -95,7 +107,9 @@ export function useChatRooms(activeRoomId: string | null) {
         .filter((r) => r.room_type === "direct")
         .map((r) => ({
           id: r.id,
+          ownerId: r.owner_id ?? null,
           sitterId: r.sitter_id ?? null,
+          reservationId: r.reservation_id ?? null,
           name: r.other_user_full_name ?? "",
           initial: (r.other_user_full_name ?? "?")[0],
           profileImage: r.other_user_profile_image ?? null,
@@ -180,14 +194,12 @@ export function useChatRooms(activeRoomId: string | null) {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "messages" },
         (payload) => {
-          const { room_id, sender_id, content, created_at } = payload.new as {
+          const { room_id, content, created_at } = payload.new as {
             room_id: string;
-            sender_id: string;
             content: string;
             created_at: string;
           };
 
-          if (sender_id !== userIdRef.current) return;
           if (!myRoomIdsRef.current.has(room_id)) return;
           updateRoomPreview(room_id, formatPreview(content), created_at);
         },
@@ -330,6 +342,7 @@ export function useChatRooms(activeRoomId: string | null) {
     posts,
     loading,
     error,
+    userId,
     deleteRoom,
     deleteApplicant,
     markRoomAsRead,

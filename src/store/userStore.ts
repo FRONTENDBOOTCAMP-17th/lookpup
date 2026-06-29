@@ -5,6 +5,11 @@ interface UserProfile {
   email: string;
   fullName: string;
   phoneNumber: string;
+  address: string;
+  displayArea: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  birthdate: string | null;
   profileImage: string | null;
   isVerified: boolean;
   role: "owner" | "both" | "admin";
@@ -13,6 +18,7 @@ interface UserProfile {
 export interface SitterData {
   id: string;
   availableArea: string;
+  displayArea: string | null;
   career: string | null;
   introduction: string | null;
   rating: number;
@@ -23,6 +29,7 @@ export interface SitterData {
   activityPhotoUrls: string[];
   latitude: number | null;
   longitude: number | null;
+  serviceRadiusKm: number | null;
 }
 
 interface UserState {
@@ -44,13 +51,27 @@ export const useUserStore = create<UserState>((set) => ({
   isLoggedIn: false,
   isLoading: true,
   isDeletedAccount: false,
-  setUser: (user) => set({ user, isLoggedIn: true, isLoading: false, isDeletedAccount: false }),
+  setUser: (user) =>
+    set({ user, isLoggedIn: true, isLoading: false, isDeletedAccount: false }),
   setSitter: (sitter) => set({ sitter }),
-  clearUser: () => set({ user: null, sitter: null, isLoggedIn: false, isLoading: false, isDeletedAccount: false }),
+  clearUser: () =>
+    set({
+      user: null,
+      sitter: null,
+      isLoggedIn: false,
+      isLoading: false,
+      isDeletedAccount: false,
+    }),
   verifyUser: () =>
     set((state) =>
       state.user ? { user: { ...state.user, isVerified: true } } : {},
     ),
   setDeletedAccount: () =>
-    set({ user: null, sitter: null, isLoggedIn: false, isLoading: false, isDeletedAccount: true }),
+    set({
+      user: null,
+      sitter: null,
+      isLoggedIn: false,
+      isLoading: false,
+      isDeletedAccount: true,
+    }),
 }));

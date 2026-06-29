@@ -2,6 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { createNotification } from "@/lib/notificationHelpers";
 
 async function getAuthUser() {
   const supabase = await createClient();
@@ -118,12 +119,99 @@ export async function createApplication(
     });
   }
 
+  const { data: sitterUser } = await db
+    .from("users")
+    .select("full_name")
+    .eq("id", user.id)
+    .single();
+  const sitterName = sitterUser?.full_name ?? "펫시터";
+
+  await createNotification({
+    userId: requestRow.owner_id,
+    type: "application",
+    title: "새로운 지원자가 도착했어요",
+    content: `${sitterName}님이 구인글에 지원했습니다.`,
+    linkUrl: `/board/${requestId}`,
+  });
+
   return { data };
+}
+
+export async function getRequestDetailsForReservation(roomId: string) {
+  const user = await getAuthUser();
+  if (!user) {
+    return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
+  }
+
+  const db = createServiceClient();
+
+  const { data: room } = await db
+    .from("chat_rooms")
+    .select("request_id, sitter_id")
+    .eq("id", roomId)
+    .single();
+
+  if (!room?.request_id) {
+    return { error: { code: "NOT_FOUND", message: "구인글 정보를 찾을 수 없습니다." } };
+  }
+
+  const { data: request } = await db
+    .from("requests")
+    .select("id, title, start_datetime, end_datetime, request_type, location, budget, pet_id")
+    .eq("id", room.request_id)
+    .single();
+
+  if (!request) {
+    return { error: { code: "NOT_FOUND", message: "구인글을 찾을 수 없습니다." } };
+  }
+
+  const { data: application } = await db
+    .from("applications")
+    .select("proposed_price")
+    .eq("request_id", room.request_id)
+    .eq("sitter_id", room.sitter_id)
+    .maybeSingle();
+
+  let petName: string | null = null;
+  let petAnimalType: string | null = null;
+  let petBreed: string | null = null;
+  if (request.pet_id) {
+    const { data: pet } = await db
+      .from("pets")
+      .select("name, animal_type, breed")
+      .eq("id", request.pet_id)
+      .maybeSingle();
+    if (pet) {
+      petName = pet.name;
+      petAnimalType = pet.animal_type;
+      petBreed = pet.breed;
+    }
+  }
+
+  return {
+    data: {
+      title: request.title,
+      startDatetime: request.start_datetime,
+      endDatetime: request.end_datetime,
+      requestType: request.request_type,
+      location: request.location,
+      totalPrice: application?.proposed_price ?? request.budget,
+      petName,
+      petAnimalType,
+      petBreed,
+    },
+  };
 }
 
 export async function updateApplication(
   id: string,
   input: { status: "selected" | "rejected" | "canceled" },
+  overrides?: {
+    startDatetime?: string | null;
+    endDatetime?: string | null;
+    totalPrice?: number | null;
+    location?: string | null;
+  },
 ) {
   const user = await getAuthUser();
   if (!user) {
@@ -136,7 +224,7 @@ export async function updateApplication(
     .from("applications")
     .select(
       `id, sitter_id, request_id, proposed_price, status,
-       requests!inner(id, owner_id, start_datetime, end_datetime, budget, status)`,
+       requests!inner(id, owner_id, start_datetime, end_datetime, budget, status, pet_id)`,
     )
     .eq("id", id)
     .single();
@@ -147,14 +235,7 @@ export async function updateApplication(
     };
   }
 
-  const requestRow = application.requests as unknown as {
-    id: string;
-    owner_id: string;
-    start_datetime: string;
-    end_datetime: string;
-    budget: number;
-    status: string;
-  };
+  const requestRow = application.requests;
 
   const { data: sitterProfile } = await db
     .from("sitters")
@@ -185,6 +266,8 @@ export async function updateApplication(
     }
   }
 
+  let reservationId: string | null = null;
+
   if (input.status === "selected") {
     if (requestRow.status !== "open") {
       return {
@@ -192,7 +275,9 @@ export async function updateApplication(
       };
     }
 
-    const totalPrice = application.proposed_price ?? requestRow.budget;
+    const totalPrice = overrides?.totalPrice ?? application.proposed_price ?? requestRow.budget ?? 0;
+    const startDatetime = overrides?.startDatetime ?? requestRow.start_datetime;
+    const endDatetime = overrides?.endDatetime ?? requestRow.end_datetime;
 
     const { data: reservation, error: reservationError } = await db
       .from("reservations")
@@ -202,10 +287,11 @@ export async function updateApplication(
         service_id: null,
         request_id: requestRow.id,
         application_id: id,
-        start_datetime: requestRow.start_datetime,
-        end_datetime: requestRow.end_datetime,
+        start_datetime: startDatetime,
+        end_datetime: endDatetime,
         total_price: totalPrice,
-        status: "pending",
+        status: "accepted",
+        accepted_at: new Date().toISOString(),
       })
       .select()
       .single();
@@ -216,18 +302,15 @@ export async function updateApplication(
       };
     }
 
-    const { data: requestPets } = await db
-      .from("request_pets")
-      .select("pet_id")
-      .eq("request_id", requestRow.id);
+    reservationId = reservation.id;
 
-    if (requestPets && requestPets.length > 0) {
-      await db.from("reservation_items").insert(
-        requestPets.map(({ pet_id }) => ({
-          reservation_id: reservation.id,
-          pet_id,
-        })),
-      );
+    type RequestRow = { pet_id?: string | null };
+    const pet_id = (requestRow as RequestRow).pet_id;
+    if (pet_id) {
+      await db.from("reservation_items").insert({
+        reservation_id: reservation.id,
+        pet_id,
+      });
     }
 
     const { data: existingRoom } = await db
@@ -264,12 +347,55 @@ export async function updateApplication(
     return { error: { code: "INTERNAL_ERROR", message: error.message } };
   }
 
-  return { data };
+  if (input.status === "selected" || input.status === "rejected") {
+    const { data: applicantSitter } = await db
+      .from("sitters")
+      .select("user_id")
+      .eq("id", application.sitter_id)
+      .single();
+
+    if (applicantSitter?.user_id) {
+      const { data: chatRoom } = await db
+        .from("chat_rooms")
+        .select("id")
+        .eq("request_id", requestRow.id)
+        .eq("sitter_id", application.sitter_id)
+        .maybeSingle();
+      const chatLink = chatRoom ? `/chat?roomId=${chatRoom.id}` : undefined;
+
+      if (input.status === "selected") {
+        await createNotification({
+          userId: applicantSitter.user_id,
+          type: "application_selected",
+          title: "지원이 수락되었어요",
+          content: "구인글 작성자의 예약이 완료될 때까지 기다려주세요.",
+          linkUrl: chatLink,
+        });
+      } else {
+        await createNotification({
+          userId: applicantSitter.user_id,
+          type: "application_rejected",
+          title: "지원이 거절되었습니다",
+          content:
+            "아쉽지만 다음 기회를 기다려봐요. 다른 구인글도 확인해 보세요.",
+          linkUrl: chatLink,
+        });
+      }
+    }
+  }
+
+  return { data, reservationId };
 }
 
 export async function updateApplicationByRoom(
   roomId: string,
   status: "selected" | "rejected",
+  overrides?: {
+    startDatetime?: string | null;
+    endDatetime?: string | null;
+    totalPrice?: number | null;
+    location?: string | null;
+  },
 ) {
   const user = await getAuthUser();
   if (!user) {
@@ -303,5 +429,5 @@ export async function updateApplicationByRoom(
     };
   }
 
-  return updateApplication(application.id, { status });
+  return updateApplication(application.id, { status }, overrides);
 }

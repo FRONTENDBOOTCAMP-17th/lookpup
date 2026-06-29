@@ -13,6 +13,25 @@ async function getAuthUser() {
   return user;
 }
 
+export async function getAcceptedReservationBySitter(sitterId: string) {
+  const user = await getAuthUser();
+  if (!user) return null;
+
+  const db = createServiceClient();
+
+  const { data } = await db
+    .from("reservations")
+    .select("id")
+    .eq("owner_id", user.id)
+    .eq("sitter_id", sitterId)
+    .eq("status", "accepted")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  return data?.id ?? null;
+}
+
 export async function createPayment(
   reservationId: string,
   payMethod: "CARD" | "VIRTUAL_ACCOUNT" | "TRANSFER",
@@ -27,7 +46,7 @@ export async function createPayment(
   const { data: reservation } = await db
     .from("reservations")
     .select(
-      `id, owner_id, total_price, status,
+      `id, owner_id, sitter_id, total_price, status,
        sitters!inner(users!inner(full_name))`,
     )
     .eq("id", reservationId)
@@ -74,6 +93,8 @@ export async function createPayment(
   const { error } = await db.from("payments").insert({
     reservation_id: reservationId,
     payment_id: paymentId,
+    owner_id: user.id,
+    sitter_id: (reservation as unknown as { sitter_id: string }).sitter_id,
     amount,
     pay_method: payMethod,
     fee_rate: FEE_RATE,
@@ -86,10 +107,7 @@ export async function createPayment(
     return { error: { code: "INTERNAL_ERROR", message: error.message } };
   }
 
-  const sitter = reservation.sitters as unknown as {
-    users: { full_name: string };
-  };
-  const orderName = `${sitter.users.full_name} 펫시팅 서비스`;
+  const orderName = `${reservation.sitters.users.full_name ?? "펫시터"} 펫시팅 서비스`;
 
   return { data: { payment_id: paymentId, amount, order_name: orderName } };
 }
@@ -117,12 +135,7 @@ export async function cancelPayment(paymentId: string, reason: string) {
     };
   }
 
-  const reservation = payment.reservations as unknown as {
-    id: string;
-    owner_id: string;
-    start_datetime: string;
-    status: string;
-  };
+  const reservation = payment.reservations;
 
   if (reservation.owner_id !== user.id) {
     return { error: { code: "FORBIDDEN", message: "취소 권한이 없습니다." } };
@@ -138,7 +151,7 @@ export async function cancelPayment(paymentId: string, reason: string) {
   }
 
   // 서비스 시작 전인지 확인
-  if (new Date(reservation.start_datetime) <= new Date()) {
+  if (!reservation.start_datetime || new Date(reservation.start_datetime) <= new Date()) {
     return {
       error: {
         code: "FORBIDDEN",

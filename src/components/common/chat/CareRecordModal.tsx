@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { X, ChevronLeft, Clock, ImagePlus } from "lucide-react";
+import { uploadToCloudinary } from "@/utils/cloudinary";
 
 //타입 정의 
 
@@ -257,12 +258,23 @@ function CareRecordField({
   field,
   value,
   onChange,
+  onFileChange,
+  error,
 }: {
   field: FieldConfig;
   value: string;
   onChange: (v: string) => void;
+  onFileChange?: (file: File) => void;
+  error?: string;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
 
   const inputBase =
     "w-full h-10 px-3 bg-white border border-orange-100 rounded-xl text-sm text-stone-900 placeholder:text-gray-400 outline-none focus:border-orange-300 transition-colors";
@@ -355,24 +367,44 @@ function CareRecordField({
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="w-full h-24 bg-orange-50 border-2 border-dashed border-orange-200 rounded-xl flex flex-col items-center justify-center gap-1.5 hover:bg-orange-100 transition-colors"
+            className="w-full bg-orange-50 border-2 border-dashed border-orange-200 rounded-xl overflow-hidden hover:bg-orange-100 transition-colors"
           >
-            <ImagePlus size={20} className="text-orange-400" />
-            <span className="text-xs text-gray-400">
-              {value ? value : "사진을 추가하세요"}
-            </span>
+            {previewUrl ? (
+              <img
+                src={previewUrl}
+                alt="미리보기"
+                className="w-full h-40 object-cover"
+              />
+            ) : (
+              <div className="h-24 flex flex-col items-center justify-center gap-1.5">
+                <ImagePlus size={20} className="text-orange-400" />
+                <span className="text-xs text-gray-400">사진을 추가하세요</span>
+              </div>
+            )}
           </button>
+          {previewUrl && (
+            <p className="mt-1.5 text-xs text-gray-400 truncate">{value}</p>
+          )}
           <input
             ref={fileRef}
             type="file"
             accept="image/*"
-            multiple
             className="hidden"
             onChange={(e) => {
-              if (e.target.files?.length) onChange(e.target.files[0].name);
+              const file = e.target.files?.[0];
+              if (file) {
+                if (previewUrl) URL.revokeObjectURL(previewUrl);
+                setPreviewUrl(URL.createObjectURL(file));
+                onChange(file.name);
+                onFileChange?.(file);
+              }
             }}
           />
         </>
+      )}
+
+      {error && (
+        <p className="mt-1.5 text-xs text-red-500">{error}</p>
       )}
     </div>
   );
@@ -445,14 +477,43 @@ function CareRecordForm({
   config,
   onSubmit,
   onBack,
+  isUploading = false,
 }: {
   config: RecordTypeConfig;
-  onSubmit: (fields: Record<string, string>) => void;
+  onSubmit: (fields: Record<string, string>, photoFiles: Record<string, File>) => void;
   onBack: () => void;
+  isUploading?: boolean;
 }) {
   const [values, setValues] = useState<Record<string, string>>(() =>
     Object.fromEntries(config.fields.map((f) => [f.key, ""]))
   );
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [photoFiles, setPhotoFiles] = useState<Record<string, File>>({});
+
+  const handleChange = (key: string, v: string) => {
+    setValues((prev) => ({ ...prev, [key]: v }));
+    if (errors[key]) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
+    }
+  };
+
+  const handleSave = () => {
+    const newErrors: Record<string, string> = {};
+    config.fields.forEach((f) => {
+      if (!f.optional && !values[f.key]?.trim()) {
+        newErrors[f.key] = `${f.label}을(를) 입력해주세요.`;
+      }
+    });
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+    onSubmit(values, photoFiles);
+  };
 
   return (
     <>
@@ -479,7 +540,9 @@ function CareRecordForm({
             key={field.key}
             field={field}
             value={values[field.key] ?? ""}
-            onChange={(v) => setValues((prev) => ({ ...prev, [field.key]: v }))}
+            onChange={(v) => handleChange(field.key, v)}
+            onFileChange={(file) => setPhotoFiles((prev) => ({ ...prev, [field.key]: file }))}
+            error={errors[field.key]}
           />
         ))}
       </div>
@@ -487,10 +550,11 @@ function CareRecordForm({
       <div className="px-5 py-4 border-t border-orange-100">
         <button
           type="button"
-          onClick={() => onSubmit(values)}
-          className="w-full h-12 bg-orange-500 rounded-2xl text-white text-sm font-semibold hover:bg-orange-600 transition-colors"
+          onClick={handleSave}
+          disabled={isUploading}
+          className="w-full h-12 bg-orange-500 rounded-2xl text-white text-sm font-semibold hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          저장하기
+          {isUploading ? "업로드 중..." : "저장하기"}
         </button>
       </div>
     </>
@@ -522,7 +586,7 @@ interface CareRecordModalProps {
   reservationId?: string;
   roomId?: string;
   senderId?: string;
-  onSubmit?: (record: CareRecordPayload) => void;
+  onSubmit: (record: CareRecordPayload) => void;
 }
 
 export default function CareRecordModal({
@@ -536,6 +600,14 @@ export default function CareRecordModal({
 }: CareRecordModalProps) {
   const [step, setStep] = useState<"select" | "form">("select");
   const [selectedType, setSelectedType] = useState<CareRecordType | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  useEffect(() => {
+    if (!open) {
+      setStep("select");
+      setSelectedType(null);
+    }
+  }, [open]);
 
   if (!open) return null;
 
@@ -559,24 +631,31 @@ export default function CareRecordModal({
     onClose();
   };
 
-  const handleSubmit = (fields: Record<string, string>) => {
+  const handleSubmit = async (fields: Record<string, string>, photoFiles: Record<string, File>) => {
     if (!selectedConfig) return;
-    const record: CareRecordPayload = {
-      reservationId,
-      roomId,
-      senderId,
-      type: selectedConfig.type,
-      serviceType,
-      title: selectedConfig.label,
-      statusText: selectedConfig.statusText,
-      content: fields.memo ?? "",
-      fields,
-      imageUrls: fields.photo ? [fields.photo] : [],
-      createdAt: new Date().toISOString(),
-    };
-    console.log("[CareRecord 저장]", record);
-    onSubmit?.(record);
-    handleClose();
+    setIsUploading(true);
+    try {
+      const imageUrls = await Promise.all(
+        Object.values(photoFiles).map((file) => uploadToCloudinary(file, "care-records"))
+      );
+      const record: CareRecordPayload = {
+        reservationId,
+        roomId,
+        senderId,
+        type: selectedConfig.type,
+        serviceType,
+        title: selectedConfig.label,
+        statusText: selectedConfig.statusText,
+        content: fields.memo ?? "",
+        fields,
+        imageUrls,
+        createdAt: new Date().toISOString(),
+      };
+      onSubmit(record);
+      handleClose();
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -599,6 +678,7 @@ export default function CareRecordModal({
             config={selectedConfig}
             onSubmit={handleSubmit}
             onBack={handleBack}
+            isUploading={isUploading}
           />
         ) : null}
       </div>

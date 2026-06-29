@@ -137,7 +137,9 @@ export default function SitterProfilePreviewPage() {
         <div className="bg-white rounded-2xl shadow-[0px_2px_12px_rgba(232,116,42,0.10)] border border-orange-100 p-6">
           <div className="text-center py-4">
             <p className="text-5xl font-bold text-orange-500 mb-2">{sitter.rating.toFixed(1)}</p>
-            <StarRow size={16} />
+            <div className="flex justify-center gap-0.5">
+              <StarRow size={16} />
+            </div>
             <p className="text-xs text-gray-400 mt-1">{sitter.reviewCount}개 리뷰</p>
           </div>
         </div>
@@ -151,7 +153,8 @@ export default function SitterProfilePreviewPage() {
               <KakaoMap
                 markers={[{ lat: sitter.latitude, lng: sitter.longitude, id: 1, certified: user.isVerified }]}
                 center={{ lat: sitter.latitude, lng: sitter.longitude }}
-                level={5}
+                level={sitter.serviceRadiusKm ? (sitter.serviceRadiusKm <= 2 ? 6 : sitter.serviceRadiusKm <= 5 ? 7 : 8) : 5}
+                serviceRadius={sitter.serviceRadiusKm ?? undefined}
               />
             </div>
           ) : (
@@ -159,7 +162,10 @@ export default function SitterProfilePreviewPage() {
           )}
           <p className="mt-4 text-gray-500 text-sm flex items-center gap-1">
             <MapPin size={14} className="text-orange-500 shrink-0" />
-            {sitter.availableArea}
+            {sitter.displayArea ?? sitter.availableArea}
+            {sitter.serviceRadiusKm && (
+              <span className="text-orange-400 font-medium ml-1">· 반경 {sitter.serviceRadiusKm}km</span>
+            )}
           </p>
         </div>
       )}

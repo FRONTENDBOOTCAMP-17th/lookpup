@@ -6,10 +6,15 @@ import { createClient } from "@/utils/supabase/client";
 import { useUserStore } from "@/store/userStore";
 import { getMySitterProfile } from "@/app/actions/sitters";
 
-export default function UserProvider({ children }: { children: React.ReactNode }) {
+export default function UserProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const router = useRouter();
   const pathname = usePathname();
-  const { setUser, setSitter, clearUser, setDeletedAccount, isDeletedAccount } = useUserStore();
+  const { setUser, setSitter, clearUser, setDeletedAccount, isDeletedAccount } =
+    useUserStore();
 
   useEffect(() => {
     if (isDeletedAccount && pathname !== "/auth/restore") {
@@ -23,7 +28,9 @@ export default function UserProvider({ children }: { children: React.ReactNode }
     const loadUser = async (userId: string) => {
       const { data } = await supabase
         .from("users")
-        .select("id, email, full_name, phone_number, profile_image, is_verified, role, deleted_at")
+        .select(
+          "id, email, full_name, phone_number, address, display_area, latitude, longitude, birthdate, profile_image, is_verified, role, deleted_at",
+        )
         .eq("id", userId)
         .single();
 
@@ -42,9 +49,14 @@ export default function UserProvider({ children }: { children: React.ReactNode }
         email: data.email ?? "",
         fullName: data.full_name ?? "",
         phoneNumber: data.phone_number ?? "",
+        address: data.address ?? "",
+        displayArea: data.display_area ?? null,
+        latitude: data.latitude != null ? Number(data.latitude) : null,
+        longitude: data.longitude != null ? Number(data.longitude) : null,
+        birthdate: data.birthdate ?? null,
         profileImage: data.profile_image ?? null,
         isVerified: data.is_verified ?? false,
-        role: data.role ?? "owner",
+        role: (data.role ?? "owner") as "owner" | "both" | "admin",
       });
 
       if (data.role === "both" || data.role === "admin") {
@@ -60,7 +72,9 @@ export default function UserProvider({ children }: { children: React.ReactNode }
       else clearUser();
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         loadUser(session.user.id);
       } else {

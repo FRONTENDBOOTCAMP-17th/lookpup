@@ -20,7 +20,7 @@ export async function GET() {
   const { data, error } = await db
     .from("reviews")
     .select(
-      `id, rating, content, created_at,
+      `id, rating, content, image_urls, created_at,
        sitters(
          users(full_name, profile_image)
        )`,
@@ -36,16 +36,14 @@ export async function GET() {
   }
 
   const reviews = data.map((item) => {
-    const sitter = item.sitters as unknown as {
-      users: { full_name: string; profile_image: string | null };
-    };
     return {
       id: item.id,
       rating: item.rating,
       content: item.content,
+      image_urls: item.image_urls ?? [],
       created_at: item.created_at,
-      sitter_full_name: sitter?.users?.full_name ?? "알 수 없음",
-      sitter_profile_image: sitter?.users?.profile_image ?? null,
+      sitter_full_name: item.sitters?.users?.full_name ?? "알 수 없음",
+      sitter_profile_image: item.sitters?.users?.profile_image ?? null,
     };
   });
 

@@ -14,6 +14,7 @@ import Header from "@/components/layout/Header";
 import { Progress } from "@/components/ui/progress";
 import { createSitter } from "@/app/actions/sitters";
 import { uploadToCloudinary } from "@/utils/cloudinary";
+import LocationPickerWithMap, { type LocationValue } from "@/components/LocationPickerWithMap";
 
 const SERVICES = [
   { id: "visit", emoji: "🏠", title: "방문돌봄", desc: "보호자님 집에서 돌봄" },
@@ -35,18 +36,6 @@ const CAREER_OPTIONS = [
   { value: "1~3년", label: "1~3년" },
   { value: "3~5년", label: "3~5년" },
   { value: "5년 이상", label: "5년 이상" },
-];
-
-const REGIONS = [
-  "서울",
-  "경기",
-  "인천",
-  "부산",
-  "대구",
-  "광주",
-  "대전",
-  "울산",
-  "세종",
 ];
 
 const labelCls = "text-stone-900 text-sm font-medium leading-5 block";
@@ -88,7 +77,7 @@ export default function PetsitterRegisterPage() {
   const [profilePhotoPreview, setProfilePhotoPreview] = useState<string | null>(
     null,
   );
-  const [region, setRegion] = useState("");
+  const [locationValue, setLocationValue] = useState<LocationValue | null>(null);
   const [intro, setIntro] = useState("");
   const [career, setCareer] = useState("");
 
@@ -173,9 +162,11 @@ export default function PetsitterRegisterPage() {
       const result = await createSitter({
         introduction: intro,
         career: career || null,
-        available_area: region,
-        latitude: 0,
-        longitude: 0,
+        available_area: locationValue?.address ?? "",
+        display_area: locationValue?.displayArea ?? null,
+        latitude: locationValue?.lat ?? 0,
+        longitude: locationValue?.lng ?? 0,
+        service_radius_km: locationValue?.radiusKm ?? 5,
         base_price: 0,
         request_type: selectedServices as (
           | "visit"
@@ -267,22 +258,12 @@ export default function PetsitterRegisterPage() {
                   </label>
                 </div>
 
-                <div className="mt-6 grid grid-cols-1 gap-4">
-                  <div>
-                    <label className={`${labelCls} mb-2`}>활동 지역 *</label>
-                    <select
-                      value={region}
-                      onChange={(e) => setRegion(e.target.value)}
-                      className="w-full h-12 px-4 bg-white rounded-xl border border-[#ffe9d6] text-base font-normal text-stone-900 focus:outline-none focus:border-[#e8742a] transition-all appearance-none cursor-pointer"
-                    >
-                      <option value="">지역을 선택하세요</option>
-                      {REGIONS.map((r) => (
-                        <option key={r} value={r}>
-                          {r}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                <div className="mt-6">
+                  <label className={`${labelCls} mb-2`}>활동 지역</label>
+                  <LocationPickerWithMap
+                    value={locationValue}
+                    onChange={setLocationValue}
+                  />
                 </div>
 
                 <div className="mt-6">

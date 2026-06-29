@@ -13,6 +13,7 @@ import { calculateDistanceKm, formatDistance } from "@/utils/distance";
 import { searchPlaceToCoord, coordToRegion } from "@/utils/kakaoGeocode";
 import { supabase } from "@/lib/supabase";
 import { createClient } from "@/utils/supabase/client";
+import { getOwnerLocation } from "@/app/actions/users";
 
 const FILTERS = ["전체", "방문돌봄", "위탁돌봄", "산책"] as const;
 type Filter = (typeof FILTERS)[number];
@@ -44,6 +45,7 @@ interface Sitter {
   services: string[];
   lat: number;
   lng: number;
+  serviceRadiusKm: number | null;
 }
 
 function parseArea(area: string | null): { district: string; neighborhood: string } {
@@ -136,8 +138,10 @@ export default function PetsittersPage() {
     type SitterRow = {
       id: string;
       available_area: string | null;
+      display_area: string | null;
       latitude: number | null;
       longitude: number | null;
+      service_radius_km: number | null;
       base_price: number | null;
       rating: number | null;
       full_name: string | null;
@@ -170,6 +174,7 @@ export default function PetsittersPage() {
             services: [...new Set(serviceTypes)],
             lat: parseFloat(String(row.latitude)),
             lng: parseFloat(String(row.longitude)),
+            serviceRadiusKm: row.service_radius_km ?? null,
           };
         });
 
@@ -225,6 +230,12 @@ export default function PetsittersPage() {
     if (navigator.permissions) {
       const status = await navigator.permissions.query({ name: "geolocation" });
       if (status.state === "denied") {
+        const { data: saved } = await getOwnerLocation();
+        if (saved) {
+          setBasePosition({ lat: saved.lat, lng: saved.lng });
+          setBaseLabel(`저장된 위치 (${saved.dong || saved.address})`);
+          return;
+        }
         setLocationError("브라우저 위치 권한이 차단되어 있어요. 브라우저 설정에서 위치 권한을 허용해 주세요.");
         return;
       }
@@ -243,8 +254,15 @@ export default function PetsittersPage() {
         }
         setLocationLoading(false);
       },
-      (err) => {
+      async (err) => {
         setLocationLoading(false);
+        // GPS 실패 시 DB 저장 위치 폴백 시도
+        const { data: saved } = await getOwnerLocation();
+        if (saved) {
+          setBasePosition({ lat: saved.lat, lng: saved.lng });
+          setBaseLabel(`저장된 위치 (${saved.dong || saved.address})`);
+          return;
+        }
         if (err.code === err.PERMISSION_DENIED) {
           setLocationError("브라우저 위치 권한이 차단되어 있어요. 브라우저 설정에서 위치 권한을 허용해 주세요.");
         } else {
@@ -326,7 +344,10 @@ export default function PetsittersPage() {
         s.name.includes(searchQuery) ||
         s.district.includes(searchQuery) ||
         s.neighborhood.includes(searchQuery);
-      return matchFilter && matchSearch;
+      // 펫시터가 반경 정보를 가지고 있으면 보호자 위치가 반경 안에 있을 때만 표시
+      const matchRadius =
+        !s.serviceRadiusKm || s.distanceKm <= s.serviceRadiusKm;
+      return matchFilter && matchSearch && matchRadius;
     })
     .sort((a, b) => {
       if (sortBy === "평점순") return b.rating - a.rating;
