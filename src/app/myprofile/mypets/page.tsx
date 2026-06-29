@@ -364,6 +364,7 @@ function EditModal({
   const [neutered, setNeutered] = useState(isNeutered(pet.gender));
   const [caution, setCaution] = useState(pet.caution ?? "");
   const [saving, setSaving] = useState(false);
+  const [editErrorMessage, setEditErrorMessage] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const visual = ANIMAL_VISUAL[pet.animal_type];
 
@@ -380,7 +381,7 @@ function EditModal({
     setSaving(false);
 
     if (result.error) {
-      alert(result.error.message);
+      setEditErrorMessage(result.error.message);
       return;
     }
 
@@ -396,6 +397,7 @@ function EditModal({
   };
 
   return (
+    <>
     <Backdrop>
       <div className="bg-white rounded-[20px] w-180 max-w-full shadow-[0_12px_32px_rgba(0,0,0,0.12)] overflow-hidden flex flex-col max-h-[90vh]">
         {/* 헤더 */}
@@ -559,6 +561,17 @@ function EditModal({
         </div>
       </div>
     </Backdrop>
+    <CustomModal
+      open={!!editErrorMessage}
+      type="error"
+      title="오류가 발생했습니다."
+      description={editErrorMessage ?? undefined}
+      confirmText="확인"
+      onConfirm={() => setEditErrorMessage(null)}
+      onClose={() => setEditErrorMessage(null)}
+      showCloseButton={false}
+    />
+    </>
   );
 }
 
@@ -823,6 +836,7 @@ export default function MyPetsPage() {
   const [pets, setPets] = useState<Pet[] | null>(null);
   const [modal, setModal] = useState<ModalType>(null);
   const [targetPet, setTargetPet] = useState<Pet | null>(null);
+  const [errorModal, setErrorModal] = useState<{ title: string; description?: string } | null>(null);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
@@ -874,7 +888,7 @@ export default function MyPetsPage() {
     if (!targetPet) return;
     const result = await deletePet(targetPet.id);
     if (result.error) {
-      alert(result.error.message);
+      setErrorModal({ title: "오류가 발생했습니다.", description: result.error.message });
       return;
     }
     setPets((prev) => prev.filter((p) => p.id !== targetPet.id));
@@ -898,7 +912,7 @@ export default function MyPetsPage() {
     setModal(null);
 
     if (failedMessages.length > 0) {
-      alert(`일부 삭제에 실패했습니다.\n${failedMessages.join("\n")}`);
+      setErrorModal({ title: "일부 삭제에 실패했습니다.", description: failedMessages.join("\n") });
     }
   };
 
@@ -1108,6 +1122,16 @@ export default function MyPetsPage() {
       {modal === "guide" && (
         <GuideModal onRegister={handleAddPet} onLater={() => setModal(null)} />
       )}
+      <CustomModal
+        open={!!errorModal}
+        type="error"
+        title={errorModal?.title ?? "오류가 발생했습니다."}
+        description={errorModal?.description}
+        confirmText="확인"
+        onConfirm={() => setErrorModal(null)}
+        onClose={() => setErrorModal(null)}
+        showCloseButton={false}
+      />
     </div>
   );
 }
