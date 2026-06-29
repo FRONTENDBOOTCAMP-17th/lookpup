@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Plus, X, Eye, Camera, MapPin, Check } from "lucide-react";
 import Header from "@/components/layout/Header";
+import { CustomModal } from "@/components/common/CustomModal";
 import Avatar from "@/components/ui/Avatar";
 import StatGrid from "@/components/ui/StatGrid";
 import { useUserStore } from "@/store/userStore";
@@ -157,6 +158,9 @@ export default function SitterEditPage() {
   const photoSlotIndex = useRef(-1);
   const sitterIdRef = useRef<string | null>(null);
 
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const [form, setForm] = useState(EMPTY_FORM);
   const [profilePreview, setProfilePreview] = useState<string | null>(null);
   const profilePhotoFileRef = useRef<File | null>(null);
@@ -372,7 +376,8 @@ export default function SitterEditPage() {
       });
 
       if (result?.error) {
-        alert(result.error.message ?? "저장 중 오류가 발생했습니다.");
+        setErrorMessage(result.error.message ?? "저장 중 오류가 발생했습니다.");
+        setShowErrorModal(true);
         return;
       }
 
@@ -382,10 +387,11 @@ export default function SitterEditPage() {
         setSitter(refreshed.data);
       }
 
-      router.replace("/myprofile/sitter-profile");
+      setShowSaveModal(true);
     } catch (e) {
       console.error("handleSave error:", e);
-      alert("저장 중 오류가 발생했습니다.");
+      setErrorMessage("저장 중 오류가 발생했습니다.");
+      setShowErrorModal(true);
     } finally {
       setSaving(false);
     }
@@ -783,6 +789,27 @@ export default function SitterEditPage() {
           </button>
         </div>
       </div>
+      <CustomModal
+        open={showSaveModal}
+        type="success"
+        title="저장이 완료되었습니다"
+        confirmText="프로필 보기"
+        closeOnOverlay={false}
+        closeOnEsc={false}
+        showCloseButton={false}
+        onConfirm={() => router.replace("/myprofile/sitter-profile")}
+        onClose={() => router.replace("/myprofile/sitter-profile")}
+      />
+
+      <CustomModal
+        open={showErrorModal}
+        type="error"
+        title="저장에 실패했습니다"
+        description={errorMessage}
+        confirmText="확인"
+        onConfirm={() => setShowErrorModal(false)}
+        onClose={() => setShowErrorModal(false)}
+      />
     </>
   );
 }
