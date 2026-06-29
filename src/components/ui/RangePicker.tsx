@@ -15,14 +15,21 @@ import {
   isWithinInterval,
   isBefore,
   isAfter,
+  startOfDay,
   format,
 } from "date-fns";
 import { ko } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
+interface BookedRange {
+  from: Date;
+  to: Date;
+}
+
 interface Props {
   value: DateRange | undefined;
   onChange: (range: DateRange | undefined) => void;
+  bookedRanges?: BookedRange[];
 }
 
 function buildWeeks(month: Date): (Date | null)[][] {
@@ -43,13 +50,34 @@ function buildWeeks(month: Date): (Date | null)[][] {
 
 const DAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
 
-export default function RangePicker({ value, onChange }: Props) {
+export default function RangePicker({ value, onChange, bookedRanges = [] }: Props) {
   const [month, setMonth] = useState(new Date());
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
+  function isBookedDay(day: Date): boolean {
+    const d = startOfDay(day);
+    return bookedRanges.some(
+      (r) => !isBefore(d, r.from) && !isAfter(d, r.to),
+    );
+  }
+
+  function firstBookedInRange(start: Date, end: Date): Date | null {
+    let earliest: Date | null = null;
+    for (const r of bookedRanges) {
+      if (!isAfter(r.from, end) && !isBefore(r.to, start)) {
+        const overlapStart = isAfter(r.from, start) ? r.from : start;
+        if (!earliest || isBefore(overlapStart, earliest)) {
+          earliest = overlapStart;
+        }
+      }
+    }
+    return earliest;
+  }
+
   function handleDayClick(day: Date) {
     if (isBefore(day, today)) return;
+    if (isBookedDay(day)) return;
 
     if (!value?.from || (value.from && value.to)) {
       onChange({ from: day, to: undefined });
@@ -57,9 +85,25 @@ export default function RangePicker({ value, onChange }: Props) {
       if (isSameDay(day, value.from)) {
         onChange(undefined);
       } else if (isBefore(day, value.from)) {
-        onChange({ from: day, to: value.from });
+        const firstBooked = firstBookedInRange(addDays(day, 1), addDays(value.from, -1));
+        if (firstBooked) {
+          const newTo = addDays(firstBooked, -1);
+          onChange({ from: day, to: isBefore(newTo, day) ? undefined : newTo });
+        } else {
+          onChange({ from: day, to: value.from });
+        }
       } else {
-        onChange({ from: value.from, to: day });
+        const firstBooked = firstBookedInRange(addDays(value.from, 1), day);
+        if (firstBooked) {
+          const newTo = addDays(firstBooked, -1);
+          if (isSameDay(newTo, value.from) || isBefore(newTo, value.from)) {
+            onChange({ from: value.from, to: undefined });
+          } else {
+            onChange({ from: value.from, to: newTo });
+          }
+        } else {
+          onChange({ from: value.from, to: day });
+        }
       }
     }
   }
@@ -120,8 +164,10 @@ export default function RangePicker({ value, onChange }: Props) {
               if (!day) return <div key={di} />;
 
               const past = isBefore(day, today);
+              const booked = !past && isBookedDay(day);
               const kind = classifyDay(day);
               const isToday = isSameDay(day, today);
+              const disabled = past || booked;
 
               // 범위 배경 막대
               let barClass = "";
@@ -152,17 +198,20 @@ export default function RangePicker({ value, onChange }: Props) {
 
                   <button
                     onClick={() => handleDayClick(day)}
-                    disabled={past}
+                    disabled={disabled}
                     className={[
                       "relative z-10 w-9 h-9 rounded-full text-sm font-medium transition-colors",
-                      past ? "text-gray-300 cursor-not-allowed" : "cursor-pointer",
-                      kind === "start" || kind === "end" || kind === "single"
+                      past ? "text-gray-300 cursor-not-allowed" : "",
+                      booked ? "text-gray-300 cursor-not-allowed line-through" : "",
+                      !disabled && (kind === "start" || kind === "end" || kind === "single")
                         ? "bg-[#e8742a] text-white"
-                        : kind === "middle"
+                        : !disabled && kind === "middle"
                           ? "text-[#281a0e] hover:bg-[#fff8f3]"
-                          : isToday
+                          : !disabled && isToday
                             ? "text-[#e8742a] font-bold hover:bg-[#fff8f3]"
-                            : "text-[#281a0e] hover:bg-[#fff8f3]",
+                            : !disabled
+                              ? "text-[#281a0e] hover:bg-[#fff8f3]"
+                              : "",
                     ].join(" ")}
                   >
                     {format(day, "d")}
