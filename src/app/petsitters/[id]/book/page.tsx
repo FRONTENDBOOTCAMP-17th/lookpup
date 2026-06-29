@@ -6,21 +6,17 @@ import {
   ChevronLeft,
   ChevronRight,
   Check,
-  CreditCard,
   Calendar,
 } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { format, differenceInDays, startOfDay } from "date-fns";
 import { ko } from "date-fns/locale";
 import { useBookingStore } from "@/store/bookingStore";
-import { usePortOne } from "@/hooks/usePortOne";
 import { findOrCreateRoom } from "@/app/actions/chat";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import RangePicker from "@/components/ui/RangePicker";
 import SimpleTimePicker from "@/components/ui/SimpleTimePicker";
-import { CustomModal } from "@/components/common/CustomModal";
-import { PaymentModalContent } from "@/components/common/PaymentModalContent";
 
 //상수
 
@@ -28,12 +24,9 @@ const STEP_LABELS = [
   "날짜 선택",
   "반려동물·서비스",
   "특이사항",
-  "결제",
   "완료",
 ];
-const TOTAL_STEPS = 5;
-
-const PLATFORM_FEE = 3000;
+const TOTAL_STEPS = 4;
 
 const SITTER_SERVICE_LABEL: Record<string, string> = {
   walk: "산책",
@@ -48,16 +41,17 @@ type SitterApiResponse = {
   id: string;
   full_name: string;
   base_price: number | null;
+  request_type: string[];
   services: (SitterService & { is_active: boolean })[];
 };
 type Pet = { id: string; name: string; type: string; breed: string; age: number; weight: number; image_url: string | null };
 type PetApiItem = { id: string; name: string; animal_type: string; breed: string | null; age: number; weight: number; image_url: string | null };
 
 const SERVICE_KEY_TO_TYPE: Record<ServiceKey, string> = {
-  visit: "care",
-  home: "hotel",
-  walk: "walk",
-  hotel: "hotel",
+  visit: "방문돌봄",
+  home: "위탁돌봄",
+  walk: "산책",
+  hotel: "호텔",
 };
 
 const QUICK_NOTES = ["알러지 있음", "야간 돌봄 필요", "약 복용 중"];
@@ -228,10 +222,12 @@ function StepPetContent({
   pets,
   selectedService,
   setSelectedService,
+  sitterServices,
 }: {
   pets: Pet[];
   selectedService: ServiceKey | null;
   setSelectedService: (s: ServiceKey) => void;
+  sitterServices: SitterService[];
 }) {
   const router = useRouter();
   const { dateRange, petIds, togglePet } = useBookingStore();
@@ -304,13 +300,19 @@ function StepPetContent({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {SERVICES.map((svc) => {
             const selected = selectedService === svc.key;
+            const available = sitterServices.some(
+              (s) => s.service_type === SERVICE_KEY_TO_TYPE[svc.key],
+            );
             return (
               <button
                 key={svc.key}
                 type="button"
-                onClick={() => setSelectedService(svc.key)}
+                onClick={() => available && setSelectedService(svc.key)}
+                disabled={!available}
                 className={`w-full p-4 rounded-2xl border text-left flex items-center gap-3 transition-colors ${
-                  selected
+                  !available
+                    ? "bg-gray-50 border-gray-100 opacity-50 cursor-not-allowed"
+                    : selected
                     ? "bg-orange-50 border-orange-500"
                     : "bg-white border-orange-100 hover:border-orange-500/50"
                 }`}
@@ -420,91 +422,7 @@ function StepNoteContent({
   );
 }
 
-//Step 4: 결제
-
-function StepPaymentContent({
-  petsitter,
-  pets,
-  selectedService,
-}: {
-  petsitter: Sitter;
-  pets: Pet[];
-  selectedService: ServiceKey | null;
-}) {
-  const { dateRange, petIds } = useBookingStore();
-  const nights = calcNights(dateRange);
-  const servicePrice = petsitter.pricePerDay * nights;
-  const selectedPets = pets.filter((p) => petIds.includes(p.id));
-  const serviceLabel = selectedService
-    ? (SERVICES.find((s) => s.key === selectedService)?.label ?? petsitter.service)
-    : petsitter.service;
-
-  return (
-    <div className="flex flex-col gap-4">
-      {/* 주문 정보 */}
-      <div className="bg-white rounded-2xl border border-orange-100 p-4 sm:p-7">
-        <p className="text-stone-900 text-lg font-semibold mb-5">주문 정보</p>
-        <div className="pb-4 border-b border-orange-100 flex items-start gap-3">
-          <div className="w-10 h-10 bg-orange-50 rounded-full border border-orange-100 flex items-center justify-center shrink-0">
-            <span className="text-orange-500 text-base font-semibold">
-              {petsitter.initial}
-            </span>
-          </div>
-          <div className="min-w-0">
-            <p className="text-stone-900 text-base font-medium">
-              {petsitter.name} 펫시터
-            </p>
-            <p className="text-gray-500 text-sm">
-              {serviceLabel} · {formatDateRange(dateRange)}
-            </p>
-            {selectedPets.length > 0 && (
-              <p className="text-gray-500 text-sm">
-                {selectedPets.map((p) => `${p.name} (${p.breed})`).join(", ")}
-              </p>
-            )}
-          </div>
-        </div>
-        <div className="pt-4 flex flex-col gap-2">
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-500">서비스 금액</span>
-            <span className="text-stone-900">
-              {servicePrice.toLocaleString()}원
-              {nights > 1 ? ` (${nights}일)` : ""}
-            </span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-500">플랫폼 수수료</span>
-            <span className="text-stone-900">
-              {PLATFORM_FEE.toLocaleString()}원
-            </span>
-          </div>
-          <div className="flex justify-between pt-3 border-t border-orange-100">
-            <span className="text-stone-900 text-base font-bold">
-              총 결제금액
-            </span>
-            <span className="text-orange-500 text-xl font-bold">
-              {(servicePrice + PLATFORM_FEE).toLocaleString()}원
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* 환불 정책 */}
-      <div className="bg-white rounded-2xl border border-orange-100 p-4 sm:p-5">
-        <div className="flex items-center gap-2 mb-2">
-          <CreditCard size={16} className="text-gray-400" />
-          <p className="text-stone-900 text-base font-medium">환불 정책 확인</p>
-        </div>
-        <p className="text-gray-500 text-sm leading-6">
-          예약 24시간 전까지 무료 취소 가능합니다. 24시간 이내 취소 시 50% 환불,
-          당일 취소 시 환불 불가합니다.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-// Step 5: 예약 완료
+// Step 4: 예약 완료
 
 function StepCompleteContent({
   petsitter,
@@ -519,8 +437,6 @@ function StepCompleteContent({
 }) {
   const router = useRouter();
   const { dateRange, petIds, reset } = useBookingStore();
-  const nights = calcNights(dateRange);
-  const total = petsitter.pricePerDay * nights + PLATFORM_FEE;
   const selectedPetNames = pets.filter((p) => petIds.includes(p.id)).map((p) => p.name);
   const serviceLabel = selectedService
     ? (SERVICES.find((s) => s.key === selectedService)?.label ?? petsitter.service)
@@ -579,12 +495,6 @@ function StepCompleteContent({
               {selectedPetNames.length > 0 ? selectedPetNames.join(", ") : "-"}
             </span>
           </div>
-          <div className="flex justify-between text-sm gap-2">
-            <span className="text-gray-500 shrink-0">결제금액</span>
-            <span className="text-orange-500 font-semibold">
-              {total.toLocaleString()}원
-            </span>
-          </div>
         </div>
       </div>
 
@@ -617,14 +527,12 @@ export default function BookPage() {
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [selectedService, setSelectedService] = useState<ServiceKey | null>(null);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [chatRoomId, setChatRoomId] = useState<string | null>(null);
   const [pets, setPets] = useState<Pet[]>([]);
   const [petsitter, setPetsitter] = useState<Sitter>({ id: sitterId, name: "", initial: "", service: "", pricePerDay: 0 });
   const [sitterServices, setSitterServices] = useState<SitterService[]>([]);
   const [bookedRanges, setBookedRanges] = useState<{ from: Date; to: Date }[]>([]);
-  const { requestPayment, isPending } = usePortOne();
   const { dateRange, petIds, note } = useBookingStore();
 
   useEffect(() => {
@@ -677,22 +585,12 @@ export default function BookPage() {
       .catch(() => {});
   }, []);
 
-  const nights = calcNights(dateRange);
-  const servicePrice = petsitter.pricePerDay * nights;
-  const total = servicePrice + PLATFORM_FEE;
+  const servicePrice = petsitter.pricePerDay * calcNights(dateRange);
 
   function canNext(): boolean {
     if (step === 1) return !!dateRange?.from && !(startTime && endTime && startTime >= endTime);
     if (step === 2) return petIds.length > 0 && !!selectedService;
     return true;
-  }
-
-  function handleNext() {
-    if (step === 4) {
-      setShowPaymentModal(true);
-    } else if (canNext()) {
-      setStep((s) => s + 1);
-    }
   }
 
   function buildISO(date: Date, time: string): string {
@@ -702,55 +600,39 @@ export default function BookPage() {
     return d.toISOString();
   }
 
-  function handlePayConfirm() {
-    const paymentId = `pay_${Date.now()}`;
-    requestPayment(
-      {
-        paymentId,
-        orderName: `펫시터 예약 - ${petsitter.name}`,
-        totalAmount: total,
-        currency: "KRW",
-        payMethod: "CARD",
-        redirectUrl: `${window.location.origin}/payment/complete`,
-      },
-      {
-        onSuccess: async () => {
-          const service = sitterServices.find((s) => s.service_type === SERVICE_KEY_TO_TYPE[selectedService ?? "visit"]);
-          const startDt = buildISO(dateRange!.from!, startTime || "00:00");
-          const endDt = buildISO(dateRange!.to ?? dateRange!.from!, endTime || "23:59");
+  async function handleSubmit() {
+    if (!canNext() || isSubmitting) return;
 
-          const res = await fetch("/api/reservations", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              sitter_id: petsitter.id,
-              service_id: service?.id ?? "",
-              pet_ids: petIds,
-              start_datetime: startDt,
-              end_datetime: endDt,
-              total_price: total,
-              payment_id: paymentId,
-              pay_method: "CARD",
-              memo: note || null,
-            }),
-          });
+    const service =
+      sitterServices.find((s) => s.service_type === SERVICE_KEY_TO_TYPE[selectedService ?? "visit"])
+      ?? sitterServices[0];
+    if (!service) return;
 
-          setShowPaymentModal(false);
-          if (!res.ok) {
-            setPaymentError("결제는 완료되었으나 예약 저장에 실패했습니다. 고객센터에 문의해 주세요.");
-            return;
-          }
-          setStep(5);
-          findOrCreateRoom({ sitter_id: petsitter.id, room_type: "direct" })
-            .then((result) => { if (result.data) setChatRoomId(result.data.room_id); })
-            .catch(() => {});
-        },
-        onFail: () => {
-          setShowPaymentModal(false);
-          setPaymentError("결제에 실패했습니다. 다시 시도해 주세요.");
-        },
-      },
-    );
+    setIsSubmitting(true);
+
+    const startDt = buildISO(dateRange!.from!, startTime || "00:00");
+    const endDt = buildISO(dateRange!.to ?? dateRange!.from!, endTime || "23:59");
+
+    const res = await fetch("/api/reservations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sitter_id: petsitter.id,
+        service_id: service.id,
+        pet_ids: petIds,
+        start_datetime: startDt,
+        end_datetime: endDt,
+        memo: note || null,
+      }),
+    });
+
+    setIsSubmitting(false);
+    if (!res.ok) return;
+
+    setStep(4);
+    findOrCreateRoom({ sitter_id: petsitter.id, room_type: "direct" })
+      .then((result) => { if (result.data) setChatRoomId(result.data.room_id); })
+      .catch(() => {});
   }
 
   return (
@@ -772,10 +654,10 @@ export default function BookPage() {
                 <ChevronLeft className="w-5 h-5" />
               </button>
               <h1 className="text-2xl font-bold text-stone-900">
-                {step === 5 ? "예약 완료" : "펫시터 예약"}
+                {step === 4 ? "예약 완료" : "펫시터 예약"}
               </h1>
             </div>
-            {step < 5 && (
+            {step < 4 && (
               <span className="text-sm text-gray-500">
                 {step} / {TOTAL_STEPS}
               </span>
@@ -783,7 +665,7 @@ export default function BookPage() {
           </div>
 
           {/* 스텝 인디케이터 */}
-          {step < 5 && (
+          {step < 4 && (
             <div className="flex items-start w-full pt-8">
               {STEP_LABELS.map((label, i) => {
                 const num = i + 1;
@@ -830,15 +712,13 @@ export default function BookPage() {
                 pets={pets}
                 selectedService={selectedService}
                 setSelectedService={setSelectedService}
+                sitterServices={sitterServices}
               />
             )}
             {step === 3 && (
               <StepNoteContent pets={pets} selectedService={selectedService} />
             )}
             {step === 4 && (
-              <StepPaymentContent petsitter={petsitter} pets={pets} selectedService={selectedService} />
-            )}
-            {step === 5 && (
               <StepCompleteContent petsitter={petsitter} pets={pets} selectedService={selectedService} chatRoomId={chatRoomId} />
             )}
           </div>
@@ -846,7 +726,7 @@ export default function BookPage() {
       </main>
 
       {/* 하단 sticky 네비게이션 */}
-      {step < 5 && (
+      {step < 4 && (
         <div className="sticky bottom-0 bg-white border-t border-orange-100 z-10">
           <div className="max-w-205 mx-auto flex items-center justify-between h-19 px-6">
             <button
@@ -862,7 +742,7 @@ export default function BookPage() {
               {step} / {TOTAL_STEPS}
             </span>
 
-            {step < 4 ? (
+            {step < 3 ? (
               <button
                 type="button"
                 onClick={() => canNext() && setStep((s) => s + 1)}
@@ -878,10 +758,11 @@ export default function BookPage() {
             ) : (
               <button
                 type="button"
-                onClick={handleNext}
-                className="h-11 px-6 rounded-xl bg-orange-500 text-white text-[15px] font-semibold hover:opacity-90 transition-opacity"
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                className="h-11 px-6 rounded-xl bg-orange-500 text-white text-[15px] font-semibold hover:opacity-90 transition-opacity disabled:opacity-60"
               >
-                결제하기 {total.toLocaleString()}원
+                {isSubmitting ? "예약 중..." : "예약하기"}
               </button>
             )}
           </div>
@@ -890,29 +771,6 @@ export default function BookPage() {
 
       <Footer />
 
-      <CustomModal
-        open={showPaymentModal}
-        preset="payment"
-        closeOnOverlay={!isPending}
-        closeOnEsc={!isPending}
-        showCloseButton={!isPending}
-        confirmText={isPending ? "결제 중..." : "결제하기"}
-        onClose={() => !isPending && setShowPaymentModal(false)}
-        onConfirm={handlePayConfirm}
-      >
-        <PaymentModalContent
-          amount={servicePrice}
-          feeRate={PLATFORM_FEE / servicePrice}
-        />
-      </CustomModal>
-
-      <CustomModal
-        open={!!paymentError}
-        preset="error"
-        description={paymentError ?? undefined}
-        onClose={() => setPaymentError(null)}
-        onConfirm={() => setPaymentError(null)}
-      />
     </>
   );
 }
