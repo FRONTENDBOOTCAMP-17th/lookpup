@@ -1234,9 +1234,15 @@ function ChatPageContent({
                           : undefined
                       }
                       onGoToChat={() => {
+                        const room = rooms.find(
+                          (r) =>
+                            r.ownerId === selectedApplicant?.ownerId &&
+                            r.sitterId === selectedApplicant?.sitterId,
+                        );
                         setActiveTab("one_on_one");
                         setSelectedApplicantId(null);
-                        setMobileChatView("list");
+                        if (room) setSelectedRoomId(room.id);
+                        setMobileChatView(room ? "room" : "list");
                       }}
                       onServiceConfirm={(id) => setPendingServiceConfirmId(id)}
                       isServiceConfirmed={
@@ -1563,8 +1569,14 @@ function ChatPageContent({
                             : undefined
                         }
                         onGoToChat={() => {
+                          const room = rooms.find(
+                            (r) =>
+                              r.ownerId === selectedApplicant?.ownerId &&
+                              r.sitterId === selectedApplicant?.sitterId,
+                          );
                           setActiveTab("one_on_one");
                           setSelectedApplicantId(null);
+                          if (room) setSelectedRoomId(room.id);
                         }}
                         onServiceConfirm={(id) => setPendingServiceConfirmId(id)}
                         isServiceConfirmed={
