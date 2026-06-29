@@ -1045,7 +1045,8 @@ export function PaymentRequestCard({
   costItems,
 }: PaymentRequestCardProps) {
   return (
-    <div className="flex justify-end">
+    <div className="flex items-start gap-3">
+      <Avatar initial={otherInitial} src={otherProfileImage} size="sm" />
       <div className="w-[318px] p-4 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col gap-3">
         <div className="flex flex-col">
           <span className="text-[#6B7280] text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
