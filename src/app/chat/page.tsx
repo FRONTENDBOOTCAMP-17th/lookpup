@@ -239,7 +239,7 @@ function ChatPageContent({
             const deadline = getPaymentDeadline();
             const payResult = await sendAutoPaymentRequestMessage(newRoomId, {
               amount: overrides.totalPrice,
-              reason: postTitle || "펫시팅 서비스",
+              reason: postTitle || "반려동물 정보",
               deadline,
               postId: confirmingApplicant?.postId,
             });
@@ -383,7 +383,7 @@ function ChatPageContent({
 
     let portonePaymentId = `pay_${Date.now()}`;
     let totalAmount = Number(paymentState.amount);
-    let orderName = paymentState.reason || "펫시팅 서비스 결제";
+    let orderName = paymentState.reason || "서비스 결제";
 
     const reservationId =
       selectedRoom?.reservationId ??
@@ -543,13 +543,21 @@ function ChatPageContent({
   const [sendingPhoto, setSendingPhoto] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [careRecordOpen, setCareRecordOpen] = useState(false);
-  const [confirmedServiceIds, setConfirmedServiceIds] = useState<Set<string>>(new Set());
+  const [confirmedServiceIds, setConfirmedServiceIds] = useState<Set<string>>(
+    new Set(),
+  );
   const checkedReservationIdsRef = useRef(new Set<string>());
   const [isServiceConfirming, setIsServiceConfirming] = useState(false);
-  const [pendingServiceConfirmId, setPendingServiceConfirmId] = useState<string | null>(null);
-  const [serviceCompleteModalOpen, setServiceCompleteModalOpen] = useState(false);
-  const [activeReservations, setActiveReservations] = useState<ActiveReservation[]>([]);
-  const [serviceCompleteModalLoading, setServiceCompleteModalLoading] = useState(false);
+  const [pendingServiceConfirmId, setPendingServiceConfirmId] = useState<
+    string | null
+  >(null);
+  const [serviceCompleteModalOpen, setServiceCompleteModalOpen] =
+    useState(false);
+  const [activeReservations, setActiveReservations] = useState<
+    ActiveReservation[]
+  >([]);
+  const [serviceCompleteModalLoading, setServiceCompleteModalLoading] =
+    useState(false);
   const [serviceCompleteSending, setServiceCompleteSending] = useState(false);
 
   const handleCareRecordSubmit = async (record: CareRecordPayload) => {
@@ -604,7 +612,10 @@ function ChatPageContent({
     if (!activeRoomId || serviceCompleteSending) return;
     setServiceCompleteSending(true);
     try {
-      const result = await sendServiceCompleteMessage(activeRoomId, reservationId);
+      const result = await sendServiceCompleteMessage(
+        activeRoomId,
+        reservationId,
+      );
       if (result.error) {
         setSendError(result.error.message);
         return;
@@ -612,7 +623,11 @@ function ChatPageContent({
       if (result.data) {
         addMessage(result.data);
         broadcastMessage(result.data);
-        updatePreview(activeRoomId, "서비스 완료", result.data.created_at ?? "");
+        updatePreview(
+          activeRoomId,
+          "서비스 완료",
+          result.data.created_at ?? "",
+        );
       }
       setServiceCompleteModalOpen(false);
     } catch {
@@ -1272,7 +1287,9 @@ function ChatPageContent({
                       onServiceConfirm={(id) => setPendingServiceConfirmId(id)}
                       isServiceConfirmed={
                         !!msg.serviceCompleteData?.reservationId &&
-                        confirmedServiceIds.has(msg.serviceCompleteData.reservationId)
+                        confirmedServiceIds.has(
+                          msg.serviceCompleteData.reservationId,
+                        )
                       }
                       isServiceConfirming={isServiceConfirming}
                     />
@@ -1610,10 +1627,14 @@ function ChatPageContent({
                           setSelectedApplicantId(null);
                           if (room) setSelectedRoomId(room.id);
                         }}
-                        onServiceConfirm={(id) => setPendingServiceConfirmId(id)}
+                        onServiceConfirm={(id) =>
+                          setPendingServiceConfirmId(id)
+                        }
                         isServiceConfirmed={
                           !!msg.serviceCompleteData?.reservationId &&
-                          confirmedServiceIds.has(msg.serviceCompleteData.reservationId)
+                          confirmedServiceIds.has(
+                            msg.serviceCompleteData.reservationId,
+                          )
                         }
                         isServiceConfirming={isServiceConfirming}
                       />
