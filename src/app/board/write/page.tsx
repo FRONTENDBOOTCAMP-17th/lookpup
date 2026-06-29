@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import { CustomModal } from "@/components/common/CustomModal";
 import RangePicker from "@/components/ui/RangePicker";
 import SimpleTimePicker from "@/components/ui/SimpleTimePicker";
 import { createRequest } from "@/app/actions/requests";
@@ -138,6 +139,7 @@ export default function BoardWritePage() {
   }, [draftKey]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [pets, setPets] = useState<Pet[]>([]);
 
   useEffect(() => {
@@ -402,7 +404,7 @@ export default function BoardWritePage() {
     });
 
     if (result.error) {
-      alert(result.error.message);
+      setErrorMessage(result.error.message);
       setIsSubmitting(false);
       return;
     }
@@ -982,6 +984,17 @@ export default function BoardWritePage() {
       </div>
 
       <Footer />
+
+      <CustomModal
+        open={!!errorMessage}
+        type="error"
+        title="오류가 발생했습니다."
+        description={errorMessage ?? undefined}
+        confirmText="확인"
+        onConfirm={() => setErrorMessage(null)}
+        onClose={() => setErrorMessage(null)}
+        showCloseButton={false}
+      />
     </>
   );
 }
