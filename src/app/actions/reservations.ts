@@ -323,7 +323,7 @@ export async function getMyReservations() {
   const { data, error } = await db
     .from("reservations")
     .select(`
-      id, status, start_datetime, end_datetime, total_price, created_at,
+      id, status, start_datetime, end_datetime, total_price, created_at, sitter_id,
       services(title),
       sitters(available_area, rating, users(full_name)),
       reservation_items(pets(name, breed, animal_type)),
@@ -359,6 +359,7 @@ export async function getMyReservations() {
       status: STATUS_MAP[r.status] ?? "pending",
       sitterName: sitter?.users?.full_name ?? "-",
       sitterRating: sitter?.rating ?? 0,
+      sitterId: (r as { sitter_id: string }).sitter_id,
       date: `${start.getFullYear()}년 ${start.getMonth() + 1}월 ${start.getDate()}일 (${DAYS[start.getDay()]})`,
       time: `${pad(start.getHours())}:${pad(start.getMinutes())} – ${pad(end.getHours())}:${pad(end.getMinutes())}`,
       location: sitter?.available_area ?? "-",

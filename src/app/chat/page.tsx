@@ -51,6 +51,10 @@ import {
 } from "@/app/actions/applications";
 import { findOrCreateRoom } from "@/app/actions/chat";
 import {
+  createPayment,
+  getAcceptedReservationBySitter,
+} from "@/app/actions/payments";
+import {
   ReservationConfirmModal,
   type ReservationDetails,
 } from "@/components/common/chat/ReservationConfirmModal";
@@ -355,11 +359,34 @@ function ChatPageContent({
   async function handlePayNow() {
     if (!paymentState || payingNow || isPaymentPending || !activeRoomId) return;
     setPayingNow(true);
+
+    let portonePaymentId = `pay_${Date.now()}`;
+    let totalAmount = paymentState.amount;
+    let orderName = paymentState.reason || "펫시팅 서비스 결제";
+
+    const reservationId =
+      selectedRoom?.reservationId ??
+      (selectedRoom?.sitterId
+        ? await getAcceptedReservationBySitter(selectedRoom.sitterId)
+        : null);
+
+    if (reservationId) {
+      const payResult = await createPayment(reservationId, "CARD");
+      if (payResult.error) {
+        setSendError(payResult.error.message);
+        setPayingNow(false);
+        return;
+      }
+      portonePaymentId = payResult.data!.payment_id;
+      totalAmount = payResult.data!.amount;
+      orderName = payResult.data!.order_name;
+    }
+
     requestPayment(
       {
-        paymentId: `pay_${Date.now()}`,
-        orderName: paymentState.reason || "펫시팅 서비스 결제",
-        totalAmount: paymentState.amount,
+        paymentId: portonePaymentId,
+        orderName,
+        totalAmount,
         currency: "KRW",
         payMethod: "CARD",
         redirectUrl: `${window.location.origin}/payment/complete`,
@@ -368,7 +395,7 @@ function ChatPageContent({
         onSuccess: async () => {
           try {
             const result = await sendPaymentCompleteMessage(activeRoomId, {
-              amount: paymentState.amount,
+              amount: totalAmount,
             });
             if (result.data) {
               addMessage(result.data);

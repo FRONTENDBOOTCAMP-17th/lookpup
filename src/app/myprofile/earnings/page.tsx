@@ -76,10 +76,6 @@ export default function EarningsPage() {
               </p>
             </div>
           </div>
-          <button className="flex items-center gap-2 h-10 px-4 rounded-xl border border-[#E8742A] text-sm font-medium text-[#E8742A] bg-white hover:bg-[#FFF8F3] transition-colors">
-            <Download size={16} />
-            내역 다운로드
-          </button>
         </div>
 
         {/* 요약 카드 */}
@@ -149,16 +145,17 @@ export default function EarningsPage() {
         <div className="bg-white border border-[#FFE9D6] rounded-2xl p-6 shadow-[0_2px_12px_rgba(232,116,42,0.06)]">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-[#281A0E]">거래 내역</h2>
-            <button className="hidden md:flex h-9 px-4 rounded-xl border border-[#E8742A] text-sm font-medium text-[#E8742A] hover:bg-[#FFF8F3] transition-colors items-center">
-              필터
-            </button>
           </div>
 
           {/* 로딩 / 빈 상태 */}
           {isLoading ? (
-            <div className="py-16 text-center text-[#6B7280] text-sm">불러오는 중...</div>
+            <div className="py-16 text-center text-[#6B7280] text-sm">
+              불러오는 중...
+            </div>
           ) : data.transactions.length === 0 ? (
-            <div className="py-16 text-center text-[#6B7280] text-sm">거래 내역이 없습니다.</div>
+            <div className="py-16 text-center text-[#6B7280] text-sm">
+              거래 내역이 없습니다.
+            </div>
           ) : (
             <>
               {/* 데스크탑 테이블 */}
@@ -209,7 +206,9 @@ export default function EarningsPage() {
                                 : "bg-[#FFF7ED] text-[#EA580C] border-[#FED7AA]"
                             }`}
                           >
-                            {transaction.status === "completed" ? "정산완료" : "정산예정"}
+                            {transaction.status === "completed"
+                              ? "정산완료"
+                              : "정산예정"}
                           </span>
                         </td>
                       </tr>
@@ -221,7 +220,10 @@ export default function EarningsPage() {
               {/* 모바일 목록 */}
               <div className="md:hidden space-y-3">
                 {data.transactions.map((transaction) => (
-                  <div key={transaction.id} className="p-4 bg-[#FFF8F3] rounded-xl">
+                  <div
+                    key={transaction.id}
+                    className="p-4 bg-[#FFF8F3] rounded-xl"
+                  >
                     <div className="flex items-start justify-between mb-2">
                       <div>
                         <p className="font-semibold text-[#281A0E] mb-1">
@@ -238,11 +240,15 @@ export default function EarningsPage() {
                             : "bg-[#FFF7ED] text-[#EA580C] border-[#FED7AA]"
                         }`}
                       >
-                        {transaction.status === "completed" ? "정산완료" : "정산예정"}
+                        {transaction.status === "completed"
+                          ? "정산완료"
+                          : "정산예정"}
                       </span>
                     </div>
                     <div className="flex items-center justify-between pt-2 border-t border-white">
-                      <p className="text-sm text-[#6B7280]">{transaction.date}</p>
+                      <p className="text-sm text-[#6B7280]">
+                        {transaction.date}
+                      </p>
                       <p className="font-bold text-[#E8742A]">
                         {formatCurrency(transaction.amount)}
                       </p>
