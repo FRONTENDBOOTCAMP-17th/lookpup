@@ -25,7 +25,7 @@ async function getAuthUser() {
 
 export async function findOrCreateRoom(input: {
   sitter_id: string;
-  room_type: "request" | "direct";
+  room_type: "request" | "direct" | "reservation_request";
   request_id?: string | null;
   reservation_id?: string | null;
 }) {
@@ -750,7 +750,7 @@ export async function sendServiceStartMessage(
     (service?.service_type
       ? (SERVICE_TYPE_LABEL[service.service_type] ?? service.service_type)
       : null) ||
-    "반려동물 이름";
+    "펫시팅 서비스";
   const petName = items[0]?.pets?.name ?? undefined;
   const startDatetime = reservation?.start_datetime ?? undefined;
   const endDatetime = reservation?.end_datetime ?? undefined;
@@ -829,3 +829,4 @@ export async function markRoomRead(roomId: string) {
 
   return { data: { ok: true } };
 }
+

@@ -58,7 +58,7 @@ export function ServiceCompleteModal({
   variant = "complete",
   onClose,
   onConfirm,
-}: Props) {
+}: Props & { variant?: "complete" | "start" }) {
   const [mounted, setMounted] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 

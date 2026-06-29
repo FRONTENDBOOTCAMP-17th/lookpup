@@ -21,7 +21,9 @@ import {
   ChatPlusPanel,
   ApplicantProfilePopup,
   ApplicantPostGroup,
+  ReservationRequestCard,
   type Applicant,
+  type ReservationRequest,
 } from "@/components/common/chat/chat_components";
 import { CustomModal } from "@/components/common/CustomModal";
 import { CustomModalPayment } from "@/components/common/CustomModalPayment";
@@ -49,8 +51,11 @@ import {
   ownerConfirmServiceComplete,
   getActiveReservationsForRoom,
   getReadyReservationsForRoom,
-  sitterStartService,
   getReservationStatuses,
+  acceptReservationRequest,
+  rejectReservationRequest,
+  sitterStartService,
+  getReservationRequestDetails,
 } from "@/app/actions/reservations";
 import {
   ServiceCompleteModal,
@@ -85,20 +90,22 @@ function ChatPageContent({
   initialTab,
   initialRoomId,
 }: {
-  initialTab: "one_on_one" | "applicants";
+  initialTab: "one_on_one" | "reservations" | "applicants";
   initialRoomId?: string | null;
 }) {
   const router = useRouter();
 
   const [editMode, setEditMode] = useState(false);
-  const [activeTab, setActiveTab] = useState<"one_on_one" | "applicants">(
-    initialTab,
-  );
+  const [activeTab, setActiveTab] = useState<
+    "one_on_one" | "reservations" | "applicants"
+  >(initialTab);
 
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [selectedApplicantId, setSelectedApplicantId] = useState<string | null>(
     null,
   );
+  const [selectedReservationRequestId, setSelectedReservationRequestId] =
+    useState<string | null>(null);
   const [input, setInput] = useState("");
   const [sendError, setSendError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
@@ -119,23 +126,39 @@ function ChatPageContent({
   const [reservationDetails, setReservationDetails] =
     useState<ReservationDetails | null>(null);
   const [pendingConfirmId, setPendingConfirmId] = useState<string | null>(null);
+
+  const [acceptModalOpen, setAcceptModalOpen] = useState(false);
+  const [acceptModalLoading, setAcceptModalLoading] = useState(false);
+  const [acceptDetails, setAcceptDetails] = useState<ReservationDetails | null>(null);
+  const [pendingAcceptRoomId, setPendingAcceptRoomId] = useState<string | null>(null);
+
   const [messagesRefreshKey, setMessagesRefreshKey] = useState(0);
 
   const activeRoomId =
-    activeTab === "one_on_one" ? selectedRoomId : selectedApplicantId;
+    activeTab === "one_on_one"
+      ? selectedRoomId
+      : activeTab === "reservations"
+        ? selectedReservationRequestId
+        : selectedApplicantId;
 
   const {
     rooms,
     applicants,
+    reservationRequests,
     posts,
     loading,
     error,
     userId,
     deleteRoom,
     deleteApplicant,
+    deleteReservationRequest,
     markRoomAsRead,
     updatePreview,
     updateApplicantStatus,
+    updateReservationRequestStatus,
+    refresh,
+    acceptedDirectRoomId,
+    clearAcceptedDirectRoomId,
   } = useChatRooms(activeRoomId);
 
   const {
@@ -145,6 +168,85 @@ function ChatPageContent({
     confirmApplicant,
     getApplicantBadge,
   } = useRequest(applicants);
+
+  async function handleAcceptReservation(roomId: string) {
+    const rr = reservationRequests.find((r) => r.id === roomId);
+    if (!rr?.reservationId || actioningId) return;
+    setPendingAcceptRoomId(roomId);
+    setAcceptDetails(null);
+    setAcceptModalOpen(true);
+    setAcceptModalLoading(true);
+    try {
+      const result = await getReservationRequestDetails(rr.reservationId);
+      if ("data" in result) {
+        setAcceptDetails(result.data ?? null);
+      }
+    } catch {
+      // 에러 시에도 모달은 유지 (details=null이면 "정보를 불러오지 못했습니다" 표시)
+    } finally {
+      setAcceptModalLoading(false);
+    }
+  }
+
+  async function handleAcceptConfirm() {
+    const roomId = pendingAcceptRoomId;
+    const rr = roomId ? reservationRequests.find((r) => r.id === roomId) : null;
+    if (!rr?.reservationId || actioningId) return;
+    setAcceptModalOpen(false);
+    setActioningId(roomId);
+    setApplicationActionError(null);
+    try {
+      const result = await acceptReservationRequest(rr.reservationId);
+      if (result.error) {
+        setApplicationActionError(result.error.message);
+        return;
+      }
+      if (result.data) {
+        broadcastReservationAccepted(result.data.room_id);
+        refresh();
+        setActiveTab("one_on_one");
+        setSelectedRoomId(result.data.room_id);
+        setSelectedReservationRequestId(null);
+        setMobileChatView("room");
+      }
+    } catch {
+      setApplicationActionError("오류가 발생했습니다. 다시 시도해주세요.");
+    } finally {
+      setActioningId(null);
+      setPendingAcceptRoomId(null);
+    }
+  }
+
+  async function handleRejectReservation(roomId: string) {
+    const rr = reservationRequests.find((r) => r.id === roomId);
+    if (!rr?.reservationId || actioningId) return;
+    setActioningId(roomId);
+    setApplicationActionError(null);
+    try {
+      const result = await rejectReservationRequest(rr.reservationId);
+      if (result.error) {
+        setApplicationActionError(result.error.message);
+        return;
+      }
+      updateReservationRequestStatus(roomId, "canceled");
+    } catch {
+      setApplicationActionError("오류가 발생했습니다. 다시 시도해주세요.");
+    } finally {
+      setActioningId(null);
+    }
+  }
+
+  async function handleDeleteReservationRequest(id: string) {
+    const result = await deleteReservationRequest(id);
+    if (result.error) {
+      setSendError(result.error);
+      return;
+    }
+    if (selectedReservationRequestId === id) {
+      setSelectedReservationRequestId(null);
+      setMobileChatView("list");
+    }
+  }
 
   async function handleRejectApplicant(id: string) {
     if (actioningId) return;
@@ -274,6 +376,7 @@ function ChatPageContent({
     addMessage,
     broadcastMessage,
     broadcastConfirmation,
+    broadcastReservationAccepted,
     loadMore,
     hasMore,
     loadingMore,
@@ -283,7 +386,6 @@ function ChatPageContent({
   const { requestPayment, isPending: isPaymentPending } = usePortOne();
   const [payingNow, setPayingNow] = useState(false);
 
-  // 각 payment_request 메시지의 결제 완료 여부를 개별 계산하기 위한 마지막 요청 ID
   const lastPaymentReqId = useMemo(() => {
     for (let i = messages.length - 1; i >= 0; i--) {
       if (messages[i].from === "payment_request") return messages[i].id;
@@ -527,8 +629,15 @@ function ChatPageContent({
       setActiveTab("applicants");
       setSelectedApplicantId(applicant.id);
       setMobileChatView("room");
+      return;
     }
-  }, [initialRoomId, rooms, applicants, loading]);
+    const rr = reservationRequests.find((r) => r.id === initialRoomId);
+    if (rr) {
+      setActiveTab("reservations");
+      setSelectedReservationRequestId(rr.id);
+      setMobileChatView("room");
+    }
+  }, [initialRoomId, rooms, applicants, reservationRequests, loading]);
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profilePopupApplicant, setProfilePopupApplicant] =
@@ -562,13 +671,9 @@ function ChatPageContent({
   const [serviceCompleteModalLoading, setServiceCompleteModalLoading] =
     useState(false);
   const [serviceCompleteSending, setServiceCompleteSending] = useState(false);
-
   const [serviceStartModalOpen, setServiceStartModalOpen] = useState(false);
-  const [readyReservations, setReadyReservations] = useState<
-    ActiveReservation[]
-  >([]);
-  const [serviceStartModalLoading, setServiceStartModalLoading] =
-    useState(false);
+  const [readyReservations, setReadyReservations] = useState<ActiveReservation[]>([]);
+  const [serviceStartModalLoading, setServiceStartModalLoading] = useState(false);
   const [serviceStartSending, setServiceStartSending] = useState(false);
 
   const handleCareRecordSubmit = async (record: CareRecordPayload) => {
@@ -599,26 +704,6 @@ function ChatPageContent({
       setSendError("돌봄기록 전송에 실패했습니다. 다시 시도해주세요.");
     }
   };
-  async function handleServiceComplete() {
-    if (!activeRoomId) return;
-    setPlusMenuOpen(false);
-    setServiceCompleteModalLoading(true);
-    setActiveReservations([]);
-    setServiceCompleteModalOpen(true);
-    try {
-      const result = await getActiveReservationsForRoom(activeRoomId);
-      if (result.error) {
-        setSendError(result.error.message);
-        return;
-      }
-      setActiveReservations(result.data ?? []);
-    } catch {
-      setSendError("예약 정보를 불러오는데 실패했습니다.");
-    } finally {
-      setServiceCompleteModalLoading(false);
-    }
-  }
-
   async function handleServiceStart() {
     if (!activeRoomId) return;
     setPlusMenuOpen(false);
@@ -658,17 +743,33 @@ function ChatPageContent({
       if (result.data) {
         addMessage(result.data);
         broadcastMessage(result.data);
-        updatePreview(
-          activeRoomId,
-          "서비스 시작",
-          result.data.created_at ?? "",
-        );
+        updatePreview(activeRoomId, "서비스 시작", result.data.created_at ?? "");
       }
       setServiceStartModalOpen(false);
     } catch {
       setSendError("서비스 시작 전송에 실패했습니다. 다시 시도해주세요.");
     } finally {
       setServiceStartSending(false);
+    }
+  }
+
+  async function handleServiceComplete() {
+    if (!activeRoomId) return;
+    setPlusMenuOpen(false);
+    setServiceCompleteModalLoading(true);
+    setActiveReservations([]);
+    setServiceCompleteModalOpen(true);
+    try {
+      const result = await getActiveReservationsForRoom(activeRoomId);
+      if (result.error) {
+        setSendError(result.error.message);
+        return;
+      }
+      setActiveReservations(result.data ?? []);
+    } catch {
+      setSendError("예약 정보를 불러오는데 실패했습니다.");
+    } finally {
+      setServiceCompleteModalLoading(false);
     }
   }
 
@@ -766,6 +867,15 @@ function ChatPageContent({
   );
 
   useEffect(() => {
+    if (!acceptedDirectRoomId) return;
+    clearAcceptedDirectRoomId();
+    setActiveTab("one_on_one");
+    setSelectedRoomId(acceptedDirectRoomId);
+    setSelectedReservationRequestId(null);
+    setMobileChatView("room");
+  }, [acceptedDirectRoomId, clearAcceptedDirectRoomId]);
+
+  useEffect(() => {
     const currentStatus = selectedApplicant?.applicationStatus;
     const prevStatus = prevApplicantStatusRef.current;
     prevApplicantStatusRef.current = currentStatus;
@@ -790,6 +900,14 @@ function ChatPageContent({
   const filteredPosts = posts.filter((p) =>
     filteredApplicants.some((a) => a.postId === p.id),
   );
+  const filteredReservationRequests = reservationRequests.filter(
+    (rr) =>
+      !searchQuery || rr.name.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
+
+  const selectedReservationRequest = selectedReservationRequestId
+    ? reservationRequests.find((rr) => rr.id === selectedReservationRequestId)
+    : undefined;
 
   function handleDeleteRoom(id: string) {
     setPendingDelete({ id, type: "room" });
@@ -840,6 +958,14 @@ function ChatPageContent({
   function getHeaderBadge() {
     if (activeTab === "one_on_one")
       return { label: "진행중", className: "bg-orange-50 text-orange-500" };
+    if (activeTab === "reservations") {
+      const status = selectedReservationRequest?.reservationStatus;
+      if (status === "canceled")
+        return { label: "거절됨", className: "bg-stone-100 text-stone-500" };
+      if (status === "accepted")
+        return { label: "확정됨", className: "bg-green-50 text-green-600" };
+      return { label: "대기 중", className: "bg-orange-50 text-orange-400" };
+    }
     if (selectedApplicantId !== null && rejectedIds.has(selectedApplicantId))
       return { label: "거절됨", className: "bg-stone-100 text-stone-500" };
     if (
@@ -851,6 +977,12 @@ function ChatPageContent({
 
   function getHeaderSub() {
     if (activeTab === "one_on_one") return selectedRoom?.sub ?? "";
+    if (activeTab === "reservations") {
+      const status = selectedReservationRequest?.reservationStatus;
+      if (status === "accepted") return "예약 요청 · 확정됨";
+      if (status === "canceled") return "예약 요청 · 거절됨";
+      return "예약 요청 · 대기 중";
+    }
     if (
       confirmedIds.get(selectedApplicant?.postId ?? "") === selectedApplicantId
     )
@@ -861,34 +993,37 @@ function ChatPageContent({
   }
 
   function getReportUrl() {
-    const isOneOnOne = activeTab === "one_on_one";
-    const isUserSitter = isOneOnOne && selectedRoom?.sitterId === userId;
-    const isUserSitterInApplicants =
-      !isOneOnOne && selectedApplicant?.sitterId === userId;
-    const isReportingOwner = isUserSitter || isUserSitterInApplicants;
+    let targetId = "";
+    let targetName = "";
+    let targetImage: string | null = null;
+    let role = "펫시터";
 
-    const targetId = isOneOnOne
-      ? isUserSitter
+    if (activeTab === "one_on_one") {
+      const isUserSitter = selectedRoom?.sitterId === userId;
+      targetId = isUserSitter
         ? (selectedRoom?.ownerId ?? "")
-        : (selectedRoom?.sitterId ?? "")
-      : isUserSitterInApplicants
+        : (selectedRoom?.sitterId ?? "");
+      targetName = selectedRoom?.name ?? "";
+      targetImage = selectedRoom?.profileImage ?? null;
+      role = isUserSitter ? "보호자" : "펫시터";
+    } else if (activeTab === "reservations") {
+      const isUserOwner = selectedReservationRequest?.ownerId === userId;
+      targetId = isUserOwner
+        ? (selectedReservationRequest?.sitterId ?? "")
+        : (selectedReservationRequest?.ownerId ?? "");
+      targetName = selectedReservationRequest?.name ?? "";
+      targetImage = selectedReservationRequest?.profileImage ?? null;
+      role = isUserOwner ? "펫시터" : "보호자";
+    } else {
+      const isUserSitter = selectedApplicant?.sitterId === userId;
+      targetId = isUserSitter
         ? (selectedApplicant?.ownerId ?? "")
         : (selectedApplicant?.sitterId ?? "");
+      targetName = isUserSitter ? "" : (selectedApplicant?.name ?? "");
+      targetImage = isUserSitter ? null : (selectedApplicant?.profileImage ?? null);
+      role = isUserSitter ? "보호자" : "펫시터";
+    }
 
-    // Applicant 타입에 보호자 이름/이미지가 없으므로 펫시터가 보호자를
-    // 신고할 때는 name/image를 전달하지 않는다 (신고 페이지에서 targetId로 조회)
-    const targetName = isOneOnOne
-      ? (selectedRoom?.name ?? "")
-      : isUserSitterInApplicants
-        ? ""
-        : (selectedApplicant?.name ?? "");
-    const targetImage = isOneOnOne
-      ? (selectedRoom?.profileImage ?? null)
-      : isUserSitterInApplicants
-        ? null
-        : (selectedApplicant?.profileImage ?? null);
-
-    const role = isReportingOwner ? "보호자" : "펫시터";
     const service = getHeaderSub();
     const params = new URLSearchParams();
     if (targetId) params.set("targetId", targetId);
@@ -902,15 +1037,21 @@ function ChatPageContent({
   const mobileRoomName =
     activeTab === "one_on_one"
       ? (selectedRoom?.name ?? "")
-      : (selectedApplicant?.name ?? "");
+      : activeTab === "reservations"
+        ? (selectedReservationRequest?.name ?? "")
+        : (selectedApplicant?.name ?? "");
   const mobileRoomInitial =
     activeTab === "one_on_one"
       ? (selectedRoom?.initial ?? "")
-      : (selectedApplicant?.initial ?? "");
+      : activeTab === "reservations"
+        ? (selectedReservationRequest?.initial ?? "")
+        : (selectedApplicant?.initial ?? "");
   const mobileRoomProfileImage =
     activeTab === "one_on_one"
       ? (selectedRoom?.profileImage ?? null)
-      : (selectedApplicant?.profileImage ?? null);
+      : activeTab === "reservations"
+        ? (selectedReservationRequest?.profileImage ?? null)
+        : (selectedApplicant?.profileImage ?? null);
   const headerBadge = getHeaderBadge();
 
   const isCurrentUserSitter =
@@ -1089,23 +1230,29 @@ function ChatPageContent({
               </div>
               {/* 탭 */}
               <div className="flex">
-                {(["one_on_one", "applicants"] as const).map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => {
-                      setActiveTab(tab);
-                      setEditMode(false);
-                      setMobileChatView("list");
-                    }}
-                    className={`flex-1 py-2 text-sm font-medium border-b-2 transition-colors ${
-                      activeTab === tab
-                        ? "border-orange-500 text-orange-500"
-                        : "border-transparent text-gray-400"
-                    }`}
-                  >
-                    {tab === "one_on_one" ? "1:1 채팅" : "지원 목록"}
-                  </button>
-                ))}
+                {(["one_on_one", "reservations", "applicants"] as const).map(
+                  (tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => {
+                        setActiveTab(tab);
+                        setEditMode(false);
+                        setMobileChatView("list");
+                      }}
+                      className={`flex-1 py-2 text-sm font-medium border-b-2 transition-colors ${
+                        activeTab === tab
+                          ? "border-orange-500 text-orange-500"
+                          : "border-transparent text-gray-400"
+                      }`}
+                    >
+                      {tab === "one_on_one"
+                        ? "1:1 채팅"
+                        : tab === "reservations"
+                          ? "예약 목록"
+                          : "지원 목록"}
+                    </button>
+                  ),
+                )}
               </div>
             </div>
 
@@ -1151,6 +1298,14 @@ function ChatPageContent({
                     새로운 채팅이 존재하지 않습니다
                   </p>
                 )}
+              {!loading &&
+                !error &&
+                activeTab === "reservations" &&
+                reservationRequests.length === 0 && (
+                  <p className="text-center text-stone-400 text-sm pt-16">
+                    예약 요청이 없습니다
+                  </p>
+                )}
               {activeTab === "one_on_one" &&
                 filteredRooms.map((room) => (
                   <ChatRoomItem
@@ -1163,6 +1318,25 @@ function ChatPageContent({
                       setSelectedRoomId(id);
                       setMobileChatView("room");
                     }}
+                  />
+                ))}
+
+              {activeTab === "reservations" &&
+                filteredReservationRequests.map((rr) => (
+                  <ReservationRequestCard
+                    key={rr.id}
+                    reservationRequest={rr}
+                    isSelected={false}
+                    editMode={editMode}
+                    isSitter={rr.ownerId !== userId}
+                    actioningId={actioningId}
+                    onSelect={(id) => {
+                      setSelectedReservationRequestId(id);
+                      setMobileChatView("room");
+                    }}
+                    onReject={handleRejectReservation}
+                    onAccept={handleAcceptReservation}
+                    onDelete={handleDeleteReservationRequest}
                   />
                 ))}
 
@@ -1263,6 +1437,13 @@ function ChatPageContent({
                             selectedRoomId !== null
                           )
                             handleDeleteRoom(selectedRoomId);
+                          else if (
+                            activeTab === "reservations" &&
+                            selectedReservationRequestId !== null
+                          )
+                            handleDeleteReservationRequest(
+                              selectedReservationRequestId,
+                            );
                           else if (
                             activeTab === "applicants" &&
                             selectedApplicantId !== null
@@ -1484,22 +1665,28 @@ function ChatPageContent({
 
             {/* 탭 */}
             <div className="flex">
-              {(["one_on_one", "applicants"] as const).map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => {
-                    setActiveTab(tab);
-                    setEditMode(false);
-                  }}
-                  className={`flex-1 py-2 text-sm font-medium border-b-2 transition-colors ${
-                    activeTab === tab
-                      ? "border-orange-500 text-orange-500"
-                      : "border-transparent text-gray-400"
-                  }`}
-                >
-                  {tab === "one_on_one" ? "1:1 채팅" : "지원 목록"}
-                </button>
-              ))}
+              {(["one_on_one", "reservations", "applicants"] as const).map(
+                (tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => {
+                      setActiveTab(tab);
+                      setEditMode(false);
+                    }}
+                    className={`flex-1 py-2 text-sm font-medium border-b-2 transition-colors ${
+                      activeTab === tab
+                        ? "border-orange-500 text-orange-500"
+                        : "border-transparent text-gray-400"
+                    }`}
+                  >
+                    {tab === "one_on_one"
+                      ? "1:1 채팅"
+                      : tab === "reservations"
+                        ? "예약 목록"
+                        : "지원 목록"}
+                  </button>
+                ),
+              )}
             </div>
           </div>
 
@@ -1528,6 +1715,31 @@ function ChatPageContent({
                   editMode={editMode}
                   onDelete={handleDeleteRoom}
                   onClick={setSelectedRoomId}
+                />
+              ))}
+            </ScrollArea>
+          )}
+
+          {/* 예약 목록 */}
+          {activeTab === "reservations" && (
+            <ScrollArea className="flex-1 overflow-hidden">
+              {filteredReservationRequests.length === 0 && (
+                <p className="text-center text-stone-400 text-sm pt-16">
+                  예약 요청이 없습니다
+                </p>
+              )}
+              {filteredReservationRequests.map((rr) => (
+                <ReservationRequestCard
+                  key={rr.id}
+                  reservationRequest={rr}
+                  isSelected={selectedReservationRequestId === rr.id}
+                  editMode={editMode}
+                  isSitter={rr.ownerId !== userId}
+                  actioningId={actioningId}
+                  onSelect={setSelectedReservationRequestId}
+                  onReject={handleRejectReservation}
+                  onAccept={handleAcceptReservation}
+                  onDelete={handleDeleteReservationRequest}
                 />
               ))}
             </ScrollArea>
@@ -1576,14 +1788,18 @@ function ChatPageContent({
               <p className="text-stone-400 text-sm">{error}</p>
             </div>
           ) : (activeTab === "one_on_one" && rooms.length === 0) ||
-            (activeTab === "applicants" && applicants.length === 0) ? (
+            (activeTab === "applicants" && applicants.length === 0) ||
+            (activeTab === "reservations" &&
+              reservationRequests.length === 0) ? (
             <div className="flex-1 flex items-center justify-center">
               <p className="text-stone-400 text-sm">
                 새로운 채팅이 존재하지 않습니다
               </p>
             </div>
           ) : (activeTab === "one_on_one" && selectedRoomId === null) ||
-            (activeTab === "applicants" && selectedApplicantId === null) ? (
+            (activeTab === "applicants" && selectedApplicantId === null) ||
+            (activeTab === "reservations" &&
+              selectedReservationRequestId === null) ? (
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
                 <p className="text-base mb-2 text-stone-500">
@@ -1600,17 +1816,23 @@ function ChatPageContent({
                 initial={
                   activeTab === "one_on_one"
                     ? (selectedRoom?.initial ?? "")
-                    : (selectedApplicant?.initial ?? "")
+                    : activeTab === "reservations"
+                      ? (selectedReservationRequest?.initial ?? "")
+                      : (selectedApplicant?.initial ?? "")
                 }
                 src={
                   activeTab === "one_on_one"
                     ? (selectedRoom?.profileImage ?? null)
-                    : (selectedApplicant?.profileImage ?? null)
+                    : activeTab === "reservations"
+                      ? (selectedReservationRequest?.profileImage ?? null)
+                      : (selectedApplicant?.profileImage ?? null)
                 }
                 name={
                   activeTab === "one_on_one"
                     ? (selectedRoom?.name ?? "")
-                    : (selectedApplicant?.name ?? "")
+                    : activeTab === "reservations"
+                      ? (selectedReservationRequest?.name ?? "")
+                      : (selectedApplicant?.name ?? "")
                 }
                 sub={getHeaderSub()}
                 badge={getHeaderBadge()}
@@ -1618,12 +1840,21 @@ function ChatPageContent({
                   const sitterId =
                     activeTab === "one_on_one"
                       ? selectedRoom?.sitterId
-                      : selectedApplicant?.sitterId;
+                      : activeTab === "reservations"
+                        ? selectedReservationRequest?.sitterId
+                        : selectedApplicant?.sitterId;
                   if (sitterId) router.push(`/petsitters/${sitterId}`);
                 }}
                 onLeaveChat={() => {
                   if (activeTab === "one_on_one" && selectedRoomId !== null)
                     handleDeleteRoom(selectedRoomId);
+                  else if (
+                    activeTab === "reservations" &&
+                    selectedReservationRequestId !== null
+                  )
+                    handleDeleteReservationRequest(
+                      selectedReservationRequestId,
+                    );
                   else if (
                     activeTab === "applicants" &&
                     selectedApplicantId !== null
@@ -1670,12 +1901,16 @@ function ChatPageContent({
                         senderInitial={
                           activeTab === "one_on_one"
                             ? (selectedRoom?.initial ?? "")
-                            : (selectedApplicant?.initial ?? "")
+                            : activeTab === "reservations"
+                              ? (selectedReservationRequest?.initial ?? "")
+                              : (selectedApplicant?.initial ?? "")
                         }
                         senderProfileImage={
                           activeTab === "one_on_one"
                             ? (selectedRoom?.profileImage ?? null)
-                            : (selectedApplicant?.profileImage ?? null)
+                            : activeTab === "reservations"
+                              ? (selectedReservationRequest?.profileImage ?? null)
+                              : (selectedApplicant?.profileImage ?? null)
                         }
                         isCurrentUserSitter={isCurrentUserSitter}
                         onPaymentRequest={handlePayNow}
@@ -1857,6 +2092,25 @@ function ChatPageContent({
         onConfirm={handleConfirmApplicant}
       />
 
+      <ReservationConfirmModal
+        open={acceptModalOpen}
+        sitterName={
+          pendingAcceptRoomId
+            ? (reservationRequests.find((rr) => rr.id === pendingAcceptRoomId)?.name ?? "")
+            : ""
+        }
+        details={acceptDetails}
+        loading={acceptModalLoading}
+        confirming={!!actioningId}
+        hideEdit
+        confirmLabel="수락"
+        onClose={() => {
+          setAcceptModalOpen(false);
+          setPendingAcceptRoomId(null);
+        }}
+        onConfirm={() => { void handleAcceptConfirm(); }}
+      />
+
       <ServiceCompleteModal
         open={serviceCompleteModalOpen}
         reservations={activeReservations}
@@ -1881,8 +2135,13 @@ function ChatPageContent({
 
 function ChatPageInner() {
   const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
   const initialTab =
-    searchParams.get("tab") === "applicants" ? "applicants" : "one_on_one";
+    tabParam === "applicants"
+      ? "applicants"
+      : tabParam === "reservations"
+        ? "reservations"
+        : "one_on_one";
   const initialRoomId = searchParams.get("roomId");
   return (
     <ChatPageContent initialTab={initialTab} initialRoomId={initialRoomId} />
