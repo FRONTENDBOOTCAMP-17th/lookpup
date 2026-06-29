@@ -457,40 +457,71 @@ export function MessageBubble({
 }: MessageBubbleProps) {
   if (msg.from === "service_start") {
     if (isCurrentUserSitter && msg.sentByMe) {
-      return <SitterServiceStartCard data={msg.serviceStartData} />;
+      return (
+        <div>
+          <SitterServiceStartCard data={msg.serviceStartData} />
+          {msg.time && <p className="text-right text-gray-500 text-xs pr-3 mt-1">{msg.time}</p>}
+        </div>
+      );
     }
     return (
-      <ServiceStartCard
-        otherInitial={senderInitial}
-        otherProfileImage={senderProfileImage}
-        data={msg.serviceStartData}
-      />
+      <div>
+        <ServiceStartCard
+          otherInitial={senderInitial}
+          otherProfileImage={senderProfileImage}
+          data={msg.serviceStartData}
+        />
+        {msg.time && <p className="text-left text-gray-500 text-xs pl-11 mt-1">{msg.time}</p>}
+      </div>
     );
   }
   if (msg.from === "reservation_request") {
     const data = msg.reservationRequestData;
     if (!data) return null;
     return (
-      <ReservationRequestMessageCard
-        data={data}
-        senderInitial={senderInitial}
-        senderProfileImage={senderProfileImage}
-      />
+      <div>
+        <ReservationRequestMessageCard
+          data={data}
+          senderInitial={senderInitial}
+          senderProfileImage={senderProfileImage}
+        />
+        {msg.time && (
+          <p className={`text-gray-500 text-xs mt-1 ${data.sentByMe ? "text-right pr-3" : "text-left pl-11"}`}>
+            {msg.time}
+          </p>
+        )}
+      </div>
     );
   }
   if (msg.from === "reservation_accepted") {
     const data = msg.reservationAcceptedData;
     if (!data) return null;
     return (
-      <ReservationAcceptedMessageCard
-        data={data}
-        senderInitial={senderInitial}
-        senderProfileImage={senderProfileImage}
-      />
+      <div>
+        <ReservationAcceptedMessageCard
+          data={data}
+          senderInitial={senderInitial}
+          senderProfileImage={senderProfileImage}
+        />
+        {msg.time && (
+          <p className={`text-gray-500 text-xs mt-1 ${data.sentByMe ? "text-right pr-3" : "text-left pl-11"}`}>
+            {msg.time}
+          </p>
+        )}
+      </div>
     );
   }
   if (msg.from === "reservation_rejected") {
-    return <ReservationRejectedMessageCard sentByMe={msg.sentByMe ?? false} />;
+    return (
+      <div>
+        <ReservationRejectedMessageCard sentByMe={msg.sentByMe ?? false} />
+        {msg.time && (
+          <p className={`text-gray-500 text-xs mt-1 ${msg.sentByMe ? "text-right pr-3" : "text-left"}`}>
+            {msg.time}
+          </p>
+        )}
+      </div>
+    );
   }
   if (msg.from === "application_selected") {
     const data = msg.applicationData;
@@ -536,18 +567,26 @@ export function MessageBubble({
   }
   if (msg.from === "service_complete") {
     if (msg.sentByMe) {
-      return <SitterServiceCompleteCard data={msg.serviceCompleteData} />;
+      return (
+        <div>
+          <SitterServiceCompleteCard data={msg.serviceCompleteData} />
+          {msg.time && <p className="text-right text-gray-500 text-xs pr-3 mt-1">{msg.time}</p>}
+        </div>
+      );
     }
     const reservationId = msg.serviceCompleteData?.reservationId ?? "";
     return (
-      <ServiceCompleteCard
-        confirmed={isServiceConfirmed ?? false}
-        onConfirm={() => onServiceConfirm?.(reservationId)}
-        isConfirming={isServiceConfirming ?? false}
-        otherInitial={senderInitial}
-        otherProfileImage={senderProfileImage}
-        data={msg.serviceCompleteData}
-      />
+      <div>
+        <ServiceCompleteCard
+          confirmed={isServiceConfirmed ?? false}
+          onConfirm={() => onServiceConfirm?.(reservationId)}
+          isConfirming={isServiceConfirming ?? false}
+          otherInitial={senderInitial}
+          otherProfileImage={senderProfileImage}
+          data={msg.serviceCompleteData}
+        />
+        {msg.time && <p className="text-left text-gray-500 text-xs pl-11 mt-1">{msg.time}</p>}
+      </div>
     );
   }
   if (msg.from === "payment_request") {
@@ -901,7 +940,7 @@ export function OwnerRejectionCard() {
 export function SitterRejectionCard() {
   return (
     <div className="flex justify-end">
-      <div className="w-79.54 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col">
+      <div className="w-79.5 p-4 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col">
         <div className="flex items-start gap-2.5">
           <div className="w-9 h-9 bg-red-50 rounded-full flex items-center justify-center shrink-0">
             <XCircle size={18} className="text-red-500" />

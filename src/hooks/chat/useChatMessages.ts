@@ -156,6 +156,7 @@ function toMessage(m: MessageApiItem, userId: string): Message {
       text: "",
       sentByMe: m.sender_id === userId,
       serviceCompleteData,
+      time: m.created_at ? formatTime(m.created_at) : undefined,
       rawDate: m.created_at ?? undefined,
     };
   }
@@ -173,6 +174,7 @@ function toMessage(m: MessageApiItem, userId: string): Message {
       text: "",
       sentByMe: m.sender_id === userId,
       serviceStartData,
+      time: m.created_at ? formatTime(m.created_at) : undefined,
       rawDate: m.created_at ?? undefined,
     };
   }
@@ -186,6 +188,7 @@ function toMessage(m: MessageApiItem, userId: string): Message {
         from: "reservation_request" as const,
         text: "",
         reservationRequestData: { ...data, sentByMe: m.sender_id === userId },
+        time: m.created_at ? formatTime(m.created_at) : undefined,
         rawDate: m.created_at ?? undefined,
       };
     } catch {
@@ -202,6 +205,7 @@ function toMessage(m: MessageApiItem, userId: string): Message {
         from: "reservation_accepted" as const,
         text: "",
         reservationAcceptedData: { ...data, sentByMe: m.sender_id === userId },
+        time: m.created_at ? formatTime(m.created_at) : undefined,
         rawDate: m.created_at ?? undefined,
       };
     } catch {
@@ -214,6 +218,7 @@ function toMessage(m: MessageApiItem, userId: string): Message {
       from: "reservation_rejected" as const,
       text: "",
       sentByMe: m.sender_id === userId,
+      time: m.created_at ? formatTime(m.created_at) : undefined,
       rawDate: m.created_at ?? undefined,
     };
   }
