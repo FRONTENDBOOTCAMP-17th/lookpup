@@ -12,7 +12,7 @@ export async function GET(
     .from("sitters")
     .select(
       `id, user_id, title, introduction, career, available_area,
-       latitude, longitude, base_price, rating, status,
+       latitude, longitude, base_price, rating, status, request_type,
        users!inner(full_name, profile_image, is_verified),
        services(id, service_type, title, price, description, is_active, animal_type)`,
     )
@@ -49,6 +49,7 @@ export async function GET(
       rating: sitter.rating,
       status: sitter.status,
       is_verified,
+      request_type: sitter.request_type ?? [],
       services: sitter.services,
       review_count: reviewCount ?? 0,
     },
