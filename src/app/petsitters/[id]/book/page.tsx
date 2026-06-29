@@ -10,7 +10,7 @@ import {
   Calendar,
 } from "lucide-react";
 import { DateRange } from "react-day-picker";
-import { format, differenceInDays } from "date-fns";
+import { format, differenceInDays, startOfDay } from "date-fns";
 import { ko } from "date-fns/locale";
 import { useBookingStore } from "@/store/bookingStore";
 import { usePortOne } from "@/hooks/usePortOne";
@@ -47,7 +47,6 @@ type SitterService = { id: string; service_type: string; price: number };
 type SitterApiResponse = {
   id: string;
   full_name: string;
-  profile_image: string | null;
   base_price: number | null;
   services: (SitterService & { is_active: boolean })[];
 };
@@ -101,8 +100,7 @@ function formatTime12h(value: string): string {
 
 function calcNights(range: DateRange | undefined): number {
   if (!range?.from || !range?.to) return 1;
-  const d = differenceInDays(range.to, range.from);
-  return d > 0 ? d : 1;
+  return Math.max(1, differenceInDays(range.to, range.from));
 }
 
 function petNamesFromIds(ids: string[], pets: Pet[]): string {
@@ -145,12 +143,14 @@ function StepDateContent({
   setStartTime,
   endTime,
   setEndTime,
+  bookedRanges,
 }: {
   petsitter: Sitter;
   startTime: string;
   setStartTime: (v: string) => void;
   endTime: string;
   setEndTime: (v: string) => void;
+  bookedRanges: { from: Date; to: Date }[];
 }) {
   const { dateRange, setDateRange } = useBookingStore();
   const nights = calcNights(dateRange);
@@ -164,7 +164,7 @@ function StepDateContent({
         </h2>
 
         <div className="overflow-x-auto">
-          <RangePicker value={dateRange} onChange={setDateRange} />
+          <RangePicker value={dateRange} onChange={setDateRange} bookedRanges={bookedRanges} />
         </div>
 
         {dateRange?.from && (
@@ -521,9 +521,7 @@ function StepCompleteContent({
   const { dateRange, petIds, reset } = useBookingStore();
   const nights = calcNights(dateRange);
   const total = petsitter.pricePerDay * nights + PLATFORM_FEE;
-  const selectedPetNames = pets.filter((p) => petIds.includes(p.id)).map(
-    (p) => p.name,
-  );
+  const selectedPetNames = pets.filter((p) => petIds.includes(p.id)).map((p) => p.name);
   const serviceLabel = selectedService
     ? (SERVICES.find((s) => s.key === selectedService)?.label ?? petsitter.service)
     : petsitter.service;
@@ -610,8 +608,6 @@ function StepCompleteContent({
   );
 }
 
-// Step 5: 예약 완료
-
 export default function BookPage() {
   const params = useParams();
   const sitterId = params.id as string;
@@ -627,6 +623,7 @@ export default function BookPage() {
   const [pets, setPets] = useState<Pet[]>([]);
   const [petsitter, setPetsitter] = useState<Sitter>({ id: sitterId, name: "", initial: "", service: "", pricePerDay: 0 });
   const [sitterServices, setSitterServices] = useState<SitterService[]>([]);
+  const [bookedRanges, setBookedRanges] = useState<{ from: Date; to: Date }[]>([]);
   const { requestPayment, isPending } = usePortOne();
   const { dateRange, petIds, note } = useBookingStore();
 
@@ -648,6 +645,20 @@ export default function BookPage() {
   }, [sitterId]);
 
   useEffect(() => {
+    fetch(`/api/sitters/${sitterId}/availability`)
+      .then<{ data: { from: string; to: string }[] }>((r) => r.json())
+      .then(({ data }) =>
+        setBookedRanges(
+          data.map((r) => ({
+            from: startOfDay(new Date(r.from)),
+            to: startOfDay(new Date(r.to)),
+          })),
+        ),
+      )
+      .catch(() => {});
+  }, [sitterId]);
+
+  useEffect(() => {
     fetch("/api/pets")
       .then<{ data: PetApiItem[] }>((r) => r.json())
       .then(({ data }) =>
@@ -659,7 +670,7 @@ export default function BookPage() {
             breed: p.breed ?? "",
             age: p.age,
             weight: p.weight,
-            image_url: p.image_url ?? null,
+            image_url: p.image_url,
           })),
         ),
       )
@@ -673,9 +684,7 @@ export default function BookPage() {
   function canNext(): boolean {
     if (step === 1) return !!dateRange?.from && !(startTime && endTime && startTime >= endTime);
     if (step === 2) return petIds.length > 0 && !!selectedService;
-    if (step === 3) return true;
-    if (step === 4) return true;
-    return false;
+    return true;
   }
 
   function handleNext() {
@@ -706,8 +715,7 @@ export default function BookPage() {
       },
       {
         onSuccess: async () => {
-          const serviceType = SERVICE_KEY_TO_TYPE[selectedService ?? "visit"];
-          const service = sitterServices.find((s) => s.service_type === serviceType);
+          const service = sitterServices.find((s) => s.service_type === SERVICE_KEY_TO_TYPE[selectedService ?? "visit"]);
           const startDt = buildISO(dateRange!.from!, startTime || "00:00");
           const endDt = buildISO(dateRange!.to ?? dateRange!.from!, endTime || "23:59");
 
@@ -816,7 +824,7 @@ export default function BookPage() {
 
           {/* 단계별 콘텐츠 */}
           <div className="pt-8">
-            {step === 1 && <StepDateContent petsitter={petsitter} startTime={startTime} setStartTime={setStartTime} endTime={endTime} setEndTime={setEndTime} />}
+            {step === 1 && <StepDateContent petsitter={petsitter} startTime={startTime} setStartTime={setStartTime} endTime={endTime} setEndTime={setEndTime} bookedRanges={bookedRanges} />}
             {step === 2 && (
               <StepPetContent
                 pets={pets}
