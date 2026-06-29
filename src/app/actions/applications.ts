@@ -358,7 +358,7 @@ export async function updateApplication(
       const { data: chatRoom } = await db
         .from("chat_rooms")
         .select("id")
-        .eq("request_id", requestRow.id)
+        .eq("request_id", application.request_id)
         .eq("sitter_id", application.sitter_id)
         .maybeSingle();
       const chatLink = chatRoom ? `/chat?roomId=${chatRoom.id}` : undefined;

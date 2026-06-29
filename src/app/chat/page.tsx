@@ -42,7 +42,17 @@ import {
   sendPaymentCompleteMessage,
   sendApplicationSelectedMessage,
   sendApplicationRejectedMessage,
+  sendServiceCompleteMessage,
 } from "@/app/actions/chat";
+import {
+  ownerConfirmServiceComplete,
+  getActiveReservationsForRoom,
+  getReservationStatuses,
+} from "@/app/actions/reservations";
+import {
+  ServiceCompleteModal,
+  type ActiveReservation,
+} from "@/components/common/chat/ServiceCompleteModal";
 import { usePortOne } from "@/hooks/usePortOne";
 import { uploadToCloudinary } from "@/utils/cloudinary";
 import {
@@ -275,6 +285,8 @@ function ChatPageContent({
     markRoomAsRead(activeRoomId);
     markRoomRead(activeRoomId);
     setSendError(null);
+    setConfirmedServiceIds(new Set());
+    checkedReservationIdsRef.current = new Set();
   }, [activeRoomId, markRoomAsRead]);
 
   useLayoutEffect(() => {
@@ -491,8 +503,15 @@ function ChatPageContent({
       setActiveTab("one_on_one");
       setSelectedRoomId(room.id);
       setMobileChatView("room");
+      return;
     }
-  }, [initialRoomId, rooms, loading]);
+    const applicant = applicants.find((a) => a.id === initialRoomId);
+    if (applicant) {
+      setActiveTab("applicants");
+      setSelectedApplicantId(applicant.id);
+      setMobileChatView("room");
+    }
+  }, [initialRoomId, rooms, applicants, loading]);
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profilePopupApplicant, setProfilePopupApplicant] =
@@ -510,6 +529,14 @@ function ChatPageContent({
   const [sendingPhoto, setSendingPhoto] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [careRecordOpen, setCareRecordOpen] = useState(false);
+  const [confirmedServiceIds, setConfirmedServiceIds] = useState<Set<string>>(new Set());
+  const checkedReservationIdsRef = useRef(new Set<string>());
+  const [isServiceConfirming, setIsServiceConfirming] = useState(false);
+  const [pendingServiceConfirmId, setPendingServiceConfirmId] = useState<string | null>(null);
+  const [serviceCompleteModalOpen, setServiceCompleteModalOpen] = useState(false);
+  const [activeReservations, setActiveReservations] = useState<ActiveReservation[]>([]);
+  const [serviceCompleteModalLoading, setServiceCompleteModalLoading] = useState(false);
+  const [serviceCompleteSending, setServiceCompleteSending] = useState(false);
 
   const handleCareRecordSubmit = async (record: CareRecordPayload) => {
     if (!activeRoomId) return;
@@ -539,6 +566,92 @@ function ChatPageContent({
       setSendError("돌봄기록 전송에 실패했습니다. 다시 시도해주세요.");
     }
   };
+  async function handleServiceComplete() {
+    if (!activeRoomId) return;
+    setPlusMenuOpen(false);
+    setServiceCompleteModalLoading(true);
+    setActiveReservations([]);
+    setServiceCompleteModalOpen(true);
+    try {
+      const result = await getActiveReservationsForRoom(activeRoomId);
+      if (result.error) {
+        setSendError(result.error.message);
+        return;
+      }
+      setActiveReservations(result.data ?? []);
+    } catch {
+      setSendError("예약 정보를 불러오는데 실패했습니다.");
+    } finally {
+      setServiceCompleteModalLoading(false);
+    }
+  }
+
+  async function handleServiceCompleteConfirm(reservationId: string) {
+    if (!activeRoomId || serviceCompleteSending) return;
+    setServiceCompleteSending(true);
+    try {
+      const result = await sendServiceCompleteMessage(activeRoomId, reservationId);
+      if (result.error) {
+        setSendError(result.error.message);
+        return;
+      }
+      if (result.data) {
+        addMessage(result.data);
+        broadcastMessage(result.data);
+        updatePreview(activeRoomId, "서비스 완료", result.data.created_at ?? "");
+      }
+      setServiceCompleteModalOpen(false);
+    } catch {
+      setSendError("서비스 완료 전송에 실패했습니다. 다시 시도해주세요.");
+    } finally {
+      setServiceCompleteSending(false);
+    }
+  }
+
+  async function handleServiceConfirm(reservationId: string) {
+    if (!reservationId || isServiceConfirming) return;
+    setIsServiceConfirming(true);
+    try {
+      const result = await ownerConfirmServiceComplete(reservationId);
+      if (result.error) {
+        setSendError(result.error.message);
+        return;
+      }
+      setConfirmedServiceIds((prev) => new Set([...prev, reservationId]));
+    } catch {
+      setSendError("서비스 완료 확인에 실패했습니다. 다시 시도해주세요.");
+    } finally {
+      setIsServiceConfirming(false);
+    }
+  }
+
+  useEffect(() => {
+    const uncheckedIds = messages
+      .filter(
+        (m) =>
+          m.from === "service_complete" &&
+          !m.sentByMe &&
+          m.serviceCompleteData?.reservationId &&
+          !checkedReservationIdsRef.current.has(
+            m.serviceCompleteData.reservationId,
+          ),
+      )
+      .map((m) => m.serviceCompleteData!.reservationId);
+
+    if (uncheckedIds.length === 0) return;
+    uncheckedIds.forEach((id) => checkedReservationIdsRef.current.add(id));
+
+    getReservationStatuses(uncheckedIds).then(({ data }) => {
+      if (!data) return;
+      const completed = Object.entries(data)
+        .filter(([, status]) => status === "completed")
+        .map(([id]) => id);
+      if (completed.length > 0) {
+        setConfirmedServiceIds((prev) => new Set([...prev, ...completed]));
+      }
+    });
+  }, [messages]);
+
   const [pendingDelete, setPendingDelete] = useState<{
     id: string;
     type: "room" | "applicant";
@@ -1121,10 +1234,22 @@ function ChatPageContent({
                           : undefined
                       }
                       onGoToChat={() => {
+                        const room = rooms.find(
+                          (r) =>
+                            r.ownerId === selectedApplicant?.ownerId &&
+                            r.sitterId === selectedApplicant?.sitterId,
+                        );
                         setActiveTab("one_on_one");
                         setSelectedApplicantId(null);
-                        setMobileChatView("list");
+                        if (room) setSelectedRoomId(room.id);
+                        setMobileChatView(room ? "room" : "list");
                       }}
+                      onServiceConfirm={(id) => setPendingServiceConfirmId(id)}
+                      isServiceConfirmed={
+                        !!msg.serviceCompleteData?.reservationId &&
+                        confirmedServiceIds.has(msg.serviceCompleteData.reservationId)
+                      }
+                      isServiceConfirming={isServiceConfirming}
                     />
                   );
                 })}
@@ -1176,6 +1301,9 @@ function ChatPageContent({
                         setCareRecordOpen(true);
                       }
                     : undefined
+                }
+                onServiceComplete={
+                  isCurrentUserSitter ? handleServiceComplete : undefined
                 }
                 onSendPhoto={() => photoInputRef.current?.click()}
               />
@@ -1441,9 +1569,21 @@ function ChatPageContent({
                             : undefined
                         }
                         onGoToChat={() => {
+                          const room = rooms.find(
+                            (r) =>
+                              r.ownerId === selectedApplicant?.ownerId &&
+                              r.sitterId === selectedApplicant?.sitterId,
+                          );
                           setActiveTab("one_on_one");
                           setSelectedApplicantId(null);
+                          if (room) setSelectedRoomId(room.id);
                         }}
+                        onServiceConfirm={(id) => setPendingServiceConfirmId(id)}
+                        isServiceConfirmed={
+                          !!msg.serviceCompleteData?.reservationId &&
+                          confirmedServiceIds.has(msg.serviceCompleteData.reservationId)
+                        }
+                        isServiceConfirming={isServiceConfirming}
                       />
                     );
                   })}
@@ -1469,6 +1609,9 @@ function ChatPageContent({
                           setCareRecordOpen(true);
                         }
                       : undefined
+                  }
+                  onServiceComplete={
+                    isCurrentUserSitter ? handleServiceComplete : undefined
                   }
                   onSendPhoto={() => photoInputRef.current?.click()}
                 />
@@ -1525,6 +1668,22 @@ function ChatPageContent({
       )}
 
       <CustomModal
+        open={pendingServiceConfirmId !== null}
+        preset="serviceComplete"
+        confirmText={isServiceConfirming ? "처리 중..." : "완료 확인"}
+        onClose={() => {
+          if (!isServiceConfirming) setPendingServiceConfirmId(null);
+        }}
+        onConfirm={() => {
+          if (pendingServiceConfirmId) {
+            handleServiceConfirm(pendingServiceConfirmId).then(() =>
+              setPendingServiceConfirmId(null),
+            );
+          }
+        }}
+      />
+
+      <CustomModal
         open={pendingDelete !== null}
         preset="leaveChat"
         confirmText={deleting ? "처리 중..." : "나가기"}
@@ -1571,6 +1730,15 @@ function ChatPageContent({
           setPendingConfirmId(null);
         }}
         onConfirm={handleConfirmApplicant}
+      />
+
+      <ServiceCompleteModal
+        open={serviceCompleteModalOpen}
+        reservations={activeReservations}
+        loading={serviceCompleteModalLoading}
+        sending={serviceCompleteSending}
+        onClose={() => setServiceCompleteModalOpen(false)}
+        onConfirm={handleServiceCompleteConfirm}
       />
     </div>
   );

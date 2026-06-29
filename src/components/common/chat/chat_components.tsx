@@ -77,6 +77,15 @@ export type ApplicationData = {
   sentByMe?: boolean;
 };
 
+export type ServiceCompleteData = {
+  reservationId: string;
+  serviceTitle?: string;
+  petName?: string;
+  startDatetime?: string;
+  endDatetime?: string;
+  totalPrice?: number;
+};
+
 // 채팅창 메시지
 export type Message = {
   id: string;
@@ -89,13 +98,15 @@ export type Message = {
     | "payment_complete"
     | "application_selected"
     | "application_rejected"
-    | "reservation_canceled";
+    | "reservation_canceled"
+    | "service_complete";
   text: string;
   imageUrl?: string;
   time?: string;
   rawDate?: string;
   paymentData?: PaymentData;
   applicationData?: ApplicationData;
+  serviceCompleteData?: ServiceCompleteData;
   sentByMe?: boolean;
 };
 
@@ -384,6 +395,9 @@ type MessageBubbleProps = {
   isPaymentPaid?: boolean;
   onPostClick?: () => void;
   onGoToChat?: () => void;
+  onServiceConfirm?: (reservationId: string) => void;
+  isServiceConfirmed?: boolean;
+  isServiceConfirming?: boolean;
 };
 
 export function MessageBubble({
@@ -395,6 +409,9 @@ export function MessageBubble({
   isPaymentPaid,
   onPostClick,
   onGoToChat,
+  onServiceConfirm,
+  isServiceConfirmed,
+  isServiceConfirming,
 }: MessageBubbleProps) {
   if (msg.from === "application_selected") {
     const data = msg.applicationData;
@@ -426,6 +443,22 @@ export function MessageBubble({
   }
   if (msg.from === "reservation_canceled") {
     return <ReservationCanceledCard sentByMe={msg.sentByMe ?? false} />;
+  }
+  if (msg.from === "service_complete") {
+    if (msg.sentByMe) {
+      return <SitterServiceCompleteCard data={msg.serviceCompleteData} />;
+    }
+    const reservationId = msg.serviceCompleteData?.reservationId ?? "";
+    return (
+      <ServiceCompleteCard
+        confirmed={isServiceConfirmed ?? false}
+        onConfirm={() => onServiceConfirm?.(reservationId)}
+        isConfirming={isServiceConfirming ?? false}
+        otherInitial={senderInitial}
+        otherProfileImage={senderProfileImage}
+        data={msg.serviceCompleteData}
+      />
+    );
   }
   if (msg.from === "payment_request") {
     const data = msg.paymentData;
@@ -537,7 +570,9 @@ export function ApplicantProfilePopup({
   onClose,
   cardVariant = "sitter",
 }: ApplicantProfilePopupProps) {
-  const [fetchedProfile, setFetchedProfile] = useState<SitterProfile | null>(null);
+  const [fetchedProfile, setFetchedProfile] = useState<SitterProfile | null>(
+    null,
+  );
   const [loadingProfile, setLoadingProfile] = useState(false);
 
   useEffect(() => {
@@ -623,7 +658,7 @@ export function ConfirmationCard({
 }: ConfirmationCardProps) {
   return (
     <div className="flex justify-end">
-      <div className="w-[318px] p-4 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col">
+      <div className="w-79.5 p-4 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col">
         <div className="flex flex-col">
           <span className="text-[#6B7280] text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
             예약 확정
@@ -690,7 +725,7 @@ export function SitterConfirmationCard({
 }: SitterConfirmationCardProps) {
   return (
     <div className="flex justify-end">
-      <div className="w-[318px] p-4 bg-orange-100 rounded-2xl outline-[1.11px] outline-orange-400 outline-offset-[-1.11px] flex flex-col">
+      <div className="w-79.5 p-4 bg-orange-100 rounded-2xl outline-[1.11px] outline-orange-400 outline-offset-[-1.11px] flex flex-col">
         <div className="flex flex-col">
           <span className="text-orange-500 text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
             예약 확정
@@ -743,7 +778,7 @@ export function SitterConfirmationCard({
 export function OwnerRejectionCard() {
   return (
     <div className="flex justify-end">
-      <div className="w-[318px] p-4 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col">
+      <div className="w-79.5 p-4 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col">
         <div className="flex items-start gap-2.5">
           <div className="w-9 h-9 bg-red-50 rounded-full flex items-center justify-center shrink-0">
             <XCircle size={18} className="text-red-500" />
@@ -769,7 +804,7 @@ export function OwnerRejectionCard() {
 export function SitterRejectionCard() {
   return (
     <div className="flex justify-end">
-      <div className="w-[318px] p-4 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col">
+      <div className="w-79.54 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col">
         <div className="flex items-start gap-2.5">
           <div className="w-9 h-9 bg-red-50 rounded-full flex items-center justify-center shrink-0">
             <XCircle size={18} className="text-red-500" />
@@ -802,7 +837,7 @@ export function SitterRejectionCard() {
 export function ReservationCanceledCard({ sentByMe }: { sentByMe: boolean }) {
   return (
     <div className="flex justify-end">
-      <div className="w-[318px] p-4 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col">
+      <div className="w-79.5 p-4 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col">
         <div className="flex items-start gap-2.5">
           <div className="w-9 h-9 bg-red-50 rounded-full flex items-center justify-center shrink-0">
             <XCircle size={18} className="text-red-500" />
@@ -831,12 +866,14 @@ type ChatPlusPanelProps = {
   onPaymentRequest?: () => void;
   onSendCareRecord?: () => void;
   onSendPhoto: () => void;
+  onServiceComplete?: () => void;
 };
 
 export function ChatPlusPanel({
   onPaymentRequest,
   onSendCareRecord,
   onSendPhoto,
+  onServiceComplete,
 }: ChatPlusPanelProps) {
   const actions = [
     onPaymentRequest
@@ -848,6 +885,9 @@ export function ChatPlusPanel({
           label: "돌봄 기록 전송",
           onClick: onSendCareRecord,
         }
+      : null,
+    onServiceComplete
+      ? { icon: CheckCircle, label: "서비스 완료", onClick: onServiceComplete }
       : null,
     { icon: Camera, label: "사진 전송", onClick: onSendPhoto },
   ].filter(Boolean) as {
@@ -1045,8 +1085,9 @@ export function PaymentRequestCard({
   costItems,
 }: PaymentRequestCardProps) {
   return (
-    <div className="flex justify-end">
-      <div className="w-[318px] p-4 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col gap-3">
+    <div className="flex items-start gap-3">
+      <Avatar initial={otherInitial} src={otherProfileImage} size="sm" />
+      <div className="w-79.5 p-4 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col gap-3">
         <div className="flex flex-col">
           <span className="text-[#6B7280] text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
             결제 요청
@@ -1172,7 +1213,7 @@ export function SitterPaymentRequestCard({
 }: SitterPaymentRequestCardProps) {
   return (
     <div className="flex justify-end">
-      <div className="w-[318px] p-4 bg-orange-100 rounded-2xl outline-[1.11px] outline-orange-400 outline-offset-[-1.11px] flex flex-col">
+      <div className="w-79.5 p-4 bg-orange-100 rounded-2xl outline-[1.11px] outline-orange-400 outline-offset-[-1.11px] flex flex-col">
         <span className="text-orange-500 text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
           결제 요청
         </span>
@@ -1253,6 +1294,191 @@ export function SitterPaymentRequestCard({
   );
 }
 
+function formatServiceDate(iso: string): string {
+  return new Date(iso).toLocaleString("ko-KR", {
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+// 서비스 완료 카드 (보호자용 - 확인 버튼 포함)
+type ServiceCompleteCardProps = {
+  confirmed: boolean;
+  onConfirm: () => void;
+  isConfirming: boolean;
+  otherInitial: string;
+  otherProfileImage?: string | null;
+  data?: ServiceCompleteData;
+};
+
+export function ServiceCompleteCard({
+  confirmed,
+  onConfirm,
+  isConfirming,
+  otherInitial,
+  otherProfileImage,
+  data,
+}: ServiceCompleteCardProps) {
+  const hasInfo =
+    data?.serviceTitle ||
+    data?.petName ||
+    data?.startDatetime ||
+    data?.totalPrice !== undefined;
+  return (
+    <div className="flex items-start gap-3">
+      <Avatar initial={otherInitial} src={otherProfileImage} size="sm" />
+      <div className="w-79.5 p-4 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 bg-[#ECFDF5] rounded-full flex items-center justify-center shrink-0">
+            <CheckCircle size={18} className="text-[#10B981]" />
+          </div>
+          <div>
+            <span className="text-[#065F46] text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
+              서비스 완료
+            </span>
+            <p className="text-[#281A0E] text-sm leading-5 mt-0.5">
+              펫시터가 서비스를 완료했어요.
+            </p>
+          </div>
+        </div>
+        {hasInfo && (
+          <div className="flex flex-col gap-2 px-3 py-2.5 bg-orange-50 rounded-xl">
+            {(data?.serviceTitle || data?.petName) && (
+              <div className="flex items-center gap-1.5">
+                {data?.serviceTitle && (
+                  <span className="text-xs text-stone-700 font-medium">
+                    {data.serviceTitle}
+                  </span>
+                )}
+                {data?.serviceTitle && data?.petName && (
+                  <span className="text-gray-300 text-xs">·</span>
+                )}
+                {data?.petName && (
+                  <span className="text-xs text-stone-500">{data.petName}</span>
+                )}
+              </div>
+            )}
+            {data?.startDatetime && (
+              <div className="flex items-center gap-2">
+                <span className="text-[#6B7280] text-xs shrink-0">일정</span>
+                <span className="text-[#374151] text-xs">
+                  {formatServiceDate(data.startDatetime)}
+                  {data.endDatetime
+                    ? ` ~ ${formatServiceDate(data.endDatetime)}`
+                    : ""}
+                </span>
+              </div>
+            )}
+            {data?.totalPrice !== undefined && (
+              <div className="flex items-center gap-2">
+                <span className="text-[#6B7280] text-xs shrink-0">금액</span>
+                <span className="text-orange-500 text-xs font-medium">
+                  {data.totalPrice.toLocaleString("ko-KR")}원
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+        <p className="text-[#6B7280] text-xs leading-relaxed">
+          서비스가 완료되었다면 확인 버튼을 눌러주세요.
+        </p>
+        {confirmed ? (
+          <button
+            disabled
+            className="w-full h-10 rounded-xl bg-orange-50 outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] text-orange-400 text-sm cursor-default"
+          >
+            완료되었어요
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={isConfirming}
+            className="w-full h-10 rounded-xl outline-[1.11px] outline-orange-500 outline-offset-[-1.11px] text-orange-500 text-sm hover:bg-orange-50 transition-colors disabled:opacity-50"
+          >
+            {isConfirming ? "처리 중..." : "확인"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// 서비스 완료 알림 카드 (펫시터)
+export function SitterServiceCompleteCard({
+  data,
+}: {
+  data?: ServiceCompleteData;
+}) {
+  const hasInfo =
+    data?.serviceTitle ||
+    data?.petName ||
+    data?.startDatetime ||
+    data?.totalPrice !== undefined;
+  return (
+    <div className="flex justify-end">
+      <div className="w-79.5 p-4 bg-orange-100 rounded-2xl outline-[1.11px] outline-orange-400 outline-offset-[-1.11px] flex flex-col gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 bg-[#ECFDF5] rounded-full flex items-center justify-center shrink-0">
+            <CheckCircle size={18} className="text-[#10B981]" />
+          </div>
+          <div>
+            <span className="text-orange-500 text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
+              서비스 완료
+            </span>
+            <p className="text-[#281A0E] text-sm leading-5 mt-0.5">
+              서비스를 완료했습니다.
+            </p>
+          </div>
+        </div>
+        {hasInfo && (
+          <div className="flex flex-col gap-2 px-3 py-2.5 bg-orange-200 rounded-xl">
+            {(data?.serviceTitle || data?.petName) && (
+              <div className="flex items-center gap-1.5">
+                {data?.serviceTitle && (
+                  <span className="text-xs text-stone-700 font-medium">
+                    {data.serviceTitle}
+                  </span>
+                )}
+                {data?.serviceTitle && data?.petName && (
+                  <span className="text-orange-300 text-xs">·</span>
+                )}
+                {data?.petName && (
+                  <span className="text-xs text-stone-500">{data.petName}</span>
+                )}
+              </div>
+            )}
+            {data?.startDatetime && (
+              <div className="flex items-center gap-2">
+                <span className="text-[#6B7280] text-xs shrink-0">일정</span>
+                <span className="text-[#374151] text-xs">
+                  {formatServiceDate(data.startDatetime)}
+                  {data.endDatetime
+                    ? ` ~ ${formatServiceDate(data.endDatetime)}`
+                    : ""}
+                </span>
+              </div>
+            )}
+            {data?.totalPrice !== undefined && (
+              <div className="flex items-center gap-2">
+                <span className="text-[#6B7280] text-xs shrink-0">금액</span>
+                <span className="text-orange-500 text-xs font-medium">
+                  {data.totalPrice.toLocaleString("ko-KR")}원
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+        <p className="text-[#6B7280] text-xs leading-relaxed">
+          보호자의 확인 후 서비스가 완료됩니다.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // 결제 완료 카드 (보호자 + 펫시터 모두)
 type PaymentCompleteCardProps = {
   amount: number;
@@ -1261,7 +1487,7 @@ type PaymentCompleteCardProps = {
 export function PaymentCompleteCard({ amount }: PaymentCompleteCardProps) {
   return (
     <div className="flex justify-end">
-      <div className="w-[318px] p-4 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col gap-3">
+      <div className="w-79.5 p-4 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col gap-3">
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 bg-[#ECFDF5] rounded-full flex items-center justify-center shrink-0">
             <CheckCircle size={18} className="text-[#10B981]" />

@@ -11,6 +11,7 @@ import {
   APPLICATION_SELECTED_PREFIX,
   APPLICATION_REJECTED_PREFIX,
   RESERVATION_CANCELED_PREFIX,
+  SERVICE_COMPLETE_PREFIX,
 } from "@/lib/chatMessagePrefixes";
 
 async function getAuthUser() {
@@ -91,7 +92,12 @@ export async function sendMessage(roomId: string, content: string) {
   }
 
   if (!content || content.trim().length === 0) {
-    return { error: { code: "VALIDATION_ERROR", message: "메시지 내용을 입력해주세요." } };
+    return {
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "메시지 내용을 입력해주세요.",
+      },
+    };
   }
 
   const db = createServiceClient();
@@ -103,11 +109,18 @@ export async function sendMessage(roomId: string, content: string) {
     .single();
 
   if (!room) {
-    return { error: { code: "NOT_FOUND", message: "채팅방을 찾을 수 없습니다." } };
+    return {
+      error: { code: "NOT_FOUND", message: "채팅방을 찾을 수 없습니다." },
+    };
   }
 
   if (room.owner_id !== user.id && room.sitters.user_id !== user.id) {
-    return { error: { code: "FORBIDDEN", message: "채팅방 참여자만 메시지를 보낼 수 있습니다." } };
+    return {
+      error: {
+        code: "FORBIDDEN",
+        message: "채팅방 참여자만 메시지를 보낼 수 있습니다.",
+      },
+    };
   }
 
   const now = new Date().toISOString();
@@ -168,7 +181,6 @@ export async function sendMessage(roomId: string, content: string) {
   return { data: message };
 }
 
-
 export async function sendImageMessage(roomId: string, imageUrl: string) {
   const user = await getAuthUser();
   if (!user) {
@@ -184,18 +196,29 @@ export async function sendImageMessage(roomId: string, imageUrl: string) {
     .single();
 
   if (!room) {
-    return { error: { code: "NOT_FOUND", message: "채팅방을 찾을 수 없습니다." } };
+    return {
+      error: { code: "NOT_FOUND", message: "채팅방을 찾을 수 없습니다." },
+    };
   }
 
   if (room.owner_id !== user.id && room.sitters.user_id !== user.id) {
-    return { error: { code: "FORBIDDEN", message: "채팅방 참여자만 메시지를 보낼 수 있습니다." } };
+    return {
+      error: {
+        code: "FORBIDDEN",
+        message: "채팅방 참여자만 메시지를 보낼 수 있습니다.",
+      },
+    };
   }
 
   const now = new Date().toISOString();
 
   const { data: message, error: msgError } = await db
     .from("messages")
-    .insert({ room_id: roomId, sender_id: user.id, content: `${IMAGE_MSG_PREFIX}${imageUrl}` })
+    .insert({
+      room_id: roomId,
+      sender_id: user.id,
+      content: `${IMAGE_MSG_PREFIX}${imageUrl}`,
+    })
     .select()
     .single();
 
@@ -282,7 +305,17 @@ export async function sendSystemMessage(roomId: string, content: string) {
 
 export async function sendPaymentRequestMessage(
   roomId: string,
-  data: { amount: number; reason: string; deadline: string; costItems?: { id: string; name: string; amount: string; description: string }[] },
+  data: {
+    amount: number;
+    reason: string;
+    deadline: string;
+    costItems?: {
+      id: string;
+      name: string;
+      amount: string;
+      description: string;
+    }[];
+  },
 ) {
   const user = await getAuthUser();
   if (!user) {
@@ -364,7 +397,18 @@ export async function sendPaymentCompleteMessage(
 
 export async function sendAutoPaymentRequestMessage(
   roomId: string,
-  data: { amount: number; reason: string; deadline: string; postId?: string; costItems?: { id: string; name: string; amount: string; description: string }[] },
+  data: {
+    amount: number;
+    reason: string;
+    deadline: string;
+    postId?: string;
+    costItems?: {
+      id: string;
+      name: string;
+      amount: string;
+      description: string;
+    }[];
+  },
 ) {
   const user = await getAuthUser();
   if (!user) {
@@ -380,11 +424,18 @@ export async function sendAutoPaymentRequestMessage(
     .single();
 
   if (!room) {
-    return { error: { code: "NOT_FOUND", message: "채팅방을 찾을 수 없습니다." } };
+    return {
+      error: { code: "NOT_FOUND", message: "채팅방을 찾을 수 없습니다." },
+    };
   }
 
   if (room.owner_id !== user.id) {
-    return { error: { code: "FORBIDDEN", message: "보호자만 이 작업을 할 수 있습니다." } };
+    return {
+      error: {
+        code: "FORBIDDEN",
+        message: "보호자만 이 작업을 할 수 있습니다.",
+      },
+    };
   }
 
   const sitterUserId = room.sitters.user_id;
@@ -459,7 +510,11 @@ export async function sendApplicationRejectedMessage(roomId: string) {
 
   const { data: message, error } = await db
     .from("messages")
-    .insert({ room_id: roomId, sender_id: user.id, content: APPLICATION_REJECTED_PREFIX })
+    .insert({
+      room_id: roomId,
+      sender_id: user.id,
+      content: APPLICATION_REJECTED_PREFIX,
+    })
     .select()
     .single();
 
@@ -486,7 +541,11 @@ export async function sendReservationCanceledMessage(roomId: string) {
 
   const { data: message, error } = await db
     .from("messages")
-    .insert({ room_id: roomId, sender_id: user.id, content: RESERVATION_CANCELED_PREFIX })
+    .insert({
+      room_id: roomId,
+      sender_id: user.id,
+      content: RESERVATION_CANCELED_PREFIX,
+    })
     .select()
     .single();
 
@@ -498,6 +557,97 @@ export async function sendReservationCanceledMessage(roomId: string) {
     .from("chat_rooms")
     .update({ last_message: "예약 취소", last_message_at: now })
     .eq("id", roomId);
+
+  return { data: message };
+}
+
+export async function sendServiceCompleteMessage(roomId: string, reservationId: string) {
+  const user = await getAuthUser();
+  if (!user) {
+    return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
+  }
+
+  const db = createServiceClient();
+
+  const { data: room } = await db
+    .from("chat_rooms")
+    .select("id, owner_id, sitters!inner(user_id)")
+    .eq("id", roomId)
+    .single();
+
+  if (!room) {
+    return {
+      error: { code: "NOT_FOUND", message: "채팅방을 찾을 수 없습니다." },
+    };
+  }
+
+  if (room.sitters.user_id !== user.id) {
+    return {
+      error: {
+        code: "FORBIDDEN",
+        message: "펫시터만 서비스 완료를 요청할 수 있습니다.",
+      },
+    };
+  }
+
+  const { data: reservation } = await db
+    .from("reservations")
+    .select("start_datetime, end_datetime, total_price, services(title, service_type), reservation_items(pets(name))")
+    .eq("id", reservationId)
+    .single();
+
+  const SERVICE_TYPE_LABEL: Record<string, string> = {
+    walk: "산책",
+    care: "방문 돌봄",
+    hotel: "위탁 돌봄",
+    pickup: "픽업",
+  };
+  type ServiceRow = { title: string; service_type: string };
+  type PetRow = { name: string } | null;
+  type ItemRow = { pets: PetRow };
+  const rawServices = reservation?.services;
+  const service = (Array.isArray(rawServices) ? rawServices[0] : rawServices) as ServiceRow | null;
+  const items = (reservation?.reservation_items as ItemRow[]) ?? [];
+  const serviceTitle =
+    service?.title ||
+    (service?.service_type ? (SERVICE_TYPE_LABEL[service.service_type] ?? service.service_type) : null) ||
+    "펫시팅 서비스";
+  const petName = items[0]?.pets?.name ?? undefined;
+  const startDatetime = reservation?.start_datetime ?? undefined;
+  const endDatetime = reservation?.end_datetime ?? undefined;
+  const totalPrice = reservation?.total_price ?? undefined;
+
+  const now = new Date().toISOString();
+  const content = `${SERVICE_COMPLETE_PREFIX}${JSON.stringify({ reservationId, serviceTitle, petName, startDatetime, endDatetime, totalPrice })}`;
+
+  const { data: message, error } = await db
+    .from("messages")
+    .insert({
+      room_id: roomId,
+      sender_id: user.id,
+      content,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    return { error: { code: "INTERNAL_ERROR", message: error.message } };
+  }
+
+  await db
+    .from("chat_rooms")
+    .update({ last_message: "서비스 완료", last_message_at: now })
+    .eq("id", roomId);
+
+  if (room.owner_id) {
+    await createNotification({
+      userId: room.owner_id,
+      type: "message",
+      title: "서비스가 완료되었어요",
+      content: "펫시터가 서비스를 완료했습니다. 확인해주세요.",
+      linkUrl: `/chat?roomId=${roomId}`,
+    });
+  }
 
   return { data: message };
 }
@@ -517,11 +667,18 @@ export async function markRoomRead(roomId: string) {
     .single();
 
   if (!room) {
-    return { error: { code: "NOT_FOUND", message: "채팅방을 찾을 수 없습니다." } };
+    return {
+      error: { code: "NOT_FOUND", message: "채팅방을 찾을 수 없습니다." },
+    };
   }
 
   if (room.owner_id !== user.id && room.sitters.user_id !== user.id) {
-    return { error: { code: "FORBIDDEN", message: "채팅방 참여자만 읽음 처리할 수 있습니다." } };
+    return {
+      error: {
+        code: "FORBIDDEN",
+        message: "채팅방 참여자만 읽음 처리할 수 있습니다.",
+      },
+    };
   }
 
   const { error } = await db

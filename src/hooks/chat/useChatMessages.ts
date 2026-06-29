@@ -15,6 +15,7 @@ import type {
   Message,
   PaymentData,
   ApplicationData,
+  ServiceCompleteData,
 } from "@/components/common/chat/chat_components";
 import {
   SYSTEM_MSG_PREFIX,
@@ -24,6 +25,7 @@ import {
   APPLICATION_SELECTED_PREFIX,
   APPLICATION_REJECTED_PREFIX,
   RESERVATION_CANCELED_PREFIX,
+  SERVICE_COMPLETE_PREFIX,
 } from "@/lib/chatMessagePrefixes";
 
 function formatTime(iso: string): string {
@@ -126,6 +128,23 @@ function toMessage(m: MessageApiItem, userId: string): Message {
       from: "reservation_canceled" as const,
       text: "",
       sentByMe: m.sender_id === userId,
+      rawDate: m.created_at ?? undefined,
+    };
+  }
+  if (m.content.startsWith(SERVICE_COMPLETE_PREFIX)) {
+    let serviceCompleteData: ServiceCompleteData | undefined;
+    const jsonPart = m.content.slice(SERVICE_COMPLETE_PREFIX.length);
+    if (jsonPart) {
+      try {
+        serviceCompleteData = JSON.parse(jsonPart) as ServiceCompleteData;
+      } catch {}
+    }
+    return {
+      id: m.id,
+      from: "service_complete" as const,
+      text: "",
+      sentByMe: m.sender_id === userId,
+      serviceCompleteData,
       rawDate: m.created_at ?? undefined,
     };
   }
