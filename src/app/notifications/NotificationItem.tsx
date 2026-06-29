@@ -24,6 +24,23 @@ type Props = {
   last?: boolean;
 };
 
+function getFallbackLink(type: string): string | null {
+  switch (type) {
+    case "application":
+    case "application_selected":
+    case "application_rejected":
+    case "message":
+      return "/chat";
+    case "review":
+    case "review_received":
+      return "/myprofile/reviews";
+    case "care_record":
+      return "/myprofile/booking-history";
+    default:
+      return null;
+  }
+}
+
 function getNotificationIcon(type: string): { icon: React.ReactNode; iconBg: string } {
   switch (type) {
     case "application":
@@ -47,6 +64,7 @@ export function NotificationItem({ id, type, title, content, time, isRead, linkU
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const { icon, iconBg } = getNotificationIcon(type);
+  const effectiveLinkUrl = linkUrl ?? getFallbackLink(type);
 
   function handleClick() {
     startTransition(async () => {
@@ -56,8 +74,8 @@ export function NotificationItem({ id, type, title, content, time, isRead, linkU
           console.error("알림 읽음 처리 실패:", result.error.message);
         }
       }
-      if (linkUrl) {
-        router.push(linkUrl);
+      if (effectiveLinkUrl) {
+        router.push(effectiveLinkUrl);
       }
     });
   }
@@ -71,7 +89,7 @@ export function NotificationItem({ id, type, title, content, time, isRead, linkU
       className={`relative px-5 py-4 flex items-start gap-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-400 first:rounded-t-2xl last:rounded-b-2xl ${
         !last ? "border-b border-orange-100" : ""
       } ${isRead ? "bg-white/60" : "bg-white"} ${
-        isPending ? "opacity-50 cursor-wait" : "hover:bg-orange-50/40 cursor-pointer"
+        isPending ? "opacity-50 cursor-wait" : effectiveLinkUrl ? "hover:bg-orange-50/40 cursor-pointer" : "cursor-default"
       }`}
     >
       <div className="relative shrink-0 mt-0.5">

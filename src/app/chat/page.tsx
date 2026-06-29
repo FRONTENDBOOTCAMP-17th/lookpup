@@ -491,8 +491,15 @@ function ChatPageContent({
       setActiveTab("one_on_one");
       setSelectedRoomId(room.id);
       setMobileChatView("room");
+      return;
     }
-  }, [initialRoomId, rooms, loading]);
+    const applicant = applicants.find((a) => a.id === initialRoomId);
+    if (applicant) {
+      setActiveTab("applicants");
+      setSelectedApplicantId(applicant.id);
+      setMobileChatView("room");
+    }
+  }, [initialRoomId, rooms, applicants, loading]);
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profilePopupApplicant, setProfilePopupApplicant] =
