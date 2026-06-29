@@ -15,10 +15,8 @@ import {
 import Header from "@/components/layout/Header";
 import Avatar from "@/components/ui/Avatar";
 import { CustomModal } from "@/components/common/CustomModal";
-import {
-  getMyReservations,
-  updateReservation,
-} from "@/app/actions/reservations";
+import { getMyReservations, updateReservation } from "@/app/actions/reservations";
+import { findOrCreateRoom } from "@/app/actions/chat";
 
 type BookingStatus =
   | "pending"
@@ -35,6 +33,7 @@ interface Booking {
   status: BookingStatus;
   sitterName: string;
   sitterRating: number;
+  sitterId: string;
   date: string;
   time: string;
   location: string;
@@ -99,6 +98,15 @@ function BookingCard({
 }) {
   const router = useRouter();
   const status = STATUS_CONFIG[booking.status];
+
+  async function handleChatClick() {
+    const result = await findOrCreateRoom({ sitter_id: booking.sitterId, room_type: "direct" });
+    if ("data" in result && result.data) {
+      router.push(`/chat?roomId=${result.data.room_id}`);
+    } else {
+      router.push("/chat");
+    }
+  }
 
   return (
     <div className="bg-white border border-orange-100 rounded-2xl overflow-hidden shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)]">
@@ -192,7 +200,7 @@ function BookingCard({
         {booking.status === "confirmed" && (
           <>
             <button
-              onClick={() => router.push("/chat")}
+              onClick={handleChatClick}
               className="flex-1 h-10 rounded-xl border border-orange-100 text-stone-900 text-sm font-medium hover:border-orange-400 transition-colors flex items-center justify-center gap-1.5"
             >
               <MessageCircle size={15} />
@@ -218,7 +226,7 @@ function BookingCard({
               예약 상세보기
             </button>
             <button
-              onClick={() => router.push("/chat")}
+              onClick={handleChatClick}
               className="flex-1 h-10 rounded-xl bg-orange-50 text-orange-500 text-sm font-semibold hover:bg-orange-100 transition-colors flex items-center justify-center gap-1.5"
             >
               <MessageCircle size={15} />

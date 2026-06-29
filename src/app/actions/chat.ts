@@ -25,6 +25,7 @@ export async function findOrCreateRoom(input: {
   sitter_id: string;
   room_type: "request" | "direct";
   request_id?: string | null;
+  reservation_id?: string | null;
 }) {
   const user = await getAuthUser();
   if (!user) {
@@ -55,6 +56,12 @@ export async function findOrCreateRoom(input: {
   }
 
   if (existingRoom) {
+    if (input.reservation_id) {
+      await db
+        .from("chat_rooms")
+        .update({ reservation_id: input.reservation_id })
+        .eq("id", existingRoom.id);
+    }
     return { data: { room_id: existingRoom.id } };
   }
 
@@ -65,6 +72,7 @@ export async function findOrCreateRoom(input: {
       owner_id: user.id,
       sitter_id: input.sitter_id,
       request_id: input.request_id ?? null,
+      reservation_id: input.reservation_id ?? null,
     })
     .select("id")
     .single();
