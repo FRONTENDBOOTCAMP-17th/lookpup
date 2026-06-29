@@ -26,7 +26,7 @@ export async function GET(
   let query = db
     .from("reviews")
     .select(
-      `id, owner_id, rating, content, image_urls, created_at,
+      `id, owner_id, rating, content, image_urls, tags, detail_ratings, created_at,
        users!inner(full_name, profile_image)`,
     )
     .eq("sitter_id", sitterId)
@@ -57,11 +57,12 @@ export async function GET(
       rating: item.rating,
       content: item.content,
       image_urls: item.image_urls ?? [],
+      tags: item.tags ?? [],
+      detail_ratings: (item.detail_ratings as Record<string, number>) ?? {},
       created_at: item.created_at,
     };
   });
 
-  // 전체 평균 평점과 총 개수는 커서 페이지네이션과 무관하게 전체 기준으로 계산
   const { data: allRatings } = await db
     .from("reviews")
     .select("rating")
@@ -70,10 +71,19 @@ export async function GET(
   const total = allRatings?.length ?? 0;
   const averageRating =
     total > 0
-      ? parseFloat((allRatings!.reduce((sum, r) => sum + r.rating, 0) / total).toFixed(1))
+      ? parseFloat(
+          (allRatings!.reduce((sum, r) => sum + r.rating, 0) / total).toFixed(
+            1,
+          ),
+        )
       : 0;
 
   return NextResponse.json({
-    data: { reviews, average_rating: averageRating, total, next_cursor: nextCursor },
+    data: {
+      reviews,
+      average_rating: averageRating,
+      total,
+      next_cursor: nextCursor,
+    },
   });
 }

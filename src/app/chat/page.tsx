@@ -43,10 +43,13 @@ import {
   sendApplicationSelectedMessage,
   sendApplicationRejectedMessage,
   sendServiceCompleteMessage,
+  sendServiceStartMessage,
 } from "@/app/actions/chat";
 import {
   ownerConfirmServiceComplete,
   getActiveReservationsForRoom,
+  getReadyReservationsForRoom,
+  sitterStartService,
   getReservationStatuses,
 } from "@/app/actions/reservations";
 import {
@@ -239,7 +242,7 @@ function ChatPageContent({
             const deadline = getPaymentDeadline();
             const payResult = await sendAutoPaymentRequestMessage(newRoomId, {
               amount: overrides.totalPrice,
-              reason: postTitle || "펫시팅 서비스",
+              reason: postTitle || "반려동물 정보",
               deadline,
               postId: confirmingApplicant?.postId,
             });
@@ -383,7 +386,7 @@ function ChatPageContent({
 
     let portonePaymentId = `pay_${Date.now()}`;
     let totalAmount = Number(paymentState.amount);
-    let orderName = paymentState.reason || "펫시팅 서비스 결제";
+    let orderName = paymentState.reason || "서비스 결제";
 
     const reservationId =
       selectedRoom?.reservationId ??
@@ -543,14 +546,30 @@ function ChatPageContent({
   const [sendingPhoto, setSendingPhoto] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [careRecordOpen, setCareRecordOpen] = useState(false);
-  const [confirmedServiceIds, setConfirmedServiceIds] = useState<Set<string>>(new Set());
+  const [confirmedServiceIds, setConfirmedServiceIds] = useState<Set<string>>(
+    new Set(),
+  );
   const checkedReservationIdsRef = useRef(new Set<string>());
   const [isServiceConfirming, setIsServiceConfirming] = useState(false);
-  const [pendingServiceConfirmId, setPendingServiceConfirmId] = useState<string | null>(null);
-  const [serviceCompleteModalOpen, setServiceCompleteModalOpen] = useState(false);
-  const [activeReservations, setActiveReservations] = useState<ActiveReservation[]>([]);
-  const [serviceCompleteModalLoading, setServiceCompleteModalLoading] = useState(false);
+  const [pendingServiceConfirmId, setPendingServiceConfirmId] = useState<
+    string | null
+  >(null);
+  const [serviceCompleteModalOpen, setServiceCompleteModalOpen] =
+    useState(false);
+  const [activeReservations, setActiveReservations] = useState<
+    ActiveReservation[]
+  >([]);
+  const [serviceCompleteModalLoading, setServiceCompleteModalLoading] =
+    useState(false);
   const [serviceCompleteSending, setServiceCompleteSending] = useState(false);
+
+  const [serviceStartModalOpen, setServiceStartModalOpen] = useState(false);
+  const [readyReservations, setReadyReservations] = useState<
+    ActiveReservation[]
+  >([]);
+  const [serviceStartModalLoading, setServiceStartModalLoading] =
+    useState(false);
+  const [serviceStartSending, setServiceStartSending] = useState(false);
 
   const handleCareRecordSubmit = async (record: CareRecordPayload) => {
     if (!activeRoomId) return;
@@ -600,11 +619,38 @@ function ChatPageContent({
     }
   }
 
-  async function handleServiceCompleteConfirm(reservationId: string) {
-    if (!activeRoomId || serviceCompleteSending) return;
-    setServiceCompleteSending(true);
+  async function handleServiceStart() {
+    if (!activeRoomId) return;
+    setPlusMenuOpen(false);
+    setServiceStartModalLoading(true);
+    setReadyReservations([]);
+    setServiceStartModalOpen(true);
     try {
-      const result = await sendServiceCompleteMessage(activeRoomId, reservationId);
+      const result = await getReadyReservationsForRoom(activeRoomId);
+      if (result.error) {
+        setServiceStartModalOpen(false);
+        setSendError(result.error.message);
+        return;
+      }
+      setReadyReservations(result.data ?? []);
+    } catch {
+      setServiceStartModalOpen(false);
+      setSendError("예약 정보를 불러오는 데 실패했습니다.");
+    } finally {
+      setServiceStartModalLoading(false);
+    }
+  }
+
+  async function handleServiceStartConfirm(reservationId: string) {
+    if (!activeRoomId || serviceStartSending) return;
+    setServiceStartSending(true);
+    try {
+      const startResult = await sitterStartService(reservationId);
+      if (startResult.error) {
+        setSendError(startResult.error.message);
+        return;
+      }
+      const result = await sendServiceStartMessage(activeRoomId, reservationId);
       if (result.error) {
         setSendError(result.error.message);
         return;
@@ -612,7 +658,40 @@ function ChatPageContent({
       if (result.data) {
         addMessage(result.data);
         broadcastMessage(result.data);
-        updatePreview(activeRoomId, "서비스 완료", result.data.created_at ?? "");
+        updatePreview(
+          activeRoomId,
+          "서비스 시작",
+          result.data.created_at ?? "",
+        );
+      }
+      setServiceStartModalOpen(false);
+    } catch {
+      setSendError("서비스 시작 전송에 실패했습니다. 다시 시도해주세요.");
+    } finally {
+      setServiceStartSending(false);
+    }
+  }
+
+  async function handleServiceCompleteConfirm(reservationId: string) {
+    if (!activeRoomId || serviceCompleteSending) return;
+    setServiceCompleteSending(true);
+    try {
+      const result = await sendServiceCompleteMessage(
+        activeRoomId,
+        reservationId,
+      );
+      if (result.error) {
+        setSendError(result.error.message);
+        return;
+      }
+      if (result.data) {
+        addMessage(result.data);
+        broadcastMessage(result.data);
+        updatePreview(
+          activeRoomId,
+          "서비스 완료",
+          result.data.created_at ?? "",
+        );
       }
       setServiceCompleteModalOpen(false);
     } catch {
@@ -1250,6 +1329,7 @@ function ChatPageContent({
                       msg={msg}
                       senderInitial={mobileRoomInitial}
                       senderProfileImage={mobileRoomProfileImage}
+                      isCurrentUserSitter={isCurrentUserSitter}
                       onPaymentRequest={handlePayNow}
                       isPaymentPending={payingNow || isPaymentPending}
                       isPaymentPaid={isThisPaymentPaid}
@@ -1272,7 +1352,9 @@ function ChatPageContent({
                       onServiceConfirm={(id) => setPendingServiceConfirmId(id)}
                       isServiceConfirmed={
                         !!msg.serviceCompleteData?.reservationId &&
-                        confirmedServiceIds.has(msg.serviceCompleteData.reservationId)
+                        confirmedServiceIds.has(
+                          msg.serviceCompleteData.reservationId,
+                        )
                       }
                       isServiceConfirming={isServiceConfirming}
                     />
@@ -1326,6 +1408,9 @@ function ChatPageContent({
                         setCareRecordOpen(true);
                       }
                     : undefined
+                }
+                onServiceStart={
+                  isCurrentUserSitter ? handleServiceStart : undefined
                 }
                 onServiceComplete={
                   isCurrentUserSitter ? handleServiceComplete : undefined
@@ -1592,6 +1677,7 @@ function ChatPageContent({
                             ? (selectedRoom?.profileImage ?? null)
                             : (selectedApplicant?.profileImage ?? null)
                         }
+                        isCurrentUserSitter={isCurrentUserSitter}
                         onPaymentRequest={handlePayNow}
                         isPaymentPending={payingNow || isPaymentPending}
                         isPaymentPaid={isThisPaymentPaid}
@@ -1610,10 +1696,14 @@ function ChatPageContent({
                           setSelectedApplicantId(null);
                           if (room) setSelectedRoomId(room.id);
                         }}
-                        onServiceConfirm={(id) => setPendingServiceConfirmId(id)}
+                        onServiceConfirm={(id) =>
+                          setPendingServiceConfirmId(id)
+                        }
                         isServiceConfirmed={
                           !!msg.serviceCompleteData?.reservationId &&
-                          confirmedServiceIds.has(msg.serviceCompleteData.reservationId)
+                          confirmedServiceIds.has(
+                            msg.serviceCompleteData.reservationId,
+                          )
                         }
                         isServiceConfirming={isServiceConfirming}
                       />
@@ -1641,6 +1731,9 @@ function ChatPageContent({
                           setCareRecordOpen(true);
                         }
                       : undefined
+                  }
+                  onServiceStart={
+                    isCurrentUserSitter ? handleServiceStart : undefined
                   }
                   onServiceComplete={
                     isCurrentUserSitter ? handleServiceComplete : undefined
@@ -1771,6 +1864,16 @@ function ChatPageContent({
         sending={serviceCompleteSending}
         onClose={() => setServiceCompleteModalOpen(false)}
         onConfirm={handleServiceCompleteConfirm}
+      />
+
+      <ServiceCompleteModal
+        variant="start"
+        open={serviceStartModalOpen}
+        reservations={readyReservations}
+        loading={serviceStartModalLoading}
+        sending={serviceStartSending}
+        onClose={() => setServiceStartModalOpen(false)}
+        onConfirm={handleServiceStartConfirm}
       />
     </div>
   );

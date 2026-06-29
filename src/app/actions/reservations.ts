@@ -454,6 +454,128 @@ export async function getActiveReservationsForRoom(roomId: string) {
   return { data: reservations };
 }
 
+export async function getReadyReservationsForRoom(roomId: string) {
+  const user = await getAuthUser();
+  if (!user) {
+    return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
+  }
+
+  const db = createServiceClient();
+
+  const { data: room } = await db
+    .from("chat_rooms")
+    .select("id, owner_id, sitter_id, sitters!inner(user_id)")
+    .eq("id", roomId)
+    .single();
+
+  if (!room) {
+    return { error: { code: "NOT_FOUND", message: "채팅방을 찾을 수 없습니다." } };
+  }
+
+  type SittersRow = { user_id: string };
+  const sittersRow = room.sitters as SittersRow;
+  if (sittersRow.user_id !== user.id) {
+    return { error: { code: "FORBIDDEN", message: "펫시터만 조회할 수 있습니다." } };
+  }
+
+  const { data, error } = await db
+    .from("reservations")
+    .select(`
+      id, status, start_datetime, end_datetime, total_price,
+      services(title, service_type),
+      reservation_items(pets(name, animal_type))
+    `)
+    .eq("owner_id", room.owner_id)
+    .eq("sitter_id", room.sitter_id)
+    .in("status", ["accepted", "paid"])
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("[getReadyReservationsForRoom] Supabase error:", error);
+    return { error: { code: "INTERNAL_ERROR", message: error.message } };
+  }
+
+  console.log("[getReadyReservationsForRoom] owner:", room.owner_id, "sitter:", room.sitter_id, "found:", data?.length ?? 0, "reservations");
+
+  const SERVICE_TYPE_LABEL: Record<string, string> = {
+    walk: "산책",
+    care: "방문 돌봄",
+    hotel: "위탁 돌봄",
+    pickup: "픽업",
+  };
+
+  type ServiceRow = { title: string; service_type: string } | null;
+  type PetRow = { name: string; animal_type: string } | null;
+  type ItemRow = { pets: PetRow };
+
+  const reservations = (data ?? []).map((r) => {
+    const service = r.services as ServiceRow;
+    const items = (r.reservation_items as ItemRow[]) ?? [];
+    const firstPet = items[0]?.pets;
+    const serviceTitle =
+      service?.title ||
+      (service?.service_type ? (SERVICE_TYPE_LABEL[service.service_type] ?? service.service_type) : null) ||
+      "펫시팅 서비스";
+    return {
+      id: r.id,
+      status: r.status,
+      startDatetime: r.start_datetime ?? null,
+      endDatetime: r.end_datetime ?? null,
+      totalPrice: r.total_price ?? 0,
+      serviceTitle,
+      petName: firstPet?.name ?? null,
+    };
+  });
+
+  return { data: reservations };
+}
+
+export async function sitterStartService(reservationId: string) {
+  const user = await getAuthUser();
+  if (!user) {
+    return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
+  }
+
+  const db = createServiceClient();
+
+  const { data: reservation } = await db
+    .from("reservations")
+    .select("id, owner_id, sitter_id, status")
+    .eq("id", reservationId)
+    .single();
+
+  if (!reservation) {
+    return { error: { code: "NOT_FOUND", message: "예약을 찾을 수 없습니다." } };
+  }
+
+  const { data: sitterProfile } = await db
+    .from("sitters")
+    .select("id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (sitterProfile?.id !== reservation.sitter_id) {
+    return { error: { code: "FORBIDDEN", message: "펫시터만 서비스를 시작할 수 있습니다." } };
+  }
+
+  if (!["accepted", "paid"].includes(reservation.status)) {
+    return { error: { code: "FORBIDDEN", message: "예약확정 상태의 예약만 시작할 수 있습니다." } };
+  }
+
+  const { data, error } = await db
+    .from("reservations")
+    .update({ status: "in_progress" })
+    .eq("id", reservationId)
+    .select()
+    .single();
+
+  if (error) {
+    return { error: { code: "INTERNAL_ERROR", message: error.message } };
+  }
+
+  return { data };
+}
+
 export async function getReservationStatuses(ids: string[]) {
   const user = await getAuthUser();
   if (!user || ids.length === 0) return { data: {} as Record<string, string> };

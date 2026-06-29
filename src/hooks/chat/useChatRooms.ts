@@ -19,6 +19,7 @@ import {
   APPLICATION_REJECTED_PREFIX,
   RESERVATION_CANCELED_PREFIX,
   SERVICE_COMPLETE_PREFIX,
+  SERVICE_START_PREFIX,
 } from "@/lib/chatMessagePrefixes";
 
 function formatTime(iso: string | null): string {
@@ -61,6 +62,7 @@ function formatPreview(content: string): string {
   if (content.startsWith(APPLICATION_REJECTED_PREFIX)) return "지원 거절";
   if (content.startsWith(RESERVATION_CANCELED_PREFIX)) return "예약 취소";
   if (content.startsWith(SERVICE_COMPLETE_PREFIX)) return "서비스 완료";
+  if (content.startsWith(SERVICE_START_PREFIX)) return "서비스 시작";
   return content;
 }
 

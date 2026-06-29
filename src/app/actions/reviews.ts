@@ -36,6 +36,8 @@ export async function createReview(input: {
   rating: number;
   content: string;
   image_urls?: string[];
+  tags?: string[];
+  detail_ratings?: Record<string, number>;
 }) {
   const user = await getAuthUser();
   if (!user) {
@@ -127,6 +129,8 @@ export async function createReview(input: {
       rating: input.rating,
       content: input.content,
       image_urls: input.image_urls ?? [],
+      tags: input.tags ?? [],
+      detail_ratings: input.detail_ratings ?? {},
     })
     .select()
     .single();
