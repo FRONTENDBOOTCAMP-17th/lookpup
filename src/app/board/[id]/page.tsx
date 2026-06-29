@@ -268,8 +268,40 @@ export default function BoardDetailPage() {
 
       <main className="flex-1 bg-orange-50 min-h-screen">
         <div className="max-w-7xl mx-auto px-4 md:px-10 py-6 md:py-8">
-          {/* 목록으로 */}
-          <BackButton href="/board" className="mb-6" />
+          {/* 목록으로 + 작성자 액션 (지도 칼럼 폭에 맞춰 한 줄, 사이드바 위로 넘어가지 않음) */}
+          <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 mb-6">
+            <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
+              <BackButton href="/board" />
+              {isAuthor && (
+                <div className="flex gap-2">
+                  {post.status === "open" && (
+                    <button
+                      onClick={handleClose}
+                      className="px-3 py-1.5 bg-gray-100 rounded-lg text-gray-500 text-xs font-medium hover:bg-gray-200 transition-colors"
+                    >
+                      모집마감
+                    </button>
+                  )}
+                  <button
+                    onClick={() => router.push(`/board/${post.id}/edit`)}
+                    className="px-3 py-1.5 bg-gray-100 rounded-lg text-gray-500 text-xs font-medium flex items-center gap-1 hover:bg-gray-200 transition-colors"
+                  >
+                    <Pencil size={12} />
+                    수정
+                  </button>
+                  <button
+                    onClick={() => setDeleteTargetId(post.id)}
+                    className="px-3 py-1.5 bg-gray-100 rounded-lg text-gray-500 text-xs font-medium flex items-center gap-1 hover:bg-gray-200 transition-colors"
+                  >
+                    <Trash2 size={12} />
+                    삭제
+                  </button>
+                </div>
+              )}
+            </div>
+            {/* 사이드바 폭 자리맞춤 (lg 이상에서 버튼을 지도 우측 끝에 정렬) */}
+            <div className="hidden lg:block lg:w-96 shrink-0" aria-hidden />
+          </div>
 
           <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
             {/* 왼쪽 메인 콘텐츠 */}
@@ -464,33 +496,6 @@ export default function BoardDetailPage() {
                 </SectionCard>
               )}
 
-              {/* 작성자 전용 액션 (수정/모집마감/삭제) */}
-              {isAuthor && (
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <button
-                    onClick={() => router.push(`/board/${post.id}/edit`)}
-                    className="flex-1 py-2.5 bg-orange-500 rounded-xl text-white text-sm font-medium flex items-center justify-center gap-1.5 hover:bg-orange-600 transition-colors"
-                  >
-                    <Pencil size={14} />
-                    수정하기
-                  </button>
-                  {post.status === "open" && (
-                    <button
-                      onClick={handleClose}
-                      className="flex-1 py-2.5 bg-gray-100 rounded-xl text-gray-500 text-sm font-medium hover:bg-gray-200 transition-colors"
-                    >
-                      모집마감
-                    </button>
-                  )}
-                  <button
-                    onClick={() => setDeleteTargetId(post.id)}
-                    className="flex-1 py-2.5 bg-red-100 rounded-xl text-red-500 text-sm font-medium flex items-center justify-center gap-1.5 hover:bg-red-200 transition-colors"
-                  >
-                    <Trash2 size={14} />
-                    삭제
-                  </button>
-                </div>
-              )}
             </div>
 
             {/* 오른쪽 사이드바 */}
