@@ -135,6 +135,7 @@ export default function BoardDetailPage() {
   const currentUserId = user?.id;
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [applying, setApplying] = useState(false);
   const [applyError, setApplyError] = useState<string | null>(null);
   const applyCancelledRef = useRef(false);
@@ -243,7 +244,7 @@ export default function BoardDetailPage() {
   const handleClose = async () => {
     const result = await updateRequest(post.id, { status: "matched" });
     if (result.error) {
-      alert(result.error.message);
+      setErrorMessage(result.error.message);
       return;
     }
     setPost((prev) => (prev ? { ...prev, status: "matched" } : prev));
@@ -255,7 +256,7 @@ export default function BoardDetailPage() {
     const result = await deleteRequest(deleteTargetId);
     setDeleteTargetId(null);
     if (result.error) {
-      alert(result.error.message);
+      setErrorMessage(result.error.message);
       return;
     }
     router.push("/board");
@@ -621,6 +622,18 @@ export default function BoardDetailPage() {
           setShowApplyModal(false);
         }}
         onConfirm={handleApply}
+      />
+
+      {/* 에러 안내 모달 */}
+      <CustomModal
+        open={!!errorMessage}
+        type="error"
+        title="오류가 발생했습니다."
+        description={errorMessage ?? undefined}
+        confirmText="확인"
+        onConfirm={() => setErrorMessage(null)}
+        onClose={() => setErrorMessage(null)}
+        showCloseButton={false}
       />
 
       {/* 삭제 확인 모달 */}
