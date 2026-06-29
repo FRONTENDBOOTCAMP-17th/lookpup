@@ -1401,6 +1401,13 @@ function ChatPageContent({
                           )
                             handleDeleteRoom(selectedRoomId);
                           else if (
+                            activeTab === "reservations" &&
+                            selectedReservationRequestId !== null
+                          )
+                            handleDeleteReservationRequest(
+                              selectedReservationRequestId,
+                            );
+                          else if (
                             activeTab === "applicants" &&
                             selectedApplicantId !== null
                           )
@@ -1857,12 +1864,16 @@ function ChatPageContent({
                         senderInitial={
                           activeTab === "one_on_one"
                             ? (selectedRoom?.initial ?? "")
-                            : (selectedApplicant?.initial ?? "")
+                            : activeTab === "reservations"
+                              ? (selectedReservationRequest?.initial ?? "")
+                              : (selectedApplicant?.initial ?? "")
                         }
                         senderProfileImage={
                           activeTab === "one_on_one"
                             ? (selectedRoom?.profileImage ?? null)
-                            : (selectedApplicant?.profileImage ?? null)
+                            : activeTab === "reservations"
+                              ? (selectedReservationRequest?.profileImage ?? null)
+                              : (selectedApplicant?.profileImage ?? null)
                         }
                         isCurrentUserSitter={isCurrentUserSitter}
                         onPaymentRequest={handlePayNow}
