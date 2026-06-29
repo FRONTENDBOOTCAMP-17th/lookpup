@@ -166,7 +166,6 @@ export default function PetsitterRegisterPage() {
         display_area: locationValue?.displayArea ?? null,
         latitude: locationValue?.lat ?? 0,
         longitude: locationValue?.lng ?? 0,
-        service_radius_km: locationValue?.radiusKm ?? 5,
         base_price: 0,
         request_type: selectedServices as (
           | "visit"

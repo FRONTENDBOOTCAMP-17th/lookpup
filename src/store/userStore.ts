@@ -29,7 +29,6 @@ export interface SitterData {
   activityPhotoUrls: string[];
   latitude: number | null;
   longitude: number | null;
-  serviceRadiusKm: number | null;
 }
 
 interface UserState {
