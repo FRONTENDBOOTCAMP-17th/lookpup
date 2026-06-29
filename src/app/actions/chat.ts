@@ -562,7 +562,10 @@ export async function sendReservationCanceledMessage(roomId: string) {
   return { data: message };
 }
 
-export async function sendServiceCompleteMessage(roomId: string, reservationId: string) {
+export async function sendServiceCompleteMessage(
+  roomId: string,
+  reservationId: string,
+) {
   const user = await getAuthUser();
   if (!user) {
     return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
@@ -593,7 +596,9 @@ export async function sendServiceCompleteMessage(roomId: string, reservationId: 
 
   const { data: reservation } = await db
     .from("reservations")
-    .select("start_datetime, end_datetime, total_price, services(title, service_type), reservation_items(pets(name))")
+    .select(
+      "start_datetime, end_datetime, total_price, services(title, service_type), reservation_items(pets(name))",
+    )
     .eq("id", reservationId)
     .single();
 
@@ -607,12 +612,16 @@ export async function sendServiceCompleteMessage(roomId: string, reservationId: 
   type PetRow = { name: string } | null;
   type ItemRow = { pets: PetRow };
   const rawServices = reservation?.services;
-  const service = (Array.isArray(rawServices) ? rawServices[0] : rawServices) as ServiceRow | null;
+  const service = (
+    Array.isArray(rawServices) ? rawServices[0] : rawServices
+  ) as ServiceRow | null;
   const items = (reservation?.reservation_items as ItemRow[]) ?? [];
   const serviceTitle =
     service?.title ||
-    (service?.service_type ? (SERVICE_TYPE_LABEL[service.service_type] ?? service.service_type) : null) ||
-    "펫시팅 서비스";
+    (service?.service_type
+      ? (SERVICE_TYPE_LABEL[service.service_type] ?? service.service_type)
+      : null) ||
+    "반려동물 이름";
   const petName = items[0]?.pets?.name ?? undefined;
   const startDatetime = reservation?.start_datetime ?? undefined;
   const endDatetime = reservation?.end_datetime ?? undefined;
@@ -653,7 +662,10 @@ export async function sendServiceCompleteMessage(roomId: string, reservationId: 
   return { data: message };
 }
 
-export async function sendServiceStartMessage(roomId: string, reservationId: string) {
+export async function sendServiceStartMessage(
+  roomId: string,
+  reservationId: string,
+) {
   const user = await getAuthUser();
   if (!user) {
     return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
@@ -668,16 +680,25 @@ export async function sendServiceStartMessage(roomId: string, reservationId: str
     .single();
 
   if (!room) {
-    return { error: { code: "NOT_FOUND", message: "채팅방을 찾을 수 없습니다." } };
+    return {
+      error: { code: "NOT_FOUND", message: "채팅방을 찾을 수 없습니다." },
+    };
   }
 
   if (room.sitters.user_id !== user.id) {
-    return { error: { code: "FORBIDDEN", message: "펫시터만 서비스 시작을 알릴 수 있습니다." } };
+    return {
+      error: {
+        code: "FORBIDDEN",
+        message: "펫시터만 서비스 시작을 알릴 수 있습니다.",
+      },
+    };
   }
 
   const { data: reservation } = await db
     .from("reservations")
-    .select("start_datetime, end_datetime, total_price, services(title, service_type), reservation_items(pets(name))")
+    .select(
+      "start_datetime, end_datetime, total_price, services(title, service_type), reservation_items(pets(name))",
+    )
     .eq("id", reservationId)
     .single();
 
@@ -691,12 +712,16 @@ export async function sendServiceStartMessage(roomId: string, reservationId: str
   type PetRow = { name: string } | null;
   type ItemRow = { pets: PetRow };
   const rawServices = reservation?.services;
-  const service = (Array.isArray(rawServices) ? rawServices[0] : rawServices) as ServiceRow | null;
+  const service = (
+    Array.isArray(rawServices) ? rawServices[0] : rawServices
+  ) as ServiceRow | null;
   const items = (reservation?.reservation_items as ItemRow[]) ?? [];
   const serviceTitle =
     service?.title ||
-    (service?.service_type ? (SERVICE_TYPE_LABEL[service.service_type] ?? service.service_type) : null) ||
-    "펫시팅 서비스";
+    (service?.service_type
+      ? (SERVICE_TYPE_LABEL[service.service_type] ?? service.service_type)
+      : null) ||
+    "반려동물 이름";
   const petName = items[0]?.pets?.name ?? undefined;
   const startDatetime = reservation?.start_datetime ?? undefined;
   const endDatetime = reservation?.end_datetime ?? undefined;

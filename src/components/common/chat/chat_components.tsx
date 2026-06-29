@@ -393,6 +393,7 @@ type MessageBubbleProps = {
   msg: Message;
   senderInitial: string;
   senderProfileImage?: string | null;
+  isCurrentUserSitter?: boolean;
   onPaymentRequest?: () => void;
   isPaymentPending?: boolean;
   isPaymentPaid?: boolean;
@@ -407,6 +408,7 @@ export function MessageBubble({
   msg,
   senderInitial,
   senderProfileImage,
+  isCurrentUserSitter,
   onPaymentRequest,
   isPaymentPending,
   isPaymentPaid,
@@ -475,7 +477,7 @@ export function MessageBubble({
     );
   }
   if (msg.from === "service_start") {
-    if (msg.sentByMe) {
+    if (isCurrentUserSitter && msg.sentByMe) {
       return <SitterServiceStartCard data={msg.serviceStartData} />;
     }
     return (
@@ -1543,7 +1545,7 @@ export function ServiceStartCard({ otherInitial, otherProfileImage, data }: Serv
               서비스 시작
             </span>
             <p className="text-[#281A0E] text-sm leading-5 mt-0.5">
-              펫시터가 서비스를 시작했어요.
+              서비스를 시작했습니다.
             </p>
           </div>
         </div>

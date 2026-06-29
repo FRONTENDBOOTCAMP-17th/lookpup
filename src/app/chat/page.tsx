@@ -1329,6 +1329,7 @@ function ChatPageContent({
                       msg={msg}
                       senderInitial={mobileRoomInitial}
                       senderProfileImage={mobileRoomProfileImage}
+                      isCurrentUserSitter={isCurrentUserSitter}
                       onPaymentRequest={handlePayNow}
                       isPaymentPending={payingNow || isPaymentPending}
                       isPaymentPaid={isThisPaymentPaid}
@@ -1676,6 +1677,7 @@ function ChatPageContent({
                             ? (selectedRoom?.profileImage ?? null)
                             : (selectedApplicant?.profileImage ?? null)
                         }
+                        isCurrentUserSitter={isCurrentUserSitter}
                         onPaymentRequest={handlePayNow}
                         isPaymentPending={payingNow || isPaymentPending}
                         isPaymentPaid={isThisPaymentPaid}
