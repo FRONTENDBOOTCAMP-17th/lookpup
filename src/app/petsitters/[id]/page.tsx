@@ -47,7 +47,6 @@ interface SitterDetail {
   display_area: string | null;
   latitude: number | null;
   longitude: number | null;
-  service_radius_km: number | null;
   base_price: number | null;
   rating: number;
   services: ServiceRow[];
@@ -94,7 +93,6 @@ export default function PetsitterProfilePage() {
 
   // 활동 지역 텍스트 (display_area 우선, 없으면 available_area)
   const areaText = sitter?.display_area ?? sitter?.available_area ?? "-";
-  const serviceRadius = sitter?.service_radius_km ?? undefined;
 
   // 통계 (경력 원문은 소개 탭에 표시하고, 여기서는 유무만 표시 / 회의해보고 입력란에 숫자로 입력받고 아래에 상세 적기 이런거로 넣어야할듯)
   const stats = [
@@ -243,16 +241,12 @@ export default function PetsitterProfilePage() {
               <KakaoMap
                 markers={[{ lat, lng, id: sitter.id }]}
                 center={{ lat, lng }}
-                level={serviceRadius ? (serviceRadius <= 2 ? 6 : serviceRadius <= 5 ? 7 : 8) : 5}
-                serviceRadius={serviceRadius}
+                level={5}
               />
             </div>
             <p className="mt-4 text-gray-500 text-sm flex items-center gap-1">
               <MapPin size={14} className="text-orange-500 shrink-0" />
               {areaText}
-              {serviceRadius && (
-                <span className="text-orange-400 font-medium ml-1">· 반경 {serviceRadius}km</span>
-              )}
             </p>
           </div>
         )}

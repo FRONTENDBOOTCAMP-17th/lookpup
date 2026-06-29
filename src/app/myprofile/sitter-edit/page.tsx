@@ -192,7 +192,6 @@ export default function SitterEditPage() {
         lat: sitter.latitude,
         lng: sitter.longitude,
         displayArea: sitter.displayArea ?? sitter.availableArea,
-        radiusKm: sitter.serviceRadiusKm ?? null,
       });
     }
 
@@ -359,7 +358,6 @@ export default function SitterEditPage() {
         displayArea: locationValue?.displayArea ?? null,
         latitude: locationValue?.lat ?? null,
         longitude: locationValue?.lng ?? null,
-        serviceRadiusKm: locationValue?.radiusKm ?? null,
         introduction: form.bio,
         career: form.career,
         availableAnimals: form.pets.map((p) => LABEL_TO_ANIMAL[p] ?? p),

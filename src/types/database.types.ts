@@ -913,7 +913,6 @@ export type Database = {
           longitude: number | null
           rating: number | null
           request_type: string[]
-          service_radius_km: number | null
           status: string
           title: string | null
           updated_at: string | null
@@ -934,7 +933,6 @@ export type Database = {
           longitude?: number | null
           rating?: number | null
           request_type?: string[]
-          service_radius_km?: number | null
           status?: string
           title?: string | null
           updated_at?: string | null
@@ -955,7 +953,6 @@ export type Database = {
           longitude?: number | null
           rating?: number | null
           request_type?: string[]
-          service_radius_km?: number | null
           status?: string
           title?: string | null
           updated_at?: string | null
@@ -1061,7 +1058,6 @@ export type Database = {
           latitude: number
           longitude: number
           rating: number
-          service_radius_km: number
           service_types: string[]
         }[]
       }

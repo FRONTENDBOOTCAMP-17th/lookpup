@@ -31,8 +31,6 @@ interface KakaoMapProps {
   // 지도 빈 곳 클릭 시 클릭 지점 좌표 전달 (위치 직접 지정용)
   onMapClick?: (lat: number, lng: number) => void;
   basePosition?: { lat: number; lng: number };
-  // 활동 반경 원 표시 (km 단위, 첫 번째 마커 기준)
-  serviceRadius?: number;
 }
 
 function markerImageUrl(selected = false): string {
@@ -67,17 +65,16 @@ export default function KakaoMap({
   onMarkerClick,
   onMapClick,
   basePosition,
-  serviceRadius,
 }: KakaoMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const kakaoMarkersRef = useRef<any[]>([]);
   const overlayRef = useRef<any>(null);
   const polylineRef = useRef<any>(null);
-  const circleRef = useRef<any>(null);
   const onMarkerClickRef = useRef(onMarkerClick);
   const onMapClickRef = useRef(onMapClick);
   const basePositionRef = useRef(basePosition);
+  const markersRef = useRef(markers);
 
   useEffect(() => {
     onMarkerClickRef.current = onMarkerClick;
@@ -90,6 +87,10 @@ export default function KakaoMap({
   useEffect(() => {
     basePositionRef.current = basePosition;
   }, [basePosition]);
+
+  useEffect(() => {
+    markersRef.current = markers;
+  }, [markers]);
 
   // 재마운트 시 kakao가 이미 로드된 경우 직접 initMap 호출
   useEffect(() => {
@@ -138,27 +139,6 @@ export default function KakaoMap({
     );
 
     drawMarkers();
-    drawServiceCircle();
-  }
-
-  function drawServiceCircle() {
-    if (circleRef.current) {
-      circleRef.current.setMap(null);
-      circleRef.current = null;
-    }
-    const map = mapRef.current;
-    if (!map || !serviceRadius || markers.length === 0) return;
-    const { lat, lng } = markers[0];
-    circleRef.current = new window.kakao.maps.Circle({
-      center: new window.kakao.maps.LatLng(lat, lng),
-      radius: serviceRadius * 1000,
-      strokeWeight: 2,
-      strokeColor: "#f97316",
-      strokeOpacity: 0.7,
-      fillColor: "#f97316",
-      fillOpacity: 0.08,
-    });
-    circleRef.current.setMap(map);
   }
 
   function drawMarkers() {
@@ -169,7 +149,7 @@ export default function KakaoMap({
     kakaoMarkersRef.current = [];
 
     markers.forEach((marker) => {
-      const { lat, lng, id, name, district, neighborhood, distanceKm } = marker;
+      const { lat, lng, id } = marker;
       const selected = selectedMarkerId === id;
       const opt = getMarkerSize(selected);
       const position = new window.kakao.maps.LatLng(lat, lng);
@@ -189,68 +169,7 @@ export default function KakaoMap({
       kakaoMarkersRef.current.push(kakaoMarker);
 
       window.kakao.maps.event.addListener(kakaoMarker, "click", () => {
-        // 기존 오버레이 제거
-        if (overlayRef.current) {
-          overlayRef.current.setMap(null);
-          overlayRef.current = null;
-        }
-        // 기존 polyline 제거
-        if (polylineRef.current) {
-          polylineRef.current.setMap(null);
-          polylineRef.current = null;
-        }
-
-        map.panTo(position);
         onMarkerClickRef.current?.(id);
-
-        // basePosition이 있으면 Polyline 그리기
-        const base = basePositionRef.current;
-        if (base) {
-          polylineRef.current = new window.kakao.maps.Polyline({
-            map,
-            path: [
-              new window.kakao.maps.LatLng(base.lat, base.lng),
-              position,
-            ],
-            strokeWeight: 2,
-            strokeColor: "#f97316",
-            strokeOpacity: 0.6,
-            strokeStyle: "dashed",
-          });
-        }
-
-        const distanceRow =
-          distanceKm !== undefined
-            ? `<div style="color:#f97316; font-size:11px; margin-top:3px;">약 ${formatDistance(distanceKm)}</div>`
-            : "";
-
-        const content = document.createElement("div");
-        content.innerHTML = `
-          <div style="
-            padding: 8px 10px;
-            background: white;
-            border: 1px solid #FFE9D6;
-            border-radius: 12px;
-            box-shadow: 0 2px 12px rgba(232,116,42,0.16);
-            color: #281A0E;
-            font-size: 13px;
-            white-space: nowrap;
-            margin-bottom: 8px;
-          ">
-            <strong>${name ?? ""}</strong>
-            <div style="color:#6B7280; font-size:12px; margin-top:2px;">
-              ${district ?? ""} ${neighborhood ?? ""}
-            </div>
-            ${distanceRow}
-          </div>
-        `;
-
-        overlayRef.current = new window.kakao.maps.CustomOverlay({
-          position,
-          content,
-          yAnchor: 1,
-        });
-        overlayRef.current.setMap(map);
       });
     });
   }
@@ -261,11 +180,76 @@ export default function KakaoMap({
     }
   }, [markers, selectedMarkerId]);
 
+  // 카드 클릭 등으로 selectedMarkerId가 바뀌면 자동으로 패닝 + overlay 표시
   useEffect(() => {
-    if (mapRef.current) {
-      drawServiceCircle();
+    const map = mapRef.current;
+    if (!map || selectedMarkerId == null) return;
+
+    const marker = markersRef.current.find((m) => m.id === selectedMarkerId);
+    if (!marker) return;
+
+    const position = new window.kakao.maps.LatLng(marker.lat, marker.lng);
+    map.panTo(position);
+
+    // 기존 overlay/polyline 제거
+    if (overlayRef.current) {
+      overlayRef.current.setMap(null);
+      overlayRef.current = null;
     }
-  }, [serviceRadius, markers]);
+    if (polylineRef.current) {
+      polylineRef.current.setMap(null);
+      polylineRef.current = null;
+    }
+
+    // polyline
+    const base = basePositionRef.current;
+    if (base) {
+      polylineRef.current = new window.kakao.maps.Polyline({
+        map,
+        path: [new window.kakao.maps.LatLng(base.lat, base.lng), position],
+        strokeWeight: 2,
+        strokeColor: "#f97316",
+        strokeOpacity: 0.6,
+        strokeStyle: "dashed",
+      });
+    }
+
+    // overlay
+    const { id, name, district, neighborhood, distanceKm } = marker;
+    const distanceRow =
+      distanceKm !== undefined
+        ? `<div style="color:#f97316; font-size:11px; margin-top:3px;">약 ${formatDistance(distanceKm)}</div>`
+        : "";
+
+    const inner = document.createElement("div");
+    inner.style.cssText = `
+      padding: 8px 10px;
+      background: white;
+      border: 1px solid #FFE9D6;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(232,116,42,0.16);
+      color: #281A0E;
+      font-size: 13px;
+      white-space: nowrap;
+      margin-bottom: 8px;
+    `;
+    inner.innerHTML = `
+      <strong>${name ?? ""}</strong>
+      <div style="color:#6B7280; font-size:12px; margin-top:2px;">
+        ${district ?? ""} ${neighborhood ?? ""}
+      </div>
+      ${distanceRow}
+    `;
+    const content = document.createElement("div");
+    content.appendChild(inner);
+
+    overlayRef.current = new window.kakao.maps.CustomOverlay({
+      position,
+      content,
+      yAnchor: 1,
+    });
+    overlayRef.current.setMap(map);
+  }, [selectedMarkerId]);
 
   return (
     <div style={{ width: "100%", height: "100%" }} className={className}>

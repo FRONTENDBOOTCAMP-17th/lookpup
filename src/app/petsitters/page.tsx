@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
-import { MapPin, Star, LocateFixed } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { MapPin, Star, LocateFixed, ChevronRight } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Avatar from "@/components/ui/Avatar";
 import Pill from "@/components/ui/Pill";
@@ -45,7 +45,6 @@ interface Sitter {
   services: string[];
   lat: number;
   lng: number;
-  serviceRadiusKm: number | null;
 }
 
 function parseArea(area: string | null): { district: string; neighborhood: string } {
@@ -61,11 +60,13 @@ interface PetsitterCardProps {
   sitter: Sitter;
   isSelected: boolean;
   distance: number;
+  onClick: () => void;
+  onConfirm: () => void;
 }
 
-function PetsitterCard({ sitter, isSelected, distance }: PetsitterCardProps) {
+function PetsitterCard({ sitter, isSelected, distance, onClick, onConfirm }: PetsitterCardProps) {
   return (
-    <Link href={`/petsitters/${sitter.id}`} className="block">
+    <div onClick={isSelected ? onConfirm : onClick} className="block">
       <div
         className={`w-full p-5 bg-white rounded-2xl border flex flex-col gap-0 transition-all cursor-pointer ${
           isSelected
@@ -80,6 +81,11 @@ function PetsitterCard({ sitter, isSelected, distance }: PetsitterCardProps) {
               <span className="text-stone-900 text-base font-semibold">
                 {sitter.name}
               </span>
+              {isSelected && (
+                <span className="flex items-center gap-0.5 text-orange-500 text-sm font-semibold">
+                  예약하기 <ChevronRight size={15} />
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-1 mt-1">
               <MapPin size={14} className="text-gray-400" />
@@ -114,11 +120,12 @@ function PetsitterCard({ sitter, isSelected, distance }: PetsitterCardProps) {
           </span>
         </div>
       </div>
-    </Link>
+    </div>
   );
 }
 
 export default function PetsittersPage() {
+  const router = useRouter();
   const [sitters, setSitters] = useState<Sitter[]>([]);
   const [activeFilter, setActiveFilter] = useState<Filter>("전체");
   const [searchQuery, setSearchQuery] = useState("");
@@ -141,7 +148,6 @@ export default function PetsittersPage() {
       display_area: string | null;
       latitude: number | null;
       longitude: number | null;
-      service_radius_km: number | null;
       base_price: number | null;
       rating: number | null;
       full_name: string | null;
@@ -174,7 +180,6 @@ export default function PetsittersPage() {
             services: [...new Set(serviceTypes)],
             lat: parseFloat(String(row.latitude)),
             lng: parseFloat(String(row.longitude)),
-            serviceRadiusKm: row.service_radius_km ?? null,
           };
         });
 
@@ -344,10 +349,7 @@ export default function PetsittersPage() {
         s.name.includes(searchQuery) ||
         s.district.includes(searchQuery) ||
         s.neighborhood.includes(searchQuery);
-      // 펫시터가 반경 정보를 가지고 있으면 보호자 위치가 반경 안에 있을 때만 표시
-      const matchRadius =
-        !s.serviceRadiusKm || s.distanceKm <= s.serviceRadiusKm;
-      return matchFilter && matchSearch && matchRadius;
+      return matchFilter && matchSearch;
     })
     .sort((a, b) => {
       if (sortBy === "평점순") return b.rating - a.rating;
@@ -466,6 +468,8 @@ export default function PetsittersPage() {
                         sitter={sitter}
                         isSelected={selectedSitterId === sitter.id}
                         distance={sitter.distanceKm}
+                        onClick={() => setSelectedSitterId(sitter.id)}
+                        onConfirm={() => router.push(`/petsitters/${sitter.id}`)}
                       />
                     </div>
                   ))}
