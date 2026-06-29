@@ -588,7 +588,17 @@ export default function BookPage() {
   const servicePrice = petsitter.pricePerDay * calcNights(dateRange);
 
   function canNext(): boolean {
-    if (step === 1) return !!dateRange?.from && !(startTime && endTime && startTime >= endTime);
+    if (step === 1) {
+      if (!dateRange?.from) return false;
+      if (startTime && endTime && startTime >= endTime) return false;
+      if (startTime) {
+        const [h, m] = startTime.split(":").map(Number);
+        const startDt = new Date(dateRange.from);
+        startDt.setHours(h, m, 0, 0);
+        if (startDt <= new Date()) return false;
+      }
+      return true;
+    }
     if (step === 2) return petIds.length > 0 && !!selectedService;
     return true;
   }
