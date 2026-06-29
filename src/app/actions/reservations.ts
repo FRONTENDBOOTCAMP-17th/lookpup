@@ -629,6 +629,86 @@ export async function getMyReservations() {
   return { data: bookings };
 }
 
+export async function getMySitterReservations() {
+  const user = await getAuthUser();
+  if (!user)
+    return {
+      error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." },
+      data: [],
+    };
+
+  const db = createServiceClient();
+
+  const { data: sitterProfile } = await db
+    .from("sitters")
+    .select("id, available_area")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!sitterProfile)
+    return {
+      error: { code: "NOT_FOUND", message: "시터 정보를 찾을 수 없습니다." },
+      data: [],
+    };
+
+  const { data, error } = await db
+    .from("reservations")
+    .select(
+      `
+      id, status, start_datetime, end_datetime, total_price, created_at, owner_id,
+      services(title),
+      reservation_items(pets(name, breed, animal_type)),
+      users!reservations_owner_id_fkey(full_name)
+    `,
+    )
+    .eq("sitter_id", sitterProfile.id)
+    .neq("status", "pending")
+    .order("created_at", { ascending: false });
+
+  if (error)
+    return {
+      error: { code: "INTERNAL_ERROR", message: error.message },
+      data: [],
+    };
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+
+  const bookings = (data ?? []).map((r) => {
+    const start = new Date(r.start_datetime ?? "");
+    const end = new Date(r.end_datetime ?? "");
+    const created = new Date(r.created_at ?? "");
+    const dateStr = `${created.getFullYear()}${pad(created.getMonth() + 1)}${pad(created.getDate())}`;
+
+    type PetRow = { name: string; breed: string | null; animal_type: string } | null;
+    type ItemRow = { pets: PetRow };
+
+    const service = r.services as { title: string } | null;
+    const items = (r.reservation_items as ItemRow[]) ?? [];
+    const firstPet = items[0]?.pets;
+    const owner = r.users as { full_name: string } | null;
+
+    return {
+      id: r.id,
+      bookingNo: `BK-${dateStr}-${r.id.slice(-3).toUpperCase()}`,
+      serviceType: service?.title ?? "-",
+      status: STATUS_MAP[r.status] ?? "pending",
+      sitterName: owner?.full_name ?? "-",
+      sitterRating: 0,
+      sitterId: sitterProfile.id,
+      ownerId: (r as { owner_id: string }).owner_id,
+      date: `${start.getFullYear()}년 ${start.getMonth() + 1}월 ${start.getDate()}일 (${DAYS[start.getDay()]})`,
+      time: `${pad(start.getHours())}:${pad(start.getMinutes())} – ${pad(end.getHours())}:${pad(end.getMinutes())}`,
+      location: sitterProfile.available_area ?? "-",
+      petName: firstPet?.name ?? "-",
+      petType: firstPet?.breed ?? firstPet?.animal_type ?? "-",
+      price: r.total_price,
+      reviewWritten: false,
+    };
+  });
+
+  return { data: bookings };
+}
+
 const PET_EMOJI: Record<string, string> = {
   cat: "🐱",
   small_dog: "🐶",

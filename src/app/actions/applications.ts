@@ -387,6 +387,79 @@ export async function updateApplication(
   return { data, reservationId };
 }
 
+export async function getMySitterApplications() {
+  const user = await getAuthUser();
+  if (!user)
+    return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." }, data: [] };
+
+  const db = createServiceClient();
+
+  const { data: sitterProfile } = await db
+    .from("sitters")
+    .select("id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!sitterProfile)
+    return { error: { code: "NOT_FOUND", message: "시터 정보를 찾을 수 없습니다." }, data: [] };
+
+  const { data, error } = await db
+    .from("applications")
+    .select(
+      `
+      id, status, proposed_price, created_at,
+      requests!inner(
+        title, start_datetime, end_datetime, location, budget,
+        users!requests_owner_id_fkey(full_name)
+      )
+    `,
+    )
+    .eq("sitter_id", sitterProfile.id)
+    .order("created_at", { ascending: false });
+
+  if (error)
+    return { error: { code: "INTERNAL_ERROR", message: error.message }, data: [] };
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const DAYS = ["일", "월", "화", "수", "목", "금", "토"];
+
+  type RequestRow = {
+    title: string;
+    start_datetime: string | null;
+    end_datetime: string | null;
+    location: string | null;
+    budget: number | null;
+    users: { full_name: string } | null;
+  };
+
+  const applications = (data ?? []).map((a) => {
+    const req = a.requests as RequestRow;
+    const start = new Date(req?.start_datetime ?? "");
+    const end = new Date(req?.end_datetime ?? "");
+    const created = new Date(a.created_at ?? "");
+    const dateStr = `${created.getFullYear()}${pad(created.getMonth() + 1)}${pad(created.getDate())}`;
+
+    return {
+      id: a.id,
+      bookingNo: `AP-${dateStr}-${a.id.slice(-3).toUpperCase()}`,
+      title: req?.title ?? "-",
+      status: a.status,
+      ownerName: req?.users?.full_name ?? "-",
+      date: req?.start_datetime
+        ? `${start.getFullYear()}년 ${start.getMonth() + 1}월 ${start.getDate()}일 (${DAYS[start.getDay()]})`
+        : "-",
+      time:
+        req?.start_datetime && req?.end_datetime
+          ? `${pad(start.getHours())}:${pad(start.getMinutes())} – ${pad(end.getHours())}:${pad(end.getMinutes())}`
+          : "-",
+      location: req?.location ?? "-",
+      price: a.proposed_price ?? req?.budget ?? 0,
+    };
+  });
+
+  return { data: applications };
+}
+
 export async function updateApplicationByRoom(
   roomId: string,
   status: "selected" | "rejected",

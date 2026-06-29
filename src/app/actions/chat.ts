@@ -86,6 +86,35 @@ export async function findOrCreateRoom(input: {
   return { data: { room_id: newRoom.id } };
 }
 
+export async function findChatRoomAsSitter(ownerId: string) {
+  const user = await getAuthUser();
+  if (!user) {
+    return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
+  }
+
+  const db = createServiceClient();
+
+  const { data: sitterProfile } = await db
+    .from("sitters")
+    .select("id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!sitterProfile) {
+    return { error: { code: "NOT_FOUND", message: "시터 정보를 찾을 수 없습니다." } };
+  }
+
+  const { data: room } = await db
+    .from("chat_rooms")
+    .select("id")
+    .eq("owner_id", ownerId)
+    .eq("sitter_id", sitterProfile.id)
+    .eq("room_type", "direct")
+    .maybeSingle();
+
+  return { data: room ? { room_id: room.id } : null };
+}
+
 export async function sendMessage(roomId: string, content: string) {
   const user = await getAuthUser();
   if (!user) {
