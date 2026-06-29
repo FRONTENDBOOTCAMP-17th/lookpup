@@ -26,6 +26,7 @@ import {
   APPLICATION_REJECTED_PREFIX,
   RESERVATION_CANCELED_PREFIX,
   SERVICE_COMPLETE_PREFIX,
+  SERVICE_START_PREFIX,
 } from "@/lib/chatMessagePrefixes";
 
 function formatTime(iso: string): string {
@@ -150,6 +151,23 @@ function toMessage(m: MessageApiItem, userId: string): Message {
       text: "",
       sentByMe: m.sender_id === userId,
       serviceCompleteData,
+      rawDate: m.created_at ?? undefined,
+    };
+  }
+  if (m.content.startsWith(SERVICE_START_PREFIX)) {
+    let serviceStartData: ServiceCompleteData | undefined;
+    const jsonPart = m.content.slice(SERVICE_START_PREFIX.length);
+    if (jsonPart) {
+      try {
+        serviceStartData = JSON.parse(jsonPart) as ServiceCompleteData;
+      } catch {}
+    }
+    return {
+      id: m.id,
+      from: "service_start" as const,
+      text: "",
+      sentByMe: m.sender_id === userId,
+      serviceStartData,
       rawDate: m.created_at ?? undefined,
     };
   }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Star, Trash2, ChevronLeft } from "lucide-react";
@@ -63,11 +63,12 @@ function RatingBlock({ rating }: { rating: number }) {
   return (
     <div className="flex items-center gap-1.5 bg-orange-50 border border-orange-100 rounded-xl px-3 py-1.5 shrink-0">
       <Star size={15} className="fill-orange-400 text-orange-400" />
-      <span className="text-base font-bold text-orange-500 leading-none">{rating}.0</span>
+      <span className="text-base font-bold text-orange-500 leading-none">
+        {rating}.0
+      </span>
     </div>
   );
 }
-
 
 function WrittenReviewCard({
   review,

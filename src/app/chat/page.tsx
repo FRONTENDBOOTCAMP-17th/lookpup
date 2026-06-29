@@ -43,10 +43,13 @@ import {
   sendApplicationSelectedMessage,
   sendApplicationRejectedMessage,
   sendServiceCompleteMessage,
+  sendServiceStartMessage,
 } from "@/app/actions/chat";
 import {
   ownerConfirmServiceComplete,
   getActiveReservationsForRoom,
+  getReadyReservationsForRoom,
+  sitterStartService,
   getReservationStatuses,
 } from "@/app/actions/reservations";
 import {
@@ -560,6 +563,14 @@ function ChatPageContent({
     useState(false);
   const [serviceCompleteSending, setServiceCompleteSending] = useState(false);
 
+  const [serviceStartModalOpen, setServiceStartModalOpen] = useState(false);
+  const [readyReservations, setReadyReservations] = useState<
+    ActiveReservation[]
+  >([]);
+  const [serviceStartModalLoading, setServiceStartModalLoading] =
+    useState(false);
+  const [serviceStartSending, setServiceStartSending] = useState(false);
+
   const handleCareRecordSubmit = async (record: CareRecordPayload) => {
     if (!activeRoomId) return;
     try {
@@ -605,6 +616,59 @@ function ChatPageContent({
       setSendError("예약 정보를 불러오는데 실패했습니다.");
     } finally {
       setServiceCompleteModalLoading(false);
+    }
+  }
+
+  async function handleServiceStart() {
+    if (!activeRoomId) return;
+    setPlusMenuOpen(false);
+    setServiceStartModalLoading(true);
+    setReadyReservations([]);
+    setServiceStartModalOpen(true);
+    try {
+      const result = await getReadyReservationsForRoom(activeRoomId);
+      if (result.error) {
+        setServiceStartModalOpen(false);
+        setSendError(result.error.message);
+        return;
+      }
+      setReadyReservations(result.data ?? []);
+    } catch {
+      setServiceStartModalOpen(false);
+      setSendError("예약 정보를 불러오는 데 실패했습니다.");
+    } finally {
+      setServiceStartModalLoading(false);
+    }
+  }
+
+  async function handleServiceStartConfirm(reservationId: string) {
+    if (!activeRoomId || serviceStartSending) return;
+    setServiceStartSending(true);
+    try {
+      const startResult = await sitterStartService(reservationId);
+      if (startResult.error) {
+        setSendError(startResult.error.message);
+        return;
+      }
+      const result = await sendServiceStartMessage(activeRoomId, reservationId);
+      if (result.error) {
+        setSendError(result.error.message);
+        return;
+      }
+      if (result.data) {
+        addMessage(result.data);
+        broadcastMessage(result.data);
+        updatePreview(
+          activeRoomId,
+          "서비스 시작",
+          result.data.created_at ?? "",
+        );
+      }
+      setServiceStartModalOpen(false);
+    } catch {
+      setSendError("서비스 시작 전송에 실패했습니다. 다시 시도해주세요.");
+    } finally {
+      setServiceStartSending(false);
     }
   }
 
@@ -1344,6 +1408,9 @@ function ChatPageContent({
                       }
                     : undefined
                 }
+                onServiceStart={
+                  isCurrentUserSitter ? handleServiceStart : undefined
+                }
                 onServiceComplete={
                   isCurrentUserSitter ? handleServiceComplete : undefined
                 }
@@ -1663,6 +1730,9 @@ function ChatPageContent({
                         }
                       : undefined
                   }
+                  onServiceStart={
+                    isCurrentUserSitter ? handleServiceStart : undefined
+                  }
                   onServiceComplete={
                     isCurrentUserSitter ? handleServiceComplete : undefined
                   }
@@ -1792,6 +1862,16 @@ function ChatPageContent({
         sending={serviceCompleteSending}
         onClose={() => setServiceCompleteModalOpen(false)}
         onConfirm={handleServiceCompleteConfirm}
+      />
+
+      <ServiceCompleteModal
+        variant="start"
+        open={serviceStartModalOpen}
+        reservations={readyReservations}
+        loading={serviceStartModalLoading}
+        sending={serviceStartSending}
+        onClose={() => setServiceStartModalOpen(false)}
+        onConfirm={handleServiceStartConfirm}
       />
     </div>
   );

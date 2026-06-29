@@ -13,6 +13,7 @@ import {
   Camera,
   ChevronDown,
   CheckCircle,
+  PlayCircle,
 } from "lucide-react";
 import Avatar from "@/components/ui/Avatar";
 import SitterProfileCard, {
@@ -99,7 +100,8 @@ export type Message = {
     | "application_selected"
     | "application_rejected"
     | "reservation_canceled"
-    | "service_complete";
+    | "service_complete"
+    | "service_start";
   text: string;
   imageUrl?: string;
   time?: string;
@@ -107,6 +109,7 @@ export type Message = {
   paymentData?: PaymentData;
   applicationData?: ApplicationData;
   serviceCompleteData?: ServiceCompleteData;
+  serviceStartData?: ServiceCompleteData;
   sentByMe?: boolean;
 };
 
@@ -468,6 +471,18 @@ export function MessageBubble({
         otherInitial={senderInitial}
         otherProfileImage={senderProfileImage}
         data={msg.serviceCompleteData}
+      />
+    );
+  }
+  if (msg.from === "service_start") {
+    if (msg.sentByMe) {
+      return <SitterServiceStartCard data={msg.serviceStartData} />;
+    }
+    return (
+      <ServiceStartCard
+        otherInitial={senderInitial}
+        otherProfileImage={senderProfileImage}
+        data={msg.serviceStartData}
       />
     );
   }
@@ -884,6 +899,7 @@ type ChatPlusPanelProps = {
   onPaymentRequest?: () => void;
   onSendCareRecord?: () => void;
   onSendPhoto: () => void;
+  onServiceStart?: () => void;
   onServiceComplete?: () => void;
 };
 
@@ -891,6 +907,7 @@ export function ChatPlusPanel({
   onPaymentRequest,
   onSendCareRecord,
   onSendPhoto,
+  onServiceStart,
   onServiceComplete,
 }: ChatPlusPanelProps) {
   const actions = [
@@ -903,6 +920,9 @@ export function ChatPlusPanel({
           label: "돌봄 기록 전송",
           onClick: onSendCareRecord,
         }
+      : null,
+    onServiceStart
+      ? { icon: PlayCircle, label: "서비스 시작", onClick: onServiceStart }
       : null,
     onServiceComplete
       ? { icon: CheckCircle, label: "서비스 완료", onClick: onServiceComplete }
@@ -1491,6 +1511,140 @@ export function SitterServiceCompleteCard({
         )}
         <p className="text-[#6B7280] text-xs leading-relaxed">
           보호자의 확인 후 서비스가 완료됩니다.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// 서비스 시작 알림 카드 (보호자용)
+type ServiceStartCardProps = {
+  otherInitial: string;
+  otherProfileImage?: string | null;
+  data?: ServiceCompleteData;
+};
+
+export function ServiceStartCard({ otherInitial, otherProfileImage, data }: ServiceStartCardProps) {
+  const hasInfo =
+    data?.serviceTitle ||
+    data?.petName ||
+    data?.startDatetime ||
+    data?.totalPrice !== undefined;
+  return (
+    <div className="flex items-start gap-3">
+      <Avatar initial={otherInitial} src={otherProfileImage} size="sm" />
+      <div className="w-79.5 p-4 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 bg-orange-100 rounded-full flex items-center justify-center shrink-0">
+            <PlayCircle size={18} className="text-orange-500" />
+          </div>
+          <div>
+            <span className="text-orange-600 text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
+              서비스 시작
+            </span>
+            <p className="text-[#281A0E] text-sm leading-5 mt-0.5">
+              펫시터가 서비스를 시작했어요.
+            </p>
+          </div>
+        </div>
+        {hasInfo && (
+          <div className="flex flex-col gap-2 px-3 py-2.5 bg-orange-50 rounded-xl">
+            {(data?.serviceTitle || data?.petName) && (
+              <div className="flex items-center gap-1.5">
+                {data?.serviceTitle && (
+                  <span className="text-xs text-stone-700 font-medium">{data.serviceTitle}</span>
+                )}
+                {data?.serviceTitle && data?.petName && (
+                  <span className="text-gray-300 text-xs">·</span>
+                )}
+                {data?.petName && (
+                  <span className="text-xs text-stone-500">{data.petName}</span>
+                )}
+              </div>
+            )}
+            {data?.startDatetime && (
+              <div className="flex items-center gap-2">
+                <span className="text-[#6B7280] text-xs shrink-0">일정</span>
+                <span className="text-[#374151] text-xs">
+                  {formatServiceDate(data.startDatetime)}
+                  {data.endDatetime ? ` ~ ${formatServiceDate(data.endDatetime)}` : ""}
+                </span>
+              </div>
+            )}
+            {data?.totalPrice !== undefined && (
+              <div className="flex items-center gap-2">
+                <span className="text-[#6B7280] text-xs shrink-0">금액</span>
+                <span className="text-orange-500 text-xs font-medium">
+                  {data.totalPrice.toLocaleString("ko-KR")}원
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// 서비스 시작 알림 카드 (펫시터용)
+export function SitterServiceStartCard({ data }: { data?: ServiceCompleteData }) {
+  const hasInfo =
+    data?.serviceTitle ||
+    data?.petName ||
+    data?.startDatetime ||
+    data?.totalPrice !== undefined;
+  return (
+    <div className="flex justify-end">
+      <div className="w-79.5 p-4 bg-orange-100 rounded-2xl outline-[1.11px] outline-orange-400 outline-offset-[-1.11px] flex flex-col gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 bg-orange-200 rounded-full flex items-center justify-center shrink-0">
+            <PlayCircle size={18} className="text-orange-500" />
+          </div>
+          <div>
+            <span className="text-orange-500 text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
+              서비스 시작
+            </span>
+            <p className="text-[#281A0E] text-sm leading-5 mt-0.5">
+              서비스를 시작했습니다.
+            </p>
+          </div>
+        </div>
+        {hasInfo && (
+          <div className="flex flex-col gap-2 px-3 py-2.5 bg-orange-200 rounded-xl">
+            {(data?.serviceTitle || data?.petName) && (
+              <div className="flex items-center gap-1.5">
+                {data?.serviceTitle && (
+                  <span className="text-xs text-stone-700 font-medium">{data.serviceTitle}</span>
+                )}
+                {data?.serviceTitle && data?.petName && (
+                  <span className="text-orange-300 text-xs">·</span>
+                )}
+                {data?.petName && (
+                  <span className="text-xs text-stone-500">{data.petName}</span>
+                )}
+              </div>
+            )}
+            {data?.startDatetime && (
+              <div className="flex items-center gap-2">
+                <span className="text-[#6B7280] text-xs shrink-0">일정</span>
+                <span className="text-[#374151] text-xs">
+                  {formatServiceDate(data.startDatetime)}
+                  {data.endDatetime ? ` ~ ${formatServiceDate(data.endDatetime)}` : ""}
+                </span>
+              </div>
+            )}
+            {data?.totalPrice !== undefined && (
+              <div className="flex items-center gap-2">
+                <span className="text-[#6B7280] text-xs shrink-0">금액</span>
+                <span className="text-orange-500 text-xs font-medium">
+                  {data.totalPrice.toLocaleString("ko-KR")}원
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+        <p className="text-[#6B7280] text-xs leading-relaxed">
+          서비스가 시작되었습니다.
         </p>
       </div>
     </div>
