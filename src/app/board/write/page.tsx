@@ -7,12 +7,6 @@ import {
   ChevronLeft,
   Plus,
   Check,
-  Home,
-  Heart,
-  PawPrint,
-  Moon,
-  Car,
-  MoreHorizontal,
   Save,
   Send,
   MapPin,
@@ -35,17 +29,13 @@ import {
 } from "@/utils/kakaoGeocode";
 import { mergeConditions } from "@/utils/boardConditions";
 import { useUserStore } from "@/store/userStore";
-
-const SERVICE_TYPES = [
-  { label: "방문 돌봄", icon: Home, value: "care" },
-  { label: "위탁 돌봄", icon: Heart, value: "foster" },
-  { label: "산책", icon: PawPrint, value: "walk" },
-  { label: "펫 호텔", icon: Moon, value: "hotel" },
-  { label: "픽업 서비스", icon: Car, value: "pickup" },
-  { label: "기타", icon: MoreHorizontal, value: "other" },
-];
-
-const BUDGET_PRESETS = [10000, 20000, 30000, 50000];
+import {
+  SERVICE_TYPES,
+  BUDGET_PRESETS,
+  SITTER_CONDITIONS,
+  mapPetRow,
+} from "@/constants/board";
+import type { Pet, PetRow } from "@/types/board";
 
 const LOCATION_TABS = ["우리 집", "펫시터 집", "직접 입력"];
 
@@ -63,42 +53,6 @@ const TEMPLATES = [
     text: "안녕하세요. 픽업 서비스를 요청드립니다.\n\n- 픽업 장소: \n- 도착지: \n- 희망 시간: \n\n감사합니다.",
   },
 ];
-
-const SITTER_CONDITIONS = [
-  "강아지 산책 경험 필수",
-  "책임감 있고 성실하신 분",
-  "반려동물에 대한 애정이 있으신 분",
-  "인증 펫시터만 (Badge 보유자 우선)",
-  "여성 펫시터 선호",
-  "반려동물 자격증 보유자 우선",
-  "흡연자 제외",
-];
-
-type Pet = {
-  id: string;
-  name: string;
-  type: string;
-  age: number | null;
-  weight: number | null;
-  emoji: string;
-  image_url: string | null;
-};
-
-// GET /api/pets 응답 행 (필요한 필드만)
-type PetRow = {
-  id: string;
-  name: string;
-  animal_type: string;
-  age: number | null;
-  weight: number | null;
-  image_url: string | null;
-};
-
-const ANIMAL_TYPE_MAP: Record<string, { label: string; emoji: string }> = {
-  dog: { label: "강아지", emoji: "🐶" },
-  cat: { label: "고양이", emoji: "🐱" },
-  other: { label: "기타", emoji: "🐾" },
-};
 
 type FormState = {
   service_type: string;
@@ -149,17 +103,7 @@ export default function BoardWritePage() {
       .then((result) => {
         const data = "data" in result ? result.data : null;
         if (data && data.length > 0) {
-          setPets(
-            data.map((p: PetRow) => ({
-              id: p.id,
-              name: p.name,
-              type: ANIMAL_TYPE_MAP[p.animal_type]?.label ?? p.animal_type,
-              age: p.age,
-              weight: p.weight,
-              emoji: ANIMAL_TYPE_MAP[p.animal_type]?.emoji ?? "🐾",
-              image_url: p.image_url,
-            })),
-          );
+          setPets(data.map((p: PetRow) => mapPetRow(p)));
         }
       });
   }, []);
