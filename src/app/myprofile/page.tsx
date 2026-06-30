@@ -20,7 +20,6 @@ import {
   HelpCircle,
   Star,
   Wallet,
-  MessageCircle,
   AlertTriangle,
   BookOpen,
   User,
@@ -179,13 +178,6 @@ const SITTER_MENU: MenuItem[] = [
     label: "게시글 관리",
     link: "/myprofile/posts",
     color: "#E8742A",
-  },
-  {
-    id: "chat",
-    icon: MessageCircle,
-    label: "메시지",
-    link: "/chat",
-    color: "#10B981",
   },
   {
     id: "reviews",
