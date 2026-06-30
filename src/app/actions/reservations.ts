@@ -1377,3 +1377,118 @@ export async function getReservationRequestDetails(reservationId: string) {
     },
   };
 }
+
+export async function getReservationsByRoom(roomId: string) {
+  const user = await getAuthUser();
+  if (!user) {
+    return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
+  }
+
+  const db = createServiceClient();
+
+  const { data: room } = await db
+    .from("chat_rooms")
+    .select("owner_id, sitter_id, sitters!inner(user_id)")
+    .eq("id", roomId)
+    .single();
+
+  if (!room) {
+    return { error: { code: "NOT_FOUND", message: "채팅방을 찾을 수 없습니다." } };
+  }
+
+  const sitterRow = room.sitters as unknown as { user_id: string };
+  if (room.owner_id !== user.id && sitterRow.user_id !== user.id) {
+    return { error: { code: "FORBIDDEN", message: "채팅방 참여자만 조회할 수 있습니다." } };
+  }
+
+  const { data, error } = await db
+    .from("reservations")
+    .select(
+      `id, start_datetime, end_datetime, total_price, status, memo,
+       reservation_items(pets(id, name, animal_type))`,
+    )
+    .eq("owner_id", room.owner_id)
+    .eq("sitter_id", room.sitter_id)
+    .in("status", ["pending", "accepted", "paid", "in_progress"])
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    return { error: { code: "INTERNAL_ERROR", message: error.message } };
+  }
+
+  const reservations = (data ?? []).map((item) => {
+    const { reservation_items, ...rest } = item as typeof item & {
+      reservation_items: { pets: { id: string; name: string; animal_type: string } }[] | null;
+    };
+    return {
+      ...rest,
+      pets: (reservation_items ?? []).map((ri) => ri.pets),
+    };
+  });
+
+  return { data: reservations };
+}
+
+export async function updateReservationDetails(
+  reservationId: string,
+  input: { start_datetime: string; end_datetime: string; memo?: string | null },
+) {
+  const user = await getAuthUser();
+  if (!user) {
+    return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
+  }
+
+  if (new Date(input.end_datetime) <= new Date(input.start_datetime)) {
+    return {
+      error: { code: "VALIDATION_ERROR", message: "종료일은 시작일 이후여야 합니다." },
+    };
+  }
+
+  const db = createServiceClient();
+
+  const { data: reservation } = await db
+    .from("reservations")
+    .select("id, owner_id, sitter_id, status")
+    .eq("id", reservationId)
+    .single();
+
+  if (!reservation) {
+    return { error: { code: "NOT_FOUND", message: "예약을 찾을 수 없습니다." } };
+  }
+
+  if (!["pending", "accepted", "paid", "in_progress"].includes(reservation.status)) {
+    return {
+      error: { code: "FORBIDDEN", message: "완료되거나 취소된 예약은 수정할 수 없습니다." },
+    };
+  }
+
+  const { data: sitterProfile } = await db
+    .from("sitters")
+    .select("id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  const isOwner = reservation.owner_id === user.id;
+  const isSitter = sitterProfile?.id === reservation.sitter_id;
+
+  if (!isOwner && !isSitter) {
+    return { error: { code: "FORBIDDEN", message: "예약 당사자만 수정할 수 있습니다." } };
+  }
+
+  const { data, error } = await db
+    .from("reservations")
+    .update({
+      start_datetime: input.start_datetime,
+      end_datetime: input.end_datetime,
+      memo: input.memo ?? null,
+    })
+    .eq("id", reservationId)
+    .select()
+    .single();
+
+  if (error) {
+    return { error: { code: "INTERNAL_ERROR", message: error.message } };
+  }
+
+  return { data };
+}

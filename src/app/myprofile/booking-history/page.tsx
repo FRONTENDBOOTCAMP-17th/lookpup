@@ -19,6 +19,7 @@ import {
   getMyReservations,
   getMySitterReservations,
   updateReservation,
+  cancelReservationAndNotify,
 } from "@/app/actions/reservations";
 import {
   getMySitterApplications,
@@ -472,9 +473,32 @@ export default function BookingHistoryPage() {
     setPage(1);
   }, [fixedRole]);
 
+  useEffect(() => {
+    if (role !== "owner" || !user?.id) return;
+
+    const supabase = createClient();
+    const channel = supabase
+      .channel("owner-booking-history-updates")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "reservations",
+          filter: `owner_id=eq.${user.id}`,
+        },
+        () => loadData(),
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [role, user?.id, loadData]);
+
   const handleCancelConfirm = async () => {
     if (!cancelingId) return;
-    await updateReservation(cancelingId, { status: "canceled" });
+    await cancelReservationAndNotify(cancelingId);
     setCancelingId(null);
     loadData();
   };

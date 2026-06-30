@@ -14,3 +14,5 @@ export const SERVICE_START_PREFIX = "__service_start__";
 export const RESERVATION_REQUEST_PREFIX = "__reservation_request__:";
 export const RESERVATION_ACCEPTED_PREFIX = "__reservation_accepted__:";
 export const RESERVATION_REJECTED_PREFIX = "__reservation_rejected__";
+export const RESERVATION_EDIT_PREFIX = "__reservation_edit__:";
+export const RESERVATION_EDIT_RESPONSE_PREFIX = "__reservation_edit_response__:";

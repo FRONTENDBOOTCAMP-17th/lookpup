@@ -13,6 +13,8 @@ import {
   RESERVATION_CANCELED_PREFIX,
   SERVICE_COMPLETE_PREFIX,
   SERVICE_START_PREFIX,
+  RESERVATION_EDIT_PREFIX,
+  RESERVATION_EDIT_RESPONSE_PREFIX,
 } from "@/lib/chatMessagePrefixes";
 
 async function getAuthUser() {
@@ -855,4 +857,133 @@ export async function markRoomRead(roomId: string) {
   }
 
   return { data: { ok: true } };
+}
+
+export async function sendReservationEditMessage(
+  roomId: string,
+  payload: {
+    reservationId: string;
+    original: { start_datetime: string; end_datetime: string; memo?: string | null };
+    proposed: { start_datetime: string; end_datetime: string; memo?: string | null };
+  },
+) {
+  const user = await getAuthUser();
+  if (!user) {
+    return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
+  }
+
+  const db = createServiceClient();
+
+  const { data: room } = await db
+    .from("chat_rooms")
+    .select("id, owner_id, sitters!inner(user_id)")
+    .eq("id", roomId)
+    .single();
+
+  if (!room) {
+    return { error: { code: "NOT_FOUND", message: "채팅방을 찾을 수 없습니다." } };
+  }
+
+  const sitter = room.sitters as unknown as { user_id: string };
+  if (room.owner_id !== user.id && sitter.user_id !== user.id) {
+    return {
+      error: { code: "FORBIDDEN", message: "채팅방 참여자만 메시지를 보낼 수 있습니다." },
+    };
+  }
+
+  const content = `${RESERVATION_EDIT_PREFIX}${JSON.stringify(payload)}`;
+
+  const { data: message, error: msgError } = await db
+    .from("messages")
+    .insert({ room_id: roomId, sender_id: user.id, content })
+    .select()
+    .single();
+
+  if (msgError) {
+    return { error: { code: "INTERNAL_ERROR", message: msgError.message } };
+  }
+
+  await db
+    .from("chat_rooms")
+    .update({
+      last_message: "예약 수정 요청",
+      last_message_at: new Date().toISOString(),
+    })
+    .eq("id", roomId);
+
+  const sitterForNotif = room.sitters as unknown as { user_id: string };
+  const recipientId = user.id === room.owner_id ? sitterForNotif.user_id : room.owner_id;
+  if (recipientId) {
+    await createNotification({
+      userId: recipientId,
+      type: "message",
+      title: "예약 수정 요청이 도착했어요",
+      content: "예약 일정 수정을 요청했습니다. 확인해주세요.",
+      linkUrl: `/chat?roomId=${roomId}`,
+    });
+  }
+
+  return { data: message };
+}
+
+export async function sendReservationEditResponseMessage(
+  roomId: string,
+  payload: { originalMessageId: string; accepted: boolean },
+) {
+  const user = await getAuthUser();
+  if (!user) {
+    return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
+  }
+
+  const db = createServiceClient();
+
+  const { data: room } = await db
+    .from("chat_rooms")
+    .select("id, owner_id, sitters!inner(user_id)")
+    .eq("id", roomId)
+    .single();
+
+  if (!room) {
+    return { error: { code: "NOT_FOUND", message: "채팅방을 찾을 수 없습니다." } };
+  }
+
+  const sitter = room.sitters as unknown as { user_id: string };
+  if (room.owner_id !== user.id && sitter.user_id !== user.id) {
+    return {
+      error: { code: "FORBIDDEN", message: "채팅방 참여자만 메시지를 보낼 수 있습니다." },
+    };
+  }
+
+  const content = `${RESERVATION_EDIT_RESPONSE_PREFIX}${JSON.stringify(payload)}`;
+
+  const { data: message, error: msgError } = await db
+    .from("messages")
+    .insert({ room_id: roomId, sender_id: user.id, content })
+    .select()
+    .single();
+
+  if (msgError) {
+    return { error: { code: "INTERNAL_ERROR", message: msgError.message } };
+  }
+
+  const lastMsg = payload.accepted ? "예약 수정 승인" : "예약 수정 거절";
+  await db
+    .from("chat_rooms")
+    .update({ last_message: lastMsg, last_message_at: new Date().toISOString() })
+    .eq("id", roomId);
+
+  const recipientId = user.id === room.owner_id ? sitter.user_id : room.owner_id;
+  if (recipientId) {
+    await createNotification({
+      userId: recipientId,
+      type: "message",
+      title: payload.accepted ? "예약 수정이 승인되었어요" : "예약 수정 요청이 거절되었어요",
+      content: payload.accepted
+        ? "예약 수정 요청이 승인되었습니다."
+        : "예약 수정 요청이 거절되었습니다.",
+      linkUrl: `/chat?roomId=${roomId}`,
+    });
+  }
+
+  return { data: message };
 }

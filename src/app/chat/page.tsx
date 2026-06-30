@@ -46,6 +46,8 @@ import {
   sendApplicationRejectedMessage,
   sendServiceCompleteMessage,
   sendServiceStartMessage,
+  sendReservationEditMessage,
+  sendReservationEditResponseMessage,
 } from "@/app/actions/chat";
 import {
   ownerConfirmServiceComplete,
@@ -56,6 +58,7 @@ import {
   rejectReservationRequest,
   sitterStartService,
   getReservationRequestDetails,
+  updateReservationDetails,
 } from "@/app/actions/reservations";
 import {
   ServiceCompleteModal,
@@ -77,6 +80,7 @@ import {
   ReservationConfirmModal,
   type ReservationDetails,
 } from "@/components/common/chat/ReservationConfirmModal";
+import ReservationEditModal from "@/components/common/chat/ReservationEditModal";
 import { useChatRooms } from "@/hooks/chat/useChatRooms";
 import { useRequest } from "@/hooks/chat/useRequest";
 import { useChatMessages } from "@/hooks/chat/useChatMessages";
@@ -394,6 +398,7 @@ function ChatPageContent({
     hasMore,
     loadingMore,
     paymentState,
+    confirmedEditIds,
   } = useChatMessages(activeRoomId, userId, messagesRefreshKey);
 
   const { requestPayment, isPending: isPaymentPending } = usePortOne();
@@ -700,6 +705,8 @@ function ChatPageContent({
     useState(false);
   const [serviceStartSending, setServiceStartSending] = useState(false);
 
+  const [reservationEditOpen, setReservationEditOpen] = useState(false);
+
   const handleCareRecordSubmit = async (record: CareRecordPayload) => {
     if (!activeRoomId) return;
     try {
@@ -778,6 +785,99 @@ function ChatPageContent({
       setSendError("서비스 시작 전송에 실패했습니다. 다시 시도해주세요.");
     } finally {
       setServiceStartSending(false);
+    }
+  }
+
+  async function handleReservationEditSubmit(
+    reservationId: string,
+    proposed: {
+      start_datetime: string;
+      end_datetime: string;
+      memo?: string | null;
+    },
+    original: {
+      start_datetime: string;
+      end_datetime: string;
+      memo?: string | null;
+    },
+  ) {
+    if (!activeRoomId) return;
+    try {
+      const result = await sendReservationEditMessage(activeRoomId, {
+        reservationId,
+        original,
+        proposed,
+      });
+      if (result.error) {
+        setSendError(result.error.message);
+        return;
+      }
+      if (result.data) {
+        addMessage(result.data);
+        broadcastMessage(result.data);
+        updatePreview(
+          activeRoomId,
+          "예약 수정 요청",
+          result.data.created_at ?? "",
+        );
+      }
+    } catch {
+      setSendError("예약 수정 요청 전송에 실패했습니다. 다시 시도해주세요.");
+    }
+  }
+
+  async function handleReservationEditConfirm(
+    messageId: string,
+    reservationId: string,
+    proposed: {
+      start_datetime: string;
+      end_datetime: string;
+      memo?: string | null;
+    },
+  ) {
+    if (!activeRoomId) return;
+    try {
+      const updateResult = await updateReservationDetails(reservationId, proposed);
+      if (updateResult.error) {
+        setSendError(updateResult.error.message);
+        return;
+      }
+      const result = await sendReservationEditResponseMessage(activeRoomId, {
+        originalMessageId: messageId,
+        accepted: true,
+      });
+      if (result.error) {
+        setSendError(result.error.message);
+        return;
+      }
+      if (result.data) {
+        addMessage(result.data);
+        broadcastMessage(result.data);
+        updatePreview(activeRoomId, "예약 수정 승인", result.data.created_at ?? "");
+      }
+    } catch {
+      setSendError("예약 수정에 실패했습니다. 다시 시도해주세요.");
+    }
+  }
+
+  async function handleReservationEditReject(messageId: string) {
+    if (!activeRoomId) return;
+    try {
+      const result = await sendReservationEditResponseMessage(activeRoomId, {
+        originalMessageId: messageId,
+        accepted: false,
+      });
+      if (result.error) {
+        setSendError(result.error.message);
+        return;
+      }
+      if (result.data) {
+        addMessage(result.data);
+        broadcastMessage(result.data);
+        updatePreview(activeRoomId, "예약 수정 거절", result.data.created_at ?? "");
+      }
+    } catch {
+      setSendError("예약 수정 거절 전송에 실패했습니다. 다시 시도해주세요.");
     }
   }
 
@@ -1568,6 +1668,9 @@ function ChatPageContent({
                         )
                       }
                       isServiceConfirming={isServiceConfirming}
+                      onReservationEditConfirm={handleReservationEditConfirm}
+                      onReservationEditReject={handleReservationEditReject}
+                      confirmedEditIds={confirmedEditIds}
                     />
                   );
                 })}
@@ -1625,6 +1728,14 @@ function ChatPageContent({
                 }
                 onServiceComplete={
                   isCurrentUserSitter ? handleServiceComplete : undefined
+                }
+                onReservationEdit={
+                  activeTab === "one_on_one"
+                    ? () => {
+                        setPlusMenuOpen(false);
+                        setReservationEditOpen(true);
+                      }
+                    : undefined
                 }
                 onSendPhoto={() => photoInputRef.current?.click()}
               />
@@ -1972,6 +2083,9 @@ function ChatPageContent({
                           )
                         }
                         isServiceConfirming={isServiceConfirming}
+                        onReservationEditConfirm={handleReservationEditConfirm}
+                        onReservationEditReject={handleReservationEditReject}
+                        confirmedEditIds={confirmedEditIds}
                       />
                     );
                   })}
@@ -2003,6 +2117,14 @@ function ChatPageContent({
                   }
                   onServiceComplete={
                     isCurrentUserSitter ? handleServiceComplete : undefined
+                  }
+                  onReservationEdit={
+                    activeTab === "one_on_one"
+                      ? () => {
+                          setPlusMenuOpen(false);
+                          setReservationEditOpen(true);
+                        }
+                      : undefined
                   }
                   onSendPhoto={() => photoInputRef.current?.click()}
                 />
@@ -2162,6 +2284,13 @@ function ChatPageContent({
         sending={serviceStartSending}
         onClose={() => setServiceStartModalOpen(false)}
         onConfirm={handleServiceStartConfirm}
+      />
+
+      <ReservationEditModal
+        open={reservationEditOpen && !!activeRoomId}
+        roomId={activeRoomId ?? ""}
+        onClose={() => setReservationEditOpen(false)}
+        onSubmit={handleReservationEditSubmit}
       />
     </div>
   );
