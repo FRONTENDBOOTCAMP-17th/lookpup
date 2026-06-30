@@ -225,8 +225,10 @@ export default function KakaoMap({
         content: button,
         xAnchor: opt.offsetX / opt.width,
         yAnchor: opt.offsetY / opt.height,
+        zIndex: selected ? 20 : 10,
         clickable: true,
       });
+      markerOverlay.setZIndex(selected ? 20 : 10);
       markerOverlay.setMap(map);
       markerOverlaysRef.current.push(markerOverlay);
     });
@@ -307,7 +309,9 @@ export default function KakaoMap({
       position,
       content,
       yAnchor: 1,
+      zIndex: 100,
     });
+    overlayRef.current.setZIndex(100);
     overlayRef.current.setMap(map);
   }
 
