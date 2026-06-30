@@ -98,7 +98,7 @@ export default function StepDateSelect({
             <label className="text-sm font-medium text-stone-900">시작 시간</label>
             <SimpleTimePicker
               value={startTime}
-              onChange={(v) => setValue("startTime", v)}
+              onChange={(v) => setValue("startTime", v, { shouldValidate: true })}
             />
             {errors.startTime && (
               <p className="text-red-500 text-xs">{errors.startTime.message}</p>
@@ -108,7 +108,7 @@ export default function StepDateSelect({
             <label className="text-sm font-medium text-stone-900">종료 시간</label>
             <SimpleTimePicker
               value={endTime}
-              onChange={(v) => setValue("endTime", v)}
+              onChange={(v) => setValue("endTime", v, { shouldValidate: true })}
             />
             {errors.endTime && (
               <p className="text-red-500 text-xs">{errors.endTime.message}</p>

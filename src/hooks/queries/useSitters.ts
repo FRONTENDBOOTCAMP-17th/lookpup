@@ -24,8 +24,10 @@ export function useSitters(filters: SitterFilters) {
     queryKey: ["sitters", filters] as const,
     queryFn: async () => {
       const { data, error } = await supabase.rpc("get_petsitters_filtered", {
-        p_district: filters.district || undefined,
-        p_dong: filters.dong || undefined,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        p_district: (filters.district || null) as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        p_dong: (filters.dong || null) as any,
       });
       if (error) throw error;
       return (data as SitterRow[]).filter(

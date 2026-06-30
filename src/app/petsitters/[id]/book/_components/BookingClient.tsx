@@ -47,6 +47,7 @@ export default function BookingClient({ sitterId }: { sitterId: string }) {
   // step별 개별 form — 각 단계에서 독립적으로 검증
   const step1Form = useForm<Step1Values>({
     resolver: zodResolver(step1Schema),
+    mode: "onChange",
     defaultValues: { dateRange: dateRange ?? { from: undefined, to: undefined }, startTime: "", endTime: "" },
   });
 

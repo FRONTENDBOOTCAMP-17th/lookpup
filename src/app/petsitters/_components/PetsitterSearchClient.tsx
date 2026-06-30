@@ -341,6 +341,7 @@ export default function PetsitterSearchClient() {
     return sitter.user_id !== currentUserId;
   });
 
+
   const sittersWithDistance = visibleSitters.map((sitter) => ({
     ...sitter,
     distanceKm: calculateDistanceKm(basePosition, { lat: sitter.lat, lng: sitter.lng }),
