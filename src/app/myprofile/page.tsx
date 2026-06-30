@@ -111,7 +111,7 @@ const OWNER_MENU: MenuItem[] = [
     id: "bookings",
     icon: Calendar,
     label: "예약 내역",
-    link: "/myprofile/booking-history",
+    link: "/myprofile/booking-history?role=owner",
     color: "#10B981",
   },
   {
@@ -170,7 +170,7 @@ const SITTER_MENU: MenuItem[] = [
     id: "bookings",
     icon: Calendar,
     label: "예약 관리",
-    link: "/myprofile/booking-history",
+    link: "/myprofile/booking-history?role=sitter",
     color: "#E8742A",
   },
   {
