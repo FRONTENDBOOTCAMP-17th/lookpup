@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Bell } from "lucide-react";
@@ -8,6 +8,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { createClient } from "@/utils/supabase/client";
 import { markAllNotificationsRead } from "@/app/actions/notifications";
+import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { NotificationItem } from "./NotificationItem";
 import { NotificationsRealtimeSync } from "./NotificationsRealtimeSync";
 
@@ -88,17 +89,35 @@ export default function NotificationsClient() {
   const prevList = notifications.filter((n) => !isToday(n.updated_at ?? n.created_at));
   const hasUnread = notifications.some((n) => !n.is_read);
 
+  const handleSync = useCallback(
+    (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
+      if (payload.eventType === "INSERT") {
+        const item = payload.new as NotificationRow;
+        setNotifications((prev) => [item, ...prev].slice(0, 50));
+      } else if (payload.eventType === "UPDATE") {
+        const updated = payload.new as NotificationRow;
+        setNotifications((prev) =>
+          prev.map((n) => (n.id === updated.id ? updated : n)),
+        );
+      } else if (payload.eventType === "DELETE") {
+        const deletedId = (payload.old as { id: string }).id;
+        setNotifications((prev) => prev.filter((n) => n.id !== deletedId));
+      }
+    },
+    [],
+  );
+
   async function handleMarkAllRead() {
     const result = await markAllNotificationsRead();
     if (result?.error) {
       console.error("모두 읽음 처리 실패:", result.error.message);
     }
-    router.refresh();
+    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
   }
 
   return (
     <>
-      {userId && <NotificationsRealtimeSync userId={userId} />}
+      {userId && <NotificationsRealtimeSync userId={userId} onSync={handleSync} />}
       <Header />
       <main className="flex-1 bg-orange-50 min-h-screen">
         <div className="max-w-[720px] mx-auto px-6 pt-12 pb-20">
