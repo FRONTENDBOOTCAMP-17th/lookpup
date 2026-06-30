@@ -123,8 +123,16 @@ export type ReservationAcceptedData = {
 
 export type ReservationEditPayload = {
   reservationId: string;
-  original: { start_datetime: string; end_datetime: string; memo?: string | null };
-  proposed: { start_datetime: string; end_datetime: string; memo?: string | null };
+  original: {
+    start_datetime: string;
+    end_datetime: string;
+    memo?: string | null;
+  };
+  proposed: {
+    start_datetime: string;
+    end_datetime: string;
+    memo?: string | null;
+  };
   sentByMe?: boolean;
 };
 
@@ -462,7 +470,11 @@ type MessageBubbleProps = {
   onReservationEditConfirm?: (
     messageId: string,
     reservationId: string,
-    proposed: { start_datetime: string; end_datetime: string; memo?: string | null },
+    proposed: {
+      start_datetime: string;
+      end_datetime: string;
+      memo?: string | null;
+    },
   ) => void;
   onReservationEditReject?: (messageId: string) => void;
   confirmedEditIds?: Set<string>;
@@ -489,7 +501,9 @@ export function MessageBubble({
     const data = msg.reservationEditResponseData;
     if (!data) return null;
     return (
-      <div className={`flex ${data.sentByMe ? "justify-end" : "items-start gap-3"}`}>
+      <div
+        className={`flex ${data.sentByMe ? "justify-end" : "items-start gap-3"}`}
+      >
         {!data.sentByMe && (
           <Avatar initial={senderInitial} src={senderProfileImage} size="sm" />
         )}
@@ -500,7 +514,9 @@ export function MessageBubble({
             <ReservationEditRejectedCard sentByMe={data.sentByMe ?? false} />
           )}
           {msg.time && (
-            <p className={`text-gray-500 text-xs mt-1 ${data.sentByMe ? "text-right pr-3" : "text-left pl-3"}`}>
+            <p
+              className={`text-gray-500 text-xs mt-1 ${data.sentByMe ? "text-right pr-3" : "text-left pl-3"}`}
+            >
               {msg.time}
             </p>
           )}
@@ -513,7 +529,9 @@ export function MessageBubble({
     if (!data) return null;
     const isProcessed = confirmedEditIds?.has(msg.id);
     return (
-      <div className={`flex ${data.sentByMe ? "justify-end" : "items-start gap-3"}`}>
+      <div
+        className={`flex ${data.sentByMe ? "justify-end" : "items-start gap-3"}`}
+      >
         {!data.sentByMe && (
           <Avatar initial={senderInitial} src={senderProfileImage} size="sm" />
         )}
@@ -541,7 +559,11 @@ export function MessageBubble({
       return (
         <div>
           <SitterServiceStartCard data={msg.serviceStartData} />
-          {msg.time && <p className="text-right text-gray-500 text-xs pr-3 mt-1">{msg.time}</p>}
+          {msg.time && (
+            <p className="text-right text-gray-500 text-xs pr-3 mt-1">
+              {msg.time}
+            </p>
+          )}
         </div>
       );
     }
@@ -552,7 +574,11 @@ export function MessageBubble({
           otherProfileImage={senderProfileImage}
           data={msg.serviceStartData}
         />
-        {msg.time && <p className="text-left text-gray-500 text-xs pl-11 mt-1">{msg.time}</p>}
+        {msg.time && (
+          <p className="text-left text-gray-500 text-xs pl-11 mt-1">
+            {msg.time}
+          </p>
+        )}
       </div>
     );
   }
@@ -567,7 +593,9 @@ export function MessageBubble({
           senderProfileImage={senderProfileImage}
         />
         {msg.time && (
-          <p className={`text-gray-500 text-xs mt-1 ${data.sentByMe ? "text-right pr-3" : "text-left pl-11"}`}>
+          <p
+            className={`text-gray-500 text-xs mt-1 ${data.sentByMe ? "text-right pr-3" : "text-left pl-11"}`}
+          >
             {msg.time}
           </p>
         )}
@@ -585,7 +613,9 @@ export function MessageBubble({
           senderProfileImage={senderProfileImage}
         />
         {msg.time && (
-          <p className={`text-gray-500 text-xs mt-1 ${data.sentByMe ? "text-right pr-3" : "text-left pl-11"}`}>
+          <p
+            className={`text-gray-500 text-xs mt-1 ${data.sentByMe ? "text-right pr-3" : "text-left pl-11"}`}
+          >
             {msg.time}
           </p>
         )}
@@ -597,7 +627,9 @@ export function MessageBubble({
       <div>
         <ReservationRejectedMessageCard sentByMe={msg.sentByMe ?? false} />
         {msg.time && (
-          <p className={`text-gray-500 text-xs mt-1 ${msg.sentByMe ? "text-right pr-3" : "text-left"}`}>
+          <p
+            className={`text-gray-500 text-xs mt-1 ${msg.sentByMe ? "text-right pr-3" : "text-left"}`}
+          >
             {msg.time}
           </p>
         )}
@@ -626,15 +658,27 @@ export function MessageBubble({
             onGoToChat={onGoToChat}
           />
         )}
-        {msg.time && <p className="text-right text-gray-500 text-xs pr-3 mt-1">{msg.time}</p>}
+        {msg.time && (
+          <p className="text-right text-gray-500 text-xs pr-3 mt-1">
+            {msg.time}
+          </p>
+        )}
       </div>
     );
   }
   if (msg.from === "application_rejected") {
     return (
       <div>
-        {msg.applicationData?.sentByMe ? <OwnerRejectionCard /> : <SitterRejectionCard />}
-        {msg.time && <p className="text-right text-gray-500 text-xs pr-3 mt-1">{msg.time}</p>}
+        {msg.applicationData?.sentByMe ? (
+          <OwnerRejectionCard />
+        ) : (
+          <SitterRejectionCard />
+        )}
+        {msg.time && (
+          <p className="text-right text-gray-500 text-xs pr-3 mt-1">
+            {msg.time}
+          </p>
+        )}
       </div>
     );
   }
@@ -642,7 +686,11 @@ export function MessageBubble({
     return (
       <div>
         <ReservationCanceledCard sentByMe={msg.sentByMe ?? false} />
-        {msg.time && <p className="text-right text-gray-500 text-xs pr-3 mt-1">{msg.time}</p>}
+        {msg.time && (
+          <p className="text-right text-gray-500 text-xs pr-3 mt-1">
+            {msg.time}
+          </p>
+        )}
       </div>
     );
   }
@@ -651,7 +699,11 @@ export function MessageBubble({
       return (
         <div>
           <SitterServiceCompleteCard data={msg.serviceCompleteData} />
-          {msg.time && <p className="text-right text-gray-500 text-xs pr-3 mt-1">{msg.time}</p>}
+          {msg.time && (
+            <p className="text-right text-gray-500 text-xs pr-3 mt-1">
+              {msg.time}
+            </p>
+          )}
         </div>
       );
     }
@@ -666,7 +718,11 @@ export function MessageBubble({
           otherProfileImage={senderProfileImage}
           data={msg.serviceCompleteData}
         />
-        {msg.time && <p className="text-left text-gray-500 text-xs pl-11 mt-1">{msg.time}</p>}
+        {msg.time && (
+          <p className="text-left text-gray-500 text-xs pl-11 mt-1">
+            {msg.time}
+          </p>
+        )}
       </div>
     );
   }
@@ -701,7 +757,9 @@ export function MessageBubble({
           />
         )}
         {msg.time && (
-          <p className={`text-gray-500 text-xs mt-1 ${data.sentByMe ? "text-right pr-3" : "text-left pl-11"}`}>
+          <p
+            className={`text-gray-500 text-xs mt-1 ${data.sentByMe ? "text-right pr-3" : "text-left pl-11"}`}
+          >
             {msg.time}
           </p>
         )}
@@ -712,7 +770,11 @@ export function MessageBubble({
     return (
       <div>
         <PaymentCompleteCard amount={msg.paymentData?.amount ?? 0} />
-        {msg.time && <p className="text-right text-gray-500 text-xs pr-3 mt-1">{msg.time}</p>}
+        {msg.time && (
+          <p className="text-right text-gray-500 text-xs pr-3 mt-1">
+            {msg.time}
+          </p>
+        )}
       </div>
     );
   }
@@ -781,59 +843,69 @@ export function MessageBubble({
   );
 }
 
-// 지원자 간략 프로필 팝업
-type ApplicantProfilePopupProps = {
-  applicant: Applicant;
-  onClose: () => void;
-  cardVariant?: "sitter" | "owner";
+export type ProfilePopupData = {
+  sitterId?: string | null;
+  name: string;
+  initial: string;
+  profileImage?: string | null;
+  location?: string;
+  rating?: number;
+  reviewCount?: number;
+  services?: string[];
+  career?: string;
 };
 
-export function ApplicantProfilePopup({
-  applicant,
+type ProfilePopupProps = {
+  data: ProfilePopupData;
+  cardVariant?: "sitter" | "owner";
+  onClose: () => void;
+};
+
+export function ProfilePopup({
+  data,
   onClose,
   cardVariant = "sitter",
-}: ApplicantProfilePopupProps) {
+}: ProfilePopupProps) {
   const [fetchedProfile, setFetchedProfile] = useState<SitterProfile | null>(
     null,
   );
   const [loadingProfile, setLoadingProfile] = useState(false);
 
   useEffect(() => {
-    if (cardVariant !== "sitter" || !applicant.sitterId) return;
+    if (cardVariant !== "sitter" || !data.sitterId) return;
     setLoadingProfile(true);
-    fetch(`/api/sitters/${applicant.sitterId}`)
+    fetch(`/api/sitters/${data.sitterId}`)
       .then((res) => res.json())
-      .then(({ data }) => {
-        if (!data) return;
+      .then(({ data: d }) => {
+        if (!d) return;
         setFetchedProfile({
-          name: data.full_name,
-          initial: data.full_name?.charAt(0) ?? "",
-          src: data.profile_image,
-          verified: data.is_verified ?? false,
-          location: data.available_area ?? "",
-          rating: data.rating,
-          reviewCount: data.review_count ?? 0,
+          name: d.full_name,
+          initial: d.full_name?.charAt(0) ?? "",
+          src: d.profile_image,
+          verified: d.is_verified ?? false,
+          location: d.available_area ?? "",
+          rating: d.rating,
+          reviewCount: d.review_count ?? 0,
           services:
-            data.services?.map(
-              (s: { service_type: string }) => s.service_type,
-            ) ?? [],
-          career: data.career ?? "",
+            d.services?.map((s: { service_type: string }) => s.service_type) ??
+            [],
+          career: d.career ?? "",
         });
       })
       .catch(() => {})
       .finally(() => setLoadingProfile(false));
-  }, [applicant.sitterId, cardVariant]);
+  }, [data.sitterId, cardVariant]);
 
   const profile: SitterProfile = fetchedProfile ?? {
-    name: applicant.name,
-    initial: applicant.initial,
-    src: applicant.profileImage,
+    name: data.name,
+    initial: data.initial,
+    src: data.profileImage,
     verified: false,
-    location: applicant.location ?? "",
-    rating: applicant.rating,
-    reviewCount: applicant.reviewCount ?? 0,
-    services: applicant.services ?? [],
-    career: applicant.experience ?? "",
+    location: data.location ?? "",
+    rating: data.rating ?? 0,
+    reviewCount: data.reviewCount ?? 0,
+    services: data.services ?? [],
+    career: data.career ?? "",
   };
 
   return (
@@ -1302,6 +1374,7 @@ type ReservationRequestCardProps = {
   onReject: (id: string) => void;
   onAccept: (id: string) => void;
   onDelete: (id: string) => void;
+  onAvatarClick?: (id: string) => void;
 };
 
 export function ReservationRequestCard({
@@ -1314,6 +1387,7 @@ export function ReservationRequestCard({
   onReject,
   onAccept,
   onDelete,
+  onAvatarClick,
 }: ReservationRequestCardProps) {
   const isPending = rr.reservationStatus === "pending";
   const isAccepted = rr.reservationStatus === "accepted";
@@ -1344,7 +1418,17 @@ export function ReservationRequestCard({
       )}
       <div className="px-5 py-4 flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
-          <Avatar initial={rr.initial} src={rr.profileImage} size="sm" />
+          <button
+            onClick={(e) => {
+              if (!editMode && onAvatarClick) {
+                e.stopPropagation();
+                onAvatarClick(rr.id);
+              }
+            }}
+            className="shrink-0"
+          >
+            <Avatar initial={rr.initial} src={rr.profileImage} size="sm" />
+          </button>
           <span className="text-sm font-semibold text-stone-900 flex-1 truncate">
             {rr.name}
           </span>
@@ -1448,7 +1532,9 @@ export function PaymentRequestCard({
             {isExtra ? "추가금 결제 요청" : "결제 요청"}
           </span>
           <span className="text-[#281A0E] text-sm leading-5 mt-0.5">
-            {isExtra ? "추가금 결제 요청이 도착했어요." : "결제 요청이 도착했어요."}
+            {isExtra
+              ? "추가금 결제 요청이 도착했어요."
+              : "결제 요청이 도착했어요."}
           </span>
           <span className="text-[#6B7280] text-xs mt-1 leading-[19.5px]">
             완료될 때까지 봐주개가 결제 금액을 안전하게 보관해요.
@@ -1850,7 +1936,11 @@ type ServiceStartCardProps = {
   data?: ServiceCompleteData;
 };
 
-export function ServiceStartCard({ otherInitial, otherProfileImage, data }: ServiceStartCardProps) {
+export function ServiceStartCard({
+  otherInitial,
+  otherProfileImage,
+  data,
+}: ServiceStartCardProps) {
   const hasInfo =
     data?.serviceTitle ||
     data?.petName ||
@@ -1878,7 +1968,9 @@ export function ServiceStartCard({ otherInitial, otherProfileImage, data }: Serv
             {(data?.serviceTitle || data?.petName) && (
               <div className="flex items-center gap-1.5">
                 {data?.serviceTitle && (
-                  <span className="text-xs text-stone-700 font-medium">{data.serviceTitle}</span>
+                  <span className="text-xs text-stone-700 font-medium">
+                    {data.serviceTitle}
+                  </span>
                 )}
                 {data?.serviceTitle && data?.petName && (
                   <span className="text-gray-300 text-xs">·</span>
@@ -1893,7 +1985,9 @@ export function ServiceStartCard({ otherInitial, otherProfileImage, data }: Serv
                 <span className="text-[#6B7280] text-xs shrink-0">일정</span>
                 <span className="text-[#374151] text-xs">
                   {formatServiceDate(data.startDatetime)}
-                  {data.endDatetime ? ` ~ ${formatServiceDate(data.endDatetime)}` : ""}
+                  {data.endDatetime
+                    ? ` ~ ${formatServiceDate(data.endDatetime)}`
+                    : ""}
                 </span>
               </div>
             )}
@@ -1913,7 +2007,11 @@ export function ServiceStartCard({ otherInitial, otherProfileImage, data }: Serv
 }
 
 // 서비스 시작 알림 카드 (펫시터용)
-export function SitterServiceStartCard({ data }: { data?: ServiceCompleteData }) {
+export function SitterServiceStartCard({
+  data,
+}: {
+  data?: ServiceCompleteData;
+}) {
   const hasInfo =
     data?.serviceTitle ||
     data?.petName ||
@@ -1940,7 +2038,9 @@ export function SitterServiceStartCard({ data }: { data?: ServiceCompleteData })
             {(data?.serviceTitle || data?.petName) && (
               <div className="flex items-center gap-1.5">
                 {data?.serviceTitle && (
-                  <span className="text-xs text-stone-700 font-medium">{data.serviceTitle}</span>
+                  <span className="text-xs text-stone-700 font-medium">
+                    {data.serviceTitle}
+                  </span>
                 )}
                 {data?.serviceTitle && data?.petName && (
                   <span className="text-orange-300 text-xs">·</span>
@@ -1955,7 +2055,9 @@ export function SitterServiceStartCard({ data }: { data?: ServiceCompleteData })
                 <span className="text-[#6B7280] text-xs shrink-0">일정</span>
                 <span className="text-[#374151] text-xs">
                   {formatServiceDate(data.startDatetime)}
-                  {data.endDatetime ? ` ~ ${formatServiceDate(data.endDatetime)}` : ""}
+                  {data.endDatetime
+                    ? ` ~ ${formatServiceDate(data.endDatetime)}`
+                    : ""}
                 </span>
               </div>
             )}
@@ -2132,9 +2234,7 @@ export function ReservationAcceptedMessageCard({
             예약 확정
           </span>
           <p className="text-[#281A0E] text-sm leading-5 mt-0.5">
-            {data.sentByMe
-              ? "예약을 수락했습니다."
-              : "예약이 확정되었어요!"}
+            {data.sentByMe ? "예약을 수락했습니다." : "예약이 확정되었어요!"}
           </p>
         </div>
       </div>
@@ -2198,7 +2298,9 @@ export function ReservationRejectedMessageCard({
               예약 거절
             </span>
             <span className="text-[#111827] text-sm leading-5 mt-0.5">
-              {sentByMe ? "예약 요청을 거절했습니다." : "예약 요청이 거절되었습니다."}
+              {sentByMe
+                ? "예약 요청을 거절했습니다."
+                : "예약 요청이 거절되었습니다."}
             </span>
           </div>
         </div>
@@ -2225,7 +2327,11 @@ function fmtDt(iso: string) {
 }
 
 // 예약 수정 승인 카드
-export function ReservationEditAcceptedCard({ sentByMe }: { sentByMe: boolean }) {
+export function ReservationEditAcceptedCard({
+  sentByMe,
+}: {
+  sentByMe: boolean;
+}) {
   return (
     <div className="w-79.5 p-4 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col">
       <div className="flex items-center gap-2.5">
@@ -2237,19 +2343,27 @@ export function ReservationEditAcceptedCard({ sentByMe }: { sentByMe: boolean })
             예약 수정 승인
           </span>
           <span className="text-[#111827] text-sm leading-5 mt-0.5">
-            {sentByMe ? "예약 수정 요청을 승인했습니다." : "예약 수정이 승인되었습니다."}
+            {sentByMe
+              ? "예약 수정 요청을 승인했습니다."
+              : "예약 수정이 승인되었습니다."}
           </span>
         </div>
       </div>
       <p className="pt-3 text-[#6B7280] text-xs leading-5">
-        {sentByMe ? "예약 정보가 변경되었습니다." : "예약 일정이 변경되었습니다."}
+        {sentByMe
+          ? "예약 정보가 변경되었습니다."
+          : "예약 일정이 변경되었습니다."}
       </p>
     </div>
   );
 }
 
 // 예약 수정 거절 카드
-export function ReservationEditRejectedCard({ sentByMe }: { sentByMe: boolean }) {
+export function ReservationEditRejectedCard({
+  sentByMe,
+}: {
+  sentByMe: boolean;
+}) {
   return (
     <div className="w-79.5 p-4 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col">
       <div className="flex items-start gap-2.5">
@@ -2261,7 +2375,9 @@ export function ReservationEditRejectedCard({ sentByMe }: { sentByMe: boolean })
             예약 수정 거절
           </span>
           <span className="text-[#111827] text-sm leading-5 mt-0.5">
-            {sentByMe ? "예약 수정 요청을 거절했습니다." : "예약 수정 요청이 거절되었습니다."}
+            {sentByMe
+              ? "예약 수정 요청을 거절했습니다."
+              : "예약 수정 요청이 거절되었습니다."}
           </span>
         </div>
       </div>
@@ -2310,7 +2426,11 @@ function ReservationEditCard({
   onConfirm?: (
     messageId: string,
     reservationId: string,
-    proposed: { start_datetime: string; end_datetime: string; memo?: string | null },
+    proposed: {
+      start_datetime: string;
+      end_datetime: string;
+      memo?: string | null;
+    },
   ) => void;
   onReject?: (messageId: string) => void;
 }) {
@@ -2335,7 +2455,9 @@ function ReservationEditCard({
             예약 수정 요청
           </span>
           <p className="text-[#281A0E] text-sm leading-5 mt-0.5">
-            {data.sentByMe ? "예약 수정을 요청했습니다." : "예약 수정 요청이 도착했어요."}
+            {data.sentByMe
+              ? "예약 수정을 요청했습니다."
+              : "예약 수정 요청이 도착했어요."}
           </p>
         </div>
       </div>
@@ -2365,7 +2487,9 @@ function ReservationEditCard({
       {isProcessed ? (
         <p className="text-center text-xs text-stone-400">처리 완료</p>
       ) : data.sentByMe ? (
-        <p className="text-center text-xs text-stone-400">상대방의 확인을 기다리고 있습니다</p>
+        <p className="text-center text-xs text-stone-400">
+          상대방의 확인을 기다리고 있습니다
+        </p>
       ) : (
         <div className="flex gap-2">
           <button
@@ -2375,7 +2499,9 @@ function ReservationEditCard({
             거절
           </button>
           <button
-            onClick={() => onConfirm?.(messageId, data.reservationId, data.proposed)}
+            onClick={() =>
+              onConfirm?.(messageId, data.reservationId, data.proposed)
+            }
             className="flex-1 py-1.5 text-xs text-white bg-orange-500 rounded-lg hover:bg-orange-600 transition-colors font-medium"
           >
             확인
@@ -2385,4 +2511,3 @@ function ReservationEditCard({
     </div>
   );
 }
-

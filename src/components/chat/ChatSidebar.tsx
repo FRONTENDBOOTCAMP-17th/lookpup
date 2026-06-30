@@ -50,6 +50,7 @@ interface ChatSidebarProps {
   onRejectApplicant: (id: string) => void;
   onConfirm: (id: string) => void;
   onAvatarClick: (id: string) => void;
+  onReservationAvatarClick: (id: string) => void;
 }
 
 export function ChatSidebar({
@@ -88,6 +89,7 @@ export function ChatSidebar({
   onRejectApplicant,
   onConfirm,
   onAvatarClick,
+  onReservationAvatarClick,
 }: ChatSidebarProps) {
   const [editMode, setEditMode] = useState(false);
   const [collapsedPosts, setCollapsedPosts] = useState<Set<string>>(new Set());
@@ -264,6 +266,7 @@ export function ChatSidebar({
                 onReject={onRejectReservation}
                 onAccept={onAcceptReservation}
                 onDelete={onDeleteReservationRequest}
+                onAvatarClick={onReservationAvatarClick}
               />
             ))}
           {activeTab === "applicants" && applicantList}
@@ -317,6 +320,7 @@ export function ChatSidebar({
                     onReject={onRejectReservation}
                     onAccept={onAcceptReservation}
                     onDelete={onDeleteReservationRequest}
+                    onAvatarClick={onReservationAvatarClick}
                   />
                 ))
               )}

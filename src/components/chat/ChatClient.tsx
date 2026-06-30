@@ -4,9 +4,11 @@ import { useState, useEffect, useLayoutEffect, useRef, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/layout/Header";
 import {
-  ApplicantProfilePopup,
+  ProfilePopup,
+  type ProfilePopupData,
   type Applicant,
   type Message,
+  type ReservationRequest,
 } from "@/components/common/chat/chat_components";
 import { ChatSidebar } from "@/components/chat/ChatSidebar";
 import { ChatWindow } from "@/components/chat/ChatWindow";
@@ -669,8 +671,10 @@ function ChatPageContent({
     }
   }, [initialRoomId, rooms, applicants, reservationRequests, loading]);
 
-  const [profilePopupApplicant, setProfilePopupApplicant] =
-    useState<Applicant | null>(null);
+  const [profilePopup, setProfilePopup] = useState<{
+    data: ProfilePopupData;
+    cardVariant: "sitter" | "owner";
+  } | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [sendingPhoto, setSendingPhoto] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
@@ -987,8 +991,36 @@ function ChatPageContent({
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   function openApplicantProfile(id: string) {
-    const found = applicants.find((a) => a.id === id) ?? null;
-    setProfilePopupApplicant(found);
+    const a = applicants.find((a) => a.id === id);
+    if (!a) return;
+    setProfilePopup({
+      data: {
+        sitterId: a.sitterId,
+        name: a.name,
+        initial: a.initial,
+        profileImage: a.profileImage,
+        location: a.location,
+        rating: a.rating,
+        reviewCount: a.reviewCount,
+        services: a.services,
+        career: a.experience,
+      },
+      cardVariant: a.ownerId === userId ? "sitter" : "owner",
+    });
+  }
+
+  function openReservationProfile(id: string) {
+    const r = reservationRequests.find((r) => r.id === id);
+    if (!r) return;
+    setProfilePopup({
+      data: {
+        sitterId: r.sitterId,
+        name: r.name,
+        initial: r.initial,
+        profileImage: r.profileImage,
+      },
+      cardVariant: r.ownerId === userId ? "sitter" : "owner",
+    });
   }
 
   const selectedRoom =
@@ -1383,6 +1415,7 @@ function ChatPageContent({
     onRejectApplicant: handleRejectApplicant,
     onConfirm: handleConfirmClick,
     onAvatarClick: openApplicantProfile,
+    onReservationAvatarClick: openReservationProfile,
   };
 
   const sharedChatWindowProps = {
@@ -1533,13 +1566,11 @@ function ChatPageContent({
         disabled={sendingPhoto}
       />
 
-      {profilePopupApplicant && (
-        <ApplicantProfilePopup
-          applicant={profilePopupApplicant}
-          onClose={() => setProfilePopupApplicant(null)}
-          cardVariant={
-            profilePopupApplicant.ownerId === userId ? "sitter" : "owner"
-          }
+      {profilePopup && (
+        <ProfilePopup
+          data={profilePopup.data}
+          cardVariant={profilePopup.cardVariant}
+          onClose={() => setProfilePopup(null)}
         />
       )}
 
