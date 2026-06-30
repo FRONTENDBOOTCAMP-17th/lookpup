@@ -54,6 +54,7 @@ function getNotificationIcon(type: string): { icon: React.ReactNode; iconBg: str
     case "message":
       return { icon: <MessageSquare size={16} className="text-sky-600" />, iconBg: "bg-sky-100" };
     case "review":
+    case "review_received":
       return { icon: <FileText size={16} className="text-purple-800" />, iconBg: "bg-pink-100" };
     default:
       return { icon: <Bell size={16} className="text-orange-500" />, iconBg: "bg-orange-50" };

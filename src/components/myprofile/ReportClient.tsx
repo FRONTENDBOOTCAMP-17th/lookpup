@@ -299,7 +299,7 @@ export default function ReportClient() {
           {targetId && (
             <>
               <div className="bg-white border border-orange-100 rounded-2xl p-6 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)]">
-                <p className="text-lg font-bold text-stone-900">신고 사유</p>
+                <p className="text-lg font-bold text-stone-900">신고 사유<span className="text-red-500 ml-0.5">*</span></p>
                 <div className="flex flex-col gap-2.5 mt-4">
                   {REPORT_REASONS.map((reason) => {
                     const active = selectedReason === reason;
@@ -327,7 +327,7 @@ export default function ReportClient() {
               </div>
 
               <div className="bg-white border border-orange-100 rounded-2xl p-6 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)]">
-                <p className="text-lg font-bold text-stone-900">상세 내용</p>
+                <p className="text-lg font-bold text-stone-900">상세 내용<span className="text-red-500 ml-0.5">*</span></p>
                 <p className="text-sm text-gray-500 mt-1">최소 10자 이상 작성해주세요</p>
                 <textarea
                   value={content}
@@ -342,7 +342,7 @@ export default function ReportClient() {
 
               <div className="bg-white border border-orange-100 rounded-2xl p-6 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)]">
                 <div className="flex items-center justify-between">
-                  <p className="text-lg font-bold text-stone-900">증거 자료 첨부</p>
+                  <p className="text-lg font-bold text-stone-900">증거 자료 첨부<span className="text-sm font-normal text-gray-400 ml-1.5">(선택사항)</span></p>
                   <span className="text-xs text-gray-500">최대 5장</span>
                 </div>
 
