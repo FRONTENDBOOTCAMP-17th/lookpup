@@ -7,12 +7,6 @@ import {
   ChevronLeft,
   Plus,
   Check,
-  Home,
-  Heart,
-  PawPrint,
-  Moon,
-  Car,
-  MoreHorizontal,
   Save,
   Send,
   MapPin,
@@ -27,25 +21,20 @@ import SimpleTimePicker from "@/components/ui/SimpleTimePicker";
 import { createRequest } from "@/app/actions/requests";
 import KakaoMap from "@/components/KakaoMap";
 import {
-  searchAddressToCoord,
-  coordToRegion,
   searchAddressList,
   coordToAddress,
   type AddressSuggestion,
 } from "@/utils/kakaoGeocode";
-import { mergeConditions } from "@/utils/boardConditions";
+import { mergeConditions, appendConditionLine } from "@/utils/boardConditions";
 import { useUserStore } from "@/store/userStore";
-
-const SERVICE_TYPES = [
-  { label: "방문 돌봄", icon: Home, value: "care" },
-  { label: "위탁 돌봄", icon: Heart, value: "foster" },
-  { label: "산책", icon: PawPrint, value: "walk" },
-  { label: "펫 호텔", icon: Moon, value: "hotel" },
-  { label: "픽업 서비스", icon: Car, value: "pickup" },
-  { label: "기타", icon: MoreHorizontal, value: "other" },
-];
-
-const BUDGET_PRESETS = [10000, 20000, 30000, 50000];
+import { useAddressSearch } from "@/hooks/useAddressSearch";
+import {
+  SERVICE_TYPES,
+  BUDGET_PRESETS,
+  SITTER_CONDITIONS,
+  mapPetRow,
+} from "@/lib/board";
+import type { Pet, PetRow } from "@/types/board";
 
 const LOCATION_TABS = ["우리 집", "펫시터 집", "직접 입력"];
 
@@ -63,42 +52,6 @@ const TEMPLATES = [
     text: "안녕하세요. 픽업 서비스를 요청드립니다.\n\n- 픽업 장소: \n- 도착지: \n- 희망 시간: \n\n감사합니다.",
   },
 ];
-
-const SITTER_CONDITIONS = [
-  "강아지 산책 경험 필수",
-  "책임감 있고 성실하신 분",
-  "반려동물에 대한 애정이 있으신 분",
-  "인증 펫시터만 (Badge 보유자 우선)",
-  "여성 펫시터 선호",
-  "반려동물 자격증 보유자 우선",
-  "흡연자 제외",
-];
-
-type Pet = {
-  id: string;
-  name: string;
-  type: string;
-  age: number | null;
-  weight: number | null;
-  emoji: string;
-  image_url: string | null;
-};
-
-// GET /api/pets 응답 행 (필요한 필드만)
-type PetRow = {
-  id: string;
-  name: string;
-  animal_type: string;
-  age: number | null;
-  weight: number | null;
-  image_url: string | null;
-};
-
-const ANIMAL_TYPE_MAP: Record<string, { label: string; emoji: string }> = {
-  dog: { label: "강아지", emoji: "🐶" },
-  cat: { label: "고양이", emoji: "🐱" },
-  other: { label: "기타", emoji: "🐾" },
-};
 
 type FormState = {
   service_type: string;
@@ -149,17 +102,7 @@ export default function BoardWritePage() {
       .then((result) => {
         const data = "data" in result ? result.data : null;
         if (data && data.length > 0) {
-          setPets(
-            data.map((p: PetRow) => ({
-              id: p.id,
-              name: p.name,
-              type: ANIMAL_TYPE_MAP[p.animal_type]?.label ?? p.animal_type,
-              age: p.age,
-              weight: p.weight,
-              emoji: ANIMAL_TYPE_MAP[p.animal_type]?.emoji ?? "🐾",
-              image_url: p.image_url,
-            })),
-          );
+          setPets(data.map((p: PetRow) => mapPetRow(p)));
         }
       });
   }, []);
@@ -180,9 +123,15 @@ export default function BoardWritePage() {
     conditions: "",
   });
 
-  const [addressSearching, setAddressSearching] = useState(false);
-  const [searchError, setSearchError] = useState<string | null>(null);
-  const [locationError, setLocationError] = useState<string | null>(null);
+  const {
+    addressSearching,
+    searchError,
+    locationError,
+    setSearchError,
+    setLocationError,
+    handleAddressSearch,
+    handleUseCurrentLocation,
+  } = useAddressSearch(setForm);
 
   // 도로명 주소 자동완성 드롭다운
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
@@ -246,65 +195,6 @@ export default function BoardWritePage() {
     !!form.title.trim() &&
     !!form.content.trim();
 
-  const handleAddressSearch = async () => {
-    if (!form.location.trim()) return;
-    setAddressSearching(true);
-    setSearchError(null);
-    setLocationError(null);
-    const result = await searchAddressToCoord(form.location.trim());
-    setAddressSearching(false);
-    if (!result) {
-      setSearchError("주소를 찾을 수 없어요. 다시 입력해주세요.");
-      return;
-    }
-    setForm((prev) => ({
-      ...prev,
-      location: result.addressName,
-      latitude: result.lat,
-      longitude: result.lng,
-    }));
-  };
-
-  const handleUseCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      setLocationError("이 브라우저에서는 위치 정보를 사용할 수 없어요.");
-      return;
-    }
-    setAddressSearching(true);
-    setSearchError(null);
-    setLocationError(null);
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        const region = await coordToRegion(lat, lng);
-        setAddressSearching(false);
-        setForm((prev) => ({
-          ...prev,
-          location: region
-            ? `${region.sido} ${region.sigungu} ${region.dong}`
-            : "현재 위치",
-          latitude: lat,
-          longitude: lng,
-        }));
-        if (pos.coords.accuracy > 1000) {
-          setLocationError(
-            "현재 위치가 부정확할 수 있어요. 정확한 주소를 직접 검색해주세요.",
-          );
-        }
-      },
-      (err) => {
-        setAddressSearching(false);
-        setLocationError(
-          err.code === err.TIMEOUT
-            ? "위치 확인이 너무 오래 걸려요. 다시 시도해주세요."
-            : "위치 정보를 가져오지 못했어요. 권한을 확인해주세요.",
-        );
-      },
-      { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 },
-    );
-  };
-
   // 현재 폼을 임시저장 (마지막 저장본만 유지 → 덮어쓰기)
   const handleSaveDraft = () => {
     if (!draftKey) return;
@@ -349,17 +239,10 @@ export default function BoardWritePage() {
 
   // 조건 버튼 클릭 시 기존 텍스트는 유지한 채 문장만 한 줄 추가 (중복 방지)
   const appendCondition = (sentence: string) =>
-    setForm((prev) => {
-      const existingLines = prev.conditions
-        .split("\n")
-        .map((l) => l.replace(/^-\s*/, "").trim());
-      if (existingLines.includes(sentence)) return prev;
-      const base = prev.conditions.replace(/\n+$/, "");
-      return {
-        ...prev,
-        conditions: base ? `${base}\n- ${sentence}` : `- ${sentence}`,
-      };
-    });
+    setForm((prev) => ({
+      ...prev,
+      conditions: appendConditionLine(prev.conditions, sentence),
+    }));
 
   const handleSubmit = async () => {
     if (!form.startDate || !canSubmit()) return;
@@ -668,7 +551,7 @@ export default function BoardWritePage() {
                     if (e.key === "Enter") {
                       e.preventDefault();
                       setShowSuggestions(false);
-                      handleAddressSearch();
+                      handleAddressSearch(form.location);
                     } else if (e.key === "Escape") {
                       setShowSuggestions(false);
                     }
@@ -678,7 +561,7 @@ export default function BoardWritePage() {
                 />
                 <button
                   type="button"
-                  onClick={handleAddressSearch}
+                  onClick={() => handleAddressSearch(form.location)}
                   disabled={addressSearching}
                   className="absolute right-2 top-1/2 -translate-y-1/2 h-8 px-3 rounded-lg bg-[var(--color-orange-500)] text-white text-xs font-medium disabled:opacity-50 transition-opacity"
                 >

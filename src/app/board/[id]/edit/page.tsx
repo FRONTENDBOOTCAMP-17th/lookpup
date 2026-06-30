@@ -6,12 +6,6 @@ import { DateRange } from "react-day-picker";
 import {
   ChevronLeft,
   Check,
-  Home,
-  Heart,
-  PawPrint,
-  Moon,
-  Car,
-  MoreHorizontal,
   Send,
   MapPin,
   LocateFixed,
@@ -22,57 +16,21 @@ import { CustomModal } from "@/components/common/CustomModal";
 import RangePicker from "@/components/ui/RangePicker";
 import SimpleTimePicker from "@/components/ui/SimpleTimePicker";
 import KakaoMap from "@/components/KakaoMap";
-import { searchAddressToCoord, coordToRegion } from "@/utils/kakaoGeocode";
-import { mergeConditions, splitConditions } from "@/utils/boardConditions";
+import {
+  mergeConditions,
+  splitConditions,
+  appendConditionLine,
+} from "@/utils/boardConditions";
 import { createClient } from "@/utils/supabase/client";
 import { updateRequest } from "@/app/actions/requests";
-
-const SITTER_CONDITIONS = [
-  "강아지 산책 경험 필수",
-  "책임감 있고 성실하신 분",
-  "반려동물에 대한 애정이 있으신 분",
-  "인증 펫시터만 (Badge 보유자 우선)",
-  "여성 펫시터 선호",
-  "반려동물 자격증 보유자 우선",
-  "흡연자 제외",
-];
-
-const SERVICE_TYPES = [
-  { label: "방문 돌봄", icon: Home, value: "care" },
-  { label: "위탁 돌봄", icon: Heart, value: "foster" },
-  { label: "산책", icon: PawPrint, value: "walk" },
-  { label: "펫 호텔", icon: Moon, value: "hotel" },
-  { label: "픽업 서비스", icon: Car, value: "pickup" },
-  { label: "기타", icon: MoreHorizontal, value: "other" },
-];
-
-const BUDGET_PRESETS = [10000, 20000, 30000, 50000];
-
-const ANIMAL_TYPE_MAP: Record<string, { label: string; emoji: string }> = {
-  dog: { label: "강아지", emoji: "🐶" },
-  cat: { label: "고양이", emoji: "🐱" },
-  other: { label: "기타", emoji: "🐾" },
-};
-
-type Pet = {
-  id: string;
-  name: string;
-  type: string;
-  age: number | null;
-  weight: number | null;
-  emoji: string;
-  image_url: string | null;
-};
-
-// GET /api/pets 응답 행 (필요한 필드만)
-type PetRow = {
-  id: string;
-  name: string;
-  animal_type: string;
-  age: number | null;
-  weight: number | null;
-  image_url: string | null;
-};
+import { useAddressSearch } from "@/hooks/useAddressSearch";
+import {
+  SERVICE_TYPES,
+  BUDGET_PRESETS,
+  SITTER_CONDITIONS,
+  mapPetRow,
+} from "@/lib/board";
+import type { Pet, PetRow } from "@/types/board";
 
 type FormState = {
   service_type: string;
@@ -113,9 +71,13 @@ export default function BoardEditPage() {
     conditions: "",
   });
 
-  const [addressSearching, setAddressSearching] = useState(false);
-  const [searchError, setSearchError] = useState<string | null>(null);
-  const [locationError, setLocationError] = useState<string | null>(null);
+  const {
+    addressSearching,
+    searchError,
+    locationError,
+    handleAddressSearch,
+    handleUseCurrentLocation,
+  } = useAddressSearch(setForm);
 
   useEffect(() => {
     async function fetchData() {
@@ -166,17 +128,7 @@ export default function BoardEditPage() {
       const petData = "data" in petResult ? petResult.data : null;
 
       if (petData && petData.length > 0) {
-        setPets(
-          petData.map((p: PetRow) => ({
-            id: p.id,
-            name: p.name,
-            type: ANIMAL_TYPE_MAP[p.animal_type]?.label ?? p.animal_type,
-            age: p.age,
-            weight: p.weight,
-            emoji: ANIMAL_TYPE_MAP[p.animal_type]?.emoji ?? "🐾",
-            image_url: p.image_url,
-          })),
-        );
+        setPets(petData.map((p: PetRow) => mapPetRow(p)));
       }
     }
     fetchData();
@@ -190,78 +142,12 @@ export default function BoardEditPage() {
         : [...prev.selected_pets, petId],
     }));
 
-  const handleAddressSearch = async () => {
-    if (!form.location.trim()) return;
-    setAddressSearching(true);
-    setSearchError(null);
-    setLocationError(null);
-    const result = await searchAddressToCoord(form.location.trim());
-    setAddressSearching(false);
-    if (!result) {
-      setSearchError("주소를 찾을 수 없어요. 다시 입력해주세요.");
-      return;
-    }
-    setForm((prev) => ({
-      ...prev,
-      location: result.addressName,
-      latitude: result.lat,
-      longitude: result.lng,
-    }));
-  };
-
-  const handleUseCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      setLocationError("이 브라우저에서는 위치 정보를 사용할 수 없어요.");
-      return;
-    }
-    setAddressSearching(true);
-    setSearchError(null);
-    setLocationError(null);
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        const region = await coordToRegion(lat, lng);
-        setAddressSearching(false);
-        setForm((prev) => ({
-          ...prev,
-          location: region
-            ? `${region.sido} ${region.sigungu} ${region.dong}`
-            : "현재 위치",
-          latitude: lat,
-          longitude: lng,
-        }));
-        if (pos.coords.accuracy > 1000) {
-          setLocationError(
-            "현재 위치가 부정확할 수 있어요. 정확한 주소를 직접 검색해주세요.",
-          );
-        }
-      },
-      (err) => {
-        setAddressSearching(false);
-        setLocationError(
-          err.code === err.TIMEOUT
-            ? "위치 확인이 너무 오래 걸려요. 다시 시도해주세요."
-            : "위치 정보를 가져오지 못했어요. 권한을 확인해주세요.",
-        );
-      },
-      { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 },
-    );
-  };
-
   // 조건 버튼 클릭 시 기존 텍스트는 유지한 채 문장만 한 줄 추가 (중복 방지)
   const appendCondition = (sentence: string) =>
-    setForm((prev) => {
-      const existingLines = prev.conditions
-        .split("\n")
-        .map((l) => l.replace(/^-\s*/, "").trim());
-      if (existingLines.includes(sentence)) return prev;
-      const base = prev.conditions.replace(/\n+$/, "");
-      return {
-        ...prev,
-        conditions: base ? `${base}\n- ${sentence}` : `- ${sentence}`,
-      };
-    });
+    setForm((prev) => ({
+      ...prev,
+      conditions: appendConditionLine(prev.conditions, sentence),
+    }));
 
   const handleSubmit = async () => {
     if (!form.startDate) return;
@@ -514,7 +400,7 @@ export default function BoardEditPage() {
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
-                      handleAddressSearch();
+                      handleAddressSearch(form.location);
                     }
                   }}
                   placeholder="주소 검색 후 Enter"
@@ -522,7 +408,7 @@ export default function BoardEditPage() {
                 />
                 <button
                   type="button"
-                  onClick={handleAddressSearch}
+                  onClick={() => handleAddressSearch(form.location)}
                   disabled={addressSearching}
                   className="absolute right-2 top-1/2 -translate-y-1/2 h-8 px-3 rounded-lg bg-[var(--color-orange-500)] text-white text-xs font-medium disabled:opacity-50 transition-opacity"
                 >
