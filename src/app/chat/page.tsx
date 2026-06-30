@@ -80,6 +80,7 @@ import {
 import { useChatRooms } from "@/hooks/chat/useChatRooms";
 import { useRequest } from "@/hooks/chat/useRequest";
 import { useChatMessages } from "@/hooks/chat/useChatMessages";
+import { useUserStore } from "@/store/userStore";
 
 function getPaymentDeadline() {
   const d = new Date(Date.now() + 24 * 60 * 60 * 1000);
@@ -95,6 +96,13 @@ function ChatPageContent({
   initialRoomId?: string | null;
 }) {
   const router = useRouter();
+  const { user, isLoading } = useUserStore();
+
+  useEffect(() => {
+    if (!isLoading && !user?.isVerified) {
+      router.replace("/auth/verification");
+    }
+  }, [isLoading, user?.isVerified, router]);
 
   const [editMode, setEditMode] = useState(false);
   const [activeTab, setActiveTab] = useState<
