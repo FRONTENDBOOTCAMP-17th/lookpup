@@ -108,11 +108,13 @@ export default function NotificationsClient() {
   );
 
   async function handleMarkAllRead() {
+    const prev = notifications;
+    setNotifications((list) => list.map((n) => ({ ...n, is_read: true })));
     const result = await markAllNotificationsRead();
     if (result?.error) {
       console.error("모두 읽음 처리 실패:", result.error.message);
+      setNotifications(prev);
     }
-    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
   }
 
   return (
