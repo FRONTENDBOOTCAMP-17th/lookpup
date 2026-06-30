@@ -471,10 +471,22 @@ export async function getReservationStatuses(ids: string[]) {
   if (!user || ids.length === 0) return { data: {} as Record<string, string> };
 
   const db = createServiceClient();
+
+  const { data: sitterProfile } = await db
+    .from("sitters")
+    .select("id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  const orFilter = sitterProfile?.id
+    ? `owner_id.eq.${user.id},sitter_id.eq.${sitterProfile.id}`
+    : `owner_id.eq.${user.id}`;
+
   const { data } = await db
     .from("reservations")
     .select("id, status")
-    .in("id", ids);
+    .in("id", ids)
+    .or(orFilter);
 
   const result: Record<string, string> = {};
   for (const r of data ?? []) {
@@ -1346,7 +1358,7 @@ export async function getReservationRequestDetails(reservationId: string) {
   const { data: reservation } = await db
     .from("reservations")
     .select(
-      "start_datetime, end_datetime, total_price, services(title, service_type), reservation_items(pets(name, animal_type, breed))",
+      "owner_id, sitter_id, start_datetime, end_datetime, total_price, services(title, service_type), reservation_items(pets(name, animal_type, breed))",
     )
     .eq("id", reservationId)
     .single();
@@ -1355,6 +1367,17 @@ export async function getReservationRequestDetails(reservationId: string) {
     return {
       error: { code: "NOT_FOUND", message: "예약 정보를 찾을 수 없습니다." },
     };
+
+  const isOwner = reservation.owner_id === user.id;
+  if (!isOwner) {
+    const { data: sitterProfile } = await db
+      .from("sitters")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (sitterProfile?.id !== reservation.sitter_id)
+      return { error: { code: "FORBIDDEN", message: "접근 권한이 없습니다." } };
+  }
 
   const rawService = reservation.services;
   const service = (
