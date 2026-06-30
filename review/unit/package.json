@@ -1,0 +1,27 @@
+{
+  "name": "lookpup-review-unit",
+  "version": "1.0.0",
+  "description": "리뷰 전용 단위테스트(교육생 테스트와 별개). git에 올리지 않음.",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "watch": "vitest",
+    "test:ui": "vitest --ui"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@vitejs/plugin-react": "^6.0.3",
+    "jsdom": "^29.1.1",
+    "vitest": "^4.1.9"
+  },
+  "private": true
+}
