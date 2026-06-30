@@ -1,17 +1,14 @@
 import { create } from "zustand";
 import { DateRange } from "react-day-picker";
 
+// 클라이언트 UI 상태만 보관 — 서버 데이터(시터 정보 등)는 TanStack Query로 관리
 interface BookingState {
-  petsitterId: number | null;
-  petsitterName: string;
-  service: string;
   dateRange: DateRange | undefined;
   petIds: string[];
   petNames: string[];
   note: string;
   paymentMethod: "card" | "kakaopay" | "tosspay" | null;
 
-  setPetsitter: (id: number, name: string, service: string) => void;
   setDateRange: (range: DateRange | undefined) => void;
   togglePet: (id: string, name: string) => void;
   setNote: (note: string) => void;
@@ -20,9 +17,6 @@ interface BookingState {
 }
 
 const initialState = {
-  petsitterId: null,
-  petsitterName: "",
-  service: "",
   dateRange: undefined,
   petIds: [] as string[],
   petNames: [] as string[],
@@ -32,8 +26,6 @@ const initialState = {
 
 export const useBookingStore = create<BookingState>((set, get) => ({
   ...initialState,
-  setPetsitter: (id, name, service) =>
-    set({ petsitterId: id, petsitterName: name, service }),
   setDateRange: (range) => set({ dateRange: range }),
   togglePet: (id: string, name: string) => {
     const { petIds, petNames } = get();
