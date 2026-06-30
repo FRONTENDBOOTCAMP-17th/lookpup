@@ -481,6 +481,7 @@ function ChatPageContent({
         amount: data.amount,
         reason: data.reason,
         deadline,
+        isExtra: data.type === "extra",
       });
       if (result.error) {
         setSendError(result.error.message);
@@ -496,13 +497,13 @@ function ChatPageContent({
     }
   }
 
-  async function handlePayNow() {
-    if (!paymentState || payingNow || isPaymentPending || !activeRoomId) return;
+  async function handlePayNow(data: { amount: number; reason: string; messageId: string }) {
+    if (payingNow || isPaymentPending || !activeRoomId) return;
     setPayingNow(true);
 
     let portonePaymentId = `pay_${Date.now()}`;
-    let totalAmount = Number(paymentState.amount);
-    let orderName = paymentState.reason || "서비스 결제";
+    let totalAmount = Number(data.amount);
+    let orderName = data.reason || "서비스 결제";
 
     const reservationId =
       selectedRoom?.reservationId ??
@@ -511,12 +512,12 @@ function ChatPageContent({
         : null);
 
     if (reservationId) {
-      const payResult = await createPayment(reservationId, "CARD");
+      const payResult = await createPayment(reservationId, "CARD", data.amount);
       if (payResult.error?.code === "FORBIDDEN") {
         const extraResult = await createExtraPayment(
           reservationId,
           totalAmount,
-          paymentState.reason ?? "추가 서비스",
+          data.reason ?? "추가 서비스",
         );
         if (extraResult.error) {
           setSendError(extraResult.error.message);
@@ -556,6 +557,7 @@ function ChatPageContent({
           try {
             const result = await sendPaymentCompleteMessage(activeRoomId, {
               amount: totalAmount,
+              paymentRequestMessageId: data.messageId,
             });
             if (result.data) {
               addMessage(result.data);

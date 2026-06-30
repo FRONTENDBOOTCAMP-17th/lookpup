@@ -83,6 +83,7 @@ export type PaymentData = {
   deadline: string;
   postId?: string;
   sentByMe?: boolean;
+  isExtra?: boolean;
   costItems?: CostItem[];
 };
 
@@ -158,6 +159,7 @@ export type Message = {
   time?: string;
   rawDate?: string;
   paymentData?: PaymentData;
+  paymentRequestMessageId?: string;
   applicationData?: ApplicationData;
   serviceCompleteData?: ServiceCompleteData;
   serviceStartData?: ServiceCompleteData;
@@ -676,6 +678,7 @@ export function MessageBubble({
             otherProfileImage={senderProfileImage}
             onPostClick={onPostClick}
             costItems={data.costItems}
+            isExtra={data.isExtra}
           />
         ) : (
           <PaymentRequestCard
@@ -683,11 +686,12 @@ export function MessageBubble({
             reason={data.reason}
             deadline={data.deadline}
             paid={isPaymentPaid ?? false}
-            onPay={onPaymentRequest ?? (() => {})}
+            onPay={onPaymentRequest}
             isPaying={isPaymentPending ?? false}
             otherInitial={senderInitial}
             otherProfileImage={senderProfileImage}
             onPostClick={onPostClick}
+            isExtra={data.isExtra}
             costItems={data.costItems}
           />
         )}
@@ -1408,12 +1412,13 @@ type PaymentRequestCardProps = {
   reason: string;
   deadline: string;
   paid: boolean;
-  onPay: () => void;
+  onPay?: () => void;
   isPaying: boolean;
   otherInitial: string;
   otherProfileImage?: string | null;
   onPostClick?: () => void;
   costItems?: CostItem[];
+  isExtra?: boolean;
 };
 
 export function PaymentRequestCard({
@@ -1427,6 +1432,7 @@ export function PaymentRequestCard({
   otherProfileImage,
   onPostClick,
   costItems,
+  isExtra,
 }: PaymentRequestCardProps) {
   return (
     <div className="flex items-start gap-3">
@@ -1434,10 +1440,10 @@ export function PaymentRequestCard({
       <div className="w-79.5 p-4 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col gap-3">
         <div className="flex flex-col">
           <span className="text-[#6B7280] text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
-            결제 요청
+            {isExtra ? "추가금 결제 요청" : "결제 요청"}
           </span>
           <span className="text-[#281A0E] text-sm leading-5 mt-0.5">
-            결제 요청이 도착했어요.
+            {isExtra ? "추가금 결제 요청이 도착했어요." : "결제 요청이 도착했어요."}
           </span>
           <span className="text-[#6B7280] text-xs mt-1 leading-[19.5px]">
             완료될 때까지 봐주개가 결제 금액을 안전하게 보관해요.
@@ -1522,7 +1528,7 @@ export function PaymentRequestCard({
           >
             완료되었어요
           </button>
-        ) : (
+        ) : onPay ? (
           <button
             type="button"
             onClick={onPay}
@@ -1530,6 +1536,13 @@ export function PaymentRequestCard({
             className="w-full h-10 rounded-xl outline-[1.11px] outline-orange-500 outline-offset-[-1.11px] text-orange-500 text-sm hover:bg-orange-50 transition-colors disabled:opacity-50"
           >
             {isPaying ? "결제 중..." : "결제하기"}
+          </button>
+        ) : (
+          <button
+            disabled
+            className="w-full h-10 rounded-xl bg-stone-50 outline-[1.11px] outline-stone-200 outline-offset-[-1.11px] text-stone-400 text-sm cursor-default"
+          >
+            새 결제 요청이 전송되었어요
           </button>
         )}
       </div>
@@ -1545,6 +1558,7 @@ type SitterPaymentRequestCardProps = {
   otherProfileImage?: string | null;
   onPostClick?: () => void;
   costItems?: CostItem[];
+  isExtra?: boolean;
 };
 
 export function SitterPaymentRequestCard({
@@ -1554,15 +1568,16 @@ export function SitterPaymentRequestCard({
   otherProfileImage,
   onPostClick,
   costItems,
+  isExtra,
 }: SitterPaymentRequestCardProps) {
   return (
     <div className="flex justify-end">
       <div className="w-79.5 p-4 bg-orange-100 rounded-2xl outline-[1.11px] outline-orange-400 outline-offset-[-1.11px] flex flex-col">
         <span className="text-orange-500 text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
-          결제 요청
+          {isExtra ? "추가금 결제 요청" : "결제 요청"}
         </span>
         <span className="text-[#281A0E] text-sm leading-5 mt-0.5">
-          결제가 요청되었습니다.
+          {isExtra ? "추가금 결제가 요청되었습니다." : "결제가 요청되었습니다."}
         </span>
         {onPostClick && (
           <button

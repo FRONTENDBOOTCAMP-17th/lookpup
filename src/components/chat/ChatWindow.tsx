@@ -30,7 +30,7 @@ interface MessageListProps {
   hasMore: boolean;
   loadingMore: boolean;
   onLoadMore: () => void;
-  onPaymentRequest: () => void;
+  onPaymentRequest: (data: { amount: number; reason: string; messageId: string }) => void;
   onNavigateToPost: (postId: string) => void;
   onGoToChat: () => void;
   onServiceConfirm: (id: string) => void;
@@ -88,11 +88,12 @@ function MessageList({
           msg.paymentData?.postId ||
           selectedApplicantPostId;
         const isThisPaymentPaid =
-          msg.from === "payment_request"
-            ? msg.id === lastPaymentReqId
-              ? (paymentState?.paid ?? false)
-              : true
-            : false;
+          msg.from === "payment_request" &&
+          messages.some(
+            (m) =>
+              m.from === "payment_complete" &&
+              m.paymentRequestMessageId === msg.id,
+          );
         return (
           <MessageBubble
             key={msg.id}
@@ -100,7 +101,16 @@ function MessageList({
             senderInitial={senderInitial}
             senderProfileImage={senderProfileImage}
             isCurrentUserSitter={isCurrentUserSitter}
-            onPaymentRequest={onPaymentRequest}
+            onPaymentRequest={
+              msg.from === "payment_request" && msg.paymentData
+                ? () =>
+                    onPaymentRequest({
+                      amount: msg.paymentData!.amount,
+                      reason: msg.paymentData!.reason,
+                      messageId: msg.id,
+                    })
+                : undefined
+            }
             isPaymentPending={payingNow || isPaymentPending}
             isPaymentPaid={isThisPaymentPaid}
             onPostClick={postId ? () => onNavigateToPost(postId) : undefined}
@@ -170,7 +180,7 @@ export interface ChatWindowProps {
   onSend: () => void;
   onLoadMore: () => void;
 
-  onPayNow: () => void;
+  onPayNow: (data: { amount: number; reason: string; messageId: string }) => void;
   onOpenPaymentModal: () => void;
   onOpenCareRecord: () => void;
   onServiceStart: () => void;

@@ -368,6 +368,7 @@ export async function sendPaymentRequestMessage(
     amount: number;
     reason: string;
     deadline: string;
+    isExtra?: boolean;
     costItems?: {
       id: string;
       name: string;
@@ -425,7 +426,7 @@ export async function sendPaymentRequestMessage(
 
 export async function sendPaymentCompleteMessage(
   roomId: string,
-  data: { amount: number },
+  data: { amount: number; paymentRequestMessageId?: string },
 ) {
   const user = await getAuthUser();
   if (!user) {

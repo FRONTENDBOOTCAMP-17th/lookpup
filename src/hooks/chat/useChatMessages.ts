@@ -91,12 +91,13 @@ function toMessage(m: MessageApiItem, userId: string): Message {
     try {
       const data = JSON.parse(
         m.content.slice(PAYMENT_COMPLETE_PREFIX.length),
-      ) as { amount: number };
+      ) as { amount: number; paymentRequestMessageId?: string };
       return {
         id: m.id,
         from: "payment_complete" as const,
         text: "",
         paymentData: { amount: data.amount, reason: "", deadline: "" },
+        paymentRequestMessageId: data.paymentRequestMessageId,
         time: m.created_at ? formatTime(m.created_at) : undefined,
         rawDate: m.created_at ?? undefined,
       };
