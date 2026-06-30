@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  useState,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useMemo,
-} from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/layout/Header";
 import {
@@ -74,7 +68,10 @@ import {
 import ReservationEditModal from "@/components/common/chat/ReservationEditModal";
 import { useChatRooms } from "@/hooks/chat/useChatRooms";
 import { useRequest } from "@/hooks/chat/useRequest";
-import { useChatMessages, type PaymentStateInfo } from "@/hooks/chat/useChatMessages";
+import {
+  useChatMessages,
+  type PaymentStateInfo,
+} from "@/hooks/chat/useChatMessages";
 import { useUserStore } from "@/store/userStore";
 
 function getPaymentDeadline() {
@@ -109,7 +106,6 @@ function withDateSeparators(msgs: Message[]): Message[] {
   }
   return result;
 }
-
 
 function ChatPageContent({
   initialTab,
@@ -217,7 +213,6 @@ function ChatPageContent({
         setAcceptDetails(result.data ?? null);
       }
     } catch {
-      // 에러 시에도 모달은 유지 (details=null이면 "정보를 불러오지 못했습니다" 표시)
     } finally {
       setAcceptModalLoading(false);
     }
@@ -843,7 +838,10 @@ function ChatPageContent({
   ) {
     if (!activeRoomId) return;
     try {
-      const updateResult = await updateReservationDetails(reservationId, proposed);
+      const updateResult = await updateReservationDetails(
+        reservationId,
+        proposed,
+      );
       if (updateResult.error) {
         setSendError(updateResult.error.message);
         return;
@@ -859,7 +857,11 @@ function ChatPageContent({
       if (result.data) {
         addMessage(result.data);
         broadcastMessage(result.data);
-        updatePreview(activeRoomId, "예약 수정 승인", result.data.created_at ?? "");
+        updatePreview(
+          activeRoomId,
+          "예약 수정 승인",
+          result.data.created_at ?? "",
+        );
       }
     } catch {
       setSendError("예약 수정에 실패했습니다. 다시 시도해주세요.");
@@ -880,7 +882,11 @@ function ChatPageContent({
       if (result.data) {
         addMessage(result.data);
         broadcastMessage(result.data);
-        updatePreview(activeRoomId, "예약 수정 거절", result.data.created_at ?? "");
+        updatePreview(
+          activeRoomId,
+          "예약 수정 거절",
+          result.data.created_at ?? "",
+        );
       }
     } catch {
       setSendError("예약 수정 거절 전송에 실패했습니다. 다시 시도해주세요.");
@@ -895,11 +901,13 @@ function ChatPageContent({
     try {
       const result = await getActiveReservationsForRoom(activeRoomId);
       if (result.error) {
+        setServiceCompleteModalOpen(false);
         setSendError(result.error.message);
         return;
       }
       setActiveReservations(result.data ?? []);
     } catch {
+      setServiceCompleteModalOpen(false);
       setSendError("예약 정보를 불러오는데 실패했습니다.");
     } finally {
       setServiceCompleteModalLoading(false);
@@ -1459,7 +1467,9 @@ function ChatPageContent({
             onServiceConfirm={(id) => setPendingServiceConfirmId(id)}
             onReservationEditConfirm={handleReservationEditConfirm}
             onReservationEditReject={handleReservationEditReject}
-            onRejectApplicant={() => handleRejectApplicant(selectedApplicantId!)}
+            onRejectApplicant={() =>
+              handleRejectApplicant(selectedApplicantId!)
+            }
             onConfirmApplicant={() => handleConfirmClick(selectedApplicantId!)}
           />
         )}
