@@ -10,14 +10,20 @@ import KakaoMap from "@/components/KakaoMap";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import SearchFilterBar from "@/components/common/SearchFilterBar";
 import { calculateDistanceKm, formatDistance } from "@/utils/distance";
-import { coordToRegion, searchAreaList, searchPlaceList, searchAddressToCoord, searchPlaceToCoord, type LocationSuggestion } from "@/utils/kakaoGeocode";
+import {
+  coordToRegion,
+  searchAreaList,
+  searchPlaceList,
+  searchAddressToCoord,
+  searchPlaceToCoord,
+  type LocationSuggestion,
+} from "@/utils/kakaoGeocode";
 import { supabase } from "@/lib/supabase";
 import { createClient } from "@/utils/supabase/client";
 import { getOwnerLocation } from "@/app/actions/users";
 
 const FILTERS = ["전체", "방문돌봄", "위탁돌봄", "산책"] as const;
 type Filter = (typeof FILTERS)[number];
-
 
 const SERVICE_TYPE_MAP: Record<string, string> = {
   walk: "산책",
@@ -28,8 +34,10 @@ const SERVICE_TYPE_MAP: Record<string, string> = {
 
 interface Sitter {
   id: string;
+  user_id: string;
   name: string;
   initial: string;
+  city: string;
   district: string;
   neighborhood: string;
   rating: number;
@@ -40,11 +48,25 @@ interface Sitter {
   lng: number;
 }
 
-function parseArea(area: string | null): { district: string; neighborhood: string } {
-  if (!area) return { district: "", neighborhood: "" };
-  const cleaned = area.replace(/^서울\s*/, "").replace(/,.*$/, "").trim();
-  const parts = cleaned.split(/\s+/);
-  return { district: parts[0] ?? "", neighborhood: parts[1] ?? "" };
+const CITY_SUFFIXES = ["특별시", "광역시", "특별자치시", "특별자치도"];
+function isCityToken(s: string) {
+  return s === "서울" || CITY_SUFFIXES.some((sfx) => s.endsWith(sfx));
+}
+
+function parseArea(area: string | null): {
+  city: string;
+  district: string;
+  neighborhood: string;
+} {
+  if (!area) return { city: "", district: "", neighborhood: "" };
+  const parts = area.replace(/,.*$/, "").trim().split(/\s+/);
+  if (parts.length >= 3 && isCityToken(parts[0])) {
+    return { city: parts[0], district: parts[1], neighborhood: parts[2] };
+  }
+  if (parts.length >= 2 && isCityToken(parts[0])) {
+    return { city: parts[0], district: parts[1], neighborhood: "" };
+  }
+  return { city: "", district: parts[0] ?? "", neighborhood: parts[1] ?? "" };
 }
 
 const DEFAULT_CENTER = { lat: 37.4979, lng: 127.0276 };
@@ -57,7 +79,13 @@ interface PetsitterCardProps {
   onConfirm: () => void;
 }
 
-function PetsitterCard({ sitter, isSelected, distance, onClick, onConfirm }: PetsitterCardProps) {
+function PetsitterCard({
+  sitter,
+  isSelected,
+  distance,
+  onClick,
+  onConfirm,
+}: PetsitterCardProps) {
   return (
     <div onClick={isSelected ? onConfirm : onClick} className="block">
       <div
@@ -125,20 +153,28 @@ function PetsittersContent() {
   const urlDistrict = searchParams.get("district") ?? "";
   const urlDong = searchParams.get("dong") ?? "";
   const urlCity = searchParams.get("city") ?? "";
+  const urlSelected = searchParams.get("selected") ?? "";
 
   const areaLabel = [urlCity, urlDistrict, urlDong].filter(Boolean).join(" ");
   const hasAreaFilter = !!(urlDistrict || urlDong);
 
   // ── 지역 검색 자동완성 상태 ──────────────────────────────────
   const [areaQuery, setAreaQuery] = useState(areaLabel);
-  const [areaSuggestions, setAreaSuggestions] = useState<LocationSuggestion[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [areaSuggestions, setAreaSuggestions] = useState<LocationSuggestion[]>(
+    [],
+  );
   const areaSearchRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // 항목 선택 직후 debounce 재실행으로 드롭다운이 다시 열리는 것을 방지
   const justSelectedRef = useRef(false);
   // 장소 선택으로 URL 파라미터를 직접 제거할 때 입력창 동기화 스킵
   const skipSyncRef = useRef(false);
+
+  // showSuggestions는 state가 아니라 파생값으로 처리
+  const trimmedAreaQuery = areaQuery.trim();
+  const isSuggestionQueryValid =
+    trimmedAreaQuery.length >= 2 && trimmedAreaQuery !== areaLabel;
+  const showSuggestions = isSuggestionQueryValid && areaSuggestions.length > 0;
 
   // 뒤로가기/앞으로가기로 URL이 바뀌면 입력창도 동기화
   // 단, 장소 선택으로 직접 파라미터를 제거한 경우는 스킵
@@ -150,15 +186,12 @@ function PetsittersContent() {
     setAreaQuery(areaLabel);
   }, [areaLabel]);
 
-  // 입력값 변경 시 자동완성 요청 (300ms debounce)
+  // 입력값이 유효할 때만 자동완성 API 호출 (300ms debounce)
   useEffect(() => {
+    if (!isSuggestionQueryValid) return;
+
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    const q = areaQuery.trim();
-    if (q.length < 2 || q === areaLabel) {
-      setAreaSuggestions([]);
-      setShowSuggestions(false);
-      return;
-    }
+
     debounceRef.current = setTimeout(async () => {
       if (justSelectedRef.current) {
         justSelectedRef.current = false;
@@ -166,24 +199,27 @@ function PetsittersContent() {
       }
       // 지역(구/동)과 장소(역, 대학교 등) 동시 검색
       const [areaResults, placeResults] = await Promise.all([
-        searchAreaList(q),
-        searchPlaceList(q),
+        searchAreaList(trimmedAreaQuery),
+        searchPlaceList(trimmedAreaQuery),
       ]);
       // 지역 결과 우선, 장소 결과 뒤에
       const combined: LocationSuggestion[] = [...areaResults, ...placeResults];
       setAreaSuggestions(combined);
-      setShowSuggestions(combined.length > 0);
     }, 300);
+
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [areaQuery]);
+  }, [trimmedAreaQuery, isSuggestionQueryValid]);
 
-  // 드롭다운 외부 클릭 시 닫기
+  // 드롭다운 외부 클릭 시 닫기 (areaSuggestions를 비워서 파생값 showSuggestions가 false가 됨)
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (areaSearchRef.current && !areaSearchRef.current.contains(e.target as Node)) {
-        setShowSuggestions(false);
+      if (
+        areaSearchRef.current &&
+        !areaSearchRef.current.contains(e.target as Node)
+      ) {
+        setAreaSuggestions([]);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -192,9 +228,12 @@ function PetsittersContent() {
 
   function pushAreaParams(district: string, dong: string, city = "") {
     const params = new URLSearchParams(searchParams.toString());
-    if (city) params.set("city", city); else params.delete("city");
-    if (district) params.set("district", district); else params.delete("district");
-    if (dong) params.set("dong", dong); else params.delete("dong");
+    if (city) params.set("city", city);
+    else params.delete("city");
+    if (district) params.set("district", district);
+    else params.delete("district");
+    if (dong) params.set("dong", dong);
+    else params.delete("dong");
     router.push(`${pathname}?${params.toString()}`);
   }
 
@@ -203,18 +242,23 @@ function PetsittersContent() {
     params.delete("city");
     params.delete("district");
     params.delete("dong");
+    params.delete("selected");
+    params.delete("sel_city");
+    params.delete("sel_district");
+    params.delete("sel_dong");
     router.push(`${pathname}?${params.toString()}`);
     setAreaQuery("");
+    setSelectedSitterId(null);
   }
 
   function selectAreaSuggestion(suggestion: LocationSuggestion) {
     justSelectedRef.current = true;
-    setShowSuggestions(false);
+    setAreaSuggestions([]);
     setAreaQuery(suggestion.label);
     setBasePosition({ lat: suggestion.lat, lng: suggestion.lng });
     setBaseLabel(suggestion.label);
 
-    if (suggestion.type === 'area') {
+    if (suggestion.type === "area") {
       pushAreaParams(suggestion.district, suggestion.dong, suggestion.city);
     } else {
       // 장소 선택 → URL 지역 파라미터만 제거 (입력창은 유지)
@@ -230,7 +274,9 @@ function PetsittersContent() {
   // ── 시터 목록 ────────────────────────────────────────────────
   const [sitters, setSitters] = useState<Sitter[]>([]);
   const [activeFilter, setActiveFilter] = useState<Filter>("전체");
-  const [selectedSitterId, setSelectedSitterId] = useState<string | null>(null);
+  const [selectedSitterId, setSelectedSitterId] = useState<string | null>(
+    urlSelected || null,
+  );
 
   // ── 위치(거리 계산용) ─────────────────────────────────────────
   const [basePosition, setBasePosition] = useState(DEFAULT_CENTER);
@@ -242,6 +288,63 @@ function PetsittersContent() {
 
   const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
+  async function requestLocationSilently() {
+    if (!navigator.geolocation) {
+      setLocationError("이 브라우저는 위치 서비스를 지원하지 않아요.");
+      return;
+    }
+
+    if (navigator.permissions) {
+      const status = await navigator.permissions.query({ name: "geolocation" });
+      if (status.state === "denied") {
+        const { data: saved } = await getOwnerLocation();
+        if (saved) {
+          setBasePosition({ lat: saved.lat, lng: saved.lng });
+          setBaseLabel(`저장된 위치 (${saved.dong || saved.address})`);
+          return;
+        }
+        setLocationError(
+          "브라우저 위치 권한이 차단되어 있어요. 브라우저 설정에서 위치 권한을 허용해 주세요.",
+        );
+        return;
+      }
+    }
+
+    setLocationLoading(true);
+    setLocationError(null);
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords }) => {
+        const pos = { lat: coords.latitude, lng: coords.longitude };
+        setBasePosition(pos);
+        setBaseLabel("현재 위치");
+        const region = await coordToRegion(pos.lat, pos.lng);
+        if (region) {
+          setBaseLabel(`현재 위치 (${region.dong || region.sigungu})`);
+        }
+        setLocationLoading(false);
+      },
+      async (err) => {
+        setLocationLoading(false);
+        const { data: saved } = await getOwnerLocation();
+        if (saved) {
+          setBasePosition({ lat: saved.lat, lng: saved.lng });
+          setBaseLabel(`저장된 위치 (${saved.dong || saved.address})`);
+          return;
+        }
+        if (err.code === err.PERMISSION_DENIED) {
+          setLocationError(
+            "브라우저 위치 권한이 차단되어 있어요. 브라우저 설정에서 위치 권한을 허용해 주세요.",
+          );
+        } else {
+          setLocationError(
+            "위치를 가져올 수 없어요. 강남역 기준으로 표시됩니다.",
+          );
+        }
+      },
+      { timeout: 10000 },
+    );
+  }
+
   // URL에 지역 파라미터가 있을 때 지도를 해당 위치로 초기화
   // Kakao SDK 로드 완료 후 실행 (타이밍 문제 방지)
   useEffect(() => {
@@ -249,7 +352,9 @@ function PetsittersContent() {
     const query = [urlCity, urlDistrict, urlDong].filter(Boolean).join(" ");
 
     async function run() {
-      const result = await searchAddressToCoord(query) ?? await searchPlaceToCoord(query);
+      const result =
+        (await searchAddressToCoord(query)) ??
+        (await searchPlaceToCoord(query));
       if (result) setBasePosition({ lat: result.lat, lng: result.lng });
     }
 
@@ -270,6 +375,7 @@ function PetsittersContent() {
   useEffect(() => {
     type SitterRow = {
       id: string;
+      user_id: string;
       available_area: string | null;
       display_area: string | null;
       latitude: number | null;
@@ -292,15 +398,19 @@ function PetsittersContent() {
         .filter((row) => row.latitude != null && row.longitude != null)
         .map((row) => {
           const name = row.full_name ?? "시터";
-          const { district, neighborhood } = parseArea(row.available_area);
+          const { city, district, neighborhood } = parseArea(
+            row.available_area,
+          );
           const serviceTypes = row.service_types
             .map((t) => SERVICE_TYPE_MAP[t] ?? t)
             .filter(Boolean);
 
           return {
             id: row.id,
+            user_id: row.user_id,
             name,
             initial: name.charAt(0),
+            city,
             district,
             neighborhood,
             rating: parseFloat(String(row.rating ?? 0)),
@@ -313,7 +423,6 @@ function PetsittersContent() {
         });
 
       setSitters(mapped);
-      setSelectedSitterId(null);
     }
 
     fetchSitters();
@@ -324,7 +433,9 @@ function PetsittersContent() {
     const browserClient = createClient();
 
     async function checkLocationConsent() {
-      const { data: { user } } = await browserClient.auth.getUser();
+      const {
+        data: { user },
+      } = await browserClient.auth.getUser();
 
       if (!user) {
         if (!urlDistrict) {
@@ -356,56 +467,20 @@ function PetsittersContent() {
     checkLocationConsent();
   }, []);
 
-  async function requestLocationSilently() {
-    if (!navigator.geolocation) {
-      setLocationError("이 브라우저는 위치 서비스를 지원하지 않아요.");
-      return;
-    }
-
-    if (navigator.permissions) {
-      const status = await navigator.permissions.query({ name: "geolocation" });
-      if (status.state === "denied") {
-        const { data: saved } = await getOwnerLocation();
-        if (saved) {
-          setBasePosition({ lat: saved.lat, lng: saved.lng });
-          setBaseLabel(`저장된 위치 (${saved.dong || saved.address})`);
-          return;
-        }
-        setLocationError("브라우저 위치 권한이 차단되어 있어요. 브라우저 설정에서 위치 권한을 허용해 주세요.");
-        return;
-      }
-    }
-
-    setLocationLoading(true);
-    setLocationError(null);
-    navigator.geolocation.getCurrentPosition(
-      async ({ coords }) => {
-        const pos = { lat: coords.latitude, lng: coords.longitude };
-        setBasePosition(pos);
-        setBaseLabel("현재 위치");
-        const region = await coordToRegion(pos.lat, pos.lng);
-        if (region) {
-          setBaseLabel(`현재 위치 (${region.dong || region.sigungu})`);
-        }
-        setLocationLoading(false);
-      },
-      async (err) => {
-        setLocationLoading(false);
-        const { data: saved } = await getOwnerLocation();
-        if (saved) {
-          setBasePosition({ lat: saved.lat, lng: saved.lng });
-          setBaseLabel(`저장된 위치 (${saved.dong || saved.address})`);
-          return;
-        }
-        if (err.code === err.PERMISSION_DENIED) {
-          setLocationError("브라우저 위치 권한이 차단되어 있어요. 브라우저 설정에서 위치 권한을 허용해 주세요.");
-        } else {
-          setLocationError("위치를 가져올 수 없어요. 강남역 기준으로 표시됩니다.");
-        }
-      },
-      { timeout: 10000 },
-    );
-  }
+  // selectedSitterId 변경 시 URL에 선택 위치 반영 (검색 파라미터 건드리지 않음)
+  useEffect(() => {
+    if (!selectedSitterId) return;
+    const sitter = sitters.find((s) => s.id === selectedSitterId);
+    if (!sitter) return;
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("selected", selectedSitterId);
+    params.set("sel_city", sitter.city);
+    params.set("sel_district", sitter.district);
+    params.set("sel_dong", sitter.neighborhood);
+    router.replace(`${pathname}?${params.toString()}`);
+    // searchParams는 의도적으로 제외 — 선택 변경 시에만 실행
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSitterId]);
 
   // 카드 스크롤 동기화
   useEffect(() => {
@@ -413,7 +488,9 @@ function PetsittersContent() {
     const card = cardRefs.current.get(selectedSitterId);
     if (!card) return;
 
-    const viewport = card.closest<HTMLElement>('[data-slot="scroll-area-viewport"]');
+    const viewport = card.closest<HTMLElement>(
+      '[data-slot="scroll-area-viewport"]',
+    );
     if (!viewport) {
       card.scrollIntoView({ behavior: "smooth", block: "nearest" });
       return;
@@ -443,7 +520,13 @@ function PetsittersContent() {
     requestLocationSilently();
   }
 
-  const sittersWithDistance = sitters.map((sitter) => ({
+  // 비로그인 시 전체 표시, 로그인 시 본인 펫시터 제외
+  const visibleSitters = sitters.filter((sitter) => {
+    if (!currentUserId) return true;
+    return sitter.user_id !== currentUserId;
+  });
+
+  const sittersWithDistance = visibleSitters.map((sitter) => ({
     ...sitter,
     distanceKm: calculateDistanceKm(basePosition, {
       lat: sitter.lat,
@@ -521,7 +604,15 @@ function PetsittersContent() {
             )}
             <KakaoMap
               markers={filtered.map(
-                ({ lat, lng, id, name, district, neighborhood, distanceKm }) => ({
+                ({
+                  lat,
+                  lng,
+                  id,
+                  name,
+                  district,
+                  neighborhood,
+                  distanceKm,
+                }) => ({
                   lat,
                   lng,
                   id,
@@ -542,7 +633,6 @@ function PetsittersContent() {
           {/* 리스트 패널 */}
           <div className="flex-1 md:flex-none w-full md:w-[520px] bg-white flex flex-col overflow-hidden">
             <div className="p-4 md:p-5 border-b border-orange-100 shrink-0 flex flex-col gap-3">
-
               {/* 지역 검색바 + 내 위치 버튼 */}
               <div className="flex gap-2">
                 <div ref={areaSearchRef} className="relative flex-1 min-w-0">
@@ -553,7 +643,7 @@ function PetsittersContent() {
                       placeholder="지역 또는 펫시터 이름 검색"
                       value={areaQuery}
                       onChange={(e) => setAreaQuery(e.target.value)}
-                      onFocus={() => areaSuggestions.length > 0 && setShowSuggestions(true)}
+                      onFocus={() => {}}
                       className="flex-1 min-w-0 bg-transparent text-sm md:text-base text-stone-900 placeholder:text-stone-900/50 outline-none"
                     />
                     {areaQuery && (
@@ -577,13 +667,16 @@ function PetsittersContent() {
                             onClick={() => selectAreaSuggestion(s)}
                             className="w-full text-left px-4 py-3 hover:bg-orange-50 transition-colors border-b border-orange-50 last:border-0 flex items-center gap-3"
                           >
-                            <MapPin size={14} className="text-orange-400 shrink-0" />
+                            <MapPin
+                              size={14}
+                              className="text-orange-400 shrink-0"
+                            />
                             <div className="flex-1 min-w-0">
                               <p className="text-sm text-stone-900 font-medium truncate">
                                 {s.label}
                               </p>
                               <p className="text-xs text-gray-400 truncate">
-                                {s.type === 'area' ? s.city : s.address}
+                                {s.type === "area" ? s.city : s.address}
                               </p>
                             </div>
                           </button>
@@ -600,7 +693,9 @@ function PetsittersContent() {
                   title="내 위치로 지도 이동"
                 >
                   <LocateFixed className="w-4 h-4 md:w-5 md:h-5 text-orange-500" />
-                  <span className="text-sm hidden sm:inline font-medium">내 위치</span>
+                  <span className="text-sm hidden sm:inline font-medium">
+                    내 위치
+                  </span>
                 </button>
               </div>
 
@@ -652,7 +747,9 @@ function PetsittersContent() {
                         isSelected={selectedSitterId === sitter.id}
                         distance={sitter.distanceKm}
                         onClick={() => setSelectedSitterId(sitter.id)}
-                        onConfirm={() => router.push(`/petsitters/${sitter.id}`)}
+                        onConfirm={() =>
+                          router.push(`/petsitters/${sitter.id}`)
+                        }
                       />
                     </div>
                   ))}
