@@ -6,6 +6,9 @@ import Link from "next/link";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import Avatar from "@/components/ui/Avatar";
+import SitterProfileCard, {
+  type SitterProfile,
+} from "@/components/sitter/SitterProfileCard";
 import KakaoMap from "@/components/KakaoMap";
 import BackButton from "@/components/common/BackButton";
 import Pill from "@/components/ui/Pill";
@@ -375,6 +378,21 @@ export default function PetsitterProfilePage() {
   const initial = name.charAt(0);
   const rating = Number(sitter?.rating ?? 0);
 
+  // 모바일 상단 카드 데이터 (미리보기 페이지와 동일한 SitterProfileCard 사용)
+  const sitterCardProfile: SitterProfile | undefined = sitter
+    ? {
+        name,
+        initial,
+        src: sitter.profile_image,
+        verified: sitter.is_verified,
+        location: areaText,
+        rating,
+        reviewCount,
+        services: serviceLabels,
+        career: sitter.career ?? undefined,
+      }
+    : undefined;
+
   return (
     <>
       <Header />
@@ -391,47 +409,21 @@ export default function PetsitterProfilePage() {
           <div className="md:flex md:gap-8 md:items-start">
             {/* 왼쪽: 모바일 이미지 헤더 / 데스크톱 프로필 카드 */}
             <div className="md:w-85.25 md:shrink-0">
-              {/* 모바일 이미지 헤더 */}
-              <div
-                className="md:hidden relative w-full h-44 bg-linear-to-br from-gray-100 to-gray-200"
-                style={
-                  sitter?.profile_image
-                    ? {
-                        backgroundImage: `url(${sitter.profile_image})`,
-                        backgroundSize: "cover",
-                        backgroundPosition: "center",
-                      }
-                    : undefined
-                }
-              >
-                <Link
-                  href="/petsitters"
-                  aria-label="펫시터 목록으로 돌아가기"
-                  className="absolute top-4 left-4 w-9 h-9 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm"
-                >
-                  <ChevronLeft
-                    size={20}
-                    className="text-stone-900"
-                    aria-hidden="true"
-                  />
-                </Link>
-                <div
-                  className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/30 to-transparent"
-                  aria-hidden="true"
-                />
-                <div className="absolute bottom-4 left-4">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <h2 className="text-xl font-bold text-white">{name}</h2>
-                    {sitter?.is_verified && (
-                      <span className="px-1.5 py-0.5 bg-orange-500 text-white text-[10px] font-medium rounded">
-                        인증
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1 text-white/80">
-                    <MapPin size={11} aria-hidden="true" />
-                    <span className="text-sm">{areaText}</span>
-                  </div>
+              {/* 모바일: 뒤로가기 + SitterProfileCard (미리보기 페이지와 통일) */}
+              <div className="md:hidden">
+                <div className="px-5 pt-4">
+                  <Link
+                    href="/petsitters"
+                    aria-label="펫시터 목록으로 돌아가기"
+                    className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-orange-100 transition-colors"
+                  >
+                    <ChevronLeft size={20} className="text-stone-900" />
+                  </Link>
+                </div>
+                <div className="px-5 pt-3 pb-5">
+                  {sitterCardProfile && (
+                    <SitterProfileCard profile={sitterCardProfile} />
+                  )}
                 </div>
               </div>
 
@@ -496,25 +488,8 @@ export default function PetsitterProfilePage() {
 
             {/* 오른쪽: 모바일 통계 + 탭 영역 */}
             <div className="flex-1 min-w-0">
-              {/* 모바일 전용: 별점 / 서비스 태그 / 통계 */}
-              <div className="md:hidden bg-white">
-                <div className="px-5 py-3 flex items-center gap-1.5">
-                  <StarRow size={13} count={Math.round(rating)} />
-                  <span className="text-sm font-bold text-stone-900">
-                    {rating.toFixed(1)}
-                  </span>
-                  <span className="text-xs text-gray-400">({reviewCount})</span>
-                </div>
-                <div className="flex flex-wrap gap-1.5 px-5 pb-3">
-                  {serviceLabels.map((s) => (
-                    <Pill key={s}>{s}</Pill>
-                  ))}
-                </div>
-                <StatGrid stats={stats} className="px-5 pb-5" />
-              </div>
-
               {/* 탭 바 */}
-              <div className="bg-white md:bg-transparent border-b border-orange-100 px-5 md:px-0 sticky top-0 md:static z-10">
+              <div className="bg-orange-50 md:bg-transparent border-b border-orange-100 px-5 md:px-0 sticky top-0 md:static z-10">
                 <div className="flex gap-6 md:gap-8">
                   {TABS.map((tab) => (
                     <button
