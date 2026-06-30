@@ -63,7 +63,7 @@ interface MenuItem {
 
 function getMenuIconColor(index: number, total: number) {
   const colors = [
-    "#E8742A",
+    "var(--color-orange-500)",
     "#EA7B32",
     "#EC833C",
     "#EE8B46",
@@ -97,7 +97,7 @@ const OWNER_MENU: MenuItem[] = [
     icon: User,
     label: "내 프로필",
     link: "/myprofile",
-    color: "#E8742A",
+    color: "var(--color-orange-500)",
   },
   {
     id: "pets",
@@ -118,7 +118,7 @@ const OWNER_MENU: MenuItem[] = [
     icon: FileText,
     label: "게시글 관리",
     link: "/myprofile/posts",
-    color: "#E8742A",
+    color: "var(--color-orange-500)",
   },
   {
     id: "reviews",
@@ -163,21 +163,21 @@ const SITTER_MENU: MenuItem[] = [
     icon: User,
     label: "내 프로필",
     link: "/myprofile",
-    color: "#E8742A",
+    color: "var(--color-orange-500)",
   },
   {
     id: "bookings",
     icon: Calendar,
     label: "예약 관리",
     link: "/myprofile/booking-history?role=sitter",
-    color: "#E8742A",
+    color: "var(--color-orange-500)",
   },
   {
     id: "posts",
     icon: FileText,
     label: "게시글 관리",
     link: "/myprofile/posts",
-    color: "#E8742A",
+    color: "var(--color-orange-500)",
   },
   {
     id: "reviews",

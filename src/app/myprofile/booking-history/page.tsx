@@ -618,7 +618,7 @@ export default function BookingHistoryPage() {
             {!isAppliedTab && (
               <Link
                 href="/petsitters"
-                className="mt-6 px-6 py-3 bg-[#E8742A] text-white rounded-xl text-sm font-semibold hover:bg-[#D4621A] transition-colors"
+                className="mt-6 px-6 py-3 bg-[var(--color-orange-500)] text-white rounded-xl text-sm font-semibold hover:bg-orange-600 transition-colors"
               >
                 펫시터 찾기
               </Link>
@@ -662,7 +662,7 @@ export default function BookingHistoryPage() {
                 onClick={() => setPage(p)}
                 className={`w-9 h-9 rounded-xl text-sm font-medium transition-all ${
                   page === p
-                    ? "bg-[#E8742A] text-white"
+                    ? "bg-[var(--color-orange-500)] text-white"
                     : "border border-orange-100 text-gray-500 hover:border-orange-300"
                 }`}
               >

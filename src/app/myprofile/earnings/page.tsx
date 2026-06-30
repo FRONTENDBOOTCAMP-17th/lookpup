@@ -81,7 +81,7 @@ export default function EarningsPage() {
         {/* 요약 카드 */}
         <div className="grid md:grid-cols-3 gap-4 mb-8">
           {/* 이번 달 수익 */}
-          <div className="p-6 rounded-2xl bg-gradient-to-br from-[#E8742A] to-[#F5A05A] text-white shadow-[0_2px_12px_rgba(232,116,42,0.2)]">
+          <div className="p-6 rounded-2xl bg-gradient-to-br from-[var(--color-orange-500)] to-[#F5A05A] text-white shadow-[0_2px_12px_rgba(232,116,42,0.2)]">
             <div className="flex items-start justify-between mb-3">
               <p className="text-white/80 text-sm font-medium">이번 달 수익</p>
               <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
@@ -101,7 +101,7 @@ export default function EarningsPage() {
             <div className="flex items-start justify-between mb-3">
               <p className="text-[#6B7280] text-sm font-medium">총 수익</p>
               <div className="w-10 h-10 rounded-full bg-[#FFF8F3] flex items-center justify-center">
-                <TrendingUp size={20} className="text-[#E8742A]" />
+                <TrendingUp size={20} className="text-[var(--color-orange-500)]" />
               </div>
             </div>
             <p className="text-3xl font-bold mb-1 text-[#281A0E]">
@@ -249,7 +249,7 @@ export default function EarningsPage() {
                       <p className="text-sm text-[#6B7280]">
                         {transaction.date}
                       </p>
-                      <p className="font-bold text-[#E8742A]">
+                      <p className="font-bold text-[var(--color-orange-500)]">
                         {formatCurrency(transaction.amount)}
                       </p>
                     </div>

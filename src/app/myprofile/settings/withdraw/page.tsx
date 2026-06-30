@@ -29,7 +29,7 @@ function SuccessScreen({ onGoHome }: { onGoHome: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
       <div className="w-24 h-24 rounded-full bg-[#FFF0E8] flex items-center justify-center mb-6">
-        <PawPrint size={40} className="text-[#E8742A]" />
+        <PawPrint size={40} className="text-[var(--color-orange-500)]" />
       </div>
       <div className="mb-2">
         <CheckCircle2 size={28} className="text-green-500 mx-auto mb-4" />
@@ -42,7 +42,7 @@ function SuccessScreen({ onGoHome }: { onGoHome: () => void }) {
       </p>
       <button
         onClick={onGoHome}
-        className="h-12 px-8 rounded-xl bg-[#E8742A] text-white font-semibold hover:bg-[#D4621A] transition-colors"
+        className="h-12 px-8 rounded-xl bg-[var(--color-orange-500)] text-white font-semibold hover:bg-orange-600 transition-colors"
       >
         메인으로 이동
       </button>
@@ -161,7 +161,7 @@ export default function WithdrawPage() {
             <div className="bg-white border border-[#FFE9D6] rounded-2xl p-6">
               <div className="flex items-center gap-3 mb-5">
                 <div className="w-10 h-10 rounded-xl bg-[#FFF0E8] flex items-center justify-center shrink-0">
-                  <AlertTriangle size={20} className="text-[#E8742A]" />
+                  <AlertTriangle size={20} className="text-[var(--color-orange-500)]" />
                 </div>
                 <h3 className="font-semibold text-[#281A0E]">
                   탈퇴 전 확인해주세요
@@ -175,7 +175,7 @@ export default function WithdrawPage() {
                   "작성한 후기 및 신고 내역은 일부 보관될 수 있습니다.",
                 ].map((text, i) => (
                   <li key={i} className="flex items-start gap-2.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#E8742A] shrink-0 mt-1.75" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-orange-500)] shrink-0 mt-1.75" />
                     <span className="text-sm text-[#6B7280] leading-relaxed">
                       {text}
                     </span>
@@ -198,14 +198,14 @@ export default function WithdrawPage() {
                         key={r.id}
                         className={`flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
                           selectedReason === r.id
-                            ? "border-[#E8742A] bg-[#FFF0E8]"
-                            : "border-[#FFE9D6] hover:border-[#E8742A]/40"
+                            ? "border-[var(--color-orange-500)] bg-[#FFF0E8]"
+                            : "border-[#FFE9D6] hover:border-[var(--color-orange-500)]/40"
                         }`}
                       >
                         <div
                           className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
                             selectedReason === r.id
-                              ? "border-[#E8742A] bg-[#E8742A]"
+                              ? "border-[var(--color-orange-500)] bg-[var(--color-orange-500)]"
                               : "border-[#D1D5DB]"
                           }`}
                         >
@@ -222,7 +222,7 @@ export default function WithdrawPage() {
                           onChange={() => setSelectedReason(r.id)}
                         />
                         <span
-                          className={`text-sm font-medium ${selectedReason === r.id ? "text-[#E8742A]" : "text-[#281A0E]"}`}
+                          className={`text-sm font-medium ${selectedReason === r.id ? "text-[var(--color-orange-500)]" : "text-[#281A0E]"}`}
                         >
                           {r.label}
                         </span>
@@ -237,7 +237,7 @@ export default function WithdrawPage() {
                         onChange={(e) => setOtherText(e.target.value)}
                         placeholder="의견을 자유롭게 입력해주세요"
                         rows={3}
-                        className="w-full px-4 py-3 border border-[#FFE9D6] rounded-xl text-sm text-[#281A0E] placeholder-[#9CA3AF] focus:outline-none focus:border-[#E8742A] resize-none transition-colors"
+                        className="w-full px-4 py-3 border border-[#FFE9D6] rounded-xl text-sm text-[#281A0E] placeholder-[#9CA3AF] focus:outline-none focus:border-[var(--color-orange-500)] resize-none transition-colors"
                       />
                     </div>
                   )}

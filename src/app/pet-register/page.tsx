@@ -105,7 +105,7 @@ export default function PetRegisterPage() {
     setShowSuccessModal(true);
   };
 
-  const inputCls = "w-full h-12 px-4 py-3 bg-white rounded-xl border border-[#ffe9d6] text-base font-normal text-[#281a0e] placeholder:text-gray-400 focus:outline-none focus:border-[#e8742a] transition-all";
+  const inputCls = "w-full h-12 px-4 py-3 bg-white rounded-xl border border-[#ffe9d6] text-base font-normal text-[#281a0e] placeholder:text-gray-400 focus:outline-none focus:border-[var(--color-orange-500)] transition-all";
   const numberInputCls = `${inputCls} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`;
 
   return (
@@ -173,12 +173,12 @@ export default function PetRegisterPage() {
                     onClick={() => setPetType(type)}
                     className={`flex-1 p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all ${
                       petType === type
-                        ? "bg-[#fff8f3] border-[#e8742a]"
-                        : "bg-white border-[#ffe9d6] hover:border-[#e8742a]/50"
+                        ? "bg-[#fff8f3] border-[var(--color-orange-500)]"
+                        : "bg-white border-[#ffe9d6] hover:border-[var(--color-orange-500)]/50"
                     }`}
                   >
                     <span className="text-3xl leading-9">{emoji}</span>
-                    <span className={`text-base font-medium leading-6 ${petType === type ? "text-[#e8742a]" : "text-[#281a0e]"}`}>
+                    <span className={`text-base font-medium leading-6 ${petType === type ? "text-[var(--color-orange-500)]" : "text-[#281a0e]"}`}>
                       {label}
                     </span>
                   </button>
@@ -250,11 +250,11 @@ export default function PetRegisterPage() {
                     onClick={() => setGender(value)}
                     className={`flex-1 h-12 rounded-xl border-2 flex justify-center items-center transition-all ${
                       gender === value
-                        ? "bg-[#fff8f3] border-[#e8742a]"
-                        : "bg-white border-[#ffe9d6] hover:border-[#e8742a]/50"
+                        ? "bg-[#fff8f3] border-[var(--color-orange-500)]"
+                        : "bg-white border-[#ffe9d6] hover:border-[var(--color-orange-500)]/50"
                     }`}
                   >
-                    <span className={`text-sm font-medium leading-5 ${gender === value ? "text-[#e8742a]" : "text-[#281a0e]"}`}>
+                    <span className={`text-sm font-medium leading-5 ${gender === value ? "text-[var(--color-orange-500)]" : "text-[#281a0e]"}`}>
                       {label}
                     </span>
                   </button>
@@ -267,11 +267,11 @@ export default function PetRegisterPage() {
               <button
                 onClick={() => setNeutered((v) => !v)}
                 className={`w-full h-14 px-4 rounded-xl border-2 flex items-center gap-3 transition-all ${
-                  neutered ? "bg-[#fff8f3] border-[#e8742a]" : "bg-white border-[#ffe9d6] hover:border-[#e8742a]/50"
+                  neutered ? "bg-[#fff8f3] border-[var(--color-orange-500)]" : "bg-white border-[#ffe9d6] hover:border-[var(--color-orange-500)]/50"
                 }`}
               >
                 <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                  neutered ? "bg-[#e8742a] border-[#e8742a]" : "bg-white border-gray-300"
+                  neutered ? "bg-[var(--color-orange-500)] border-[var(--color-orange-500)]" : "bg-white border-gray-300"
                 }`}>
                   {neutered && (
                     <svg width="12" height="9" viewBox="0 0 12 9" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -293,7 +293,7 @@ export default function PetRegisterPage() {
                 }}
                 placeholder="알러지, 질병, 주의사항 등을 입력해주세요"
                 style={{ height: "120px" }}
-                className="w-full px-4 py-3 bg-white rounded-xl border border-[#ffe9d6] text-base font-normal leading-6 text-[#281a0e] placeholder:text-[#281a0e]/50 resize-none focus:outline-none focus:border-[#e8742a] transition-all"
+                className="w-full px-4 py-3 bg-white rounded-xl border border-[#ffe9d6] text-base font-normal leading-6 text-[#281a0e] placeholder:text-[#281a0e]/50 resize-none focus:outline-none focus:border-[var(--color-orange-500)] transition-all"
               />
               <div className="pt-1 flex justify-end">
                 <span className="text-gray-500 text-xs font-normal leading-4">{notes.length}/500</span>
@@ -310,8 +310,8 @@ export default function PetRegisterPage() {
                     onClick={() => toggleNote(note)}
                     className={`h-9 px-4 rounded-full border text-xs font-medium leading-4 transition-all ${
                       selectedNotes.includes(note)
-                        ? "bg-[#e8742a] border-[#e8742a] text-white"
-                        : "bg-white border-[#ffe9d6] text-[#281a0e] hover:border-[#e8742a]/50"
+                        ? "bg-[var(--color-orange-500)] border-[var(--color-orange-500)] text-white"
+                        : "bg-white border-[#ffe9d6] text-[#281a0e] hover:border-[var(--color-orange-500)]/50"
                     }`}
                   >
                     {note}
@@ -324,14 +324,14 @@ export default function PetRegisterPage() {
             <div className="pt-8 flex gap-3">
               <button
                 onClick={() => router.back()}
-                className="flex-1 h-12 px-6 bg-white rounded-xl border border-[#ffe9d6] flex justify-center items-center hover:bg-[#fff8f3] hover:border-[#e8742a]/50 transition-colors"
+                className="flex-1 h-12 px-6 bg-white rounded-xl border border-[#ffe9d6] flex justify-center items-center hover:bg-[#fff8f3] hover:border-[var(--color-orange-500)]/50 transition-colors"
               >
                 <span className="text-[#6b7280] text-base font-semibold leading-6">취소</span>
               </button>
               <button
                 onClick={handleSubmit}
                 disabled={submitting}
-                className="flex-1 h-12 px-6 bg-[#e8742a] rounded-xl flex justify-center items-center hover:bg-[#d4621a] disabled:opacity-60 transition-colors"
+                className="flex-1 h-12 px-6 bg-[var(--color-orange-500)] rounded-xl flex justify-center items-center hover:bg-orange-600 disabled:opacity-60 transition-colors"
               >
                 <span className="text-white text-base font-semibold leading-6">
                   {submitting ? "등록 중..." : "등록하기"}

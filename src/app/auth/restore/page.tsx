@@ -46,7 +46,7 @@ export default function RestorePage() {
         {/* 아이콘 */}
         <div className="flex flex-col items-center mb-8">
           <div className="w-20 h-20 rounded-full bg-[#FFF0E8] flex items-center justify-center mb-4">
-            <PawPrint size={36} className="text-[#E8742A]" />
+            <PawPrint size={36} className="text-[var(--color-orange-500)]" />
           </div>
           <h1 className="text-2xl font-bold text-[#281A0E]">봐주개</h1>
         </div>
@@ -55,7 +55,7 @@ export default function RestorePage() {
         <div className="bg-white border border-[#FFE9D6] rounded-2xl p-6 mb-4">
           <div className="flex items-start gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center shrink-0">
-              <AlertTriangle size={20} className="text-[#E8742A]" />
+              <AlertTriangle size={20} className="text-[var(--color-orange-500)]" />
             </div>
             <div>
               <p className="font-semibold text-[#281A0E] mb-1">탈퇴된 계정입니다</p>
@@ -73,7 +73,7 @@ export default function RestorePage() {
               "보안을 위해 본인인증을 다시 진행해야 합니다",
             ].map((text, i) => (
               <li key={i} className="flex items-start gap-2 text-sm text-[#6B7280]">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#E8742A] shrink-0 mt-1.5" />
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-orange-500)] shrink-0 mt-1.5" />
                 {text}
               </li>
             ))}
@@ -90,7 +90,7 @@ export default function RestorePage() {
             type="button"
             onClick={handleRestore}
             disabled={isRestoring}
-            className="w-full h-12 rounded-xl bg-[#E8742A] text-white font-semibold flex items-center justify-center gap-2 hover:bg-[#D4621A] transition-colors disabled:opacity-50"
+            className="w-full h-12 rounded-xl bg-[var(--color-orange-500)] text-white font-semibold flex items-center justify-center gap-2 hover:bg-orange-600 transition-colors disabled:opacity-50"
           >
             <RotateCcw size={18} />
             {isRestoring ? "복구 중..." : "계정 복구하기"}

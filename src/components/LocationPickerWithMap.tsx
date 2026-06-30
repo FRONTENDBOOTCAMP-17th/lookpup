@@ -147,7 +147,7 @@ export default function LocationPickerWithMap({
             }}
             onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
             placeholder="도로명 또는 지번 주소 검색"
-            className="w-full h-12 pl-9 pr-10 bg-white border border-[#ffe9d6] rounded-xl text-[15px] text-stone-900 placeholder:text-gray-400 outline-none focus:border-[#e8742a] transition-colors"
+            className="w-full h-12 pl-9 pr-10 bg-white border border-[#ffe9d6] rounded-xl text-[15px] text-stone-900 placeholder:text-gray-400 outline-none focus:border-[var(--color-orange-500)] transition-colors"
           />
           {query && (
             <button

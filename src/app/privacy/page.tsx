@@ -190,7 +190,7 @@ export default function PrivacyPage() {
                 {index > 0 && (
                   <div className="border-t border-[#FFE9D6] mb-6" />
                 )}
-                <h2 className="text-base font-bold text-[#E8742A] mb-3">
+                <h2 className="text-base font-bold text-[var(--color-orange-500)] mb-3">
                   {article.title}
                 </h2>
                 {"content" in article && article.content ? (
@@ -208,7 +208,7 @@ export default function PrivacyPage() {
                   <ol className="flex flex-col gap-3">
                     {article.items?.map((item, i) => (
                       <li key={i} className="flex gap-2">
-                        <span className="text-sm font-semibold text-[#E8742A] leading-relaxed shrink-0">
+                        <span className="text-sm font-semibold text-[var(--color-orange-500)] leading-relaxed shrink-0">
                           {i + 1}.
                         </span>
                         {isTitledItem(item) ? (
@@ -232,7 +232,7 @@ export default function PrivacyPage() {
 
           {/* 적용일자 */}
           <div className="bg-[#FFF0E8] rounded-2xl border border-[#FFE9D6] px-6 py-4">
-            <p className="text-sm font-semibold text-[#E8742A]">적용일자</p>
+            <p className="text-sm font-semibold text-[var(--color-orange-500)]">적용일자</p>
             <p className="text-sm text-[#6B7280] mt-1">
               본 개인정보 처리방침은 2026년 7월 1일부터 적용됩니다.
             </p>

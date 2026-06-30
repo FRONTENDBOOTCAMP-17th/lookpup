@@ -52,11 +52,11 @@ function CheckboxCard({
   return (
     <button
       onClick={onToggle}
-      className="p-3 bg-white rounded-lg border border-[#ffe9d6] flex items-center gap-3 hover:border-[#e8742a]/50 transition-all text-left"
+      className="p-3 bg-white rounded-lg border border-[#ffe9d6] flex items-center gap-3 hover:border-[var(--color-orange-500)]/50 transition-all text-left"
     >
       <div
         className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
-          checked ? "bg-[#e8742a] border-[#e8742a]" : "border-gray-300"
+          checked ? "bg-[var(--color-orange-500)] border-[var(--color-orange-500)]" : "border-gray-300"
         }`}
       >
         {checked && <Check className="w-3 h-3 text-white" strokeWidth={2.5} />}
@@ -272,7 +272,7 @@ export default function PetsitterRegisterPage() {
                     onChange={(e) => setIntro(e.target.value.slice(0, 500))}
                     placeholder="펫시터 경력, 반려동물 돌봄 경험 등을 작성해주세요"
                     rows={6}
-                    className="w-full px-4 py-3 bg-white rounded-xl border border-[#ffe9d6] text-base font-normal text-stone-900 placeholder:text-stone-900/50 leading-6 resize-none focus:outline-none focus:border-[#e8742a] transition-all"
+                    className="w-full px-4 py-3 bg-white rounded-xl border border-[#ffe9d6] text-base font-normal text-stone-900 placeholder:text-stone-900/50 leading-6 resize-none focus:outline-none focus:border-[var(--color-orange-500)] transition-all"
                   />
                   <div className="flex justify-end pt-1">
                     <span className="text-gray-400 text-xs font-normal leading-4">
@@ -286,7 +286,7 @@ export default function PetsitterRegisterPage() {
                   <select
                     value={career}
                     onChange={(e) => setCareer(e.target.value)}
-                    className="w-full h-11 px-4 bg-white rounded-xl border border-[#ffe9d6] text-base font-normal text-stone-900 focus:outline-none focus:border-[#e8742a] transition-all appearance-none cursor-pointer"
+                    className="w-full h-11 px-4 bg-white rounded-xl border border-[#ffe9d6] text-base font-normal text-stone-900 focus:outline-none focus:border-[var(--color-orange-500)] transition-all appearance-none cursor-pointer"
                   >
                     <option value="">펫시터 경력 선택</option>
                     {CAREER_OPTIONS.map((o) => (
@@ -328,8 +328,8 @@ export default function PetsitterRegisterPage() {
                         }
                         className={`p-4 bg-white rounded-xl border-2 text-left transition-all ${
                           isSelected
-                            ? "border-[#e8742a] bg-[#fff8f3]"
-                            : "border-[#ffe9d6] hover:border-[#e8742a]/50"
+                            ? "border-[var(--color-orange-500)] bg-[#fff8f3]"
+                            : "border-[#ffe9d6] hover:border-[var(--color-orange-500)]/50"
                         }`}
                       >
                         <div className="flex items-center gap-4">
@@ -339,7 +339,7 @@ export default function PetsitterRegisterPage() {
                           <div>
                             <p
                               className={`text-base font-semibold leading-6 ${
-                                isSelected ? "text-[#e8742a]" : "text-stone-900"
+                                isSelected ? "text-[var(--color-orange-500)]" : "text-stone-900"
                               }`}
                             >
                               {service.title}
@@ -490,7 +490,7 @@ export default function PetsitterRegisterPage() {
             <button
               type="button"
               onClick={() => setStep((s) => s + 1)}
-              className="h-11 px-6 rounded-xl bg-[#e8742a] text-white text-[15px] font-semibold flex items-center gap-1.5 hover:opacity-90 transition-opacity"
+              className="h-11 px-6 rounded-xl bg-[var(--color-orange-500)] text-white text-[15px] font-semibold flex items-center gap-1.5 hover:bg-orange-600 transition-colors"
             >
               다음 단계
               <ChevronRight className="w-4 h-4" />
@@ -500,7 +500,7 @@ export default function PetsitterRegisterPage() {
               type="button"
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className="h-11 px-6 rounded-xl bg-[#e8742a] text-white text-[15px] font-semibold flex items-center gap-1.5 hover:opacity-90 transition-opacity disabled:opacity-50"
+              className="h-11 px-6 rounded-xl bg-[var(--color-orange-500)] text-white text-[15px] font-semibold flex items-center gap-1.5 hover:bg-orange-600 transition-colors disabled:opacity-50"
             >
               {isSubmitting ? "등록 중..." : "등록 완료"}
             </button>
