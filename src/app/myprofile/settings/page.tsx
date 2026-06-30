@@ -67,7 +67,7 @@ export default function SettingsPage() {
   const user = useUserStore((s) => s.user);
   const setUser = useUserStore((s) => s.setUser);
 
-  const [activeTab, setActiveTab] = useState<Tab>("notifications");
+  const [activeTab, setActiveTab] = useState<Tab>("profile");
   const [notificationPrefs, setNotificationPrefs] = useState(
     loadNotificationPrefs(),
   );
