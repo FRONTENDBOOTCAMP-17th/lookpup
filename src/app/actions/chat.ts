@@ -47,14 +47,39 @@ export async function findOrCreateRoom(input: {
       .maybeSingle();
     existingRoom = data;
   } else {
-    const { data } = await db
-      .from("chat_rooms")
-      .select("id")
-      .eq("owner_id", user.id)
-      .eq("sitter_id", input.sitter_id)
-      .eq("room_type", "direct")
-      .maybeSingle();
-    existingRoom = data;
+    const [{ data: otherSitter }, { data: mySitter }] = await Promise.all([
+      db
+        .from("sitters")
+        .select("user_id")
+        .eq("id", input.sitter_id)
+        .maybeSingle(),
+      db.from("sitters").select("id").eq("user_id", user.id).maybeSingle(),
+    ]);
+
+    const otherUserId = otherSitter?.user_id;
+    const mySitterId = mySitter?.id;
+
+    if (otherUserId && mySitterId) {
+      const { data } = await db
+        .from("chat_rooms")
+        .select("id")
+        .eq("room_type", "direct")
+        .or(
+          `and(owner_id.eq.${user.id},sitter_id.eq.${input.sitter_id}),` +
+            `and(owner_id.eq.${otherUserId},sitter_id.eq.${mySitterId})`,
+        )
+        .maybeSingle();
+      existingRoom = data;
+    } else {
+      const { data } = await db
+        .from("chat_rooms")
+        .select("id")
+        .eq("owner_id", user.id)
+        .eq("sitter_id", input.sitter_id)
+        .eq("room_type", "direct")
+        .maybeSingle();
+      existingRoom = data;
+    }
   }
 
   if (existingRoom) {
@@ -101,7 +126,9 @@ export async function findChatRoomAsSitter(ownerId: string) {
     .maybeSingle();
 
   if (!sitterProfile) {
-    return { error: { code: "NOT_FOUND", message: "시터 정보를 찾을 수 없습니다." } };
+    return {
+      error: { code: "NOT_FOUND", message: "시터 정보를 찾을 수 없습니다." },
+    };
   }
 
   const { data: room } = await db
@@ -829,4 +856,3 @@ export async function markRoomRead(roomId: string) {
 
   return { data: { ok: true } };
 }
-
