@@ -26,6 +26,7 @@ import {
 } from "@/app/actions/applications";
 import { findOrCreateRoom, findChatRoomAsSitter } from "@/app/actions/chat";
 import { useUserStore } from "@/store/userStore";
+import { createClient } from "@/utils/supabase/client";
 
 type BookingStatus =
   | "pending"
@@ -427,7 +428,7 @@ const SITTER_TABS: { id: TabId; label: string }[] = [
 
 export default function BookingHistoryPage() {
   const router = useRouter();
-  const { user } = useUserStore();
+  const { user, sitter } = useUserStore();
   const isSitter = user?.role === "both" || user?.role === "admin";
 
   const [role, setRole] = useState<"owner" | "sitter">("owner");
@@ -459,6 +460,39 @@ export default function BookingHistoryPage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    if (role !== "sitter" || !sitter?.id) return;
+
+    const supabase = createClient();
+    const channel = supabase
+      .channel("sitter-booking-history-updates")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "applications",
+          filter: `sitter_id=eq.${sitter.id}`,
+        },
+        () => loadData(),
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "reservations",
+          filter: `sitter_id=eq.${sitter.id}`,
+        },
+        () => loadData(),
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [role, sitter?.id, loadData]);
 
   const handleCancelConfirm = async () => {
     if (!cancelingId) return;
