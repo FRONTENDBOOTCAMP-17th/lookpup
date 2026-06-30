@@ -68,10 +68,7 @@ import {
 import ReservationEditModal from "@/components/common/chat/ReservationEditModal";
 import { useChatRooms } from "@/hooks/chat/useChatRooms";
 import { useRequest } from "@/hooks/chat/useRequest";
-import {
-  useChatMessages,
-  type PaymentStateInfo,
-} from "@/hooks/chat/useChatMessages";
+import { useChatMessages } from "@/hooks/chat/useChatMessages";
 import { useUserStore } from "@/store/userStore";
 
 function getPaymentDeadline() {
@@ -1197,6 +1194,7 @@ function ChatPageContent({
         ? (selectedReservationRequest?.profileImage ?? null)
         : (selectedApplicant?.profileImage ?? null);
   const headerBadge = getHeaderBadge();
+  const headerSub = getHeaderSub();
 
   const isCurrentUserSitter =
     userId !== null &&
@@ -1232,7 +1230,7 @@ function ChatPageContent({
     insertAt: 0,
   });
 
-  const displayMessages = useMemo(() => {
+  const processedMessages = useMemo(() => {
     const fillPostTitles = (msgs: typeof messages) =>
       msgs.map((msg) => {
         if (
@@ -1255,17 +1253,19 @@ function ChatPageContent({
         return msg;
       });
 
-    if (activeTab !== "applicants" || !selectedApplicant) return messages;
+    if (activeTab !== "applicants" || !selectedApplicant)
+      return withDateSeparators(messages);
     const hasCard = messages.some(
       (m) =>
         m.from === "application_selected" || m.from === "application_rejected",
     );
-    if (hasCard) return fillPostTitles(messages);
+    if (hasCard) return withDateSeparators(fillPostTitles(messages));
 
     const status = selectedApplicant.applicationStatus;
-    if (status !== "selected" && status !== "rejected") return messages;
+    if (status !== "selected" && status !== "rejected")
+      return withDateSeparators(messages);
 
-    if (hasMore) return messages;
+    if (hasMore) return withDateSeparators(messages);
 
     if (
       syntheticCardRef.current.roomId !== selectedApplicant.id ||
@@ -1273,7 +1273,7 @@ function ChatPageContent({
     ) {
       if (messages.length === 0) {
         syntheticCardRef.current = { roomId: null, insertAt: 0 };
-        return messages;
+        return withDateSeparators(messages);
       }
       syntheticCardRef.current = {
         roomId: selectedApplicant.id,
@@ -1310,11 +1310,13 @@ function ChatPageContent({
             },
           };
 
-    return fillPostTitles([
-      ...messages.slice(0, insertAt),
-      card,
-      ...messages.slice(insertAt),
-    ]);
+    return withDateSeparators(
+      fillPostTitles([
+        ...messages.slice(0, insertAt),
+        card,
+        ...messages.slice(insertAt),
+      ]),
+    );
   }, [
     messages,
     hasMore,
@@ -1324,11 +1326,6 @@ function ChatPageContent({
     isOwnerOfSelectedRoom,
     posts,
   ]);
-
-  const processedMessages = useMemo(
-    () => withDateSeparators(displayMessages),
-    [displayMessages],
-  );
 
   function handleGoToChat(isMobile: boolean) {
     const room = rooms.find(
@@ -1354,6 +1351,86 @@ function ChatPageContent({
       handleDeleteApplicant(selectedApplicantId);
   };
 
+  const sharedSidebarProps = {
+    activeTab,
+    searchQuery,
+    loading,
+    error,
+    userId,
+    filteredRooms,
+    filteredApplicants,
+    filteredPosts,
+    filteredReservationRequests,
+    totalRoomCount: rooms.length,
+    totalApplicantCount: applicants.length,
+    totalReservationCount: reservationRequests.length,
+    applicants,
+    selectedRoomId,
+    selectedApplicantId,
+    selectedReservationRequestId,
+    rejectedIds,
+    confirmedIds,
+    actioningId,
+    getApplicantBadge,
+    onSearchChange: setSearchQuery,
+    onDeleteRoom: handleDeleteRoom,
+    onDeleteApplicant: handleDeleteApplicant,
+    onDeleteReservationRequest: handleDeleteReservationRequest,
+    onRejectReservation: handleRejectReservation,
+    onAcceptReservation: handleAcceptReservation,
+    onRejectApplicant: handleRejectApplicant,
+    onConfirm: handleConfirmClick,
+    onAvatarClick: openApplicantProfile,
+  };
+
+  const sharedChatWindowProps = {
+    roomName,
+    roomInitial,
+    roomProfileImage,
+    headerSub,
+    headerBadge,
+    activeTab,
+    selectedApplicantPostId: selectedApplicant?.postId,
+    messages: processedMessages,
+    mobileScrollRef,
+    messagesEndRef,
+    hasMore,
+    loadingMore,
+    paymentState,
+    lastPaymentReqId,
+    confirmedEditIds,
+    confirmedServiceIds,
+    payingNow,
+    isPaymentPending,
+    isServiceConfirming,
+    isCurrentUserSitter,
+    input,
+    sending,
+    sendError,
+    isRejectedApplicant,
+    showApplicantActions,
+    applicationActionError,
+    actioningId,
+    onLeaveChat: leaveChat,
+    onReport: () => router.push(getReportUrl()),
+    onNavigateToPost: (postId: string) => router.push(`/board/${postId}`),
+    onSetInput: setInput,
+    onSend: handleSend,
+    onLoadMore: handleLoadMore,
+    onPayNow: handlePayNow,
+    onOpenPaymentModal: () => setPaymentModalOpen(true),
+    onOpenCareRecord: () => setCareRecordOpen(true),
+    onServiceStart: handleServiceStart,
+    onServiceComplete: handleServiceComplete,
+    onOpenReservationEdit: () => setReservationEditOpen(true),
+    onPhotoClick: () => photoInputRef.current?.click(),
+    onServiceConfirm: (id: string) => setPendingServiceConfirmId(id),
+    onReservationEditConfirm: handleReservationEditConfirm,
+    onReservationEditReject: handleReservationEditReject,
+    onRejectApplicant: () => handleRejectApplicant(selectedApplicantId!),
+    onConfirmApplicant: () => handleConfirmClick(selectedApplicantId!),
+  };
+
   return (
     <div className="h-screen overflow-hidden flex flex-col">
       <Header />
@@ -1362,33 +1439,13 @@ function ChatPageContent({
       <div className="md:hidden flex flex-col flex-1 overflow-hidden">
         {mobileChatView === "list" ? (
           <ChatSidebar
+            {...sharedSidebarProps}
             className="flex flex-col h-full"
             isMobile
-            activeTab={activeTab}
-            searchQuery={searchQuery}
-            loading={loading}
-            error={error}
-            userId={userId}
-            filteredRooms={filteredRooms}
-            filteredApplicants={filteredApplicants}
-            filteredPosts={filteredPosts}
-            filteredReservationRequests={filteredReservationRequests}
-            totalRoomCount={rooms.length}
-            totalApplicantCount={applicants.length}
-            totalReservationCount={reservationRequests.length}
-            applicants={applicants}
-            selectedRoomId={selectedRoomId}
-            selectedApplicantId={selectedApplicantId}
-            selectedReservationRequestId={selectedReservationRequestId}
-            rejectedIds={rejectedIds}
-            confirmedIds={confirmedIds}
-            actioningId={actioningId}
-            getApplicantBadge={getApplicantBadge}
             onTabChange={(tab) => {
               setActiveTab(tab);
               setMobileChatView("list");
             }}
-            onSearchChange={setSearchQuery}
             onRoomSelect={(id) => {
               setSelectedRoomId(id);
               setMobileChatView("room");
@@ -1401,49 +1458,15 @@ function ChatPageContent({
               setSelectedReservationRequestId(id);
               setMobileChatView("room");
             }}
-            onDeleteRoom={handleDeleteRoom}
-            onDeleteApplicant={handleDeleteApplicant}
-            onDeleteReservationRequest={handleDeleteReservationRequest}
-            onRejectReservation={handleRejectReservation}
-            onAcceptReservation={handleAcceptReservation}
-            onRejectApplicant={handleRejectApplicant}
-            onConfirm={handleConfirmClick}
-            onAvatarClick={openApplicantProfile}
           />
         ) : (
           <ChatWindow
+            {...sharedChatWindowProps}
             isMobile
             loading={false}
             error={null}
             isEmpty={false}
             hasSelection={true}
-            roomName={roomName}
-            roomInitial={roomInitial}
-            roomProfileImage={roomProfileImage}
-            headerSub={getHeaderSub()}
-            headerBadge={headerBadge}
-            activeTab={activeTab}
-            selectedApplicantPostId={selectedApplicant?.postId}
-            messages={processedMessages}
-            mobileScrollRef={mobileScrollRef}
-            messagesEndRef={messagesEndRef}
-            hasMore={hasMore}
-            loadingMore={loadingMore}
-            paymentState={paymentState}
-            lastPaymentReqId={lastPaymentReqId}
-            confirmedEditIds={confirmedEditIds}
-            confirmedServiceIds={confirmedServiceIds}
-            payingNow={payingNow}
-            isPaymentPending={isPaymentPending}
-            isServiceConfirming={isServiceConfirming}
-            isCurrentUserSitter={isCurrentUserSitter}
-            input={input}
-            sending={sending}
-            sendError={sendError}
-            isRejectedApplicant={isRejectedApplicant}
-            showApplicantActions={showApplicantActions}
-            applicationActionError={applicationActionError}
-            actioningId={actioningId}
             onBack={() => setMobileChatView("list")}
             onGoToProfile={() => {
               const sitterId =
@@ -1452,27 +1475,7 @@ function ChatPageContent({
                   : selectedApplicant?.sitterId;
               if (sitterId) router.push(`/petsitters/${sitterId}`);
             }}
-            onLeaveChat={leaveChat}
-            onReport={() => router.push(getReportUrl())}
-            onNavigateToPost={(postId) => router.push(`/board/${postId}`)}
             onGoToChat={() => handleGoToChat(true)}
-            onSetInput={setInput}
-            onSend={handleSend}
-            onLoadMore={handleLoadMore}
-            onPayNow={handlePayNow}
-            onOpenPaymentModal={() => setPaymentModalOpen(true)}
-            onOpenCareRecord={() => setCareRecordOpen(true)}
-            onServiceStart={handleServiceStart}
-            onServiceComplete={handleServiceComplete}
-            onOpenReservationEdit={() => setReservationEditOpen(true)}
-            onPhotoClick={() => photoInputRef.current?.click()}
-            onServiceConfirm={(id) => setPendingServiceConfirmId(id)}
-            onReservationEditConfirm={handleReservationEditConfirm}
-            onReservationEditReject={handleReservationEditReject}
-            onRejectApplicant={() =>
-              handleRejectApplicant(selectedApplicantId!)
-            }
-            onConfirmApplicant={() => handleConfirmClick(selectedApplicantId!)}
           />
         )}
       </div>
@@ -1480,42 +1483,15 @@ function ChatPageContent({
       {/* 데스크톱 */}
       <div className="hidden md:flex flex-1 bg-orange-50 overflow-hidden">
         <ChatSidebar
+          {...sharedSidebarProps}
           className="w-96 bg-white border-r border-orange-100 flex flex-col shrink-0"
-          activeTab={activeTab}
-          searchQuery={searchQuery}
-          loading={loading}
-          error={error}
-          userId={userId}
-          filteredRooms={filteredRooms}
-          filteredApplicants={filteredApplicants}
-          filteredPosts={filteredPosts}
-          filteredReservationRequests={filteredReservationRequests}
-          totalRoomCount={rooms.length}
-          totalApplicantCount={applicants.length}
-          totalReservationCount={reservationRequests.length}
-          applicants={applicants}
-          selectedRoomId={selectedRoomId}
-          selectedApplicantId={selectedApplicantId}
-          selectedReservationRequestId={selectedReservationRequestId}
-          rejectedIds={rejectedIds}
-          confirmedIds={confirmedIds}
-          actioningId={actioningId}
-          getApplicantBadge={getApplicantBadge}
           onTabChange={setActiveTab}
-          onSearchChange={setSearchQuery}
           onRoomSelect={setSelectedRoomId}
           onApplicantSelect={setSelectedApplicantId}
           onReservationSelect={setSelectedReservationRequestId}
-          onDeleteRoom={handleDeleteRoom}
-          onDeleteApplicant={handleDeleteApplicant}
-          onDeleteReservationRequest={handleDeleteReservationRequest}
-          onRejectReservation={handleRejectReservation}
-          onAcceptReservation={handleAcceptReservation}
-          onRejectApplicant={handleRejectApplicant}
-          onConfirm={handleConfirmClick}
-          onAvatarClick={openApplicantProfile}
         />
         <ChatWindow
+          {...sharedChatWindowProps}
           isMobile={false}
           loading={loading}
           error={error}
@@ -1532,33 +1508,6 @@ function ChatPageContent({
                 selectedReservationRequestId === null)
             )
           }
-          roomName={roomName}
-          roomInitial={roomInitial}
-          roomProfileImage={roomProfileImage}
-          headerSub={getHeaderSub()}
-          headerBadge={headerBadge}
-          activeTab={activeTab}
-          selectedApplicantPostId={selectedApplicant?.postId}
-          messages={processedMessages}
-          mobileScrollRef={mobileScrollRef}
-          messagesEndRef={messagesEndRef}
-          hasMore={hasMore}
-          loadingMore={loadingMore}
-          paymentState={paymentState}
-          lastPaymentReqId={lastPaymentReqId}
-          confirmedEditIds={confirmedEditIds}
-          confirmedServiceIds={confirmedServiceIds}
-          payingNow={payingNow}
-          isPaymentPending={isPaymentPending}
-          isServiceConfirming={isServiceConfirming}
-          isCurrentUserSitter={isCurrentUserSitter}
-          input={input}
-          sending={sending}
-          sendError={sendError}
-          isRejectedApplicant={isRejectedApplicant}
-          showApplicantActions={showApplicantActions}
-          applicationActionError={applicationActionError}
-          actioningId={actioningId}
           onBack={() => {}}
           onGoToProfile={() => {
             const sitterId =
@@ -1569,25 +1518,7 @@ function ChatPageContent({
                   : selectedApplicant?.sitterId;
             if (sitterId) router.push(`/petsitters/${sitterId}`);
           }}
-          onLeaveChat={leaveChat}
-          onReport={() => router.push(getReportUrl())}
-          onNavigateToPost={(postId) => router.push(`/board/${postId}`)}
           onGoToChat={() => handleGoToChat(false)}
-          onSetInput={setInput}
-          onSend={handleSend}
-          onLoadMore={handleLoadMore}
-          onPayNow={handlePayNow}
-          onOpenPaymentModal={() => setPaymentModalOpen(true)}
-          onOpenCareRecord={() => setCareRecordOpen(true)}
-          onServiceStart={handleServiceStart}
-          onServiceComplete={handleServiceComplete}
-          onOpenReservationEdit={() => setReservationEditOpen(true)}
-          onPhotoClick={() => photoInputRef.current?.click()}
-          onServiceConfirm={(id) => setPendingServiceConfirmId(id)}
-          onReservationEditConfirm={handleReservationEditConfirm}
-          onReservationEditReject={handleReservationEditReject}
-          onRejectApplicant={() => handleRejectApplicant(selectedApplicantId!)}
-          onConfirmApplicant={() => handleConfirmClick(selectedApplicantId!)}
         />
       </div>
 
