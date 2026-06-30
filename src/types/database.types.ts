@@ -784,34 +784,40 @@ export type Database = {
         Row: {
           content: string
           created_at: string | null
+          detail_ratings: Json | null
           id: string
           image_urls: string[] | null
           owner_id: string
           rating: number
           reservation_id: string
           sitter_id: string
+          tags: string[] | null
           updated_at: string | null
         }
         Insert: {
           content: string
           created_at?: string | null
+          detail_ratings?: Json | null
           id?: string
           image_urls?: string[] | null
           owner_id: string
           rating: number
           reservation_id: string
           sitter_id: string
+          tags?: string[] | null
           updated_at?: string | null
         }
         Update: {
           content?: string
           created_at?: string | null
+          detail_ratings?: Json | null
           id?: string
           image_urls?: string[] | null
           owner_id?: string
           rating?: number
           reservation_id?: string
           sitter_id?: string
+          tags?: string[] | null
           updated_at?: string | null
         }
         Relationships: [

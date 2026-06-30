@@ -10,3 +10,7 @@ export const APPLICATION_SELECTED_PREFIX = "__application_selected__:";
 export const APPLICATION_REJECTED_PREFIX = "__application_rejected__";
 export const RESERVATION_CANCELED_PREFIX = "__reservation_canceled__";
 export const SERVICE_COMPLETE_PREFIX = "__service_complete__";
+export const SERVICE_START_PREFIX = "__service_start__";
+export const RESERVATION_REQUEST_PREFIX = "__reservation_request__:";
+export const RESERVATION_ACCEPTED_PREFIX = "__reservation_accepted__:";
+export const RESERVATION_REJECTED_PREFIX = "__reservation_rejected__";

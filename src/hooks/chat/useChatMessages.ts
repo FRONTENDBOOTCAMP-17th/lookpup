@@ -16,6 +16,8 @@ import type {
   PaymentData,
   ApplicationData,
   ServiceCompleteData,
+  ReservationRequestData,
+  ReservationAcceptedData,
 } from "@/components/common/chat/chat_components";
 import {
   SYSTEM_MSG_PREFIX,
@@ -26,6 +28,10 @@ import {
   APPLICATION_REJECTED_PREFIX,
   RESERVATION_CANCELED_PREFIX,
   SERVICE_COMPLETE_PREFIX,
+  SERVICE_START_PREFIX,
+  RESERVATION_REQUEST_PREFIX,
+  RESERVATION_ACCEPTED_PREFIX,
+  RESERVATION_REJECTED_PREFIX,
 } from "@/lib/chatMessagePrefixes";
 
 function formatTime(iso: string): string {
@@ -70,6 +76,7 @@ function toMessage(m: MessageApiItem, userId: string): Message {
         from: "payment_request" as const,
         text: "",
         paymentData: { ...data, sentByMe: m.sender_id === userId },
+        time: m.created_at ? formatTime(m.created_at) : undefined,
         rawDate: m.created_at ?? undefined,
       };
     } catch {
@@ -86,6 +93,7 @@ function toMessage(m: MessageApiItem, userId: string): Message {
         from: "payment_complete" as const,
         text: "",
         paymentData: { amount: data.amount, reason: "", deadline: "" },
+        time: m.created_at ? formatTime(m.created_at) : undefined,
         rawDate: m.created_at ?? undefined,
       };
     } catch {
@@ -102,6 +110,7 @@ function toMessage(m: MessageApiItem, userId: string): Message {
         from: "application_selected" as const,
         text: "",
         applicationData: { ...data, sentByMe: m.sender_id === userId },
+        time: m.created_at ? formatTime(m.created_at) : undefined,
         rawDate: m.created_at ?? undefined,
       };
     } catch {
@@ -119,6 +128,7 @@ function toMessage(m: MessageApiItem, userId: string): Message {
         sitterId: "",
         sentByMe: m.sender_id === userId,
       },
+      time: m.created_at ? formatTime(m.created_at) : undefined,
       rawDate: m.created_at ?? undefined,
     };
   }
@@ -128,6 +138,7 @@ function toMessage(m: MessageApiItem, userId: string): Message {
       from: "reservation_canceled" as const,
       text: "",
       sentByMe: m.sender_id === userId,
+      time: m.created_at ? formatTime(m.created_at) : undefined,
       rawDate: m.created_at ?? undefined,
     };
   }
@@ -145,6 +156,69 @@ function toMessage(m: MessageApiItem, userId: string): Message {
       text: "",
       sentByMe: m.sender_id === userId,
       serviceCompleteData,
+      time: m.created_at ? formatTime(m.created_at) : undefined,
+      rawDate: m.created_at ?? undefined,
+    };
+  }
+  if (m.content.startsWith(SERVICE_START_PREFIX)) {
+    let serviceStartData: ServiceCompleteData | undefined;
+    const jsonPart = m.content.slice(SERVICE_START_PREFIX.length);
+    if (jsonPart) {
+      try {
+        serviceStartData = JSON.parse(jsonPart) as ServiceCompleteData;
+      } catch {}
+    }
+    return {
+      id: m.id,
+      from: "service_start" as const,
+      text: "",
+      sentByMe: m.sender_id === userId,
+      serviceStartData,
+      time: m.created_at ? formatTime(m.created_at) : undefined,
+      rawDate: m.created_at ?? undefined,
+    };
+  }
+  if (m.content.startsWith(RESERVATION_REQUEST_PREFIX)) {
+    try {
+      const data = JSON.parse(
+        m.content.slice(RESERVATION_REQUEST_PREFIX.length),
+      ) as ReservationRequestData;
+      return {
+        id: m.id,
+        from: "reservation_request" as const,
+        text: "",
+        reservationRequestData: { ...data, sentByMe: m.sender_id === userId },
+        time: m.created_at ? formatTime(m.created_at) : undefined,
+        rawDate: m.created_at ?? undefined,
+      };
+    } catch {
+      return { id: m.id, from: "divider", text: "예약 요청" };
+    }
+  }
+  if (m.content.startsWith(RESERVATION_ACCEPTED_PREFIX)) {
+    try {
+      const data = JSON.parse(
+        m.content.slice(RESERVATION_ACCEPTED_PREFIX.length),
+      ) as ReservationAcceptedData;
+      return {
+        id: m.id,
+        from: "reservation_accepted" as const,
+        text: "",
+        reservationAcceptedData: { ...data, sentByMe: m.sender_id === userId },
+        time: m.created_at ? formatTime(m.created_at) : undefined,
+        rawDate: m.created_at ?? undefined,
+      };
+    } catch {
+      return { id: m.id, from: "divider", text: "예약 확정" };
+    }
+  }
+  if (m.content === RESERVATION_REJECTED_PREFIX) {
+    return {
+      id: m.id,
+      from: "reservation_rejected" as const,
+      text: "",
+      sentByMe: m.sender_id === userId,
+      time: m.created_at ? formatTime(m.created_at) : undefined,
       rawDate: m.created_at ?? undefined,
     };
   }
@@ -301,6 +375,14 @@ export function useChatMessages(
     });
   }
 
+  function broadcastReservationAccepted(roomId: string) {
+    channelRef.current?.send({
+      type: "broadcast",
+      event: "reservation_accepted",
+      payload: { room_id: roomId },
+    });
+  }
+
   const paymentState = useMemo(() => derivePaymentState(messages), [messages]);
 
   async function loadMore() {
@@ -331,6 +413,7 @@ export function useChatMessages(
     addMessage,
     broadcastMessage,
     broadcastConfirmation,
+    broadcastReservationAccepted,
     loadMore,
     hasMore,
     loadingMore,

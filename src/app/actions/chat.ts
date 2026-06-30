@@ -12,6 +12,7 @@ import {
   APPLICATION_REJECTED_PREFIX,
   RESERVATION_CANCELED_PREFIX,
   SERVICE_COMPLETE_PREFIX,
+  SERVICE_START_PREFIX,
 } from "@/lib/chatMessagePrefixes";
 
 async function getAuthUser() {
@@ -24,7 +25,7 @@ async function getAuthUser() {
 
 export async function findOrCreateRoom(input: {
   sitter_id: string;
-  room_type: "request" | "direct";
+  room_type: "request" | "direct" | "reservation_request";
   request_id?: string | null;
   reservation_id?: string | null;
 }) {
@@ -83,6 +84,35 @@ export async function findOrCreateRoom(input: {
   }
 
   return { data: { room_id: newRoom.id } };
+}
+
+export async function findChatRoomAsSitter(ownerId: string) {
+  const user = await getAuthUser();
+  if (!user) {
+    return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
+  }
+
+  const db = createServiceClient();
+
+  const { data: sitterProfile } = await db
+    .from("sitters")
+    .select("id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!sitterProfile) {
+    return { error: { code: "NOT_FOUND", message: "시터 정보를 찾을 수 없습니다." } };
+  }
+
+  const { data: room } = await db
+    .from("chat_rooms")
+    .select("id")
+    .eq("owner_id", ownerId)
+    .eq("sitter_id", sitterProfile.id)
+    .eq("room_type", "direct")
+    .maybeSingle();
+
+  return { data: room ? { room_id: room.id } : null };
 }
 
 export async function sendMessage(roomId: string, content: string) {
@@ -561,7 +591,10 @@ export async function sendReservationCanceledMessage(roomId: string) {
   return { data: message };
 }
 
-export async function sendServiceCompleteMessage(roomId: string, reservationId: string) {
+export async function sendServiceCompleteMessage(
+  roomId: string,
+  reservationId: string,
+) {
   const user = await getAuthUser();
   if (!user) {
     return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
@@ -592,7 +625,9 @@ export async function sendServiceCompleteMessage(roomId: string, reservationId: 
 
   const { data: reservation } = await db
     .from("reservations")
-    .select("start_datetime, end_datetime, total_price, services(title, service_type), reservation_items(pets(name))")
+    .select(
+      "start_datetime, end_datetime, total_price, services(title, service_type), reservation_items(pets(name))",
+    )
     .eq("id", reservationId)
     .single();
 
@@ -606,12 +641,16 @@ export async function sendServiceCompleteMessage(roomId: string, reservationId: 
   type PetRow = { name: string } | null;
   type ItemRow = { pets: PetRow };
   const rawServices = reservation?.services;
-  const service = (Array.isArray(rawServices) ? rawServices[0] : rawServices) as ServiceRow | null;
+  const service = (
+    Array.isArray(rawServices) ? rawServices[0] : rawServices
+  ) as ServiceRow | null;
   const items = (reservation?.reservation_items as ItemRow[]) ?? [];
   const serviceTitle =
     service?.title ||
-    (service?.service_type ? (SERVICE_TYPE_LABEL[service.service_type] ?? service.service_type) : null) ||
-    "펫시팅 서비스";
+    (service?.service_type
+      ? (SERVICE_TYPE_LABEL[service.service_type] ?? service.service_type)
+      : null) ||
+    "반려동물 이름";
   const petName = items[0]?.pets?.name ?? undefined;
   const startDatetime = reservation?.start_datetime ?? undefined;
   const endDatetime = reservation?.end_datetime ?? undefined;
@@ -645,6 +684,102 @@ export async function sendServiceCompleteMessage(roomId: string, reservationId: 
       type: "message",
       title: "서비스가 완료되었어요",
       content: "펫시터가 서비스를 완료했습니다. 확인해주세요.",
+      linkUrl: `/chat?roomId=${roomId}`,
+    });
+  }
+
+  return { data: message };
+}
+
+export async function sendServiceStartMessage(
+  roomId: string,
+  reservationId: string,
+) {
+  const user = await getAuthUser();
+  if (!user) {
+    return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
+  }
+
+  const db = createServiceClient();
+
+  const { data: room } = await db
+    .from("chat_rooms")
+    .select("id, owner_id, sitters!inner(user_id)")
+    .eq("id", roomId)
+    .single();
+
+  if (!room) {
+    return {
+      error: { code: "NOT_FOUND", message: "채팅방을 찾을 수 없습니다." },
+    };
+  }
+
+  if (room.sitters.user_id !== user.id) {
+    return {
+      error: {
+        code: "FORBIDDEN",
+        message: "펫시터만 서비스 시작을 알릴 수 있습니다.",
+      },
+    };
+  }
+
+  const { data: reservation } = await db
+    .from("reservations")
+    .select(
+      "start_datetime, end_datetime, total_price, services(title, service_type), reservation_items(pets(name))",
+    )
+    .eq("id", reservationId)
+    .single();
+
+  const SERVICE_TYPE_LABEL: Record<string, string> = {
+    walk: "산책",
+    care: "방문 돌봄",
+    hotel: "위탁 돌봄",
+    pickup: "픽업",
+  };
+  type ServiceRow = { title: string; service_type: string };
+  type PetRow = { name: string } | null;
+  type ItemRow = { pets: PetRow };
+  const rawServices = reservation?.services;
+  const service = (
+    Array.isArray(rawServices) ? rawServices[0] : rawServices
+  ) as ServiceRow | null;
+  const items = (reservation?.reservation_items as ItemRow[]) ?? [];
+  const serviceTitle =
+    service?.title ||
+    (service?.service_type
+      ? (SERVICE_TYPE_LABEL[service.service_type] ?? service.service_type)
+      : null) ||
+    "펫시팅 서비스";
+  const petName = items[0]?.pets?.name ?? undefined;
+  const startDatetime = reservation?.start_datetime ?? undefined;
+  const endDatetime = reservation?.end_datetime ?? undefined;
+  const totalPrice = reservation?.total_price ?? undefined;
+
+  const now = new Date().toISOString();
+  const content = `${SERVICE_START_PREFIX}${JSON.stringify({ reservationId, serviceTitle, petName, startDatetime, endDatetime, totalPrice })}`;
+
+  const { data: message, error } = await db
+    .from("messages")
+    .insert({ room_id: roomId, sender_id: user.id, content })
+    .select()
+    .single();
+
+  if (error) {
+    return { error: { code: "INTERNAL_ERROR", message: error.message } };
+  }
+
+  await db
+    .from("chat_rooms")
+    .update({ last_message: "서비스 시작", last_message_at: now })
+    .eq("id", roomId);
+
+  if (room.owner_id) {
+    await createNotification({
+      userId: room.owner_id,
+      type: "message",
+      title: "서비스가 시작되었어요",
+      content: "펫시터가 서비스를 시작했습니다.",
       linkUrl: `/chat?roomId=${roomId}`,
     });
   }
@@ -694,3 +829,4 @@ export async function markRoomRead(roomId: string) {
 
   return { data: { ok: true } };
 }
+

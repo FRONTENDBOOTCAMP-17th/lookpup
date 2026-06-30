@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Star, Trash2, ChevronLeft } from "lucide-react";
@@ -14,6 +14,8 @@ interface WrittenReview {
   rating: number;
   content: string;
   image_urls: string[];
+  tags: string[];
+  detail_ratings: Record<string, number>;
   created_at: string;
   sitter_full_name: string;
   sitter_profile_image: string | null;
@@ -27,6 +29,8 @@ interface ReceivedReview {
   rating: number;
   content: string;
   image_urls: string[];
+  tags: string[];
+  detail_ratings: Record<string, number>;
   created_at: string;
 }
 
@@ -37,18 +41,31 @@ const TABS: { id: TabId; label: string }[] = [
   { id: "received", label: "받은 후기" },
 ];
 
-function StarRating({ rating }: { rating: number }) {
+function MiniStarRating({ value }: { value: number }) {
   return (
     <div className="flex gap-0.5">
-      {[1, 2, 3, 4, 5].map((star) => (
+      {[1, 2, 3, 4, 5].map((i) => (
         <Star
-          key={star}
-          size={14}
+          key={i}
+          size={11}
           className={
-            star <= rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
+            i <= value
+              ? "fill-orange-400 text-orange-400"
+              : "fill-orange-100 text-orange-100"
           }
         />
       ))}
+    </div>
+  );
+}
+
+function RatingBlock({ rating }: { rating: number }) {
+  return (
+    <div className="flex items-center gap-1.5 bg-orange-50 border border-orange-100 rounded-xl px-3 py-1.5 shrink-0">
+      <Star size={15} className="fill-orange-400 text-orange-400" />
+      <span className="text-base font-bold text-orange-500 leading-none">
+        {rating}.0
+      </span>
     </div>
   );
 }
@@ -78,46 +95,77 @@ function WrittenReviewCard({
 
   return (
     <>
-      <div className="bg-white border border-orange-100 rounded-2xl p-6 shadow-sm">
-        <div className="flex items-start justify-between mb-3">
+      <div className="bg-white rounded-2xl border border-orange-100 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] overflow-hidden">
+        {/* 헤더 */}
+        <div className="flex items-start justify-between px-5 pt-5 pb-4">
           <div className="flex items-center gap-3">
             <Avatar
               initial={review.sitter_full_name?.charAt(0) ?? "?"}
               src={review.sitter_profile_image}
             />
             <div>
-              <p className="font-semibold text-stone-900">
+              <p className="font-semibold text-stone-900 text-sm">
                 {review.sitter_full_name}
               </p>
-              <p className="text-xs text-gray-500 mt-0.5">
+              <p className="text-xs text-stone-400 mt-0.5">
                 {new Date(review.created_at).toLocaleDateString("ko-KR")}
               </p>
             </div>
           </div>
-          <StarRating rating={review.rating} />
+          <RatingBlock rating={review.rating} />
         </div>
-        <p className="text-sm text-stone-900 leading-relaxed mb-3">
-          {review.content}
-        </p>
-        {review.image_urls.length > 0 && (
-          <div className="flex gap-2 mb-3 overflow-x-auto pb-1">
-            {review.image_urls.map((url, i) => (
-              <img
-                key={i}
-                src={url}
-                alt=""
-                className="w-20 h-20 rounded-lg object-cover shrink-0"
-              />
+
+        {/* 세부 평가 */}
+        {Object.keys(review.detail_ratings).length > 0 && (
+          <div className="px-5 pb-4 border-t border-orange-100 pt-3 space-y-2">
+            {Object.entries(review.detail_ratings).map(([label, val]) => (
+              <div key={label} className="flex items-center justify-between">
+                <span className="text-xs text-stone-500">{label}</span>
+                <MiniStarRating value={val} />
+              </div>
             ))}
           </div>
         )}
-        <div className="flex gap-2 pt-4 border-t border-orange-100">
+
+        {/* 본문 + 사진 */}
+        <div className="px-5 pt-4 border-t border-orange-100">
+          <div className="flex gap-3">
+            {review.image_urls.length > 0 && (
+              <div className="flex flex-col gap-1.5 shrink-0">
+                {review.image_urls.map((url, i) => (
+                  <img
+                    key={i}
+                    src={url}
+                    alt=""
+                    className="w-20 h-20 rounded-xl object-cover"
+                  />
+                ))}
+              </div>
+            )}
+            <p className="text-sm text-stone-900 leading-relaxed flex-1">
+              {review.content}
+            </p>
+          </div>
+        </div>
+
+        {/* 태그 + 액션 */}
+        <div className="px-5 py-3 border-t border-orange-100 mt-4 flex items-center justify-between gap-2">
+          <div className="flex flex-wrap gap-1.5">
+            {review.tags.map((tag) => (
+              <span
+                key={tag}
+                className="px-2.5 py-1 bg-orange-50 text-orange-500 text-xs font-medium rounded-full border border-orange-200"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
           <button
             onClick={() => setShowDeleteModal(true)}
             disabled={isDeleting}
-            className="flex-1 h-9 rounded-xl border border-orange-100 text-sm font-medium text-orange-500 hover:border-orange-500 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
+            className="flex items-center gap-1 text-xs text-stone-400 hover:text-red-400 transition-colors disabled:opacity-50 shrink-0"
           >
-            <Trash2 size={13} /> {isDeleting ? "삭제 중..." : "삭제"}
+            <Trash2 size={12} /> {isDeleting ? "삭제 중..." : "삭제"}
           </button>
         </div>
       </div>
@@ -148,34 +196,69 @@ function WrittenReviewCard({
 
 function ReceivedReviewCard({ review }: { review: ReceivedReview }) {
   return (
-    <div className="bg-white border border-orange-100 rounded-2xl p-6 shadow-sm">
-      <div className="flex items-start justify-between mb-3">
+    <div className="bg-white rounded-2xl border border-orange-100 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] overflow-hidden">
+      {/* 헤더 */}
+      <div className="flex items-start justify-between px-5 pt-5 pb-4">
         <div className="flex items-center gap-3">
           <Avatar
             initial={review.owner_full_name?.charAt(0) ?? "?"}
             src={review.owner_profile_image}
           />
           <div>
-            <p className="font-semibold text-stone-900">
+            <p className="font-semibold text-stone-900 text-sm">
               {review.owner_full_name}
             </p>
-            <p className="text-xs text-gray-500 mt-0.5">
+            <p className="text-xs text-stone-400 mt-0.5">
               {new Date(review.created_at).toLocaleDateString("ko-KR")}
             </p>
           </div>
         </div>
-        <StarRating rating={review.rating} />
+        <RatingBlock rating={review.rating} />
       </div>
-      <p className="text-sm text-stone-900 leading-relaxed">{review.content}</p>
-      {review.image_urls.length > 0 && (
-        <div className="flex gap-2 mt-3 overflow-x-auto pb-1">
-          {review.image_urls.map((url, i) => (
-            <img
-              key={i}
-              src={url}
-              alt=""
-              className="w-20 h-20 rounded-lg object-cover shrink-0"
-            />
+
+      {/* 세부 평가 */}
+      {Object.keys(review.detail_ratings).length > 0 && (
+        <div className="px-5 pb-4 border-t border-orange-100 pt-3 space-y-2">
+          {Object.entries(review.detail_ratings).map(([label, val]) => (
+            <div key={label} className="flex items-center justify-between">
+              <span className="text-xs text-stone-500">{label}</span>
+              <MiniStarRating value={val} />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* 본문 + 사진 */}
+      <div className="px-5 pt-4 pb-5 border-t border-orange-100">
+        <div className="flex gap-3">
+          {review.image_urls.length > 0 && (
+            <div className="flex flex-col gap-1.5 shrink-0">
+              {review.image_urls.map((url, i) => (
+                <img
+                  key={i}
+                  src={url}
+                  alt=""
+                  className="w-20 h-20 rounded-xl object-cover"
+                />
+              ))}
+            </div>
+          )}
+          <p className="text-sm text-stone-900 leading-relaxed flex-1">
+            {review.content}
+          </p>
+        </div>
+      </div>
+
+      {/* 태그 */}
+      {review.tags.length > 0 && (
+        <div className="px-5 py-3 border-t border-orange-100 mt-4 flex flex-wrap gap-1.5">
+          {review.tags.map((tag) => (
+            <span
+              key={tag}
+              className="px-2.5 py-1 bg-orange-50 text-orange-500 text-xs font-medium rounded-full border border-orange-200"
+            >
+              {tag}
+            </span>
           ))}
         </div>
       )}

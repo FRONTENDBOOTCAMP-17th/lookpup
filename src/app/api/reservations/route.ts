@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createServiceClient } from "@/utils/supabase/service";
-import { createBookingReservation } from "@/app/actions/reservations";
+import { createReservation } from "@/app/actions/reservations";
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -125,24 +125,21 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { sitter_id, service_id, pet_ids, start_datetime, end_datetime, total_price, payment_id, pay_method, memo } = body;
+  const { sitter_id, service_id, pet_ids, start_datetime, end_datetime, memo } = body;
 
-  if (!sitter_id || !service_id || !Array.isArray(pet_ids) || !pet_ids.length || !start_datetime || !end_datetime || !total_price || !payment_id) {
+  if (!sitter_id || !service_id || !Array.isArray(pet_ids) || !pet_ids.length || !start_datetime || !end_datetime) {
     return NextResponse.json(
       { error: { code: "VALIDATION_ERROR", message: "필수 항목이 누락되었습니다." } },
       { status: 400 },
     );
   }
 
-  const result = await createBookingReservation({
+  const result = await createReservation({
     sitter_id,
     service_id,
     pet_ids,
     start_datetime,
     end_datetime,
-    total_price,
-    payment_id,
-    pay_method: pay_method ?? "CARD",
     memo: memo ?? null,
   });
 

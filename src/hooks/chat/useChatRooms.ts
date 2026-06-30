@@ -9,6 +9,7 @@ import type { RealtimeChannel } from "@supabase/supabase-js";
 import type {
   ChatRoom,
   Applicant,
+  ReservationRequest,
 } from "@/components/common/chat/chat_components";
 import {
   SYSTEM_MSG_PREFIX,
@@ -19,6 +20,10 @@ import {
   APPLICATION_REJECTED_PREFIX,
   RESERVATION_CANCELED_PREFIX,
   SERVICE_COMPLETE_PREFIX,
+  SERVICE_START_PREFIX,
+  RESERVATION_REQUEST_PREFIX,
+  RESERVATION_ACCEPTED_PREFIX,
+  RESERVATION_REJECTED_PREFIX,
 } from "@/lib/chatMessagePrefixes";
 
 function formatTime(iso: string | null): string {
@@ -37,7 +42,7 @@ export interface Post {
 
 interface RoomApiItem {
   id: string;
-  room_type: "direct" | "request";
+  room_type: "direct" | "request" | "reservation_request";
   owner_id: string | null;
   sitter_id: string | null;
   reservation_id: string | null;
@@ -50,10 +55,12 @@ interface RoomApiItem {
   request_title: string | null;
   request_status: string | null;
   application_status: string | null;
+  reservation_status: string | null;
 }
 
 function formatPreview(content: string): string {
-  if (content.startsWith(SYSTEM_MSG_PREFIX)) return content.slice(SYSTEM_MSG_PREFIX.length);
+  if (content.startsWith(SYSTEM_MSG_PREFIX))
+    return content.slice(SYSTEM_MSG_PREFIX.length);
   if (content.startsWith(IMAGE_MSG_PREFIX)) return "사진";
   if (content.startsWith(PAYMENT_REQUEST_PREFIX)) return "결제 요청";
   if (content.startsWith(PAYMENT_COMPLETE_PREFIX)) return "결제 완료";
@@ -61,16 +68,24 @@ function formatPreview(content: string): string {
   if (content.startsWith(APPLICATION_REJECTED_PREFIX)) return "지원 거절";
   if (content.startsWith(RESERVATION_CANCELED_PREFIX)) return "예약 취소";
   if (content.startsWith(SERVICE_COMPLETE_PREFIX)) return "서비스 완료";
+  if (content.startsWith(SERVICE_START_PREFIX)) return "서비스 시작";
+  if (content.startsWith(RESERVATION_REQUEST_PREFIX)) return "예약 요청";
+  if (content.startsWith(RESERVATION_ACCEPTED_PREFIX)) return "예약 확정";
+  if (content === RESERVATION_REJECTED_PREFIX) return "예약 거절";
   return content;
 }
 
 export function useChatRooms(activeRoomId: string | null) {
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
   const [applicants, setApplicants] = useState<Applicant[]>([]);
+  const [reservationRequests, setReservationRequests] = useState<
+    ReservationRequest[]
+  >([]);
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [acceptedDirectRoomId, setAcceptedDirectRoomId] = useState<string | null>(null);
 
   const activeRoomIdRef = useRef(activeRoomId);
   activeRoomIdRef.current = activeRoomId;
@@ -89,9 +104,9 @@ export function useChatRooms(activeRoomId: string | null) {
   myRoomIdsRef.current = new Set([
     ...rooms.map((r) => r.id),
     ...applicants.map((a) => a.id),
+    ...reservationRequests.map((rr) => rr.id),
   ]);
 
-  // 현재 로그인한 유저 ID 가져오기
   useEffect(() => {
     createClient()
       .auth.getUser()
@@ -136,8 +151,25 @@ export function useChatRooms(activeRoomId: string | null) {
         applicationStatus: r.application_status ?? null,
       }));
 
+      const reservationRequestList = data
+        .filter((r) => r.room_type === "reservation_request")
+        .map((r) => ({
+          id: r.id,
+          sitterId: r.sitter_id ?? null,
+          ownerId: r.owner_id ?? null,
+          reservationId: r.reservation_id ?? null,
+          name: r.other_user_full_name ?? "",
+          initial: (r.other_user_full_name ?? "?")[0],
+          profileImage: r.other_user_profile_image ?? null,
+          preview: formatPreview(r.last_message ?? ""),
+          time: formatTime(r.last_message_at),
+          unread: r.unread_count ?? 0,
+          reservationStatus: r.reservation_status ?? null,
+        }));
+
       setRooms(directRooms);
       setApplicants(applicantList);
+      setReservationRequests(reservationRequestList);
 
       const seen = new Set<string>();
       const derivedPosts: Post[] = [];
@@ -171,13 +203,27 @@ export function useChatRooms(activeRoomId: string | null) {
       .channel("new-rooms-tracker")
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "chat_rooms", filter: `sitter_id=eq.${userId}` },
-        () => { fetchRooms(true); },
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "chat_rooms",
+          filter: `sitter_id=eq.${userId}`,
+        },
+        () => {
+          fetchRooms(true);
+        },
       )
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "chat_rooms", filter: `owner_id=eq.${userId}` },
-        () => { fetchRooms(true); },
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "chat_rooms",
+          filter: `owner_id=eq.${userId}`,
+        },
+        () => {
+          fetchRooms(true);
+        },
       )
       .subscribe();
 
@@ -216,7 +262,11 @@ export function useChatRooms(activeRoomId: string | null) {
   useEffect(() => {
     if (!userId) return;
 
-    const allIds = [...rooms.map((r) => r.id), ...applicants.map((a) => a.id)];
+    const allIds = [
+      ...rooms.map((r) => r.id),
+      ...applicants.map((a) => a.id),
+      ...reservationRequests.map((rr) => rr.id),
+    ];
     const newIds = allIds.filter((id) => !subscribedRoomIdsRef.current.has(id));
     if (newIds.length === 0) return;
 
@@ -251,6 +301,11 @@ export function useChatRooms(activeRoomId: string | null) {
             ),
           );
         })
+        .on("broadcast", { event: "reservation_accepted" }, ({ payload }) => {
+          fetchRooms(true);
+          const roomId = (payload as { room_id?: string }).room_id;
+          if (roomId) setAcceptedDirectRoomId(roomId);
+        })
         .subscribe();
       broadcastChannelsRef.current.push(ch);
     });
@@ -281,6 +336,11 @@ export function useChatRooms(activeRoomId: string | null) {
     setApplicants((prev) =>
       prev.map((a) => (a.id === roomId ? { ...a, preview: content } : a)),
     );
+    setReservationRequests((prev) =>
+      prev.map((rr) =>
+        rr.id === roomId ? { ...rr, preview: content, time } : rr,
+      ),
+    );
   }
 
   function incrementUnread(roomId: string) {
@@ -290,6 +350,11 @@ export function useChatRooms(activeRoomId: string | null) {
     setApplicants((prev) =>
       prev.map((a) => (a.id === roomId ? { ...a, unread: a.unread + 1 } : a)),
     );
+    setReservationRequests((prev) =>
+      prev.map((rr) =>
+        rr.id === roomId ? { ...rr, unread: rr.unread + 1 } : rr,
+      ),
+    );
   }
 
   const markRoomAsRead = useCallback((roomId: string) => {
@@ -298,6 +363,9 @@ export function useChatRooms(activeRoomId: string | null) {
     );
     setApplicants((prev) =>
       prev.map((a) => (a.id === roomId ? { ...a, unread: 0 } : a)),
+    );
+    setReservationRequests((prev) =>
+      prev.map((rr) => (rr.id === roomId ? { ...rr, unread: 0 } : rr)),
     );
   }, []);
 
@@ -338,17 +406,45 @@ export function useChatRooms(activeRoomId: string | null) {
     );
   }
 
+  async function deleteReservationRequest(
+    id: string,
+  ): Promise<{ error?: string }> {
+    const res = await fetch(`/api/chat/rooms/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      return { error: body?.error?.message ?? "채팅방 나가기에 실패했습니다." };
+    }
+    setReservationRequests((prev) => prev.filter((rr) => rr.id !== id));
+    return {};
+  }
+
+  function updateReservationRequestStatus(roomId: string, status: string) {
+    setReservationRequests((prev) =>
+      prev.map((rr) =>
+        rr.id === roomId ? { ...rr, reservationStatus: status } : rr,
+      ),
+    );
+  }
+
+  const refresh = useCallback(() => fetchRooms(true), [fetchRooms]);
+
   return {
     rooms,
     applicants,
+    reservationRequests,
     posts,
     loading,
     error,
     userId,
     deleteRoom,
     deleteApplicant,
+    deleteReservationRequest,
     markRoomAsRead,
     updatePreview: updateRoomPreview,
     updateApplicantStatus,
+    updateReservationRequestStatus,
+    refresh,
+    acceptedDirectRoomId,
+    clearAcceptedDirectRoomId: () => setAcceptedDirectRoomId(null),
   };
 }

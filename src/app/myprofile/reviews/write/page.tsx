@@ -960,6 +960,8 @@ function ReviewWriteContent() {
       rating: reviewData.overallRating,
       content: reviewData.content,
       image_urls,
+      tags: reviewData.tags,
+      detail_ratings: reviewData.detailRatings,
     });
 
     setIsSubmitting(false);
