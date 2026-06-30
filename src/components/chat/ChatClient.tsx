@@ -22,7 +22,7 @@ import {
   ApplicantPostGroup,
   ReservationRequestCard,
   type Applicant,
-  type ReservationRequest,
+  type Message,
 } from "@/components/common/chat/chat_components";
 import { CustomModal } from "@/components/common/CustomModal";
 import { CustomModalPayment } from "@/components/common/CustomModalPayment";
@@ -82,13 +82,143 @@ import {
 import ReservationEditModal from "@/components/common/chat/ReservationEditModal";
 import { useChatRooms } from "@/hooks/chat/useChatRooms";
 import { useRequest } from "@/hooks/chat/useRequest";
-import { useChatMessages } from "@/hooks/chat/useChatMessages";
+import { useChatMessages, type PaymentStateInfo } from "@/hooks/chat/useChatMessages";
 import { useUserStore } from "@/store/userStore";
 
 function getPaymentDeadline() {
   const d = new Date(Date.now() + 24 * 60 * 60 * 1000);
   const p = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+function withDateSeparators(msgs: Message[]): Message[] {
+  const result: Message[] = [];
+  let lastDateKey: string | null = null;
+  for (const msg of msgs) {
+    if (msg.rawDate) {
+      const d = new Date(msg.rawDate);
+      const key = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+      if (key !== lastDateKey) {
+        const label = d.toLocaleDateString("ko-KR", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          weekday: "long",
+        });
+        result.push({
+          id: `__date_${key}__`,
+          from: "date_separator",
+          text: label,
+        });
+        lastDateKey = key;
+      }
+    }
+    result.push(msg);
+  }
+  return result;
+}
+
+interface MessageListProps {
+  messages: Message[];
+  senderInitial: string;
+  senderProfileImage: string | null;
+  isCurrentUserSitter: boolean;
+  selectedApplicantPostId: string | undefined;
+  lastPaymentReqId: string | null;
+  paymentState: PaymentStateInfo | null;
+  payingNow: boolean;
+  isPaymentPending: boolean;
+  confirmedServiceIds: Set<string>;
+  isServiceConfirming: boolean;
+  confirmedEditIds: Set<string>;
+  hasMore: boolean;
+  loadingMore: boolean;
+  onLoadMore: () => void;
+  onPaymentRequest: () => void;
+  onNavigateToPost: (postId: string) => void;
+  onGoToChat: () => void;
+  onServiceConfirm: (id: string) => void;
+  onReservationEditConfirm: (
+    messageId: string,
+    reservationId: string,
+    proposed: { start_datetime: string; end_datetime: string; memo?: string | null },
+  ) => void;
+  onReservationEditReject: (messageId: string) => void;
+}
+
+function MessageList({
+  messages,
+  senderInitial,
+  senderProfileImage,
+  isCurrentUserSitter,
+  selectedApplicantPostId,
+  lastPaymentReqId,
+  paymentState,
+  payingNow,
+  isPaymentPending,
+  confirmedServiceIds,
+  isServiceConfirming,
+  confirmedEditIds,
+  hasMore,
+  loadingMore,
+  onLoadMore,
+  onPaymentRequest,
+  onNavigateToPost,
+  onGoToChat,
+  onServiceConfirm,
+  onReservationEditConfirm,
+  onReservationEditReject,
+}: MessageListProps) {
+  return (
+    <>
+      {hasMore && (
+        <div className="flex justify-center py-2">
+          <button
+            onClick={onLoadMore}
+            disabled={loadingMore}
+            className="text-sm text-orange-500 disabled:text-stone-400"
+          >
+            {loadingMore ? "불러오는 중..." : "이전 메시지 더 보기"}
+          </button>
+        </div>
+      )}
+      {messages.map((msg) => {
+        const postId =
+          msg.applicationData?.postId ||
+          msg.paymentData?.postId ||
+          selectedApplicantPostId;
+        const isThisPaymentPaid =
+          msg.from === "payment_request"
+            ? msg.id === lastPaymentReqId
+              ? (paymentState?.paid ?? false)
+              : true
+            : false;
+        return (
+          <MessageBubble
+            key={msg.id}
+            msg={msg}
+            senderInitial={senderInitial}
+            senderProfileImage={senderProfileImage}
+            isCurrentUserSitter={isCurrentUserSitter}
+            onPaymentRequest={onPaymentRequest}
+            isPaymentPending={payingNow || isPaymentPending}
+            isPaymentPaid={isThisPaymentPaid}
+            onPostClick={postId ? () => onNavigateToPost(postId) : undefined}
+            onGoToChat={onGoToChat}
+            onServiceConfirm={onServiceConfirm}
+            isServiceConfirmed={
+              !!msg.serviceCompleteData?.reservationId &&
+              confirmedServiceIds.has(msg.serviceCompleteData.reservationId)
+            }
+            isServiceConfirming={isServiceConfirming}
+            onReservationEditConfirm={onReservationEditConfirm}
+            onReservationEditReject={onReservationEditReject}
+            confirmedEditIds={confirmedEditIds}
+          />
+        );
+      })}
+    </>
+  );
 }
 
 function ChatPageContent({
@@ -1310,31 +1440,32 @@ function ChatPageContent({
     posts,
   ]);
 
-  function withDateSeparators(msgs: typeof displayMessages) {
-    const result: typeof displayMessages = [];
-    let lastDateKey: string | null = null;
-    for (const msg of msgs) {
-      if (msg.rawDate) {
-        const d = new Date(msg.rawDate);
-        const key = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
-        if (key !== lastDateKey) {
-          const label = d.toLocaleDateString("ko-KR", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-            weekday: "long",
-          });
-          result.push({
-            id: `__date_${key}__`,
-            from: "date_separator",
-            text: label,
-          });
-          lastDateKey = key;
-        }
-      }
-      result.push(msg);
-    }
-    return result;
+  const processedMessages = useMemo(
+    () => withDateSeparators(displayMessages),
+    [displayMessages],
+  );
+
+  function handleGoToChatMobile() {
+    const room = rooms.find(
+      (r) =>
+        r.ownerId === selectedApplicant?.ownerId &&
+        r.sitterId === selectedApplicant?.sitterId,
+    );
+    setActiveTab("one_on_one");
+    setSelectedApplicantId(null);
+    if (room) setSelectedRoomId(room.id);
+    setMobileChatView(room ? "room" : "list");
+  }
+
+  function handleGoToChatDesktop() {
+    const room = rooms.find(
+      (r) =>
+        r.ownerId === selectedApplicant?.ownerId &&
+        r.sitterId === selectedApplicant?.sitterId,
+    );
+    setActiveTab("one_on_one");
+    setSelectedApplicantId(null);
+    if (room) setSelectedRoomId(room.id);
   }
 
   return (
@@ -1610,69 +1741,29 @@ function ChatPageContent({
                   if (plusMenuOpen) setPlusMenuOpen(false);
                 }}
               >
-                {hasMore && (
-                  <div className="flex justify-center py-2">
-                    <button
-                      onClick={handleLoadMore}
-                      disabled={loadingMore}
-                      className="text-sm text-orange-500 disabled:text-stone-400"
-                    >
-                      {loadingMore ? "불러오는 중..." : "이전 메시지 더 보기"}
-                    </button>
-                  </div>
-                )}
-                {withDateSeparators(displayMessages).map((msg) => {
-                  const postId =
-                    msg.applicationData?.postId ||
-                    msg.paymentData?.postId ||
-                    selectedApplicant?.postId;
-                  // 메시지별 결제 완료 여부: 마지막 요청이면 파생 상태, 이전 요청이면 항상 true(비활성)
-                  const isThisPaymentPaid =
-                    msg.from === "payment_request"
-                      ? msg.id === lastPaymentReqId
-                        ? (paymentState?.paid ?? false)
-                        : true
-                      : false;
-                  return (
-                    <MessageBubble
-                      key={msg.id}
-                      msg={msg}
-                      senderInitial={mobileRoomInitial}
-                      senderProfileImage={mobileRoomProfileImage}
-                      isCurrentUserSitter={isCurrentUserSitter}
-                      onPaymentRequest={handlePayNow}
-                      isPaymentPending={payingNow || isPaymentPending}
-                      isPaymentPaid={isThisPaymentPaid}
-                      onPostClick={
-                        postId
-                          ? () => router.push(`/board/${postId}`)
-                          : undefined
-                      }
-                      onGoToChat={() => {
-                        const room = rooms.find(
-                          (r) =>
-                            r.ownerId === selectedApplicant?.ownerId &&
-                            r.sitterId === selectedApplicant?.sitterId,
-                        );
-                        setActiveTab("one_on_one");
-                        setSelectedApplicantId(null);
-                        if (room) setSelectedRoomId(room.id);
-                        setMobileChatView(room ? "room" : "list");
-                      }}
-                      onServiceConfirm={(id) => setPendingServiceConfirmId(id)}
-                      isServiceConfirmed={
-                        !!msg.serviceCompleteData?.reservationId &&
-                        confirmedServiceIds.has(
-                          msg.serviceCompleteData.reservationId,
-                        )
-                      }
-                      isServiceConfirming={isServiceConfirming}
-                      onReservationEditConfirm={handleReservationEditConfirm}
-                      onReservationEditReject={handleReservationEditReject}
-                      confirmedEditIds={confirmedEditIds}
-                    />
-                  );
-                })}
+                <MessageList
+                  messages={processedMessages}
+                  senderInitial={mobileRoomInitial}
+                  senderProfileImage={mobileRoomProfileImage}
+                  isCurrentUserSitter={isCurrentUserSitter}
+                  selectedApplicantPostId={selectedApplicant?.postId}
+                  lastPaymentReqId={lastPaymentReqId}
+                  paymentState={paymentState}
+                  payingNow={payingNow}
+                  isPaymentPending={isPaymentPending}
+                  confirmedServiceIds={confirmedServiceIds}
+                  isServiceConfirming={isServiceConfirming}
+                  confirmedEditIds={confirmedEditIds}
+                  hasMore={hasMore}
+                  loadingMore={loadingMore}
+                  onLoadMore={handleLoadMore}
+                  onPaymentRequest={handlePayNow}
+                  onNavigateToPost={(postId) => router.push(`/board/${postId}`)}
+                  onGoToChat={handleGoToChatMobile}
+                  onServiceConfirm={(id) => setPendingServiceConfirmId(id)}
+                  onReservationEditConfirm={handleReservationEditConfirm}
+                  onReservationEditReject={handleReservationEditReject}
+                />
               </div>
             </div>
 
@@ -2011,83 +2102,29 @@ function ChatPageContent({
                     if (plusMenuOpen) setPlusMenuOpen(false);
                   }}
                 >
-                  {hasMore && (
-                    <div className="flex justify-center py-2">
-                      <button
-                        onClick={handleLoadMore}
-                        disabled={loadingMore}
-                        className="text-sm text-orange-500 disabled:text-stone-400"
-                      >
-                        {loadingMore ? "불러오는 중..." : "이전 메시지 더 보기"}
-                      </button>
-                    </div>
-                  )}
-                  {withDateSeparators(displayMessages).map((msg) => {
-                    const postId =
-                      msg.applicationData?.postId ||
-                      msg.paymentData?.postId ||
-                      selectedApplicant?.postId;
-                    // 메시지별 결제 완료 여부: 마지막 요청이면 파생 상태, 이전 요청이면 항상 true(비활성)
-                    const isThisPaymentPaid =
-                      msg.from === "payment_request"
-                        ? msg.id === lastPaymentReqId
-                          ? (paymentState?.paid ?? false)
-                          : true
-                        : false;
-                    return (
-                      <MessageBubble
-                        key={msg.id}
-                        msg={msg}
-                        senderInitial={
-                          activeTab === "one_on_one"
-                            ? (selectedRoom?.initial ?? "")
-                            : activeTab === "reservations"
-                              ? (selectedReservationRequest?.initial ?? "")
-                              : (selectedApplicant?.initial ?? "")
-                        }
-                        senderProfileImage={
-                          activeTab === "one_on_one"
-                            ? (selectedRoom?.profileImage ?? null)
-                            : activeTab === "reservations"
-                              ? (selectedReservationRequest?.profileImage ??
-                                null)
-                              : (selectedApplicant?.profileImage ?? null)
-                        }
-                        isCurrentUserSitter={isCurrentUserSitter}
-                        onPaymentRequest={handlePayNow}
-                        isPaymentPending={payingNow || isPaymentPending}
-                        isPaymentPaid={isThisPaymentPaid}
-                        onPostClick={
-                          postId
-                            ? () => router.push(`/board/${postId}`)
-                            : undefined
-                        }
-                        onGoToChat={() => {
-                          const room = rooms.find(
-                            (r) =>
-                              r.ownerId === selectedApplicant?.ownerId &&
-                              r.sitterId === selectedApplicant?.sitterId,
-                          );
-                          setActiveTab("one_on_one");
-                          setSelectedApplicantId(null);
-                          if (room) setSelectedRoomId(room.id);
-                        }}
-                        onServiceConfirm={(id) =>
-                          setPendingServiceConfirmId(id)
-                        }
-                        isServiceConfirmed={
-                          !!msg.serviceCompleteData?.reservationId &&
-                          confirmedServiceIds.has(
-                            msg.serviceCompleteData.reservationId,
-                          )
-                        }
-                        isServiceConfirming={isServiceConfirming}
-                        onReservationEditConfirm={handleReservationEditConfirm}
-                        onReservationEditReject={handleReservationEditReject}
-                        confirmedEditIds={confirmedEditIds}
-                      />
-                    );
-                  })}
+                  <MessageList
+                    messages={processedMessages}
+                    senderInitial={mobileRoomInitial}
+                    senderProfileImage={mobileRoomProfileImage}
+                    isCurrentUserSitter={isCurrentUserSitter}
+                    selectedApplicantPostId={selectedApplicant?.postId}
+                    lastPaymentReqId={lastPaymentReqId}
+                    paymentState={paymentState}
+                    payingNow={payingNow}
+                    isPaymentPending={isPaymentPending}
+                    confirmedServiceIds={confirmedServiceIds}
+                    isServiceConfirming={isServiceConfirming}
+                    confirmedEditIds={confirmedEditIds}
+                    hasMore={hasMore}
+                    loadingMore={loadingMore}
+                    onLoadMore={handleLoadMore}
+                    onPaymentRequest={handlePayNow}
+                    onNavigateToPost={(postId) => router.push(`/board/${postId}`)}
+                    onGoToChat={handleGoToChatDesktop}
+                    onServiceConfirm={(id) => setPendingServiceConfirmId(id)}
+                    onReservationEditConfirm={handleReservationEditConfirm}
+                    onReservationEditReject={handleReservationEditReject}
+                  />
 
                   <div ref={messagesEndRef} />
                 </div>
