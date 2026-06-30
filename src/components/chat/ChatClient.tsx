@@ -8,22 +8,14 @@ import {
   useMemo,
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Search, ChevronLeft, MoreVertical, Send, Plus } from "lucide-react";
 import Header from "@/components/layout/Header";
-import Avatar from "@/components/ui/Avatar";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  ChatRoomItem,
-  ChatWindowHeader,
-  MessageBubble,
-  ChatInput,
-  ChatPlusPanel,
   ApplicantProfilePopup,
-  ApplicantPostGroup,
-  ReservationRequestCard,
   type Applicant,
   type Message,
 } from "@/components/common/chat/chat_components";
+import { ChatSidebar } from "@/components/chat/ChatSidebar";
+import { ChatWindow } from "@/components/chat/ChatWindow";
 import { CustomModal } from "@/components/common/CustomModal";
 import { CustomModalPayment } from "@/components/common/CustomModalPayment";
 import CareRecordModal, {
@@ -118,108 +110,6 @@ function withDateSeparators(msgs: Message[]): Message[] {
   return result;
 }
 
-interface MessageListProps {
-  messages: Message[];
-  senderInitial: string;
-  senderProfileImage: string | null;
-  isCurrentUserSitter: boolean;
-  selectedApplicantPostId: string | undefined;
-  lastPaymentReqId: string | null;
-  paymentState: PaymentStateInfo | null;
-  payingNow: boolean;
-  isPaymentPending: boolean;
-  confirmedServiceIds: Set<string>;
-  isServiceConfirming: boolean;
-  confirmedEditIds: Set<string>;
-  hasMore: boolean;
-  loadingMore: boolean;
-  onLoadMore: () => void;
-  onPaymentRequest: () => void;
-  onNavigateToPost: (postId: string) => void;
-  onGoToChat: () => void;
-  onServiceConfirm: (id: string) => void;
-  onReservationEditConfirm: (
-    messageId: string,
-    reservationId: string,
-    proposed: { start_datetime: string; end_datetime: string; memo?: string | null },
-  ) => void;
-  onReservationEditReject: (messageId: string) => void;
-}
-
-function MessageList({
-  messages,
-  senderInitial,
-  senderProfileImage,
-  isCurrentUserSitter,
-  selectedApplicantPostId,
-  lastPaymentReqId,
-  paymentState,
-  payingNow,
-  isPaymentPending,
-  confirmedServiceIds,
-  isServiceConfirming,
-  confirmedEditIds,
-  hasMore,
-  loadingMore,
-  onLoadMore,
-  onPaymentRequest,
-  onNavigateToPost,
-  onGoToChat,
-  onServiceConfirm,
-  onReservationEditConfirm,
-  onReservationEditReject,
-}: MessageListProps) {
-  return (
-    <>
-      {hasMore && (
-        <div className="flex justify-center py-2">
-          <button
-            onClick={onLoadMore}
-            disabled={loadingMore}
-            className="text-sm text-orange-500 disabled:text-stone-400"
-          >
-            {loadingMore ? "불러오는 중..." : "이전 메시지 더 보기"}
-          </button>
-        </div>
-      )}
-      {messages.map((msg) => {
-        const postId =
-          msg.applicationData?.postId ||
-          msg.paymentData?.postId ||
-          selectedApplicantPostId;
-        const isThisPaymentPaid =
-          msg.from === "payment_request"
-            ? msg.id === lastPaymentReqId
-              ? (paymentState?.paid ?? false)
-              : true
-            : false;
-        return (
-          <MessageBubble
-            key={msg.id}
-            msg={msg}
-            senderInitial={senderInitial}
-            senderProfileImage={senderProfileImage}
-            isCurrentUserSitter={isCurrentUserSitter}
-            onPaymentRequest={onPaymentRequest}
-            isPaymentPending={payingNow || isPaymentPending}
-            isPaymentPaid={isThisPaymentPaid}
-            onPostClick={postId ? () => onNavigateToPost(postId) : undefined}
-            onGoToChat={onGoToChat}
-            onServiceConfirm={onServiceConfirm}
-            isServiceConfirmed={
-              !!msg.serviceCompleteData?.reservationId &&
-              confirmedServiceIds.has(msg.serviceCompleteData.reservationId)
-            }
-            isServiceConfirming={isServiceConfirming}
-            onReservationEditConfirm={onReservationEditConfirm}
-            onReservationEditReject={onReservationEditReject}
-            confirmedEditIds={confirmedEditIds}
-          />
-        );
-      })}
-    </>
-  );
-}
 
 function ChatPageContent({
   initialTab,
@@ -237,7 +127,6 @@ function ChatPageContent({
     }
   }, [isLoading, user?.isVerified, router]);
 
-  const [editMode, setEditMode] = useState(false);
   const [activeTab, setActiveTab] = useState<
     "one_on_one" | "reservations" | "applicants"
   >(initialTab);
@@ -745,7 +634,6 @@ function ChatPageContent({
     }
     setSendError(null);
     setSendingPhoto(true);
-    setPlusMenuOpen(false);
     try {
       const imageUrl = await uploadToCloudinary(file, "chats/photos");
       const result = await sendImageMessage(activeRoomId, imageUrl);
@@ -794,18 +682,8 @@ function ChatPageContent({
     }
   }, [initialRoomId, rooms, applicants, reservationRequests, loading]);
 
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profilePopupApplicant, setProfilePopupApplicant] =
     useState<Applicant | null>(null);
-  const [collapsedPosts, setCollapsedPosts] = useState<Set<string>>(new Set());
-  const togglePostCollapse = (postId: string) =>
-    setCollapsedPosts((prev) => {
-      const next = new Set(prev);
-      next.has(postId) ? next.delete(postId) : next.add(postId);
-      return next;
-    });
-
-  const [plusMenuOpen, setPlusMenuOpen] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [sendingPhoto, setSendingPhoto] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
@@ -866,7 +744,6 @@ function ChatPageContent({
   };
   async function handleServiceStart() {
     if (!activeRoomId) return;
-    setPlusMenuOpen(false);
     setServiceStartModalLoading(true);
     setReadyReservations([]);
     setServiceStartModalOpen(true);
@@ -1012,7 +889,6 @@ function ChatPageContent({
 
   async function handleServiceComplete() {
     if (!activeRoomId) return;
-    setPlusMenuOpen(false);
     setServiceCompleteModalLoading(true);
     setActiveReservations([]);
     setServiceCompleteModalOpen(true);
@@ -1204,7 +1080,6 @@ function ChatPageContent({
         setMobileChatView("list");
       }
       setPendingDelete(null);
-      setMobileMenuOpen(false);
     } catch {
       setDeleteError("오류가 발생했습니다. 다시 시도해주세요.");
     } finally {
@@ -1468,733 +1343,251 @@ function ChatPageContent({
     if (room) setSelectedRoomId(room.id);
   }
 
+  const leaveChat = () => {
+    if (activeTab === "one_on_one" && selectedRoomId !== null)
+      handleDeleteRoom(selectedRoomId);
+    else if (
+      activeTab === "reservations" &&
+      selectedReservationRequestId !== null
+    )
+      handleDeleteReservationRequest(selectedReservationRequestId);
+    else if (activeTab === "applicants" && selectedApplicantId !== null)
+      handleDeleteApplicant(selectedApplicantId);
+  };
+
   return (
     <div className="h-screen overflow-hidden flex flex-col">
       <Header />
 
-      {/* ── 모바일 레이아웃 (md 미만) ── */}
+      {/* 모바일 */}
       <div className="md:hidden flex flex-col flex-1 overflow-hidden">
         {mobileChatView === "list" ? (
-          /* 채팅 목록 뷰 */
-          <div className="flex flex-col h-full">
-            {/* 헤더 */}
-            <div className="px-5 pt-5 bg-white border-b border-orange-100 shrink-0">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold text-stone-900">채팅</h2>
-                <button
-                  onClick={() => setEditMode((v) => !v)}
-                  className={`text-sm font-medium transition-colors ${editMode ? "text-stone-900" : "text-orange-500"}`}
-                >
-                  {editMode ? "완료" : "편집"}
-                </button>
-              </div>
-              {/* 탭 */}
-              <div className="flex">
-                {(["one_on_one", "reservations", "applicants"] as const).map(
-                  (tab) => (
-                    <button
-                      key={tab}
-                      onClick={() => {
-                        setActiveTab(tab);
-                        setEditMode(false);
-                        setMobileChatView("list");
-                      }}
-                      className={`flex-1 py-2 text-sm font-medium border-b-2 transition-colors ${
-                        activeTab === tab
-                          ? "border-orange-500 text-orange-500"
-                          : "border-transparent text-gray-400"
-                      }`}
-                    >
-                      {tab === "one_on_one"
-                        ? "1:1 채팅"
-                        : tab === "reservations"
-                          ? "예약 목록"
-                          : "지원 목록"}
-                    </button>
-                  ),
-                )}
-              </div>
-            </div>
-
-            {/* 검색창 */}
-            <div className="px-5 py-3 bg-white border-b border-orange-100 shrink-0">
-              <div className="flex items-center gap-2 px-4 py-2.5 bg-orange-50 rounded-xl">
-                <Search size={16} className="text-gray-400 shrink-0" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="채팅방 검색"
-                  className="flex-1 bg-transparent text-sm text-stone-900 placeholder-stone-900/50 outline-none"
-                />
-              </div>
-            </div>
-
-            {/* 목록 */}
-            <ScrollArea className="flex-1 overflow-hidden">
-              {loading && (
-                <p className="text-center text-stone-400 text-sm pt-16">
-                  불러오는 중...
-                </p>
-              )}
-              {!loading && error && (
-                <p className="text-center text-stone-400 text-sm pt-16">
-                  {error}
-                </p>
-              )}
-              {!loading &&
-                !error &&
-                activeTab === "one_on_one" &&
-                rooms.length === 0 && (
-                  <p className="text-center text-stone-400 text-sm pt-16">
-                    새로운 채팅이 존재하지 않습니다
-                  </p>
-                )}
-              {!loading &&
-                !error &&
-                activeTab === "applicants" &&
-                applicants.length === 0 && (
-                  <p className="text-center text-stone-400 text-sm pt-16">
-                    새로운 채팅이 존재하지 않습니다
-                  </p>
-                )}
-              {!loading &&
-                !error &&
-                activeTab === "reservations" &&
-                reservationRequests.length === 0 && (
-                  <p className="text-center text-stone-400 text-sm pt-16">
-                    예약 요청이 없습니다
-                  </p>
-                )}
-              {activeTab === "one_on_one" &&
-                filteredRooms.map((room) => (
-                  <ChatRoomItem
-                    key={room.id}
-                    room={room}
-                    isSelected={false}
-                    editMode={editMode}
-                    onDelete={handleDeleteRoom}
-                    onClick={(id) => {
-                      setSelectedRoomId(id);
-                      setMobileChatView("room");
-                    }}
-                  />
-                ))}
-
-              {activeTab === "reservations" &&
-                filteredReservationRequests.map((rr) => (
-                  <ReservationRequestCard
-                    key={rr.id}
-                    reservationRequest={rr}
-                    isSelected={false}
-                    editMode={editMode}
-                    isSitter={rr.ownerId !== userId}
-                    actioningId={actioningId}
-                    onSelect={(id) => {
-                      setSelectedReservationRequestId(id);
-                      setMobileChatView("room");
-                    }}
-                    onReject={handleRejectReservation}
-                    onAccept={handleAcceptReservation}
-                    onDelete={handleDeleteReservationRequest}
-                  />
-                ))}
-
-              {activeTab === "applicants" && (
-                <>
-                  {filteredPosts.map((post) => (
-                    <ApplicantPostGroup
-                      key={post.id}
-                      post={post}
-                      applicants={filteredApplicants.filter(
-                        (a) => a.postId === post.id,
-                      )}
-                      isCollapsed={collapsedPosts.has(post.id)}
-                      isOwner={
-                        applicants.find((a) => a.postId === post.id)
-                          ?.ownerId === userId
-                      }
-                      selectedApplicantId={selectedApplicantId}
-                      rejectedIds={rejectedIds}
-                      confirmedId={confirmedIds.get(post.id) ?? null}
-                      editMode={editMode}
-                      onToggle={() => togglePostCollapse(post.id)}
-                      onDelete={handleDeleteApplicant}
-                      onReject={handleRejectApplicant}
-                      onConfirm={handleConfirmClick}
-                      onSelect={(id) => {
-                        setSelectedApplicantId(id);
-                        setMobileChatView("room");
-                      }}
-                      onAvatarClick={openApplicantProfile}
-                      getApplicantBadge={getApplicantBadge}
-                    />
-                  ))}
-                </>
-              )}
-            </ScrollArea>
-          </div>
+          <ChatSidebar
+            className="flex flex-col h-full"
+            isMobile
+            activeTab={activeTab}
+            searchQuery={searchQuery}
+            loading={loading}
+            error={error}
+            userId={userId}
+            filteredRooms={filteredRooms}
+            filteredApplicants={filteredApplicants}
+            filteredPosts={filteredPosts}
+            filteredReservationRequests={filteredReservationRequests}
+            totalRoomCount={rooms.length}
+            totalApplicantCount={applicants.length}
+            totalReservationCount={reservationRequests.length}
+            applicants={applicants}
+            selectedRoomId={selectedRoomId}
+            selectedApplicantId={selectedApplicantId}
+            selectedReservationRequestId={selectedReservationRequestId}
+            rejectedIds={rejectedIds}
+            confirmedIds={confirmedIds}
+            actioningId={actioningId}
+            getApplicantBadge={getApplicantBadge}
+            onTabChange={(tab) => {
+              setActiveTab(tab);
+              setMobileChatView("list");
+            }}
+            onSearchChange={setSearchQuery}
+            onRoomSelect={(id) => {
+              setSelectedRoomId(id);
+              setMobileChatView("room");
+            }}
+            onApplicantSelect={(id) => {
+              setSelectedApplicantId(id);
+              setMobileChatView("room");
+            }}
+            onReservationSelect={(id) => {
+              setSelectedReservationRequestId(id);
+              setMobileChatView("room");
+            }}
+            onDeleteRoom={handleDeleteRoom}
+            onDeleteApplicant={handleDeleteApplicant}
+            onDeleteReservationRequest={handleDeleteReservationRequest}
+            onRejectReservation={handleRejectReservation}
+            onAcceptReservation={handleAcceptReservation}
+            onRejectApplicant={handleRejectApplicant}
+            onConfirm={handleConfirmClick}
+            onAvatarClick={openApplicantProfile}
+          />
         ) : (
-          /* 채팅방 뷰 */
-          <div className="flex flex-col h-full">
-            {/* 헤더 */}
-            <div className="h-14 px-4 bg-white border-b border-orange-100 flex items-center gap-3 shrink-0">
-              <button
-                onClick={() => setMobileChatView("list")}
-                className="p-1 -ml-1"
-              >
-                <ChevronLeft size={24} className="text-stone-900" />
-              </button>
-              <Avatar
-                initial={mobileRoomInitial}
-                src={mobileRoomProfileImage}
-                size="sm"
-              />
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm text-stone-900 truncate">
-                  {mobileRoomName}
-                </p>
-                <p className="text-xs text-gray-400 truncate">
-                  {getHeaderSub()}
-                </p>
-              </div>
-              <span
-                className={`text-xs px-2.5 py-1 rounded-full font-medium shrink-0 ${headerBadge.className}`}
-              >
-                {headerBadge.label}
-              </span>
-              <div className="relative">
-                <button
-                  onClick={() => setMobileMenuOpen((v) => !v)}
-                  className="p-1"
-                >
-                  <MoreVertical size={20} className="text-gray-500" />
-                </button>
-                {mobileMenuOpen && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-10"
-                      onClick={() => setMobileMenuOpen(false)}
-                    />
-                    <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-lg border border-orange-100 z-20 overflow-hidden">
-                      <button
-                        onClick={() => {
-                          const sitterId =
-                            activeTab === "one_on_one"
-                              ? selectedRoom?.sitterId
-                              : selectedApplicant?.sitterId;
-                          if (sitterId) router.push(`/petsitters/${sitterId}`);
-                          setMobileMenuOpen(false);
-                        }}
-                        className="w-full px-4 py-3 text-left text-sm text-stone-700 hover:bg-orange-50 transition-colors"
-                      >
-                        프로필로 이동하기
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (
-                            activeTab === "one_on_one" &&
-                            selectedRoomId !== null
-                          )
-                            handleDeleteRoom(selectedRoomId);
-                          else if (
-                            activeTab === "reservations" &&
-                            selectedReservationRequestId !== null
-                          )
-                            handleDeleteReservationRequest(
-                              selectedReservationRequestId,
-                            );
-                          else if (
-                            activeTab === "applicants" &&
-                            selectedApplicantId !== null
-                          )
-                            handleDeleteApplicant(selectedApplicantId);
-                          setMobileMenuOpen(false);
-                        }}
-                        className="w-full px-4 py-3 text-left text-sm text-stone-700 hover:bg-orange-50 transition-colors border-t border-orange-50"
-                      >
-                        채팅 나가기
-                      </button>
-                      <button
-                        onClick={() => {
-                          router.push(getReportUrl());
-                          setMobileMenuOpen(false);
-                        }}
-                        className="w-full px-4 py-3 text-left text-sm text-red-500 hover:bg-red-50 transition-colors border-t border-orange-50"
-                      >
-                        신고하기
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* 메시지 영역 */}
-            <div
-              ref={mobileScrollRef}
-              className="flex-1 min-h-0 overflow-y-auto bg-orange-50"
-            >
-              <div
-                className="px-4 py-4 flex flex-col gap-4"
-                onClick={() => {
-                  if (plusMenuOpen) setPlusMenuOpen(false);
-                }}
-              >
-                <MessageList
-                  messages={processedMessages}
-                  senderInitial={mobileRoomInitial}
-                  senderProfileImage={mobileRoomProfileImage}
-                  isCurrentUserSitter={isCurrentUserSitter}
-                  selectedApplicantPostId={selectedApplicant?.postId}
-                  lastPaymentReqId={lastPaymentReqId}
-                  paymentState={paymentState}
-                  payingNow={payingNow}
-                  isPaymentPending={isPaymentPending}
-                  confirmedServiceIds={confirmedServiceIds}
-                  isServiceConfirming={isServiceConfirming}
-                  confirmedEditIds={confirmedEditIds}
-                  hasMore={hasMore}
-                  loadingMore={loadingMore}
-                  onLoadMore={handleLoadMore}
-                  onPaymentRequest={handlePayNow}
-                  onNavigateToPost={(postId) => router.push(`/board/${postId}`)}
-                  onGoToChat={handleGoToChatMobile}
-                  onServiceConfirm={(id) => setPendingServiceConfirmId(id)}
-                  onReservationEditConfirm={handleReservationEditConfirm}
-                  onReservationEditReject={handleReservationEditReject}
-                />
-              </div>
-            </div>
-
-            {/* 지원자 거절/확정 버튼 */}
-            {showApplicantActions && (
-              <div className="px-4 py-2.5 bg-white border-t border-orange-100 flex flex-col gap-1 shrink-0">
-                {applicationActionError && (
-                  <p className="text-xs text-red-500 px-1">
-                    {applicationActionError}
-                  </p>
-                )}
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleRejectApplicant(selectedApplicantId!)}
-                    disabled={!!actioningId}
-                    className="flex-1 py-2 text-sm text-gray-500 border border-stone-200 rounded-xl hover:bg-stone-50 transition-colors disabled:opacity-50"
-                  >
-                    거절
-                  </button>
-                  <button
-                    onClick={() => handleConfirmClick(selectedApplicantId!)}
-                    disabled={!!actioningId}
-                    className="flex-1 py-2 text-sm text-white bg-orange-500 rounded-xl hover:bg-orange-600 transition-colors font-medium disabled:opacity-50"
-                  >
-                    선택 확정
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* + 버튼 패널 */}
-            {plusMenuOpen && (
-              <ChatPlusPanel
-                onPaymentRequest={
-                  isCurrentUserSitter
-                    ? () => {
-                        setPlusMenuOpen(false);
-                        setPaymentModalOpen(true);
-                      }
-                    : undefined
-                }
-                onSendCareRecord={
-                  isCurrentUserSitter
-                    ? () => {
-                        setPlusMenuOpen(false);
-                        setCareRecordOpen(true);
-                      }
-                    : undefined
-                }
-                onServiceStart={
-                  isCurrentUserSitter ? handleServiceStart : undefined
-                }
-                onServiceComplete={
-                  isCurrentUserSitter ? handleServiceComplete : undefined
-                }
-                onReservationEdit={
-                  activeTab === "one_on_one"
-                    ? () => {
-                        setPlusMenuOpen(false);
-                        setReservationEditOpen(true);
-                      }
-                    : undefined
-                }
-                onSendPhoto={() => photoInputRef.current?.click()}
-              />
-            )}
-
-            {/* 입력창 */}
-            {isRejectedApplicant ? (
-              <div className="px-4 py-3 bg-stone-50 border-t border-stone-200 text-center text-xs text-stone-400 shrink-0">
-                지원이 거절되어 메시지를 보낼 수 없습니다.
-              </div>
-            ) : (
-              <>
-                {sendError && (
-                  <p className="px-4 py-1 text-xs text-red-500 bg-red-50 border-t border-red-100 shrink-0">
-                    {sendError}
-                  </p>
-                )}
-                <div className="px-4 py-3 bg-white border-t border-orange-100 flex items-center gap-2.5 shrink-0">
-                  <button
-                    onClick={() => setPlusMenuOpen((v) => !v)}
-                    className="w-11 h-11 rounded-xl flex items-center justify-center hover:bg-orange-50 transition-colors shrink-0"
-                  >
-                    <Plus
-                      size={22}
-                      className={`text-gray-500 transition-transform duration-200 ${plusMenuOpen ? "rotate-45" : ""}`}
-                    />
-                  </button>
-                  <input
-                    type="text"
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.nativeEvent.isComposing)
-                        handleSend();
-                    }}
-                    placeholder="메시지를 입력하세요"
-                    className="flex-1 h-11 px-4 bg-orange-50 rounded-2xl text-sm text-stone-900 placeholder-stone-900/50 outline-none"
-                  />
-                  <button
-                    onClick={handleSend}
-                    disabled={sending}
-                    className="w-11 h-11 bg-orange-500 rounded-xl flex items-center justify-center shrink-0 disabled:opacity-50"
-                  >
-                    <Send size={16} className="text-white" />
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
+          <ChatWindow
+            isMobile
+            loading={false}
+            error={null}
+            isEmpty={false}
+            hasSelection={true}
+            roomName={mobileRoomName}
+            roomInitial={mobileRoomInitial}
+            roomProfileImage={mobileRoomProfileImage}
+            headerSub={getHeaderSub()}
+            headerBadge={headerBadge}
+            activeTab={activeTab}
+            selectedApplicantPostId={selectedApplicant?.postId}
+            messages={processedMessages}
+            mobileScrollRef={mobileScrollRef}
+            messagesEndRef={messagesEndRef}
+            hasMore={hasMore}
+            loadingMore={loadingMore}
+            paymentState={paymentState}
+            lastPaymentReqId={lastPaymentReqId}
+            confirmedEditIds={confirmedEditIds}
+            confirmedServiceIds={confirmedServiceIds}
+            payingNow={payingNow}
+            isPaymentPending={isPaymentPending}
+            isServiceConfirming={isServiceConfirming}
+            isCurrentUserSitter={isCurrentUserSitter}
+            input={input}
+            sending={sending}
+            sendError={sendError}
+            isRejectedApplicant={isRejectedApplicant}
+            showApplicantActions={showApplicantActions}
+            applicationActionError={applicationActionError}
+            actioningId={actioningId}
+            onBack={() => setMobileChatView("list")}
+            onGoToProfile={() => {
+              const sitterId =
+                activeTab === "one_on_one"
+                  ? selectedRoom?.sitterId
+                  : selectedApplicant?.sitterId;
+              if (sitterId) router.push(`/petsitters/${sitterId}`);
+            }}
+            onLeaveChat={leaveChat}
+            onReport={() => router.push(getReportUrl())}
+            onNavigateToPost={(postId) => router.push(`/board/${postId}`)}
+            onGoToChat={handleGoToChatMobile}
+            onSetInput={setInput}
+            onSend={handleSend}
+            onLoadMore={handleLoadMore}
+            onPayNow={handlePayNow}
+            onOpenPaymentModal={() => setPaymentModalOpen(true)}
+            onOpenCareRecord={() => setCareRecordOpen(true)}
+            onServiceStart={handleServiceStart}
+            onServiceComplete={handleServiceComplete}
+            onOpenReservationEdit={() => setReservationEditOpen(true)}
+            onPhotoClick={() => photoInputRef.current?.click()}
+            onServiceConfirm={(id) => setPendingServiceConfirmId(id)}
+            onReservationEditConfirm={handleReservationEditConfirm}
+            onReservationEditReject={handleReservationEditReject}
+            onRejectApplicant={() => handleRejectApplicant(selectedApplicantId!)}
+            onConfirmApplicant={() => handleConfirmClick(selectedApplicantId!)}
+          />
         )}
       </div>
 
-      {/* ── 데스크톱 레이아웃 (md 이상) ── */}
+      {/* 데스크톱 */}
       <div className="hidden md:flex flex-1 bg-orange-50 overflow-hidden">
-        {/* 사이드바 */}
-        <div className="w-96 bg-white border-r border-orange-100 flex flex-col shrink-0">
-          {/* 헤더 */}
-          <div className="px-6 pt-6 border-b border-orange-100">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-stone-900 text-2xl font-bold">채팅</h2>
-              <button
-                onClick={() => setEditMode((v) => !v)}
-                className={`text-sm font-medium transition-colors ${editMode ? "text-stone-900" : "text-orange-500"}`}
-              >
-                {editMode ? "완료" : "편집"}
-              </button>
-            </div>
-
-            {/* 탭 */}
-            <div className="flex">
-              {(["one_on_one", "reservations", "applicants"] as const).map(
-                (tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => {
-                      setActiveTab(tab);
-                      setEditMode(false);
-                    }}
-                    className={`flex-1 py-2 text-sm font-medium border-b-2 transition-colors ${
-                      activeTab === tab
-                        ? "border-orange-500 text-orange-500"
-                        : "border-transparent text-gray-400"
-                    }`}
-                  >
-                    {tab === "one_on_one"
-                      ? "1:1 채팅"
-                      : tab === "reservations"
-                        ? "예약 목록"
-                        : "지원 목록"}
-                  </button>
-                ),
-              )}
-            </div>
-          </div>
-
-          {/* 검색창 */}
-          <div className="px-6 py-3 border-b border-orange-100">
-            <div className="flex items-center gap-2 px-4 py-3 bg-orange-50 rounded-xl">
-              <Search size={16} className="text-gray-400 shrink-0" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="채팅방 검색"
-                className="flex-1 bg-transparent text-sm text-stone-900 placeholder-stone-900/50 outline-none"
-              />
-            </div>
-          </div>
-
-          {/* 1:1 채팅 목록 */}
-          {activeTab === "one_on_one" && (
-            <ScrollArea className="flex-1 overflow-hidden">
-              {filteredRooms.map((room) => (
-                <ChatRoomItem
-                  key={room.id}
-                  room={room}
-                  isSelected={selectedRoomId === room.id}
-                  editMode={editMode}
-                  onDelete={handleDeleteRoom}
-                  onClick={setSelectedRoomId}
-                />
-              ))}
-            </ScrollArea>
-          )}
-
-          {/* 예약 목록 */}
-          {activeTab === "reservations" && (
-            <ScrollArea className="flex-1 overflow-hidden">
-              {filteredReservationRequests.length === 0 && (
-                <p className="text-center text-stone-400 text-sm pt-16">
-                  예약 요청이 없습니다
-                </p>
-              )}
-              {filteredReservationRequests.map((rr) => (
-                <ReservationRequestCard
-                  key={rr.id}
-                  reservationRequest={rr}
-                  isSelected={selectedReservationRequestId === rr.id}
-                  editMode={editMode}
-                  isSitter={rr.ownerId !== userId}
-                  actioningId={actioningId}
-                  onSelect={setSelectedReservationRequestId}
-                  onReject={handleRejectReservation}
-                  onAccept={handleAcceptReservation}
-                  onDelete={handleDeleteReservationRequest}
-                />
-              ))}
-            </ScrollArea>
-          )}
-
-          {/* 지원 목록 */}
-          {activeTab === "applicants" && (
-            <ScrollArea className="flex-1 overflow-hidden">
-              {filteredPosts.map((post) => (
-                <ApplicantPostGroup
-                  key={post.id}
-                  post={post}
-                  applicants={filteredApplicants.filter(
-                    (a) => a.postId === post.id,
-                  )}
-                  isCollapsed={collapsedPosts.has(post.id)}
-                  isOwner={
-                    applicants.find((a) => a.postId === post.id)?.ownerId ===
-                    userId
-                  }
-                  selectedApplicantId={selectedApplicantId}
-                  rejectedIds={rejectedIds}
-                  confirmedId={confirmedIds.get(post.id) ?? null}
-                  editMode={editMode}
-                  onToggle={() => togglePostCollapse(post.id)}
-                  onDelete={handleDeleteApplicant}
-                  onReject={handleRejectApplicant}
-                  onConfirm={handleConfirmClick}
-                  onSelect={setSelectedApplicantId}
-                  onAvatarClick={openApplicantProfile}
-                  getApplicantBadge={getApplicantBadge}
-                />
-              ))}
-            </ScrollArea>
-          )}
-        </div>
-
-        {/* 채팅창 */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {loading ? (
-            <div className="flex-1 flex items-center justify-center">
-              <p className="text-stone-400 text-sm">불러오는 중...</p>
-            </div>
-          ) : error ? (
-            <div className="flex-1 flex items-center justify-center">
-              <p className="text-stone-400 text-sm">{error}</p>
-            </div>
-          ) : (activeTab === "one_on_one" && rooms.length === 0) ||
+        <ChatSidebar
+          className="w-96 bg-white border-r border-orange-100 flex flex-col shrink-0"
+          activeTab={activeTab}
+          searchQuery={searchQuery}
+          loading={loading}
+          error={error}
+          userId={userId}
+          filteredRooms={filteredRooms}
+          filteredApplicants={filteredApplicants}
+          filteredPosts={filteredPosts}
+          filteredReservationRequests={filteredReservationRequests}
+          totalRoomCount={rooms.length}
+          totalApplicantCount={applicants.length}
+          totalReservationCount={reservationRequests.length}
+          applicants={applicants}
+          selectedRoomId={selectedRoomId}
+          selectedApplicantId={selectedApplicantId}
+          selectedReservationRequestId={selectedReservationRequestId}
+          rejectedIds={rejectedIds}
+          confirmedIds={confirmedIds}
+          actioningId={actioningId}
+          getApplicantBadge={getApplicantBadge}
+          onTabChange={setActiveTab}
+          onSearchChange={setSearchQuery}
+          onRoomSelect={setSelectedRoomId}
+          onApplicantSelect={setSelectedApplicantId}
+          onReservationSelect={setSelectedReservationRequestId}
+          onDeleteRoom={handleDeleteRoom}
+          onDeleteApplicant={handleDeleteApplicant}
+          onDeleteReservationRequest={handleDeleteReservationRequest}
+          onRejectReservation={handleRejectReservation}
+          onAcceptReservation={handleAcceptReservation}
+          onRejectApplicant={handleRejectApplicant}
+          onConfirm={handleConfirmClick}
+          onAvatarClick={openApplicantProfile}
+        />
+        <ChatWindow
+          isMobile={false}
+          loading={loading}
+          error={error}
+          isEmpty={
+            (activeTab === "one_on_one" && rooms.length === 0) ||
             (activeTab === "applicants" && applicants.length === 0) ||
-            (activeTab === "reservations" &&
-              reservationRequests.length === 0) ? (
-            <div className="flex-1 flex items-center justify-center">
-              <p className="text-stone-400 text-sm">
-                새로운 채팅이 존재하지 않습니다
-              </p>
-            </div>
-          ) : (activeTab === "one_on_one" && selectedRoomId === null) ||
-            (activeTab === "applicants" && selectedApplicantId === null) ||
-            (activeTab === "reservations" &&
-              selectedReservationRequestId === null) ? (
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-center">
-                <p className="text-base mb-2 text-stone-500">
-                  채팅방을 선택해주세요
-                </p>
-                <p className="text-sm text-stone-400">
-                  왼쪽 목록에서 대화를 시작할 상대를 선택하세요
-                </p>
-              </div>
-            </div>
-          ) : (
-            <>
-              <ChatWindowHeader
-                initial={
-                  activeTab === "one_on_one"
-                    ? (selectedRoom?.initial ?? "")
-                    : activeTab === "reservations"
-                      ? (selectedReservationRequest?.initial ?? "")
-                      : (selectedApplicant?.initial ?? "")
-                }
-                src={
-                  activeTab === "one_on_one"
-                    ? (selectedRoom?.profileImage ?? null)
-                    : activeTab === "reservations"
-                      ? (selectedReservationRequest?.profileImage ?? null)
-                      : (selectedApplicant?.profileImage ?? null)
-                }
-                name={
-                  activeTab === "one_on_one"
-                    ? (selectedRoom?.name ?? "")
-                    : activeTab === "reservations"
-                      ? (selectedReservationRequest?.name ?? "")
-                      : (selectedApplicant?.name ?? "")
-                }
-                sub={getHeaderSub()}
-                badge={getHeaderBadge()}
-                onGoToProfile={() => {
-                  const sitterId =
-                    activeTab === "one_on_one"
-                      ? selectedRoom?.sitterId
-                      : activeTab === "reservations"
-                        ? selectedReservationRequest?.sitterId
-                        : selectedApplicant?.sitterId;
-                  if (sitterId) router.push(`/petsitters/${sitterId}`);
-                }}
-                onLeaveChat={() => {
-                  if (activeTab === "one_on_one" && selectedRoomId !== null)
-                    handleDeleteRoom(selectedRoomId);
-                  else if (
-                    activeTab === "reservations" &&
-                    selectedReservationRequestId !== null
-                  )
-                    handleDeleteReservationRequest(
-                      selectedReservationRequestId,
-                    );
-                  else if (
-                    activeTab === "applicants" &&
-                    selectedApplicantId !== null
-                  )
-                    handleDeleteApplicant(selectedApplicantId);
-                }}
-                onReport={() => router.push(getReportUrl())}
-              />
-
-              <ScrollArea className="flex-1 min-h-0">
-                <div
-                  className="px-8 py-6 flex flex-col gap-6"
-                  onClick={() => {
-                    if (plusMenuOpen) setPlusMenuOpen(false);
-                  }}
-                >
-                  <MessageList
-                    messages={processedMessages}
-                    senderInitial={mobileRoomInitial}
-                    senderProfileImage={mobileRoomProfileImage}
-                    isCurrentUserSitter={isCurrentUserSitter}
-                    selectedApplicantPostId={selectedApplicant?.postId}
-                    lastPaymentReqId={lastPaymentReqId}
-                    paymentState={paymentState}
-                    payingNow={payingNow}
-                    isPaymentPending={isPaymentPending}
-                    confirmedServiceIds={confirmedServiceIds}
-                    isServiceConfirming={isServiceConfirming}
-                    confirmedEditIds={confirmedEditIds}
-                    hasMore={hasMore}
-                    loadingMore={loadingMore}
-                    onLoadMore={handleLoadMore}
-                    onPaymentRequest={handlePayNow}
-                    onNavigateToPost={(postId) => router.push(`/board/${postId}`)}
-                    onGoToChat={handleGoToChatDesktop}
-                    onServiceConfirm={(id) => setPendingServiceConfirmId(id)}
-                    onReservationEditConfirm={handleReservationEditConfirm}
-                    onReservationEditReject={handleReservationEditReject}
-                  />
-
-                  <div ref={messagesEndRef} />
-                </div>
-              </ScrollArea>
-
-              {plusMenuOpen && (
-                <ChatPlusPanel
-                  onPaymentRequest={
-                    isCurrentUserSitter
-                      ? () => {
-                          setPlusMenuOpen(false);
-                          setPaymentModalOpen(true);
-                        }
-                      : undefined
-                  }
-                  onSendCareRecord={
-                    isCurrentUserSitter
-                      ? () => {
-                          setPlusMenuOpen(false);
-                          setCareRecordOpen(true);
-                        }
-                      : undefined
-                  }
-                  onServiceStart={
-                    isCurrentUserSitter ? handleServiceStart : undefined
-                  }
-                  onServiceComplete={
-                    isCurrentUserSitter ? handleServiceComplete : undefined
-                  }
-                  onReservationEdit={
-                    activeTab === "one_on_one"
-                      ? () => {
-                          setPlusMenuOpen(false);
-                          setReservationEditOpen(true);
-                        }
-                      : undefined
-                  }
-                  onSendPhoto={() => photoInputRef.current?.click()}
-                />
-              )}
-              {applicationActionError && (
-                <p className="px-8 py-1 text-xs text-red-500 bg-red-50 border-t border-red-100 shrink-0">
-                  {applicationActionError}
-                </p>
-              )}
-              {isRejectedApplicant ? (
-                <div className="px-8 py-4 bg-stone-50 border-t border-stone-200 text-center text-sm text-stone-400 shrink-0">
-                  지원이 거절되어 메시지를 보낼 수 없습니다.
-                </div>
-              ) : (
-                <>
-                  {sendError && (
-                    <p className="px-8 py-1 text-xs text-red-500 bg-red-50 border-t border-red-100 shrink-0">
-                      {sendError}
-                    </p>
-                  )}
-                  <ChatInput
-                    input={input}
-                    onChange={setInput}
-                    onSend={handleSend}
-                    showPlusButton={true}
-                    plusOpen={plusMenuOpen}
-                    onPlusToggle={() => setPlusMenuOpen((v) => !v)}
-                    disabled={sending}
-                  />
-                </>
-              )}
-            </>
-          )}
-        </div>
+            (activeTab === "reservations" && reservationRequests.length === 0)
+          }
+          hasSelection={
+            !(
+              (activeTab === "one_on_one" && selectedRoomId === null) ||
+              (activeTab === "applicants" && selectedApplicantId === null) ||
+              (activeTab === "reservations" &&
+                selectedReservationRequestId === null)
+            )
+          }
+          roomName={mobileRoomName}
+          roomInitial={mobileRoomInitial}
+          roomProfileImage={mobileRoomProfileImage}
+          headerSub={getHeaderSub()}
+          headerBadge={headerBadge}
+          activeTab={activeTab}
+          selectedApplicantPostId={selectedApplicant?.postId}
+          messages={processedMessages}
+          mobileScrollRef={mobileScrollRef}
+          messagesEndRef={messagesEndRef}
+          hasMore={hasMore}
+          loadingMore={loadingMore}
+          paymentState={paymentState}
+          lastPaymentReqId={lastPaymentReqId}
+          confirmedEditIds={confirmedEditIds}
+          confirmedServiceIds={confirmedServiceIds}
+          payingNow={payingNow}
+          isPaymentPending={isPaymentPending}
+          isServiceConfirming={isServiceConfirming}
+          isCurrentUserSitter={isCurrentUserSitter}
+          input={input}
+          sending={sending}
+          sendError={sendError}
+          isRejectedApplicant={isRejectedApplicant}
+          showApplicantActions={showApplicantActions}
+          applicationActionError={applicationActionError}
+          actioningId={actioningId}
+          onBack={() => {}}
+          onGoToProfile={() => {
+            const sitterId =
+              activeTab === "one_on_one"
+                ? selectedRoom?.sitterId
+                : activeTab === "reservations"
+                  ? selectedReservationRequest?.sitterId
+                  : selectedApplicant?.sitterId;
+            if (sitterId) router.push(`/petsitters/${sitterId}`);
+          }}
+          onLeaveChat={leaveChat}
+          onReport={() => router.push(getReportUrl())}
+          onNavigateToPost={(postId) => router.push(`/board/${postId}`)}
+          onGoToChat={handleGoToChatDesktop}
+          onSetInput={setInput}
+          onSend={handleSend}
+          onLoadMore={handleLoadMore}
+          onPayNow={handlePayNow}
+          onOpenPaymentModal={() => setPaymentModalOpen(true)}
+          onOpenCareRecord={() => setCareRecordOpen(true)}
+          onServiceStart={handleServiceStart}
+          onServiceComplete={handleServiceComplete}
+          onOpenReservationEdit={() => setReservationEditOpen(true)}
+          onPhotoClick={() => photoInputRef.current?.click()}
+          onServiceConfirm={(id) => setPendingServiceConfirmId(id)}
+          onReservationEditConfirm={handleReservationEditConfirm}
+          onReservationEditReject={handleReservationEditReject}
+          onRejectApplicant={() => handleRejectApplicant(selectedApplicantId!)}
+          onConfirmApplicant={() => handleConfirmClick(selectedApplicantId!)}
+        />
       </div>
 
       <input
