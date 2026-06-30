@@ -164,7 +164,7 @@ Table payments {
   amount int [not null, note: "CHECK (amount >= 0)"]
   
   canceled_amount int [not null, default: 0, note: "CHECK (canceled_amount >= 0)"] // 컬럼명 오타 수정
-  fee_rate numeric [not null, default: 0.10]
+  fee_rate numeric [not null, default: 0.05]
   platform_fee int [not null, default: 0, note: "CHECK (platform_fee >= 0)"]
   settle_amount int [not null, default: 0, note: "CHECK (settle_amount >= 0)"]
   status text [not null, note: "ready / paid / failed / canceled / partial_canceled"] // 허용값 오타 수정 (미국식 통일)
