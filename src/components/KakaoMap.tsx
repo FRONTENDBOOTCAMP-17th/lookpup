@@ -28,7 +28,6 @@ interface KakaoMapProps {
   className?: string;
   selectedMarkerId?: string | number | null;
   onMarkerClick?: (id: string | number) => void;
-  // 지도 빈 곳 클릭 시 클릭 지점 좌표 전달 (위치 직접 지정용)
   onMapClick?: (lat: number, lng: number) => void;
   basePosition?: { lat: number; lng: number };
 }
@@ -68,13 +67,18 @@ export default function KakaoMap({
 }: KakaoMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
-  const kakaoMarkersRef = useRef<any[]>([]);
+  const markerOverlaysRef = useRef<any[]>([]);
   const overlayRef = useRef<any>(null);
   const polylineRef = useRef<any>(null);
   const onMarkerClickRef = useRef(onMarkerClick);
   const onMapClickRef = useRef(onMapClick);
   const basePositionRef = useRef(basePosition);
   const markersRef = useRef(markers);
+  const selectedMarkerIdRef = useRef(selectedMarkerId);
+  const markerClickGuardRef = useRef(false);
+  const markerClickGuardTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
   useEffect(() => {
     onMarkerClickRef.current = onMarkerClick;
@@ -92,14 +96,26 @@ export default function KakaoMap({
     markersRef.current = markers;
   }, [markers]);
 
-  // 재마운트 시 kakao가 이미 로드된 경우 직접 initMap 호출
+  useEffect(() => {
+    selectedMarkerIdRef.current = selectedMarkerId;
+  }, [selectedMarkerId]);
+
+  useEffect(() => {
+    return () => {
+      if (markerClickGuardTimerRef.current) {
+        clearTimeout(markerClickGuardTimerRef.current);
+      }
+      clearMarkerOverlays();
+      clearSelectedGraphics();
+    };
+  }, []);
+
   useEffect(() => {
     if (window.kakao?.maps) {
       window.kakao.maps.load(initMap);
     }
   }, []);
 
-  // center prop 변경 시 지도 pan
   useEffect(() => {
     if (mapRef.current && center) {
       mapRef.current.panTo(new window.kakao.maps.LatLng(center.lat, center.lng));
@@ -124,15 +140,11 @@ export default function KakaoMap({
       mapRef.current,
       "click",
       (mouseEvent: any) => {
-        if (overlayRef.current) {
-          overlayRef.current.setMap(null);
-          overlayRef.current = null;
+        if (markerClickGuardRef.current) {
+          markerClickGuardRef.current = false;
+          return;
         }
-        if (polylineRef.current) {
-          polylineRef.current.setMap(null);
-          polylineRef.current = null;
-        }
-        // 빈 곳 클릭 시 해당 좌표를 콜백으로 전달 (위치 직접 지정)
+        clearSelectedGraphics();
         const latlng = mouseEvent.latLng;
         onMapClickRef.current?.(latlng.getLat(), latlng.getLng());
       },
@@ -141,57 +153,12 @@ export default function KakaoMap({
     drawMarkers();
   }
 
-  function drawMarkers() {
-    const map = mapRef.current;
-    if (!map) return;
-
-    kakaoMarkersRef.current.forEach((m) => m.setMap(null));
-    kakaoMarkersRef.current = [];
-
-    markers.forEach((marker) => {
-      const { lat, lng, id } = marker;
-      const selected = selectedMarkerId === id;
-      const opt = getMarkerSize(selected);
-      const position = new window.kakao.maps.LatLng(lat, lng);
-
-      const markerImage = new window.kakao.maps.MarkerImage(
-        markerImageUrl(selected),
-        new window.kakao.maps.Size(opt.width, opt.height),
-        { offset: new window.kakao.maps.Point(opt.offsetX, opt.offsetY) },
-      );
-
-      const kakaoMarker = new window.kakao.maps.Marker({
-        map,
-        position,
-        image: markerImage,
-      });
-
-      kakaoMarkersRef.current.push(kakaoMarker);
-
-      window.kakao.maps.event.addListener(kakaoMarker, "click", () => {
-        onMarkerClickRef.current?.(id);
-      });
-    });
+  function clearMarkerOverlays() {
+    markerOverlaysRef.current.forEach((overlay) => overlay.setMap(null));
+    markerOverlaysRef.current = [];
   }
 
-  useEffect(() => {
-    if (mapRef.current) {
-      drawMarkers();
-    }
-  }, [markers, selectedMarkerId]);
-
-  // 카드 클릭 등으로 selectedMarkerId가 바뀌면 자동으로 패닝 + overlay 표시
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || selectedMarkerId == null) return;
-
-    const marker = markersRef.current.find((m) => m.id === selectedMarkerId);
-    if (!marker) return;
-
-    const position = new window.kakao.maps.LatLng(marker.lat, marker.lng);
-    map.panTo(position);
-
-    // 기존 overlay/polyline 제거
+  function clearSelectedGraphics() {
     if (overlayRef.current) {
       overlayRef.current.setMap(null);
       overlayRef.current = null;
@@ -200,8 +167,103 @@ export default function KakaoMap({
       polylineRef.current.setMap(null);
       polylineRef.current = null;
     }
+  }
 
-    // polyline
+  function drawMarkers() {
+    const map = mapRef.current;
+    if (!map) return;
+
+    clearMarkerOverlays();
+
+    markersRef.current.forEach((marker) => {
+      const { lat, lng, id } = marker;
+      const selected = String(selectedMarkerIdRef.current) === String(id);
+      const opt = getMarkerSize(selected);
+      const position = new window.kakao.maps.LatLng(lat, lng);
+
+      const button = document.createElement("button");
+      button.type = "button";
+      button.setAttribute("aria-label", `${marker.name ?? "펫시터"} 선택`);
+      button.style.cssText = `
+        width: ${Math.max(opt.width, 44)}px;
+        height: ${Math.max(opt.height, 44)}px;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        touch-action: manipulation;
+      `;
+
+      const image = document.createElement("img");
+      image.src = markerImageUrl(selected);
+      image.alt = "";
+      image.draggable = false;
+      image.style.cssText = `
+        width: ${opt.width}px;
+        height: ${opt.height}px;
+        pointer-events: none;
+      `;
+      button.appendChild(image);
+
+      const stopMapEvent = (event: Event) => {
+        event.stopPropagation();
+      };
+      button.addEventListener("pointerdown", stopMapEvent);
+      button.addEventListener("mousedown", stopMapEvent);
+      button.addEventListener("touchstart", stopMapEvent, { passive: true });
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        selectMarker(id);
+      });
+
+      const markerOverlay = new window.kakao.maps.CustomOverlay({
+        position,
+        content: button,
+        xAnchor: opt.offsetX / opt.width,
+        yAnchor: opt.offsetY / opt.height,
+        zIndex: selected ? 20 : 10,
+        clickable: true,
+      });
+      markerOverlay.setZIndex(selected ? 20 : 10);
+      markerOverlay.setMap(map);
+      markerOverlaysRef.current.push(markerOverlay);
+    });
+  }
+
+  function selectMarker(id: string | number) {
+    markerClickGuardRef.current = true;
+    if (markerClickGuardTimerRef.current) {
+      clearTimeout(markerClickGuardTimerRef.current);
+    }
+    markerClickGuardTimerRef.current = setTimeout(() => {
+      markerClickGuardRef.current = false;
+    }, 100);
+    selectedMarkerIdRef.current = id;
+    drawMarkers();
+    showSelectedMarker(id);
+    onMarkerClickRef.current?.(id);
+  }
+
+  function showSelectedMarker(id: string | number | null | undefined) {
+    const map = mapRef.current;
+    if (!map) return;
+
+    if (id == null) {
+      clearSelectedGraphics();
+      return;
+    }
+
+    const marker = markersRef.current.find((m) => String(m.id) === String(id));
+    if (!marker) return;
+
+    const position = new window.kakao.maps.LatLng(marker.lat, marker.lng);
+    map.panTo(position);
+    clearSelectedGraphics();
+
     const base = basePositionRef.current;
     if (base) {
       polylineRef.current = new window.kakao.maps.Polyline({
@@ -214,13 +276,7 @@ export default function KakaoMap({
       });
     }
 
-    // overlay
-    const { id, name, district, neighborhood, distanceKm } = marker;
-    const distanceRow =
-      distanceKm !== undefined
-        ? `<div style="color:#f97316; font-size:11px; margin-top:3px;">약 ${formatDistance(distanceKm)}</div>`
-        : "";
-
+    const { name, district, neighborhood, distanceKm } = marker;
     const inner = document.createElement("div");
     inner.style.cssText = `
       padding: 8px 10px;
@@ -233,13 +289,24 @@ export default function KakaoMap({
       white-space: nowrap;
       margin-bottom: 8px;
     `;
-    inner.innerHTML = `
-      <strong>${name ?? ""}</strong>
-      <div style="color:#6B7280; font-size:12px; margin-top:2px;">
-        ${district ?? ""} ${neighborhood ?? ""}
-      </div>
-      ${distanceRow}
-    `;
+
+    const nameEl = document.createElement("strong");
+    nameEl.textContent = name ?? "";
+    inner.appendChild(nameEl);
+
+    const areaEl = document.createElement("div");
+    areaEl.style.cssText = "color:#6B7280; font-size:12px; margin-top:2px;";
+    areaEl.textContent = [district, neighborhood].filter(Boolean).join(" ");
+    inner.appendChild(areaEl);
+
+    if (distanceKm !== undefined) {
+      const distanceEl = document.createElement("div");
+      distanceEl.style.cssText =
+        "color:#f97316; font-size:11px; margin-top:3px;";
+      distanceEl.textContent = `약 ${formatDistance(distanceKm)}`;
+      inner.appendChild(distanceEl);
+    }
+
     const content = document.createElement("div");
     content.appendChild(inner);
 
@@ -247,8 +314,20 @@ export default function KakaoMap({
       position,
       content,
       yAnchor: 1,
+      zIndex: 100,
     });
+    overlayRef.current.setZIndex(100);
     overlayRef.current.setMap(map);
+  }
+
+  useEffect(() => {
+    if (mapRef.current) {
+      drawMarkers();
+    }
+  }, [markers, selectedMarkerId]);
+
+  useEffect(() => {
+    showSelectedMarker(selectedMarkerId);
   }, [selectedMarkerId]);
 
   return (

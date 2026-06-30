@@ -1067,6 +1067,20 @@ export type Database = {
           service_types: string[]
         }[]
       }
+      get_petsitters_filtered: {
+        Args: { p_district?: string | null; p_dong?: string | null }
+        Returns: {
+          available_area: string
+          base_price: number
+          display_area: string
+          full_name: string
+          id: string
+          latitude: number
+          longitude: number
+          rating: number
+          service_types: string[]
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
