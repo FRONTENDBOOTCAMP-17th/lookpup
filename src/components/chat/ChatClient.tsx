@@ -266,16 +266,9 @@ function ChatPageContent({
     }
   }
 
-  async function handleDeleteReservationRequest(id: string) {
-    const result = await deleteReservationRequest(id);
-    if (result.error) {
-      setSendError(result.error);
-      return;
-    }
-    if (selectedReservationRequestId === id) {
-      setSelectedReservationRequestId(null);
-      setMobileChatView("list");
-    }
+  function handleDeleteReservationRequest(id: string) {
+    setPendingDelete({ id, type: "reservation" });
+    setDeleteError(null);
   }
 
   async function handleRejectApplicant(id: string) {
@@ -989,7 +982,7 @@ function ChatPageContent({
 
   const [pendingDelete, setPendingDelete] = useState<{
     id: string;
-    type: "room" | "applicant";
+    type: "room" | "applicant" | "reservation";
   } | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -1068,7 +1061,9 @@ function ChatPageContent({
       const result =
         pendingDelete.type === "room"
           ? await deleteRoom(pendingDelete.id)
-          : await deleteApplicant(pendingDelete.id);
+          : pendingDelete.type === "reservation"
+            ? await deleteReservationRequest(pendingDelete.id)
+            : await deleteApplicant(pendingDelete.id);
       if (result.error) {
         setDeleteError(result.error);
         return;
@@ -1078,6 +1073,13 @@ function ChatPageContent({
         selectedRoomId === pendingDelete.id
       ) {
         setSelectedRoomId(null);
+        setMobileChatView("list");
+      }
+      if (
+        pendingDelete.type === "reservation" &&
+        selectedReservationRequestId === pendingDelete.id
+      ) {
+        setSelectedReservationRequestId(null);
         setMobileChatView("list");
       }
       if (
