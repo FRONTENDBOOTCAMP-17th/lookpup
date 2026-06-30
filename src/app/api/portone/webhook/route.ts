@@ -27,8 +27,10 @@ export async function POST(request: NextRequest) {
   const body = await request.text();
 
   const webhookId = request.headers.get("portone-webhook-id") ?? "";
-  const webhookTimestamp = request.headers.get("portone-webhook-timestamp") ?? "";
-  const webhookSignature = request.headers.get("portone-webhook-signature") ?? "";
+  const webhookTimestamp =
+    request.headers.get("portone-webhook-timestamp") ?? "";
+  const webhookSignature =
+    request.headers.get("portone-webhook-signature") ?? "";
 
   if (!verifySignature(body, webhookId, webhookTimestamp, webhookSignature)) {
     return NextResponse.json(
@@ -42,7 +44,9 @@ export async function POST(request: NextRequest) {
     event = JSON.parse(body);
   } catch {
     return NextResponse.json(
-      { error: { code: "VALIDATION_ERROR", message: "잘못된 요청 형식입니다." } },
+      {
+        error: { code: "VALIDATION_ERROR", message: "잘못된 요청 형식입니다." },
+      },
       { status: 400 },
     );
   }
@@ -54,11 +58,10 @@ export async function POST(request: NextRequest) {
 
   const { data: payment } = await db
     .from("payments")
-    .select("id, reservation_id, amount")
+    .select("id, reservation_id")
     .eq("payment_id", paymentId)
     .maybeSingle();
 
-  // 알 수 없는 결제 ID면 200 반환 (재전송 방지)
   if (!payment) {
     return NextResponse.json({ data: { ok: true } });
   }
@@ -66,49 +69,33 @@ export async function POST(request: NextRequest) {
   const now = new Date().toISOString();
 
   if (type === "Transaction.Paid") {
-    // PortOne API로 실제 결제 금액 검증
-    const portoneRes = await fetch(
-      `https://api.portone.io/payments/${paymentId}`,
-      {
-        headers: {
-          Authorization: `PortOne ${process.env.PORTONE_API_SECRET}`,
-        },
-        cache: "no-store",
-      },
-    );
+    const { data: reservation } = await db
+      .from("reservations")
+      .select("status")
+      .eq("id", payment.reservation_id)
+      .single();
 
-    if (!portoneRes.ok) {
-      return NextResponse.json(
-        { error: { code: "INTERNAL_ERROR", message: "PortOne 결제 조회 실패" } },
-        { status: 500 },
-      );
+    await db
+      .from("payments")
+      .update({ status: "paid", paid_at: now })
+      .eq("id", payment.id);
+
+    if (reservation?.status === "accepted") {
+      await db
+        .from("reservations")
+        .update({ status: "paid", paid_at: now })
+        .eq("id", payment.reservation_id);
     }
-
-    const portonePayment = await portoneRes.json() as {
-      status: string;
-      amount: { total: number };
-    };
-
-    // 실제 결제 금액이 DB 기대 금액과 다르면 위변조로 간주
-    if (
-      portonePayment.status !== "PAID" ||
-      portonePayment.amount.total !== payment.amount
-    ) {
-      await db.from("payments").update({ status: "failed" }).eq("id", payment.id);
-      return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "결제 금액 불일치" } },
-        { status: 400 },
-      );
-    }
-
-    await Promise.all([
-      db.from("payments").update({ status: "paid", paid_at: now }).eq("id", payment.id),
-      db.from("reservations").update({ status: "paid", paid_at: now }).eq("id", payment.reservation_id),
-    ]);
   } else if (type === "Transaction.Cancelled") {
     await Promise.all([
-      db.from("payments").update({ status: "canceled", canceled_at: now }).eq("id", payment.id),
-      db.from("reservations").update({ status: "canceled", canceled_at: now }).eq("id", payment.reservation_id),
+      db
+        .from("payments")
+        .update({ status: "canceled", canceled_at: now })
+        .eq("id", payment.id),
+      db
+        .from("reservations")
+        .update({ status: "canceled", canceled_at: now })
+        .eq("id", payment.reservation_id),
     ]);
   } else if (type === "Transaction.Failed") {
     await db.from("payments").update({ status: "failed" }).eq("id", payment.id);

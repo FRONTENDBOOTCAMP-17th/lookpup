@@ -26,6 +26,7 @@ import {
 } from "@/app/actions/applications";
 import { findOrCreateRoom, findChatRoomAsSitter } from "@/app/actions/chat";
 import { useUserStore } from "@/store/userStore";
+import { createClient } from "@/utils/supabase/client";
 
 type BookingStatus =
   | "pending"

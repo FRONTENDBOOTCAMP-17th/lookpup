@@ -70,6 +70,7 @@ import {
 import { findOrCreateRoom } from "@/app/actions/chat";
 import {
   createPayment,
+  createExtraPayment,
   getAcceptedReservationBySitter,
 } from "@/app/actions/payments";
 import {
@@ -79,6 +80,7 @@ import {
 import { useChatRooms } from "@/hooks/chat/useChatRooms";
 import { useRequest } from "@/hooks/chat/useRequest";
 import { useChatMessages } from "@/hooks/chat/useChatMessages";
+import { useUserStore } from "@/store/userStore";
 
 function getPaymentDeadline() {
   const d = new Date(Date.now() + 24 * 60 * 60 * 1000);
@@ -94,6 +96,13 @@ function ChatPageContent({
   initialRoomId?: string | null;
 }) {
   const router = useRouter();
+  const { user, isLoading } = useUserStore();
+
+  useEffect(() => {
+    if (!isLoading && !user?.isVerified) {
+      router.replace("/auth/verification");
+    }
+  }, [isLoading, user?.isVerified, router]);
 
   const [editMode, setEditMode] = useState(false);
   const [activeTab, setActiveTab] = useState<
@@ -129,8 +138,12 @@ function ChatPageContent({
 
   const [acceptModalOpen, setAcceptModalOpen] = useState(false);
   const [acceptModalLoading, setAcceptModalLoading] = useState(false);
-  const [acceptDetails, setAcceptDetails] = useState<ReservationDetails | null>(null);
-  const [pendingAcceptRoomId, setPendingAcceptRoomId] = useState<string | null>(null);
+  const [acceptDetails, setAcceptDetails] = useState<ReservationDetails | null>(
+    null,
+  );
+  const [pendingAcceptRoomId, setPendingAcceptRoomId] = useState<string | null>(
+    null,
+  );
 
   const [messagesRefreshKey, setMessagesRefreshKey] = useState(0);
 
@@ -452,12 +465,6 @@ function ChatPageContent({
     type: string;
     amount: number;
     reason: string;
-    costItems?: {
-      id: string;
-      name: string;
-      amount: string;
-      description: string;
-    }[];
   }) {
     if (!activeRoomId) return;
     try {
@@ -466,7 +473,6 @@ function ChatPageContent({
         amount: data.amount,
         reason: data.reason,
         deadline,
-        costItems: data.costItems,
       });
       if (result.error) {
         setSendError(result.error.message);
@@ -497,14 +503,29 @@ function ChatPageContent({
         : null);
 
     if (reservationId) {
-      const payResult = await createPayment(reservationId, "CARD", totalAmount);
-      if (payResult.error) {
+      const payResult = await createPayment(reservationId, "CARD");
+      if (payResult.error?.code === "FORBIDDEN") {
+        const extraResult = await createExtraPayment(
+          reservationId,
+          totalAmount,
+          paymentState.reason ?? "추가 서비스",
+        );
+        if (extraResult.error) {
+          setSendError(extraResult.error.message);
+          setPayingNow(false);
+          return;
+        }
+        portonePaymentId = extraResult.data!.payment_id;
+        orderName = extraResult.data!.order_name;
+      } else if (payResult.error) {
         setSendError(payResult.error.message);
         setPayingNow(false);
         return;
+      } else {
+        portonePaymentId = payResult.data!.payment_id;
+        totalAmount = payResult.data!.amount;
+        orderName = payResult.data!.order_name;
       }
-      portonePaymentId = payResult.data!.payment_id;
-      orderName = payResult.data!.order_name;
     }
 
     if (!totalAmount || totalAmount <= 0) {
@@ -672,8 +693,11 @@ function ChatPageContent({
     useState(false);
   const [serviceCompleteSending, setServiceCompleteSending] = useState(false);
   const [serviceStartModalOpen, setServiceStartModalOpen] = useState(false);
-  const [readyReservations, setReadyReservations] = useState<ActiveReservation[]>([]);
-  const [serviceStartModalLoading, setServiceStartModalLoading] = useState(false);
+  const [readyReservations, setReadyReservations] = useState<
+    ActiveReservation[]
+  >([]);
+  const [serviceStartModalLoading, setServiceStartModalLoading] =
+    useState(false);
   const [serviceStartSending, setServiceStartSending] = useState(false);
 
   const handleCareRecordSubmit = async (record: CareRecordPayload) => {
@@ -743,7 +767,11 @@ function ChatPageContent({
       if (result.data) {
         addMessage(result.data);
         broadcastMessage(result.data);
-        updatePreview(activeRoomId, "서비스 시작", result.data.created_at ?? "");
+        updatePreview(
+          activeRoomId,
+          "서비스 시작",
+          result.data.created_at ?? "",
+        );
       }
       setServiceStartModalOpen(false);
     } catch {
@@ -1020,7 +1048,9 @@ function ChatPageContent({
         ? (selectedApplicant?.ownerId ?? "")
         : (selectedApplicant?.sitterId ?? "");
       targetName = isUserSitter ? "" : (selectedApplicant?.name ?? "");
-      targetImage = isUserSitter ? null : (selectedApplicant?.profileImage ?? null);
+      targetImage = isUserSitter
+        ? null
+        : (selectedApplicant?.profileImage ?? null);
       role = isUserSitter ? "보호자" : "펫시터";
     }
 
@@ -1909,7 +1939,8 @@ function ChatPageContent({
                           activeTab === "one_on_one"
                             ? (selectedRoom?.profileImage ?? null)
                             : activeTab === "reservations"
-                              ? (selectedReservationRequest?.profileImage ?? null)
+                              ? (selectedReservationRequest?.profileImage ??
+                                null)
                               : (selectedApplicant?.profileImage ?? null)
                         }
                         isCurrentUserSitter={isCurrentUserSitter}
@@ -2096,7 +2127,8 @@ function ChatPageContent({
         open={acceptModalOpen}
         sitterName={
           pendingAcceptRoomId
-            ? (reservationRequests.find((rr) => rr.id === pendingAcceptRoomId)?.name ?? "")
+            ? (reservationRequests.find((rr) => rr.id === pendingAcceptRoomId)
+                ?.name ?? "")
             : ""
         }
         details={acceptDetails}
@@ -2108,7 +2140,9 @@ function ChatPageContent({
           setAcceptModalOpen(false);
           setPendingAcceptRoomId(null);
         }}
-        onConfirm={() => { void handleAcceptConfirm(); }}
+        onConfirm={() => {
+          void handleAcceptConfirm();
+        }}
       />
 
       <ServiceCompleteModal

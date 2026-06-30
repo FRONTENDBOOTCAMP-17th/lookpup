@@ -2,16 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { CreditCard, X, Plus } from "lucide-react";
+import { CreditCard, X } from "lucide-react";
 
 type RequestType = "extra" | "payment";
-
-interface CostItem {
-  id: string;
-  name: string;
-  amount: string;
-  description: string;
-}
 
 const REQUEST_TYPES: { value: RequestType; label: string; sub: string }[] = [
   { value: "extra", label: "추가금 요청", sub: "추가 서비스 발생 시" },
@@ -25,8 +18,7 @@ interface CustomModalPaymentProps {
     type: RequestType;
     amount: number;
     reason: string;
-    costItems: CostItem[];
-  }) => void;
+  }) => Promise<void> | void;
 }
 
 export function CustomModalPayment({
@@ -38,11 +30,8 @@ export function CustomModalPayment({
   const [requestType, setRequestType] = useState<RequestType>("extra");
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState("");
-  const [costItems, setCostItems] = useState<CostItem[]>([]);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newItemName, setNewItemName] = useState("");
-  const [newItemAmount, setNewItemAmount] = useState("");
-  const [newItemDescription, setNewItemDescription] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => setMounted(true), []);
 
@@ -69,11 +58,8 @@ export function CustomModalPayment({
       setRequestType("extra");
       setAmount("");
       setReason("");
-      setCostItems([]);
-      setShowAddForm(false);
-      setNewItemName("");
-      setNewItemAmount("");
-      setNewItemDescription("");
+      setSubmitError(null);
+      setSubmitting(false);
     }
   }, [open]);
 
@@ -82,43 +68,23 @@ export function CustomModalPayment({
   const amountNum = Number(amount.replace(/,/g, ""));
   const total = amount && !isNaN(amountNum) && amountNum > 0 ? amountNum : null;
 
-  const displayTotal = total;
-
   function handleAmountChange(value: string) {
     const digits = value.replace(/[^0-9]/g, "");
     setAmount(digits ? Number(digits).toLocaleString("ko-KR") : "");
   }
 
-  function handleNewItemAmountChange(value: string) {
-    const digits = value.replace(/[^0-9]/g, "");
-    setNewItemAmount(digits ? Number(digits).toLocaleString("ko-KR") : "");
-  }
-
-  function handleAddCostItem() {
-    if (!newItemName.trim() || !newItemAmount) return;
-    setCostItems((prev) => [
-      ...prev,
-      {
-        id: crypto.randomUUID(),
-        name: newItemName.trim(),
-        amount: newItemAmount,
-        description: newItemDescription.trim(),
-      },
-    ]);
-    setNewItemName("");
-    setNewItemAmount("");
-    setNewItemDescription("");
-    setShowAddForm(false);
-  }
-
-  function handleRemoveCostItem(id: string) {
-    setCostItems((prev) => prev.filter((item) => item.id !== id));
-  }
-
-  function handleSubmit() {
-    if (!total || !reason.trim()) return;
-    onSubmit?.({ type: requestType, amount: total, reason, costItems });
-    onClose();
+  async function handleSubmit() {
+    if (!total || !reason.trim() || submitting) return;
+    setSubmitError(null);
+    setSubmitting(true);
+    try {
+      await onSubmit?.({ type: requestType, amount: total, reason });
+      onClose();
+    } catch (e) {
+      setSubmitError(e instanceof Error ? e.message : "오류가 발생했습니다.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   const modal = (
@@ -244,150 +210,19 @@ export function CustomModalPayment({
             />
           </div>
 
-          {/* 비용 상세 내역 */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-[#281A0E] text-sm font-semibold">
-                비용 상세 내역
-              </p>
-              <span className="text-[#9CA3AF] text-xs">선택사항</span>
-            </div>
-
-            {/* 추가된 항목 목록 */}
-            {costItems.length > 0 && (
-              <div className="flex flex-col gap-2 mb-2">
-                {costItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-start justify-between gap-3 px-4 py-3 rounded-xl bg-orange-50 outline outline-orange-200 outline-offset-[-1px]"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-sm font-semibold text-[#281A0E] truncate">
-                          {item.name}
-                        </span>
-                        <span className="text-sm font-bold text-orange-500 shrink-0">
-                          {Number(item.amount.replace(/,/g, "")).toLocaleString("ko-KR")}원
-                        </span>
-                      </div>
-                      {item.description && (
-                        <p className="text-xs text-gray-500 mt-0.5 truncate">
-                          {item.description}
-                        </p>
-                      )}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveCostItem(item.id)}
-                      className="shrink-0 w-6 h-6 flex items-center justify-center rounded-md hover:bg-orange-100 transition-colors"
-                    >
-                      <X size={13} className="text-gray-400" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* 항목 추가 폼 */}
-            {showAddForm ? (
-              <div className="rounded-xl outline outline-orange-300 outline-offset-[-1px] px-4 py-4 flex flex-col gap-3">
-                {/* 항목명 */}
-                <div>
-                  <label className="text-xs font-semibold text-[#281A0E] mb-1.5 block">
-                    항목명<span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={newItemName}
-                    onChange={(e) => setNewItemName(e.target.value.slice(0, 30))}
-                    placeholder="예) 산책 30분 연장"
-                    className="w-full h-11 px-3 rounded-lg outline outline-orange-200 outline-offset-[-1px] text-sm text-[#281A0E] placeholder-[rgba(40,26,14,0.40)] focus:outline-orange-500 transition-colors"
-                    autoFocus
-                  />
-                </div>
-
-                {/* 금액 */}
-                <div>
-                  <label className="text-xs font-semibold text-[#281A0E] mb-1.5 block">
-                    금액<span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      value={newItemAmount}
-                      onChange={(e) => handleNewItemAmountChange(e.target.value)}
-                      placeholder="10,000"
-                      className="w-full h-11 pl-3 pr-9 rounded-lg outline outline-orange-200 outline-offset-[-1px] text-sm text-[#281A0E] placeholder-[rgba(40,26,14,0.40)] focus:outline-orange-500 transition-colors"
-                    />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-gray-500">
-                      원
-                    </span>
-                  </div>
-                </div>
-
-                {/* 상세 설명 */}
-                <div>
-                  <label className="text-xs font-semibold text-[#281A0E] mb-1.5 block">
-                    상세 설명
-                    <span className="text-[#9CA3AF] font-normal ml-1">(선택)</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={newItemDescription}
-                    onChange={(e) => setNewItemDescription(e.target.value.slice(0, 60))}
-                    placeholder="예) 보호자 요청으로 공원 1바퀴 추가"
-                    className="w-full h-11 px-3 rounded-lg outline outline-orange-200 outline-offset-[-1px] text-sm text-[#281A0E] placeholder-[rgba(40,26,14,0.40)] focus:outline-orange-500 transition-colors"
-                  />
-                </div>
-
-                {/* 폼 버튼 */}
-                <div className="flex gap-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowAddForm(false);
-                      setNewItemName("");
-                      setNewItemAmount("");
-                      setNewItemDescription("");
-                    }}
-                    className="flex-1 h-9 rounded-lg border border-orange-200 text-orange-500 text-sm font-medium hover:bg-orange-50 transition-colors"
-                  >
-                    취소
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleAddCostItem}
-                    disabled={!newItemName.trim() || !newItemAmount}
-                    className="flex-1 h-9 rounded-lg bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-colors disabled:opacity-40 disabled:cursor-default"
-                  >
-                    추가
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setShowAddForm(true)}
-                className="w-full h-10.5 rounded-xl outline outline-orange-200 outline-offset-[-1.11px] flex items-center justify-center gap-2 hover:bg-orange-50 transition-colors"
-              >
-                <Plus size={15} className="text-orange-500" />
-                <span className="text-orange-500 text-sm font-medium">
-                  항목 추가
-                </span>
-              </button>
-            )}
-          </div>
-
           {/* 총 요청 금액 */}
           <div className="bg-orange-50 rounded-2xl border border-orange-200 px-5 py-5 flex items-center justify-between">
             <span className="text-orange-900 text-sm font-semibold">
               총 요청 금액
             </span>
             <span className="text-orange-500 text-2xl font-bold">
-              {displayTotal ? displayTotal.toLocaleString("ko-KR") + "원" : "—"}
+              {total ? total.toLocaleString("ko-KR") + "원" : "—"}
             </span>
           </div>
+
+          {submitError && (
+            <p className="text-red-500 text-sm text-center">{submitError}</p>
+          )}
         </div>
 
         {/* 푸터 */}
@@ -395,18 +230,19 @@ export function CustomModalPayment({
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 h-13 rounded-xl border border-orange-200 text-orange-500 text-[15px] font-semibold hover:bg-orange-50 transition-colors"
+            disabled={submitting}
+            className="flex-1 h-13 rounded-xl border border-orange-200 text-orange-500 text-[15px] font-semibold hover:bg-orange-50 transition-colors disabled:opacity-40"
           >
             취소
           </button>
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={!total || !reason.trim()}
+            disabled={!total || !reason.trim() || submitting}
             className="flex-1 h-13 rounded-xl bg-orange-500 flex items-center justify-center gap-2 text-white text-[15px] font-semibold hover:bg-orange-600 transition-colors disabled:opacity-40 disabled:cursor-default"
           >
             <CreditCard size={17} className="text-white" />
-            결제 요청 보내기
+            {submitting ? "처리 중..." : "결제 요청 보내기"}
           </button>
         </div>
       </div>

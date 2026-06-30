@@ -378,6 +378,7 @@ export type Database = {
           owner_id: string
           paid_at: string | null
           pay_method: string
+          payment_id: string
           platform_fee: number
           receipt_url: string | null
           reservation_id: string
@@ -394,10 +395,11 @@ export type Database = {
           canceled_at?: string | null
           created_at?: string | null
           fee_rate?: number
-          id: string
+          id?: string
           owner_id: string
           paid_at?: string | null
           pay_method: string
+          payment_id: string
           platform_fee?: number
           receipt_url?: string | null
           reservation_id: string
@@ -418,6 +420,7 @@ export type Database = {
           owner_id?: string
           paid_at?: string | null
           pay_method?: string
+          payment_id?: string
           platform_fee?: number
           receipt_url?: string | null
           reservation_id?: string
@@ -784,40 +787,40 @@ export type Database = {
         Row: {
           content: string
           created_at: string | null
-          detail_ratings: Json | null
+          detail_ratings: Json
           id: string
           image_urls: string[] | null
           owner_id: string
           rating: number
           reservation_id: string
           sitter_id: string
-          tags: string[] | null
+          tags: string[]
           updated_at: string | null
         }
         Insert: {
           content: string
           created_at?: string | null
-          detail_ratings?: Json | null
+          detail_ratings?: Json
           id?: string
           image_urls?: string[] | null
           owner_id: string
           rating: number
           reservation_id: string
           sitter_id: string
-          tags?: string[] | null
+          tags?: string[]
           updated_at?: string | null
         }
         Update: {
           content?: string
           created_at?: string | null
-          detail_ratings?: Json | null
+          detail_ratings?: Json
           id?: string
           image_urls?: string[] | null
           owner_id?: string
           rating?: number
           reservation_id?: string
           sitter_id?: string
-          tags?: string[] | null
+          tags?: string[]
           updated_at?: string | null
         }
         Relationships: [
@@ -1048,11 +1051,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_unread_counts: {
-        Args: { room_ids: string[]; my_id: string }
-        Returns: { room_id: string; count: number }[]
-      }
       get_petsitter_detail: { Args: { p_sitter_id: string }; Returns: Json }
+      get_petsitters_filtered: {
+        Args: { p_district?: string; p_dong?: string }
+        Returns: {
+          available_area: string
+          base_price: number
+          display_area: string
+          full_name: string
+          id: string
+          latitude: number
+          longitude: number
+          rating: number
+          service_types: string[]
+          user_id: string
+        }[]
+      }
       get_petsitters_for_map: {
         Args: never
         Returns: {
@@ -1067,18 +1081,11 @@ export type Database = {
           service_types: string[]
         }[]
       }
-      get_petsitters_filtered: {
-        Args: { p_district?: string | null; p_dong?: string | null }
+      get_unread_counts: {
+        Args: { my_id: string; room_ids: string[] }
         Returns: {
-          available_area: string
-          base_price: number
-          display_area: string
-          full_name: string
-          id: string
-          latitude: number
-          longitude: number
-          rating: number
-          service_types: string[]
+          count: number
+          room_id: string
         }[]
       }
     }

@@ -35,7 +35,6 @@ export async function getAcceptedReservationBySitter(sitterId: string) {
 export async function createPayment(
   reservationId: string,
   payMethod: "CARD" | "VIRTUAL_ACCOUNT" | "TRANSFER",
-  requestedAmount?: number,
 ) {
   const user = await getAuthUser();
   if (!user) {
@@ -72,7 +71,6 @@ export async function createPayment(
     };
   }
 
-  // 이미 결제된 내역 확인
   const { data: existingPayment } = await db
     .from("payments")
     .select("id")
@@ -84,16 +82,9 @@ export async function createPayment(
     return { error: { code: "CONFLICT", message: "이미 결제된 예약입니다." } };
   }
 
-  const amount = requestedAmount ?? reservation.total_price;
-
-  if (!amount || amount <= 0) {
-    return { error: { code: "INVALID_AMOUNT", message: "예약 금액이 올바르지 않습니다." } };
-  }
-
+  const amount = reservation.total_price;
   const platformFee = Math.floor(amount * FEE_RATE);
   const settleAmount = amount - platformFee;
-
-  // 머천트 측 결제 ID 생성 (PortOne 결제창에 전달할 고유값)
   const paymentId = `pay_${reservationId.replace(/-/g, "")}_${Date.now()}`;
 
   const { error } = await db.from("payments").insert({
@@ -113,9 +104,90 @@ export async function createPayment(
     return { error: { code: "INTERNAL_ERROR", message: error.message } };
   }
 
-  const orderName = `${reservation.sitters.users.full_name ?? "펫시터"} 펫시팅 서비스`;
+  const sitter = reservation.sitters as unknown as {
+    users: { full_name: string };
+  };
+  const orderName = `${sitter.users.full_name} 펫시팅 서비스`;
 
   return { data: { payment_id: paymentId, amount, order_name: orderName } };
+}
+
+export async function createExtraPayment(
+  reservationId: string,
+  amount: number,
+  reason: string,
+  payMethod: "CARD" | "VIRTUAL_ACCOUNT" | "TRANSFER" = "CARD",
+) {
+  const user = await getAuthUser();
+  if (!user) {
+    return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
+  }
+
+  if (amount < 1000 || amount > 500000) {
+    return {
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "추가금은 1,000원 이상 500,000원 이하여야 합니다.",
+      },
+    };
+  }
+
+  const db = createServiceClient();
+
+  const { data: reservation } = await db
+    .from("reservations")
+    .select(`id, owner_id, sitter_id, status, sitters!inner(users!inner(full_name))`)
+    .eq("id", reservationId)
+    .single();
+
+  if (!reservation) {
+    return {
+      error: { code: "NOT_FOUND", message: "예약을 찾을 수 없습니다." },
+    };
+  }
+
+  if (reservation.owner_id !== user.id) {
+    return { error: { code: "FORBIDDEN", message: "결제 권한이 없습니다." } };
+  }
+
+  if (reservation.status !== "in_progress") {
+    return {
+      error: {
+        code: "FORBIDDEN",
+        message: "진행 중인 예약에만 추가금을 결제할 수 있습니다.",
+      },
+    };
+  }
+
+  const platformFee = Math.floor(amount * FEE_RATE);
+  const settleAmount = amount - platformFee;
+  const paymentId = `extra_${reservationId.replace(/-/g, "")}_${Date.now()}`;
+
+  const { error } = await db.from("payments").insert({
+    reservation_id: reservationId,
+    payment_id: paymentId,
+    owner_id: user.id,
+    sitter_id: (reservation as unknown as { sitter_id: string }).sitter_id,
+    amount,
+    pay_method: payMethod,
+    fee_rate: FEE_RATE,
+    platform_fee: platformFee,
+    settle_amount: settleAmount,
+    status: "ready",
+  });
+
+  if (error) {
+    return { error: { code: "INTERNAL_ERROR", message: error.message } };
+  }
+
+  const sitter = reservation.sitters as unknown as {
+    users: { full_name: string };
+  };
+  const orderName = `${sitter.users.full_name} 펫시팅 추가 서비스`;
+
+  return {
+    data: { payment_id: paymentId, amount, order_name: orderName, reason },
+  };
 }
 
 export async function cancelPayment(paymentId: string, reason: string) {
@@ -141,7 +213,12 @@ export async function cancelPayment(paymentId: string, reason: string) {
     };
   }
 
-  const reservation = payment.reservations;
+  const reservation = payment.reservations as unknown as {
+    id: string;
+    owner_id: string;
+    start_datetime: string;
+    status: string;
+  };
 
   if (reservation.owner_id !== user.id) {
     return { error: { code: "FORBIDDEN", message: "취소 권한이 없습니다." } };
@@ -156,8 +233,7 @@ export async function cancelPayment(paymentId: string, reason: string) {
     };
   }
 
-  // 서비스 시작 전인지 확인
-  if (!reservation.start_datetime || new Date(reservation.start_datetime) <= new Date()) {
+  if (new Date(reservation.start_datetime) <= new Date()) {
     return {
       error: {
         code: "FORBIDDEN",
