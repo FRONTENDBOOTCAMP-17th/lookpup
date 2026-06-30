@@ -13,6 +13,7 @@ import { MapPin, ChevronLeft } from "lucide-react";
 import StarRow from "@/components/ui/StarRow";
 import StatGrid from "@/components/ui/StatGrid";
 import { supabase } from "@/lib/supabase";
+import { useUserStore } from "@/store/userStore";
 
 const SERVICE_TYPE_LABEL: Record<string, string> = {
   walk: "산책",
@@ -38,6 +39,7 @@ interface ServiceRow {
 
 interface SitterDetail {
   id: string;
+  user_id: string;
   full_name: string | null;
   profile_image: string | null;
   is_verified: boolean;
@@ -81,6 +83,7 @@ export default function PetsitterProfilePage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>("소개");
   const [reviews, setReviews] = useState<ReviewRow[]>([]);
+  const currentUserId = useUserStore((s) => s.user?.id ?? null);
 
   useEffect(() => {
     async function fetchDetail() {
@@ -110,6 +113,10 @@ export default function PetsitterProfilePage() {
     fetchReviews();
   }, [sitterId]);
 
+
+  // 본인 프로필 여부
+  const isSelf = !!currentUserId && currentUserId === sitter?.user_id;
+
   // 서비스 목록에서 표시용 레이블 도출
   const serviceLabels = sitter
     ? [
@@ -124,7 +131,6 @@ export default function PetsitterProfilePage() {
   // 활동 지역 텍스트 (display_area 우선, 없으면 available_area)
   const areaText = sitter?.display_area ?? sitter?.available_area ?? "-";
 
-  // 통계 (경력 원문은 소개 탭에 표시하고, 여기서는 유무만 표시 / 회의해보고 입력란에 숫자로 입력받고 아래에 상세 적기 이런거로 넣어야할듯)
   const stats = [
     { label: "경력", value: sitter?.career ? "경력 있음" : "-" },
     { label: "완료", value: "-" },
@@ -303,9 +309,7 @@ export default function PetsitterProfilePage() {
                         <div className="flex items-center gap-1 mt-0.5">
                           <StarRow size={11} count={rv.rating} />
                           <span className="text-xs text-gray-400 ml-1">
-                            {new Date(rv.created_at).toLocaleDateString(
-                              "ko-KR",
-                            )}
+                            {new Date(rv.created_at).toLocaleDateString("ko-KR")}
                           </span>
                         </div>
                       </div>
@@ -460,7 +464,7 @@ export default function PetsitterProfilePage() {
                 </div>
 
                 <div className="flex items-center justify-center gap-1 mb-4">
-                  <StarRow size={18} />
+                  <StarRow size={18} count={Math.round(rating)} />
                   <span className="text-stone-900 text-lg font-bold ml-1">
                     {rating.toFixed(1)}
                   </span>
@@ -475,12 +479,18 @@ export default function PetsitterProfilePage() {
 
                 <StatGrid stats={stats} className="w-full mb-6" />
 
-                <Link
-                  href={`/petsitters/${sitterId}/book`}
-                  className="w-full h-13 bg-orange-500 hover:bg-orange-600 text-white text-base font-semibold rounded-[10px] flex items-center justify-center transition-colors"
-                >
-                  예약하기
-                </Link>
+                {isSelf ? (
+                  <div className="w-full h-13 bg-gray-200 text-gray-400 text-base font-semibold rounded-[10px] flex items-center justify-center cursor-not-allowed">
+                    본인 프로필입니다
+                  </div>
+                ) : (
+                  <Link
+                    href={`/petsitters/${sitterId}/book`}
+                    className="w-full h-13 bg-orange-500 hover:bg-orange-600 text-white text-base font-semibold rounded-[10px] flex items-center justify-center transition-colors"
+                  >
+                    예약하기
+                  </Link>
+                )}
               </div>
             </div>
 
@@ -489,7 +499,7 @@ export default function PetsitterProfilePage() {
               {/* 모바일 전용: 별점 / 서비스 태그 / 통계 */}
               <div className="md:hidden bg-white">
                 <div className="px-5 py-3 flex items-center gap-1.5">
-                  <StarRow size={13} />
+                  <StarRow size={13} count={Math.round(rating)} />
                   <span className="text-sm font-bold text-stone-900">
                     {rating.toFixed(1)}
                   </span>
@@ -536,12 +546,18 @@ export default function PetsitterProfilePage() {
 
       {/* 모바일 예약하기 고정 버튼 */}
       <div className="fixed bottom-0 left-0 right-0 md:hidden z-40 bg-white border-t border-orange-100 px-5 py-3">
-        <Link
-          href={`/petsitters/${sitterId}/book`}
-          className="block w-full py-3.5 bg-orange-500 text-white font-semibold rounded-xl text-sm text-center hover:bg-orange-600 transition-colors"
-        >
-          예약하기
-        </Link>
+        {isSelf ? (
+          <div className="block w-full py-3.5 bg-gray-200 text-gray-400 font-semibold rounded-xl text-sm text-center cursor-not-allowed">
+            본인 프로필입니다
+          </div>
+        ) : (
+          <Link
+            href={`/petsitters/${sitterId}/book`}
+            className="block w-full py-3.5 bg-orange-500 text-white font-semibold rounded-xl text-sm text-center hover:bg-orange-600 transition-colors"
+          >
+            예약하기
+          </Link>
+        )}
       </div>
 
       <Footer />
