@@ -207,27 +207,39 @@ export function ChatSidebar({
           {!loading &&
             !error &&
             activeTab === "one_on_one" &&
-            totalRoomCount === 0 && (
+            (totalRoomCount === 0 ? (
               <p className="text-center text-stone-400 text-sm pt-16">
-                새로운 채팅이 존재하지 않습니다
+                새로운 채팅이 존재하지 않습니다.
               </p>
-            )}
+            ) : filteredRooms.length === 0 ? (
+              <p className="text-center text-stone-400 text-sm pt-16">
+                검색 결과가 없습니다.
+              </p>
+            ) : null)}
           {!loading &&
             !error &&
             activeTab === "applicants" &&
-            totalApplicantCount === 0 && (
+            (totalApplicantCount === 0 ? (
               <p className="text-center text-stone-400 text-sm pt-16">
-                새로운 채팅이 존재하지 않습니다
+                새로운 채팅이 존재하지 않습니다.
               </p>
-            )}
+            ) : filteredApplicants.length === 0 ? (
+              <p className="text-center text-stone-400 text-sm pt-16">
+                검색 결과가 없습니다.
+              </p>
+            ) : null)}
           {!loading &&
             !error &&
             activeTab === "reservations" &&
-            totalReservationCount === 0 && (
+            (totalReservationCount === 0 ? (
               <p className="text-center text-stone-400 text-sm pt-16">
-                예약 요청이 없습니다
+                예약 요청이 없습니다.
               </p>
-            )}
+            ) : filteredReservationRequests.length === 0 ? (
+              <p className="text-center text-stone-400 text-sm pt-16">
+                검색 결과가 없습니다.
+              </p>
+            ) : null)}
           {activeTab === "one_on_one" &&
             filteredRooms.map((room) => (
               <ChatRoomItem
@@ -260,44 +272,69 @@ export function ChatSidebar({
         <>
           {activeTab === "one_on_one" && (
             <ScrollArea className="flex-1 overflow-hidden">
-              {filteredRooms.map((room) => (
-                <ChatRoomItem
-                  key={room.id}
-                  room={room}
-                  isSelected={selectedRoomId === room.id}
-                  editMode={editMode}
-                  onDelete={onDeleteRoom}
-                  onClick={onRoomSelect}
-                />
-              ))}
+              {totalRoomCount === 0 ? (
+                <p className="text-center text-stone-400 text-sm pt-16">
+                  새로운 채팅이 존재하지 않습니다.
+                </p>
+              ) : filteredRooms.length === 0 ? (
+                <p className="text-center text-stone-400 text-sm pt-16">
+                  검색 결과가 없습니다.
+                </p>
+              ) : (
+                filteredRooms.map((room) => (
+                  <ChatRoomItem
+                    key={room.id}
+                    room={room}
+                    isSelected={selectedRoomId === room.id}
+                    editMode={editMode}
+                    onDelete={onDeleteRoom}
+                    onClick={onRoomSelect}
+                  />
+                ))
+              )}
             </ScrollArea>
           )}
           {activeTab === "reservations" && (
             <ScrollArea className="flex-1 overflow-hidden">
-              {filteredReservationRequests.length === 0 && (
+              {totalReservationCount === 0 ? (
                 <p className="text-center text-stone-400 text-sm pt-16">
-                  예약 요청이 없습니다
+                  예약 요청이 없습니다.
                 </p>
+              ) : filteredReservationRequests.length === 0 ? (
+                <p className="text-center text-stone-400 text-sm pt-16">
+                  검색 결과가 없습니다.
+                </p>
+              ) : (
+                filteredReservationRequests.map((rr) => (
+                  <ReservationRequestCard
+                    key={rr.id}
+                    reservationRequest={rr}
+                    isSelected={selectedReservationRequestId === rr.id}
+                    editMode={editMode}
+                    isSitter={rr.ownerId !== userId}
+                    actioningId={actioningId}
+                    onSelect={onReservationSelect}
+                    onReject={onRejectReservation}
+                    onAccept={onAcceptReservation}
+                    onDelete={onDeleteReservationRequest}
+                  />
+                ))
               )}
-              {filteredReservationRequests.map((rr) => (
-                <ReservationRequestCard
-                  key={rr.id}
-                  reservationRequest={rr}
-                  isSelected={selectedReservationRequestId === rr.id}
-                  editMode={editMode}
-                  isSitter={rr.ownerId !== userId}
-                  actioningId={actioningId}
-                  onSelect={onReservationSelect}
-                  onReject={onRejectReservation}
-                  onAccept={onAcceptReservation}
-                  onDelete={onDeleteReservationRequest}
-                />
-              ))}
             </ScrollArea>
           )}
           {activeTab === "applicants" && (
             <ScrollArea className="flex-1 overflow-hidden">
-              {applicantList}
+              {totalApplicantCount === 0 ? (
+                <p className="text-center text-stone-400 text-sm pt-16">
+                  새로운 채팅이 존재하지 않습니다.
+                </p>
+              ) : filteredApplicants.length === 0 ? (
+                <p className="text-center text-stone-400 text-sm pt-16">
+                  검색 결과가 없습니다.
+                </p>
+              ) : (
+                applicantList
+              )}
             </ScrollArea>
           )}
         </>
