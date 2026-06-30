@@ -18,6 +18,8 @@ import type {
   ServiceCompleteData,
   ReservationRequestData,
   ReservationAcceptedData,
+  ReservationEditPayload,
+  ReservationEditResponsePayload,
 } from "@/components/common/chat/chat_components";
 import {
   SYSTEM_MSG_PREFIX,
@@ -32,6 +34,8 @@ import {
   RESERVATION_REQUEST_PREFIX,
   RESERVATION_ACCEPTED_PREFIX,
   RESERVATION_REJECTED_PREFIX,
+  RESERVATION_EDIT_PREFIX,
+  RESERVATION_EDIT_RESPONSE_PREFIX,
 } from "@/lib/chatMessagePrefixes";
 
 function formatTime(iso: string): string {
@@ -222,6 +226,40 @@ function toMessage(m: MessageApiItem, userId: string): Message {
       rawDate: m.created_at ?? undefined,
     };
   }
+  if (m.content.startsWith(RESERVATION_EDIT_PREFIX)) {
+    try {
+      const payload = JSON.parse(
+        m.content.slice(RESERVATION_EDIT_PREFIX.length),
+      ) as Omit<ReservationEditPayload, "sentByMe">;
+      return {
+        id: m.id,
+        from: "reservation_edit" as const,
+        text: "",
+        reservationEditData: { ...payload, sentByMe: m.sender_id === userId },
+        time: m.created_at ? formatTime(m.created_at) : undefined,
+        rawDate: m.created_at ?? undefined,
+      };
+    } catch {
+      return { id: m.id, from: "divider", text: "예약 수정 요청" };
+    }
+  }
+  if (m.content.startsWith(RESERVATION_EDIT_RESPONSE_PREFIX)) {
+    try {
+      const payload = JSON.parse(
+        m.content.slice(RESERVATION_EDIT_RESPONSE_PREFIX.length),
+      ) as Omit<ReservationEditResponsePayload, "sentByMe">;
+      return {
+        id: m.id,
+        from: "reservation_edit_response" as const,
+        text: "",
+        reservationEditResponseData: { ...payload, sentByMe: m.sender_id === userId },
+        time: m.created_at ? formatTime(m.created_at) : undefined,
+        rawDate: m.created_at ?? undefined,
+      };
+    } catch {
+      return { id: m.id, from: "divider", text: "예약 수정 응답" };
+    }
+  }
   return {
     id: m.id,
     from: m.sender_id === userId ? "me" : "other",
@@ -385,6 +423,19 @@ export function useChatMessages(
 
   const paymentState = useMemo(() => derivePaymentState(messages), [messages]);
 
+  const confirmedEditIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const m of messages) {
+      if (
+        m.from === "reservation_edit_response" &&
+        m.reservationEditResponseData?.originalMessageId
+      ) {
+        ids.add(m.reservationEditResponseData.originalMessageId);
+      }
+    }
+    return ids;
+  }, [messages]);
+
   async function loadMore() {
     if (!nextCursor || !activeRoomId || !userId || loadingMore) return;
     setLoadingMore(true);
@@ -418,5 +469,6 @@ export function useChatMessages(
     hasMore,
     loadingMore,
     paymentState,
+    confirmedEditIds,
   };
 }

@@ -14,6 +14,7 @@ import {
   ChevronDown,
   CheckCircle,
   PlayCircle,
+  CalendarRange,
 } from "lucide-react";
 import Avatar from "@/components/ui/Avatar";
 import SitterProfileCard, {
@@ -119,6 +120,19 @@ export type ReservationAcceptedData = {
   sentByMe?: boolean;
 };
 
+export type ReservationEditPayload = {
+  reservationId: string;
+  original: { start_datetime: string; end_datetime: string; memo?: string | null };
+  proposed: { start_datetime: string; end_datetime: string; memo?: string | null };
+  sentByMe?: boolean;
+};
+
+export type ReservationEditResponsePayload = {
+  originalMessageId: string;
+  accepted: boolean;
+  sentByMe?: boolean;
+};
+
 // 채팅창 메시지
 export type Message = {
   id: string;
@@ -136,7 +150,9 @@ export type Message = {
     | "reservation_request"
     | "reservation_accepted"
     | "reservation_rejected"
-    | "service_start";
+    | "service_start"
+    | "reservation_edit"
+    | "reservation_edit_response";
   text: string;
   imageUrl?: string;
   time?: string;
@@ -147,6 +163,8 @@ export type Message = {
   serviceStartData?: ServiceCompleteData;
   reservationRequestData?: ReservationRequestData;
   reservationAcceptedData?: ReservationAcceptedData;
+  reservationEditData?: ReservationEditPayload;
+  reservationEditResponseData?: ReservationEditResponsePayload;
   sentByMe?: boolean;
 };
 
@@ -439,6 +457,13 @@ type MessageBubbleProps = {
   onServiceConfirm?: (reservationId: string) => void;
   isServiceConfirmed?: boolean;
   isServiceConfirming?: boolean;
+  onReservationEditConfirm?: (
+    messageId: string,
+    reservationId: string,
+    proposed: { start_datetime: string; end_datetime: string; memo?: string | null },
+  ) => void;
+  onReservationEditReject?: (messageId: string) => void;
+  confirmedEditIds?: Set<string>;
 };
 
 export function MessageBubble({
@@ -454,7 +479,56 @@ export function MessageBubble({
   onServiceConfirm,
   isServiceConfirmed,
   isServiceConfirming,
+  onReservationEditConfirm,
+  onReservationEditReject,
+  confirmedEditIds,
 }: MessageBubbleProps) {
+  if (msg.from === "reservation_edit_response") {
+    const data = msg.reservationEditResponseData;
+    if (!data) return null;
+    return (
+      <div>
+        {data.accepted ? (
+          <ReservationEditAcceptedCard sentByMe={data.sentByMe ?? false} />
+        ) : (
+          <ReservationEditRejectedCard sentByMe={data.sentByMe ?? false} />
+        )}
+        {msg.time && (
+          <p className={`text-gray-500 text-xs mt-1 ${data.sentByMe ? "text-right pr-3" : "text-left"}`}>
+            {msg.time}
+          </p>
+        )}
+      </div>
+    );
+  }
+  if (msg.from === "reservation_edit") {
+    const data = msg.reservationEditData;
+    if (!data) return null;
+    const isProcessed = confirmedEditIds?.has(msg.id);
+    return (
+      <div className={`flex ${data.sentByMe ? "justify-end" : "items-start gap-3"}`}>
+        {!data.sentByMe && (
+          <Avatar initial={senderInitial} src={senderProfileImage} size="sm" />
+        )}
+        <div>
+          <ReservationEditCard
+            messageId={msg.id}
+            data={data}
+            isProcessed={isProcessed ?? false}
+            onConfirm={onReservationEditConfirm}
+            onReject={onReservationEditReject}
+          />
+          {msg.time && (
+            <p
+              className={`text-gray-500 text-xs mt-1 ${data.sentByMe ? "text-right pr-3" : "text-left pl-3"}`}
+            >
+              {msg.time}
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
   if (msg.from === "service_start") {
     if (isCurrentUserSitter && msg.sentByMe) {
       return (
@@ -1004,6 +1078,7 @@ type ChatPlusPanelProps = {
   onSendPhoto: () => void;
   onServiceStart?: () => void;
   onServiceComplete?: () => void;
+  onReservationEdit?: () => void;
 };
 
 export function ChatPlusPanel({
@@ -1012,6 +1087,7 @@ export function ChatPlusPanel({
   onSendPhoto,
   onServiceStart,
   onServiceComplete,
+  onReservationEdit,
 }: ChatPlusPanelProps) {
   const actions = [
     onPaymentRequest
@@ -1029,6 +1105,9 @@ export function ChatPlusPanel({
       : null,
     onServiceComplete
       ? { icon: CheckCircle, label: "서비스 완료", onClick: onServiceComplete }
+      : null,
+    onReservationEdit
+      ? { icon: CalendarRange, label: "예약 수정", onClick: onReservationEdit }
       : null,
     { icon: Camera, label: "사진 전송", onClick: onSendPhoto },
   ].filter(Boolean) as {
@@ -2105,6 +2184,184 @@ export function ReservationRejectedMessageCard({
             : "다른 펫시터에게 예약을 요청해보세요."}
         </p>
       </div>
+    </div>
+  );
+}
+
+// 예약 수정 요청 카드
+
+function fmtDt(iso: string) {
+  return new Date(iso).toLocaleString("ko-KR", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+// 예약 수정 승인 카드
+export function ReservationEditAcceptedCard({ sentByMe }: { sentByMe: boolean }) {
+  return (
+    <div className={sentByMe ? "flex justify-end" : ""}>
+      <div className="w-79.5 p-4 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 bg-[#ECFDF5] rounded-full flex items-center justify-center shrink-0">
+            <CheckCircle size={18} className="text-[#10B981]" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[#065F46] text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
+              예약 수정 승인
+            </span>
+            <span className="text-[#111827] text-sm leading-5 mt-0.5">
+              {sentByMe ? "예약 수정 요청을 승인했습니다." : "예약 수정이 승인되었습니다."}
+            </span>
+          </div>
+        </div>
+        <p className="pt-3 text-[#6B7280] text-xs leading-5">
+          {sentByMe ? "예약 정보가 변경되었습니다." : "예약 일정이 변경되었습니다."}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// 예약 수정 거절 카드
+export function ReservationEditRejectedCard({ sentByMe }: { sentByMe: boolean }) {
+  return (
+    <div className={sentByMe ? "flex justify-end" : ""}>
+      <div className="w-79.5 p-4 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col">
+        <div className="flex items-start gap-2.5">
+          <div className="w-9 h-9 bg-red-50 rounded-full flex items-center justify-center shrink-0">
+            <XCircle size={18} className="text-red-500" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-red-800 text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
+              예약 수정 거절
+            </span>
+            <span className="text-[#111827] text-sm leading-5 mt-0.5">
+              {sentByMe ? "예약 수정 요청을 거절했습니다." : "예약 수정 요청이 거절되었습니다."}
+            </span>
+          </div>
+        </div>
+        <p className="pt-3 text-[#6B7280] text-xs leading-5">
+          기존 예약 일정이 유지됩니다.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function EditDiffRow({
+  label,
+  original,
+  proposed,
+}: {
+  label: string;
+  original: string;
+  proposed: string;
+}) {
+  const changed = original !== proposed;
+  return (
+    <div>
+      <p className="text-[10px] text-stone-400 mb-0.5">{label}</p>
+      {changed ? (
+        <>
+          <p className="text-xs text-stone-400 line-through">{original}</p>
+          <p className="text-xs text-stone-900 font-medium">{proposed}</p>
+        </>
+      ) : (
+        <p className="text-xs text-stone-600">{original}</p>
+      )}
+    </div>
+  );
+}
+
+function ReservationEditCard({
+  messageId,
+  data,
+  isProcessed,
+  onConfirm,
+  onReject,
+}: {
+  messageId: string;
+  data: ReservationEditPayload;
+  isProcessed: boolean;
+  onConfirm?: (
+    messageId: string,
+    reservationId: string,
+    proposed: { start_datetime: string; end_datetime: string; memo?: string | null },
+  ) => void;
+  onReject?: (messageId: string) => void;
+}) {
+  return (
+    <div
+      className={`w-79.5 p-4 rounded-2xl flex flex-col gap-3 ${
+        data.sentByMe
+          ? "bg-orange-100 outline-[1.11px] outline-orange-400 outline-offset-[-1.11px]"
+          : "bg-white outline-[1.11px] outline-orange-200 outline-offset-[-1.11px]"
+      }`}
+    >
+      <div className="flex items-center gap-2.5">
+        <div className="w-9 h-9 bg-orange-100 rounded-full flex items-center justify-center shrink-0">
+          <CalendarRange size={16} className="text-orange-500" />
+        </div>
+        <div>
+          <span
+            className={`text-[10px] font-bold uppercase tracking-[0.3px] leading-4 ${
+              data.sentByMe ? "text-orange-500" : "text-[#6B7280]"
+            }`}
+          >
+            예약 수정 요청
+          </span>
+          <p className="text-[#281A0E] text-sm leading-5 mt-0.5">
+            {data.sentByMe ? "예약 수정을 요청했습니다." : "예약 수정 요청이 도착했어요."}
+          </p>
+        </div>
+      </div>
+      <div
+        className={`flex flex-col gap-2 px-3 py-2.5 rounded-xl ${
+          data.sentByMe ? "bg-orange-200" : "bg-orange-50"
+        }`}
+      >
+        <EditDiffRow
+          label="시작 일시"
+          original={fmtDt(data.original.start_datetime)}
+          proposed={fmtDt(data.proposed.start_datetime)}
+        />
+        <EditDiffRow
+          label="종료 일시"
+          original={fmtDt(data.original.end_datetime)}
+          proposed={fmtDt(data.proposed.end_datetime)}
+        />
+        {(data.original.memo || data.proposed.memo) && (
+          <EditDiffRow
+            label="메모"
+            original={data.original.memo || "(없음)"}
+            proposed={data.proposed.memo || "(없음)"}
+          />
+        )}
+      </div>
+      {isProcessed ? (
+        <p className="text-center text-xs text-stone-400">처리 완료</p>
+      ) : data.sentByMe ? (
+        <p className="text-center text-xs text-stone-400">상대방의 확인을 기다리고 있습니다</p>
+      ) : (
+        <div className="flex gap-2">
+          <button
+            onClick={() => onReject?.(messageId)}
+            className="flex-1 py-1.5 text-xs text-stone-500 border border-stone-200 rounded-lg hover:bg-stone-50 transition-colors"
+          >
+            거절
+          </button>
+          <button
+            onClick={() => onConfirm?.(messageId, data.reservationId, data.proposed)}
+            className="flex-1 py-1.5 text-xs text-white bg-orange-500 rounded-lg hover:bg-orange-600 transition-colors font-medium"
+          >
+            확인
+          </button>
+        </div>
+      )}
     </div>
   );
 }
