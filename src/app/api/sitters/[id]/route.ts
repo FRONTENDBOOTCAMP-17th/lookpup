@@ -17,6 +17,7 @@ export async function GET(
        services(id, service_type, title, price, description, is_active, animal_type)`,
     )
     .eq("id", id)
+    .eq("status", "approved")
     .single();
 
   if (error || !sitter) {
@@ -49,8 +50,9 @@ export async function GET(
       rating: sitter.rating,
       status: sitter.status,
       is_verified,
-      request_type: sitter.request_type ?? [],
-      services: sitter.services,
+      services: (sitter.services ?? []).filter(
+        (service: { is_active: boolean }) => service.is_active,
+      ),
       review_count: reviewCount ?? 0,
     },
   });
