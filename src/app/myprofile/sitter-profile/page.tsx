@@ -15,13 +15,6 @@ import StatGrid from "@/components/ui/StatGrid";
 import { useUserStore } from "@/store/userStore";
 import { getSitterServices } from "@/app/actions/sitters";
 
-const REQUEST_TYPE_LABEL: Record<string, string> = {
-  visit: "방문돌봄",
-  foster: "위탁돌봄",
-  walk: "산책",
-  hotel: "호텔",
-};
-
 const ANIMAL_LABEL: Record<string, string> = {
   small_dog: "강아지 소형",
   medium_dog: "강아지 중형",
@@ -76,17 +69,6 @@ export default function SitterProfilePreviewPage() {
               <div className="flex gap-2 flex-wrap">
                 {sitter.availableAnimals.map((animal) => (
                   <Pill key={animal}>{ANIMAL_LABEL[animal] ?? animal}</Pill>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {sitter.requestType.length > 0 && (
-            <div className="bg-white rounded-2xl shadow-[0px_2px_12px_rgba(232,116,42,0.10)] border border-orange-100 p-6">
-              <h3 className="font-bold text-stone-900 mb-4">제공 서비스 유형</h3>
-              <div className="flex gap-2 flex-wrap">
-                {sitter.requestType.map((type) => (
-                  <Pill key={type}>{REQUEST_TYPE_LABEL[type] ?? type}</Pill>
                 ))}
               </div>
             </div>

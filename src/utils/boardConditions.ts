@@ -12,6 +12,19 @@ export function mergeConditions(content: string, conditions: string): string {
   return c ? `${content.trim()}${CONDITIONS_MARKER}${c}` : content;
 }
 
+// 조건 텍스트에 문장 한 줄("- 문장")을 덧붙인다. 이미 있으면 그대로 둔다(중복 방지).
+export function appendConditionLine(
+  conditions: string,
+  sentence: string,
+): string {
+  const existingLines = conditions
+    .split("\n")
+    .map((l) => l.replace(/^-\s*/, "").trim());
+  if (existingLines.includes(sentence)) return conditions;
+  const base = conditions.replace(/\n+$/, "");
+  return base ? `${base}\n- ${sentence}` : `- ${sentence}`;
+}
+
 // 저장된 content를 본문과 조건으로 분리한다. 마커가 없으면 조건은 빈 문자열.
 export function splitConditions(raw: string): {
   content: string;
