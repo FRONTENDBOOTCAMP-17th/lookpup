@@ -277,11 +277,6 @@ export default function KakaoMap({
     }
 
     const { name, district, neighborhood, distanceKm } = marker;
-    const distanceRow =
-      distanceKm !== undefined
-        ? `<div style="color:#f97316; font-size:11px; margin-top:3px;">약 ${formatDistance(distanceKm)}</div>`
-        : "";
-
     const inner = document.createElement("div");
     inner.style.cssText = `
       padding: 8px 10px;
@@ -294,13 +289,23 @@ export default function KakaoMap({
       white-space: nowrap;
       margin-bottom: 8px;
     `;
-    inner.innerHTML = `
-      <strong>${name ?? ""}</strong>
-      <div style="color:#6B7280; font-size:12px; margin-top:2px;">
-        ${district ?? ""} ${neighborhood ?? ""}
-      </div>
-      ${distanceRow}
-    `;
+
+    const nameEl = document.createElement("strong");
+    nameEl.textContent = name ?? "";
+    inner.appendChild(nameEl);
+
+    const areaEl = document.createElement("div");
+    areaEl.style.cssText = "color:#6B7280; font-size:12px; margin-top:2px;";
+    areaEl.textContent = [district, neighborhood].filter(Boolean).join(" ");
+    inner.appendChild(areaEl);
+
+    if (distanceKm !== undefined) {
+      const distanceEl = document.createElement("div");
+      distanceEl.style.cssText =
+        "color:#f97316; font-size:11px; margin-top:3px;";
+      distanceEl.textContent = `약 ${formatDistance(distanceKm)}`;
+      inner.appendChild(distanceEl);
+    }
 
     const content = document.createElement("div");
     content.appendChild(inner);

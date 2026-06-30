@@ -34,7 +34,7 @@ const SERVICE_TYPE_MAP: Record<string, string> = {
 
 interface Sitter {
   id: string;
-  user_id: string;
+  user_id: string | null;
   name: string;
   initial: string;
   city: string;
@@ -375,7 +375,7 @@ function PetsittersContent() {
   useEffect(() => {
     type SitterRow = {
       id: string;
-      user_id: string;
+      user_id?: string | null;
       available_area: string | null;
       display_area: string | null;
       latitude: number | null;
@@ -407,7 +407,7 @@ function PetsittersContent() {
 
           return {
             id: row.id,
-            user_id: row.user_id,
+            user_id: row.user_id ?? null,
             name,
             initial: name.charAt(0),
             city,
@@ -474,9 +474,12 @@ function PetsittersContent() {
     if (!sitter) return;
     const params = new URLSearchParams(searchParams.toString());
     params.set("selected", selectedSitterId);
-    params.set("sel_city", sitter.city);
-    params.set("sel_district", sitter.district);
-    params.set("sel_dong", sitter.neighborhood);
+    if (sitter.city) params.set("sel_city", sitter.city);
+    else params.delete("sel_city");
+    if (sitter.district) params.set("sel_district", sitter.district);
+    else params.delete("sel_district");
+    if (sitter.neighborhood) params.set("sel_dong", sitter.neighborhood);
+    else params.delete("sel_dong");
     router.replace(`${pathname}?${params.toString()}`);
     // searchParams는 의도적으로 제외 — 선택 변경 시에만 실행
     // eslint-disable-next-line react-hooks/exhaustive-deps
