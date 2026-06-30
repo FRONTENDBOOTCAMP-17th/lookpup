@@ -1168,19 +1168,19 @@ function ChatPageContent({
     return `/myprofile/report?${params.toString()}`;
   }
 
-  const mobileRoomName =
+  const roomName =
     activeTab === "one_on_one"
       ? (selectedRoom?.name ?? "")
       : activeTab === "reservations"
         ? (selectedReservationRequest?.name ?? "")
         : (selectedApplicant?.name ?? "");
-  const mobileRoomInitial =
+  const roomInitial =
     activeTab === "one_on_one"
       ? (selectedRoom?.initial ?? "")
       : activeTab === "reservations"
         ? (selectedReservationRequest?.initial ?? "")
         : (selectedApplicant?.initial ?? "");
-  const mobileRoomProfileImage =
+  const roomProfileImage =
     activeTab === "one_on_one"
       ? (selectedRoom?.profileImage ?? null)
       : activeTab === "reservations"
@@ -1320,7 +1320,7 @@ function ChatPageContent({
     [displayMessages],
   );
 
-  function handleGoToChatMobile() {
+  function handleGoToChat(isMobile: boolean) {
     const room = rooms.find(
       (r) =>
         r.ownerId === selectedApplicant?.ownerId &&
@@ -1329,18 +1329,7 @@ function ChatPageContent({
     setActiveTab("one_on_one");
     setSelectedApplicantId(null);
     if (room) setSelectedRoomId(room.id);
-    setMobileChatView(room ? "room" : "list");
-  }
-
-  function handleGoToChatDesktop() {
-    const room = rooms.find(
-      (r) =>
-        r.ownerId === selectedApplicant?.ownerId &&
-        r.sitterId === selectedApplicant?.sitterId,
-    );
-    setActiveTab("one_on_one");
-    setSelectedApplicantId(null);
-    if (room) setSelectedRoomId(room.id);
+    if (isMobile) setMobileChatView(room ? "room" : "list");
   }
 
   const leaveChat = () => {
@@ -1418,9 +1407,9 @@ function ChatPageContent({
             error={null}
             isEmpty={false}
             hasSelection={true}
-            roomName={mobileRoomName}
-            roomInitial={mobileRoomInitial}
-            roomProfileImage={mobileRoomProfileImage}
+            roomName={roomName}
+            roomInitial={roomInitial}
+            roomProfileImage={roomProfileImage}
             headerSub={getHeaderSub()}
             headerBadge={headerBadge}
             activeTab={activeTab}
@@ -1456,7 +1445,7 @@ function ChatPageContent({
             onLeaveChat={leaveChat}
             onReport={() => router.push(getReportUrl())}
             onNavigateToPost={(postId) => router.push(`/board/${postId}`)}
-            onGoToChat={handleGoToChatMobile}
+            onGoToChat={() => handleGoToChat(true)}
             onSetInput={setInput}
             onSend={handleSend}
             onLoadMore={handleLoadMore}
@@ -1531,9 +1520,9 @@ function ChatPageContent({
                 selectedReservationRequestId === null)
             )
           }
-          roomName={mobileRoomName}
-          roomInitial={mobileRoomInitial}
-          roomProfileImage={mobileRoomProfileImage}
+          roomName={roomName}
+          roomInitial={roomInitial}
+          roomProfileImage={roomProfileImage}
           headerSub={getHeaderSub()}
           headerBadge={headerBadge}
           activeTab={activeTab}
@@ -1571,7 +1560,7 @@ function ChatPageContent({
           onLeaveChat={leaveChat}
           onReport={() => router.push(getReportUrl())}
           onNavigateToPost={(postId) => router.push(`/board/${postId}`)}
-          onGoToChat={handleGoToChatDesktop}
+          onGoToChat={() => handleGoToChat(false)}
           onSetInput={setInput}
           onSend={handleSend}
           onLoadMore={handleLoadMore}
