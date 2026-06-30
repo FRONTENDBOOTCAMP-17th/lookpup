@@ -20,8 +20,6 @@ import {
   HelpCircle,
   Star,
   Wallet,
-  MessageCircle,
-  Bell,
   AlertTriangle,
   BookOpen,
   User,
@@ -63,13 +61,43 @@ interface MenuItem {
   color: string;
 }
 
+function getMenuIconColor(index: number, total: number) {
+  const colors = [
+    "var(--color-orange-500)",
+    "#EA7B32",
+    "#EC833C",
+    "#EE8B46",
+    "#F09450",
+    "#F29D5C",
+    "#F4A667",
+    "#F6AF72",
+    "#F8B77C",
+    "#FABF86",
+  ];
+  if (total <= 1) return colors[0];
+  const colorIndex = Math.round((index / (total - 1)) * (colors.length - 1));
+  return colors[colorIndex];
+}
+
+function MenuIcon({
+  icon: Icon,
+  size,
+  color,
+}: {
+  icon: React.ElementType;
+  size: number;
+  color: string;
+}) {
+  return <Icon size={size} color={color} />;
+}
+
 const OWNER_MENU: MenuItem[] = [
   {
     id: "profile",
     icon: User,
     label: "내 프로필",
     link: "/myprofile",
-    color: "#E8742A",
+    color: "var(--color-orange-500)",
   },
   {
     id: "pets",
@@ -82,7 +110,7 @@ const OWNER_MENU: MenuItem[] = [
     id: "bookings",
     icon: Calendar,
     label: "예약 내역",
-    link: "/myprofile/booking-history",
+    link: "/myprofile/booking-history?role=owner",
     color: "#10B981",
   },
   {
@@ -90,7 +118,7 @@ const OWNER_MENU: MenuItem[] = [
     icon: FileText,
     label: "게시글 관리",
     link: "/myprofile/posts",
-    color: "#E8742A",
+    color: "var(--color-orange-500)",
   },
   {
     id: "reviews",
@@ -135,33 +163,26 @@ const SITTER_MENU: MenuItem[] = [
     icon: User,
     label: "내 프로필",
     link: "/myprofile",
-    color: "#E8742A",
+    color: "var(--color-orange-500)",
   },
   {
     id: "bookings",
     icon: Calendar,
     label: "예약 관리",
-    link: "/myprofile/booking-history",
-    color: "#E8742A",
+    link: "/myprofile/booking-history?role=sitter",
+    color: "var(--color-orange-500)",
   },
   {
     id: "posts",
     icon: FileText,
     label: "게시글 관리",
     link: "/myprofile/posts",
-    color: "#E8742A",
-  },
-  {
-    id: "chat",
-    icon: MessageCircle,
-    label: "메시지",
-    link: "/chat",
-    color: "#10B981",
+    color: "var(--color-orange-500)",
   },
   {
     id: "reviews",
     icon: BookOpen,
-    label: "리뷰 관리",
+    label: "후기 관리",
     link: "/myprofile/reviews",
     color: "#F59E0B",
   },
@@ -173,9 +194,9 @@ const SITTER_MENU: MenuItem[] = [
     color: "#3B82F6",
   },
   {
-    id: "notif",
-    icon: Bell,
-    label: "알림 설정",
+    id: "settings",
+    icon: Settings,
+    label: "설정",
     link: "/myprofile/settings",
     color: "#8B5CF6",
   },
@@ -204,14 +225,19 @@ const SITTER_MENU: MenuItem[] = [
 
 function SidebarItem({
   item,
+  index,
+  total,
   selected,
   onClick,
 }: {
   item: MenuItem;
+  index: number;
+  total: number;
   selected: boolean;
   onClick: () => void;
 }) {
   const Icon = item.icon;
+  const iconColor = getMenuIconColor(index, total);
   return (
     <button
       onClick={onClick}
@@ -224,7 +250,7 @@ function SidebarItem({
       {selected && (
         <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-orange-500 rounded-r-full" />
       )}
-      <Icon size={16} style={{ color: selected ? "#E8742A" : item.color }} />
+      <MenuIcon icon={Icon} size={16} color={iconColor} />
       <span
         className={`text-sm font-medium ${selected ? "text-orange-500" : "text-stone-900"}`}
       >
@@ -795,10 +821,12 @@ export default function MyProfilePage() {
 
                 {/* 메뉴 */}
                 <nav className="space-y-0.5">
-                  {menuItems.map((item) => (
+                  {menuItems.map((item, index) => (
                     <SidebarItem
                       key={item.id}
                       item={item}
+                      index={index}
+                      total={menuItems.length}
                       selected={selectedMenu === item.id}
                       onClick={() => handleMenuClick(item)}
                     />
@@ -833,6 +861,10 @@ export default function MyProfilePage() {
                     <div className="grid grid-cols-2 gap-3">
                       {quickMenuItems.map((item) => {
                         const Icon = item.icon;
+                        const iconColor = getMenuIconColor(
+                          menuItems.findIndex((menu) => menu.id === item.id),
+                          menuItems.length,
+                        );
                         return (
                           <button
                             key={item.id}
@@ -840,10 +872,13 @@ export default function MyProfilePage() {
                             className="flex items-center gap-3 p-4 bg-orange-50 hover:bg-orange-100 rounded-xl transition-colors text-left"
                           >
                             <div
-                              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                              style={{ background: `${item.color}20` }}
+                              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-white shadow-sm border border-orange-100"
                             >
-                              <Icon size={16} style={{ color: item.color }} />
+                              <MenuIcon
+                                icon={Icon}
+                                size={16}
+                                color={iconColor}
+                              />
                             </div>
                             <span className="text-sm font-medium text-stone-900">
                               {item.label}
@@ -899,8 +934,9 @@ export default function MyProfilePage() {
         )}
 
         <div className="space-y-2 mb-5">
-          {menuItems.map((item) => {
+          {menuItems.map((item, index) => {
             const Icon = item.icon;
+            const iconColor = getMenuIconColor(index, menuItems.length);
             return (
               <Link key={item.id} href={item.link}>
                 <div className="w-full bg-white rounded-2xl px-4 py-3.5 flex items-center gap-4 shadow-sm border border-orange-100">
@@ -908,7 +944,7 @@ export default function MyProfilePage() {
                     className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                     style={{ background: `${item.color}18` }}
                   >
-                    <Icon size={20} style={{ color: item.color }} />
+                    <MenuIcon icon={Icon} size={20} color={iconColor} />
                   </div>
                   <span className="flex-1 text-left text-sm font-medium text-stone-900">
                     {item.label}
@@ -939,7 +975,6 @@ export default function MyProfilePage() {
               </div>
             </Link>
           ))}
-
       </div>
     </div>
   );

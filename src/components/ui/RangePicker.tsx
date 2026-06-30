@@ -204,11 +204,11 @@ export default function RangePicker({ value, onChange, bookedRanges = [] }: Prop
                       past ? "text-gray-300 cursor-not-allowed" : "",
                       booked ? "text-gray-300 cursor-not-allowed line-through" : "",
                       !disabled && (kind === "start" || kind === "end" || kind === "single")
-                        ? "bg-[#e8742a] text-white"
+                        ? "bg-[var(--color-orange-500)] text-white"
                         : !disabled && kind === "middle"
                           ? "text-[#281a0e] hover:bg-[#fff8f3]"
                           : !disabled && isToday
-                            ? "text-[#e8742a] font-bold hover:bg-[#fff8f3]"
+                            ? "text-[var(--color-orange-500)] font-bold hover:bg-[#fff8f3]"
                             : !disabled
                               ? "text-[#281a0e] hover:bg-[#fff8f3]"
                               : "",

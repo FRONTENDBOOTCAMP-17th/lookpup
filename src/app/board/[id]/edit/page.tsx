@@ -356,7 +356,7 @@ export default function BoardEditPage() {
             <button
               onClick={handleSubmit}
               disabled={!canSubmit || isSubmitting}
-              className={`h-10 px-5 rounded-xl text-[15px] font-semibold flex items-center gap-1.5 bg-[#e8742a] text-white transition-opacity ${
+              className={`h-10 px-5 rounded-xl text-[15px] font-semibold flex items-center gap-1.5 bg-[var(--color-orange-500)] text-white transition-colors ${
                 canSubmit && !isSubmitting ? "opacity-100" : "opacity-40"
               }`}
             >
@@ -383,15 +383,15 @@ export default function BoardEditPage() {
                       }
                       className={`flex flex-col items-center justify-center gap-2 h-25 rounded-xl border transition-all ${
                         selected
-                          ? "border-[#e8742a] bg-[#fff8f3]"
-                          : "border-[#ffe9d6] bg-white hover:border-[#e8742a]/50"
+                          ? "border-[var(--color-orange-500)] bg-[#fff8f3]"
+                          : "border-[#ffe9d6] bg-white hover:border-[var(--color-orange-500)]/50"
                       }`}
                     >
                       <Icon
-                        className={`w-5.5 h-5.5 ${selected ? "text-[#e8742a]" : "text-[#281a0e]"}`}
+                        className={`w-5.5 h-5.5 ${selected ? "text-[var(--color-orange-500)]" : "text-[#281a0e]"}`}
                       />
                       <span
-                        className={`text-sm font-medium ${selected ? "text-[#e8742a]" : "text-[#281a0e]"}`}
+                        className={`text-sm font-medium ${selected ? "text-[var(--color-orange-500)]" : "text-[#281a0e]"}`}
                       >
                         {label}
                       </span>
@@ -434,8 +434,8 @@ export default function BoardEditPage() {
                       }
                       className={`h-8.5 px-4 rounded-full border text-sm transition-colors ${
                         form.budget === String(amount)
-                          ? "bg-[#e8742a] text-white border-[#e8742a]"
-                          : "bg-[#fff8f3] text-[#281a0e] border-[#ffe9d6] hover:border-[#e8742a]/50"
+                          ? "bg-[var(--color-orange-500)] text-white border-[var(--color-orange-500)]"
+                          : "bg-[#fff8f3] text-[#281a0e] border-[#ffe9d6] hover:border-[var(--color-orange-500)]/50"
                       }`}
                     >
                       {amount.toLocaleString()}원
@@ -518,13 +518,13 @@ export default function BoardEditPage() {
                     }
                   }}
                   placeholder="주소 검색 후 Enter"
-                  className="w-full h-12 pl-9 pr-20 bg-white border border-[#ffe9d6] rounded-xl text-[#281a0e] placeholder:text-gray-400 outline-none focus:border-[#e8742a] transition"
+                  className="w-full h-12 pl-9 pr-20 bg-white border border-[#ffe9d6] rounded-xl text-[#281a0e] placeholder:text-gray-400 outline-none focus:border-[var(--color-orange-500)] transition"
                 />
                 <button
                   type="button"
                   onClick={handleAddressSearch}
                   disabled={addressSearching}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 px-3 rounded-lg bg-[#e8742a] text-white text-xs font-medium disabled:opacity-50 transition-opacity"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 px-3 rounded-lg bg-[var(--color-orange-500)] text-white text-xs font-medium disabled:opacity-50 transition-opacity"
                 >
                   검색
                 </button>
@@ -558,7 +558,7 @@ export default function BoardEditPage() {
                 {form.latitude === null && (
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <div className="flex flex-col items-center gap-2">
-                      <div className="w-9 h-9 bg-[#e8742a] rounded-full flex items-center justify-center shadow-md">
+                      <div className="w-9 h-9 bg-[var(--color-orange-500)] rounded-full flex items-center justify-center shadow-md">
                         <MapPin className="w-5 h-5 text-white" />
                       </div>
                       <span className="px-3 py-1 bg-white rounded-full text-xs text-[#281a0e] shadow-sm">
@@ -579,7 +579,7 @@ export default function BoardEditPage() {
                 type="button"
                 onClick={handleUseCurrentLocation}
                 disabled={addressSearching}
-                className="flex items-center gap-1.5 text-[#e8742a] text-sm font-medium mt-3 hover:opacity-80 disabled:opacity-50 transition-opacity"
+                className="flex items-center gap-1.5 text-[var(--color-orange-500)] text-sm font-medium mt-3 hover:opacity-80 disabled:opacity-50 transition-opacity"
               >
                 <LocateFixed className="w-4 h-4" />
                 {addressSearching ? "위치 확인 중..." : "현재 위치 사용"}
@@ -601,17 +601,17 @@ export default function BoardEditPage() {
                       onClick={() => togglePet(pet.id)}
                       className={`relative rounded-2xl border-2 overflow-hidden transition-all ${
                         isSelected
-                          ? "border-[#e8742a]"
-                          : "border-[#ffe9d6] hover:border-[#e8742a]/50"
+                          ? "border-[var(--color-orange-500)]"
+                          : "border-[#ffe9d6] hover:border-[var(--color-orange-500)]/50"
                       }`}
                     >
                       {isSelected && (
-                        <div className="absolute top-2 right-2 w-5 h-5 bg-[#e8742a] rounded-full flex items-center justify-center z-10">
+                        <div className="absolute top-2 right-2 w-5 h-5 bg-[var(--color-orange-500)] rounded-full flex items-center justify-center z-10">
                           <Check className="w-3 h-3 text-white" />
                         </div>
                       )}
                       <div className="relative bg-[#fff8f3] h-30 flex items-center justify-center">
-                        <span className="absolute top-2 left-2 px-2 py-0.5 bg-white border border-[#ffe9d6] rounded-full text-xs font-medium text-[#e8742a] z-10">
+                        <span className="absolute top-2 left-2 px-2 py-0.5 bg-white border border-[#ffe9d6] rounded-full text-xs font-medium text-[var(--color-orange-500)] z-10">
                           {pet.type}
                         </span>
                         {pet.image_url ? (
@@ -658,7 +658,7 @@ export default function BoardEditPage() {
                       setForm((prev) => ({ ...prev, title: e.target.value }));
                   }}
                   placeholder="예: 이번 주말 강아지 산책 펫시터 구해요"
-                  className="w-full h-12 px-4 bg-white border border-[#ffe9d6] rounded-xl text-[#281a0e] placeholder:text-gray-400 outline-none focus:border-[#e8742a] transition"
+                  className="w-full h-12 px-4 bg-white border border-[#ffe9d6] rounded-xl text-[#281a0e] placeholder:text-gray-400 outline-none focus:border-[var(--color-orange-500)] transition"
                 />
               </div>
               <div className="flex flex-col gap-2">
@@ -681,7 +681,7 @@ export default function BoardEditPage() {
                   }}
                   placeholder="펫시터에게 전달하고 싶은 내용을 입력해주세요"
                   rows={7}
-                  className="w-full px-4 py-3 bg-white border border-[#ffe9d6] rounded-xl text-[#281a0e] placeholder:text-gray-400 outline-none resize-none focus:border-[#e8742a] transition mt-1"
+                  className="w-full px-4 py-3 bg-white border border-[#ffe9d6] rounded-xl text-[#281a0e] placeholder:text-gray-400 outline-none resize-none focus:border-[var(--color-orange-500)] transition mt-1"
                 />
               </div>
             </div>
@@ -692,7 +692,7 @@ export default function BoardEditPage() {
                 <div className="flex items-center justify-between">
                   <label className="text-sm font-bold text-[#281a0e] flex items-center gap-2">
                     펫시터 조건
-                    <span className="px-2 py-0.5 bg-[#fff8f3] rounded-full text-xs font-medium text-[#e8742a]">
+                    <span className="px-2 py-0.5 bg-[#fff8f3] rounded-full text-xs font-medium text-[var(--color-orange-500)]">
                       선택
                     </span>
                   </label>
@@ -710,7 +710,7 @@ export default function BoardEditPage() {
                       key={condition}
                       type="button"
                       onClick={() => appendCondition(condition)}
-                      className="px-3 py-1 rounded-full text-xs font-medium border border-[#ffe9d6] text-gray-500 hover:border-[#e8742a]/50 hover:text-[#e8742a] transition-colors"
+                      className="px-3 py-1 rounded-full text-xs font-medium border border-[#ffe9d6] text-gray-500 hover:border-[var(--color-orange-500)]/50 hover:text-[var(--color-orange-500)] transition-colors"
                     >
                       {condition}
                     </button>
@@ -727,7 +727,7 @@ export default function BoardEditPage() {
                   }}
                   placeholder="예: - 책임감 있고 성실하신 분"
                   rows={6}
-                  className="w-full px-4 py-3 bg-white border border-[#ffe9d6] rounded-xl text-[#281a0e] placeholder:text-gray-400 outline-none resize-none focus:border-[#e8742a] transition mt-1"
+                  className="w-full px-4 py-3 bg-white border border-[#ffe9d6] rounded-xl text-[#281a0e] placeholder:text-gray-400 outline-none resize-none focus:border-[var(--color-orange-500)] transition mt-1"
                 />
               </div>
             </div>

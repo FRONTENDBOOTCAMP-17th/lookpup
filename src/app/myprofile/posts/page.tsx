@@ -450,7 +450,7 @@ export default function PostsManagePage() {
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex-1 min-w-fit px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${
                     isActive
-                      ? "bg-[#E8742A] text-white"
+                      ? "bg-[var(--color-orange-500)] text-white"
                       : "text-[#6B7280] hover:text-[#281A0E]"
                   }`}
                 >

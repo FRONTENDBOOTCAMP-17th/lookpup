@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Calendar,
   Clock,
@@ -428,10 +428,14 @@ const SITTER_TABS: { id: TabId; label: string }[] = [
 
 export default function BookingHistoryPage() {
   const router = useRouter();
-  const { user, sitter } = useUserStore();
+  const searchParams = useSearchParams();
+  const { user } = useUserStore();
   const isSitter = user?.role === "both" || user?.role === "admin";
+  const roleParam = searchParams.get("role");
+  const fixedRole =
+    roleParam === "owner" || roleParam === "sitter" ? roleParam : null;
 
-  const [role, setRole] = useState<"owner" | "sitter">("owner");
+  const [role, setRole] = useState<"owner" | "sitter">(fixedRole ?? "owner");
   const [activeTab, setActiveTab] = useState<TabId>("all");
   const [page, setPage] = useState(1);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -462,37 +466,11 @@ export default function BookingHistoryPage() {
   }, [loadData]);
 
   useEffect(() => {
-    if (role !== "sitter" || !sitter?.id) return;
-
-    const supabase = createClient();
-    const channel = supabase
-      .channel("sitter-booking-history-updates")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "applications",
-          filter: `sitter_id=eq.${sitter.id}`,
-        },
-        () => loadData(),
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "reservations",
-          filter: `sitter_id=eq.${sitter.id}`,
-        },
-        () => loadData(),
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [role, sitter?.id, loadData]);
+    if (!fixedRole) return;
+    setRole(fixedRole);
+    setActiveTab("all");
+    setPage(1);
+  }, [fixedRole]);
 
   const handleCancelConfirm = async () => {
     if (!cancelingId) return;
@@ -577,7 +555,7 @@ export default function BookingHistoryPage() {
         </div>
 
         {/* 보호자 / 펫시터 역할 토글 */}
-        {isSitter && (
+        {isSitter && !fixedRole && (
           <div className="flex bg-white border border-orange-100 rounded-2xl p-1 mb-4">
             {(["owner", "sitter"] as const).map((r) => (
               <button
@@ -641,7 +619,7 @@ export default function BookingHistoryPage() {
             {!isAppliedTab && (
               <Link
                 href="/petsitters"
-                className="mt-6 px-6 py-3 bg-[#E8742A] text-white rounded-xl text-sm font-semibold hover:bg-[#D4621A] transition-colors"
+                className="mt-6 px-6 py-3 bg-[var(--color-orange-500)] text-white rounded-xl text-sm font-semibold hover:bg-orange-600 transition-colors"
               >
                 펫시터 찾기
               </Link>
@@ -685,7 +663,7 @@ export default function BookingHistoryPage() {
                 onClick={() => setPage(p)}
                 className={`w-9 h-9 rounded-xl text-sm font-medium transition-all ${
                   page === p
-                    ? "bg-[#E8742A] text-white"
+                    ? "bg-[var(--color-orange-500)] text-white"
                     : "border border-orange-100 text-gray-500 hover:border-orange-300"
                 }`}
               >

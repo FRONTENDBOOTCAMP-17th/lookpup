@@ -18,7 +18,7 @@ function renderItemText(text: string) {
         {match[1]}
         <Link
           href={PRIVACY_LINKS[match[2]]}
-          className="text-[#E8742A] underline underline-offset-2 hover:opacity-70 transition-opacity"
+          className="text-[var(--color-orange-500)] underline underline-offset-2 hover:opacity-70 transition-opacity"
         >
           {match[2]}
         </Link>
@@ -162,7 +162,7 @@ export default function TermsPage() {
                 {index > 0 && (
                   <div className="border-t border-[#FFE9D6] mb-6" />
                 )}
-                <h2 className="text-base font-bold text-[#E8742A] mb-3">
+                <h2 className="text-base font-bold text-[var(--color-orange-500)] mb-3">
                   {article.title}
                 </h2>
                 {"content" in article && article.content ? (
@@ -180,7 +180,7 @@ export default function TermsPage() {
                   <ol className="flex flex-col gap-3">
                     {article.items?.map((item, i) => (
                       <li key={i} className="flex gap-2">
-                        <span className="text-sm font-semibold text-[#E8742A] leading-relaxed shrink-0">
+                        <span className="text-sm font-semibold text-[var(--color-orange-500)] leading-relaxed shrink-0">
                           {i + 1}.
                         </span>
                         <p className="text-sm text-[#281A0E] leading-relaxed whitespace-pre-line">
@@ -196,7 +196,7 @@ export default function TermsPage() {
 
           {/* 적용일자 */}
           <div className="bg-[#FFF0E8] rounded-2xl border border-[#FFE9D6] px-6 py-4">
-            <p className="text-sm font-semibold text-[#E8742A]">적용일자</p>
+            <p className="text-sm font-semibold text-[var(--color-orange-500)]">적용일자</p>
             <p className="text-sm text-[#6B7280] mt-1">
               본 약관은 2026년 7월 1일부터 적용됩니다.
             </p>

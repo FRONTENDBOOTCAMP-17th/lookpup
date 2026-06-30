@@ -19,8 +19,8 @@ const SIZE: Record<NonNullable<AvatarProps["size"]>, string> = {
 };
 
 const VARIANT: Record<NonNullable<AvatarProps["variant"]>, { container: string; text: string }> = {
-  default: { container: "bg-[#FFF0E8] border-2 border-[#FFE9D6]", text: "text-[#E8742A]" },
-  dark: { container: "bg-orange-100", text: "text-[#E8742A]" },
+  default: { container: "bg-[#FFF0E8] border-2 border-[#FFE9D6]", text: "text-[var(--color-orange-500)]" },
+  dark: { container: "bg-orange-100", text: "text-[var(--color-orange-500)]" },
   orange: { container: "bg-orange-50 border border-orange-100", text: "text-orange-500" },
   blue: { container: "bg-[#aed6f1]", text: "text-white" },
 };
@@ -64,7 +64,7 @@ export function AvatarWithCamera({
       <button
         type="button"
         onClick={onCameraClick}
-        className="absolute bottom-0 right-0 size-8 bg-[#E8742A] rounded-full flex justify-center items-center"
+        className="absolute bottom-0 right-0 size-8 bg-[var(--color-orange-500)] rounded-full flex justify-center items-center"
       >
         <Camera className="size-4 text-white" />
       </button>
@@ -88,7 +88,7 @@ export function AvatarReport({
   return (
     <div className={`relative shrink-0 ${className}`}>
       <Avatar initial={initial} src={src} size="lg" variant="blue" />
-      <div className="absolute bottom-0 right-0 w-5 h-5 rounded-full bg-[#e8742a] flex items-center justify-center">
+      <div className="absolute bottom-0 right-0 w-5 h-5 rounded-full bg-[var(--color-orange-500)] flex items-center justify-center">
         {badge}
       </div>
     </div>

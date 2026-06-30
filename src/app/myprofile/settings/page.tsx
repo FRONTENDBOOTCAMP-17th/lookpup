@@ -67,7 +67,7 @@ export default function SettingsPage() {
   const user = useUserStore((s) => s.user);
   const setUser = useUserStore((s) => s.setUser);
 
-  const [activeTab, setActiveTab] = useState<Tab>("notifications");
+  const [activeTab, setActiveTab] = useState<Tab>("profile");
   const [notificationPrefs, setNotificationPrefs] = useState(
     loadNotificationPrefs(),
   );
@@ -258,7 +258,7 @@ export default function SettingsPage() {
                 {user?.email ?? ""}
               </p>
               <span
-                className={`px-3 py-1 rounded-md text-white text-xs font-medium ${user?.isVerified ? "bg-[#E8742A]" : "bg-[#9CA3AF]"}`}
+                className={`px-3 py-1 rounded-md text-white text-xs font-medium ${user?.isVerified ? "bg-[var(--color-orange-500)]" : "bg-[#9CA3AF]"}`}
               >
                 {user?.isVerified ? "본인인증 완료" : "본인인증 미완료"}
               </span>
@@ -268,7 +268,7 @@ export default function SettingsPage() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`w-full h-12 rounded-xl text-left px-4 text-base font-medium transition-all ${activeTab === tab.id ? "bg-[#E8742A] text-white" : "bg-[#FFF8F3] text-[#6B7280] hover:bg-[#FFF0E8]"}`}
+                  className={`w-full h-12 rounded-xl text-left px-4 text-base font-medium transition-all ${activeTab === tab.id ? "bg-[var(--color-orange-500)] text-white" : "bg-[#FFF8F3] text-[#6B7280] hover:bg-[#FFF0E8]"}`}
                 >
                   {tab.label}
                 </button>
@@ -289,7 +289,7 @@ export default function SettingsPage() {
                     <input
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      className="w-full h-12 rounded-xl border border-[#FFE9D6] flex items-center px-4 text-[#281A0E] text-base outline-none focus:border-[#E8742A]"
+                      className="w-full h-12 rounded-xl border border-[#FFE9D6] flex items-center px-4 text-[#281A0E] text-base outline-none focus:border-[var(--color-orange-500)]"
                     />
                   </div>
                   <div className="flex flex-col gap-2">
@@ -310,7 +310,7 @@ export default function SettingsPage() {
                       <input
                         value={phoneNumber}
                         onChange={(e) => setPhoneNumber(e.target.value)}
-                        className="w-full h-12 rounded-xl border border-[#FFE9D6] flex items-center pl-12 pr-4 text-[#281A0E] text-base outline-none focus:border-[#E8742A]"
+                        className="w-full h-12 rounded-xl border border-[#FFE9D6] flex items-center pl-12 pr-4 text-[#281A0E] text-base outline-none focus:border-[var(--color-orange-500)]"
                       />
                     </div>
                   </div>
@@ -328,7 +328,7 @@ export default function SettingsPage() {
                           setShowAddressSuggestions(true)
                         }
                         placeholder="도로명 또는 지번 주소 검색"
-                        className="w-full h-12 rounded-xl border border-[#FFE9D6] flex items-center pl-12 pr-4 text-[#281A0E] text-base outline-none focus:border-[#E8742A]"
+                        className="w-full h-12 rounded-xl border border-[#FFE9D6] flex items-center pl-12 pr-4 text-[#281A0E] text-base outline-none focus:border-[var(--color-orange-500)]"
                       />
                       {showAddressSuggestions &&
                         addressSuggestions.length > 0 && (
@@ -378,7 +378,7 @@ export default function SettingsPage() {
                         type="date"
                         value={birthdate}
                         onChange={(e) => setBirthdate(e.target.value)}
-                        className="w-full h-12 rounded-xl border border-[#FFE9D6] pl-12 pr-4 text-[#281A0E] text-base outline-none focus:border-[#E8742A]"
+                        className="w-full h-12 rounded-xl border border-[#FFE9D6] pl-12 pr-4 text-[#281A0E] text-base outline-none focus:border-[var(--color-orange-500)]"
                       />
                     </div>
                   </div>
@@ -398,7 +398,7 @@ export default function SettingsPage() {
                         setShowAddressSuggestions(false);
                         setSaveError(null);
                       }}
-                      className="flex-1 h-12 px-6 bg-white rounded-[10px] border border-[#E8742A] text-[#E8742A] text-base font-semibold"
+                      className="flex-1 h-12 px-6 bg-white rounded-[10px] border border-[var(--color-orange-500)] text-[var(--color-orange-500)] text-base font-semibold"
                     >
                       취소
                     </button>
@@ -406,7 +406,7 @@ export default function SettingsPage() {
                     <button
                       onClick={handleSave}
                       disabled={isSaving}
-                      className="flex-1 h-12 px-6 bg-[#E8742A] rounded-[10px] text-white text-base font-semibold disabled:opacity-50"
+                      className="flex-1 h-12 px-6 bg-[var(--color-orange-500)] rounded-[10px] text-white text-base font-semibold disabled:opacity-50"
                     >
                       {isSaving ? "저장 중..." : "저장하기"}
                     </button>

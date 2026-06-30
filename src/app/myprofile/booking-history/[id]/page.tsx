@@ -88,7 +88,7 @@ function ReviewSection({
 }) {
   if (!reviewWritten) {
     return (
-      <div className="bg-white border-2 border-[#E8742A] rounded-2xl p-6">
+      <div className="bg-white border-2 border-[var(--color-orange-500)] rounded-2xl p-6">
         <div className="flex items-start gap-4">
           <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center shrink-0">
             <Star size={20} className="text-orange-500" />
