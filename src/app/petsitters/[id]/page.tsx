@@ -49,7 +49,22 @@ interface SitterDetail {
   longitude: number | null;
   base_price: number | null;
   rating: number;
+  review_count: number;
+  activity_photo_urls: string[];
   services: ServiceRow[];
+}
+
+interface ReviewRow {
+  id: string;
+  rating: number;
+  content: string;
+  image_urls: string[] | null;
+  tags: string[];
+  created_at: string;
+  owner: {
+    full_name: string | null;
+    profile_image: string | null;
+  } | null;
 }
 
 const TABS = ["소개", "서비스", "후기", "위치"] as const;
@@ -65,6 +80,7 @@ export default function PetsitterProfilePage() {
   const [sitter, setSitter] = useState<SitterDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>("소개");
+  const [reviews, setReviews] = useState<ReviewRow[]>([]);
 
   useEffect(() => {
     async function fetchDetail() {
@@ -78,6 +94,20 @@ export default function PetsitterProfilePage() {
       setLoading(false);
     }
     fetchDetail();
+  }, [sitterId]);
+
+  useEffect(() => {
+    async function fetchReviews() {
+      const { data } = await supabase
+        .from("reviews")
+        .select(
+          "id, rating, content, image_urls, tags, created_at, owner:users!reviews_owner_id_fkey(full_name, profile_image)",
+        )
+        .eq("sitter_id", sitterId)
+        .order("created_at", { ascending: false });
+      if (data) setReviews(data as ReviewRow[]);
+    }
+    fetchReviews();
   }, [sitterId]);
 
   // 서비스 목록에서 표시용 레이블 도출
@@ -103,6 +133,13 @@ export default function PetsitterProfilePage() {
   // 지도 좌표
   const lat = sitter?.latitude ?? DEFAULT_LAT;
   const lng = sitter?.longitude ?? DEFAULT_LNG;
+
+  // 후기 통계
+  const reviewCount = sitter?.review_count ?? reviews.length;
+  const ratingCounts = [5, 4, 3, 2, 1].map((r) => ({
+    r,
+    count: reviews.filter((rv) => rv.rating === r).length,
+  }));
 
   const renderTabContent = () => {
     if (loading) {
@@ -141,14 +178,20 @@ export default function PetsitterProfilePage() {
 
             <div className="bg-white rounded-2xl shadow-[0px_2px_12px_rgba(232,116,42,0.10)] border border-orange-100 p-6">
               <h3 className="font-bold text-stone-900 mb-4">사진</h3>
-              <div className="grid grid-cols-3 gap-3">
-                {Array.from({ length: 6 }).map((_, idx) => (
-                  <div
-                    key={idx}
-                    className="aspect-square rounded-lg bg-linear-to-br from-gray-100 to-gray-200"
-                  />
-                ))}
-              </div>
+              {sitter.activity_photo_urls.length === 0 ? (
+                <p className="text-gray-400 text-sm">등록된 사진이 없습니다.</p>
+              ) : (
+                <div className="grid grid-cols-3 gap-3">
+                  {sitter.activity_photo_urls.map((url, idx) => (
+                    <img
+                      key={idx}
+                      src={url}
+                      alt={`활동 사진 ${idx + 1}`}
+                      className="aspect-square rounded-lg object-cover w-full"
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -203,31 +246,101 @@ export default function PetsitterProfilePage() {
                     {Number(sitter.rating).toFixed(1)}
                   </p>
                   <div className="flex items-center gap-0.5 justify-center mb-1">
-                    <StarRow size={14} />
+                    <StarRow size={14} count={Math.round(sitter.rating)} />
                   </div>
-                  <p className="text-xs text-gray-400">0개 리뷰</p>
+                  <p className="text-xs text-gray-400">{reviewCount}개 리뷰</p>
                 </div>
                 <div className="flex-1 flex flex-col gap-2">
-                  {[5, 4, 3, 2, 1].map((r) => (
+                  {ratingCounts.map(({ r, count }) => (
                     <div key={r} className="flex items-center gap-3">
                       <span className="text-xs text-gray-500 w-6">{r}점</span>
                       <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                         <div
                           className="h-full bg-amber-400 rounded-full"
-                          style={{ width: "0%" }}
+                          style={{
+                            width:
+                              reviewCount > 0
+                                ? `${(count / reviewCount) * 100}%`
+                                : "0%",
+                          }}
                         />
                       </div>
                       <span className="text-xs text-gray-400 w-4 text-right">
-                        0
+                        {count}
                       </span>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
-            <div className="flex items-center justify-center py-10 text-gray-400 text-sm">
-              아직 후기가 없습니다.
-            </div>
+            {reviews.length === 0 ? (
+              <div className="flex items-center justify-center py-10 text-gray-400 text-sm">
+                아직 후기가 없습니다.
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {reviews.map((rv) => (
+                  <div
+                    key={rv.id}
+                    className="bg-white rounded-2xl shadow-[0px_2px_12px_rgba(232,116,42,0.10)] border border-orange-100 p-5"
+                  >
+                    <div className="flex items-center gap-3 mb-3">
+                      {rv.owner?.profile_image ? (
+                        <img
+                          src={rv.owner.profile_image}
+                          alt={rv.owner.full_name ?? "보호자"}
+                          className="w-9 h-9 rounded-full object-cover shrink-0"
+                        />
+                      ) : (
+                        <div className="w-9 h-9 rounded-full bg-gray-200 shrink-0 flex items-center justify-center text-gray-500 text-sm font-bold">
+                          {(rv.owner?.full_name ?? "?").charAt(0)}
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-stone-900 truncate">
+                          {rv.owner?.full_name ?? "보호자"}
+                        </p>
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <StarRow size={11} count={rv.rating} />
+                          <span className="text-xs text-gray-400 ml-1">
+                            {new Date(rv.created_at).toLocaleDateString(
+                              "ko-KR",
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
+                      {rv.content}
+                    </p>
+                    {rv.image_urls && rv.image_urls.length > 0 && (
+                      <div className="flex gap-2 mt-3 overflow-x-auto">
+                        {rv.image_urls.map((url, idx) => (
+                          <img
+                            key={idx}
+                            src={url}
+                            alt={`후기 사진 ${idx + 1}`}
+                            className="w-20 h-20 rounded-lg object-cover shrink-0"
+                          />
+                        ))}
+                      </div>
+                    )}
+                    {rv.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mt-3">
+                        {rv.tags.map((tag) => (
+                          <span
+                            key={tag}
+                            className="px-2 py-0.5 bg-orange-50 text-orange-500 text-xs rounded-full"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -275,7 +388,18 @@ export default function PetsitterProfilePage() {
             {/* 왼쪽: 모바일 이미지 헤더 / 데스크톱 프로필 카드 */}
             <div className="md:w-85.25 md:shrink-0">
               {/* 모바일 이미지 헤더 */}
-              <div className="md:hidden relative w-full h-44 bg-linear-to-br from-gray-100 to-gray-200">
+              <div
+                className="md:hidden relative w-full h-44 bg-linear-to-br from-gray-100 to-gray-200"
+                style={
+                  sitter?.profile_image
+                    ? {
+                        backgroundImage: `url(${sitter.profile_image})`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                      }
+                    : undefined
+                }
+              >
                 <Link
                   href="/petsitters"
                   aria-label="펫시터 목록으로 돌아가기"
@@ -309,7 +433,15 @@ export default function PetsitterProfilePage() {
 
               {/* 데스크톱 프로필 카드 */}
               <div className="hidden md:flex flex-col items-center bg-white rounded-2xl shadow-[0px_2px_12px_rgba(232,116,42,0.10)] border border-orange-100 p-5">
-                <div className="w-full aspect-square rounded-xl bg-linear-to-br from-gray-100 to-gray-200 mb-4" />
+                {sitter?.profile_image ? (
+                  <img
+                    src={sitter.profile_image}
+                    alt={`${name} 프로필`}
+                    className="w-full aspect-square rounded-xl object-cover mb-4"
+                  />
+                ) : (
+                  <div className="w-full aspect-square rounded-xl bg-linear-to-br from-gray-100 to-gray-200 mb-4" />
+                )}
 
                 <div className="flex items-center justify-center gap-2 mb-2">
                   <span className="text-stone-900 text-2xl font-bold">
@@ -332,7 +464,7 @@ export default function PetsitterProfilePage() {
                   <span className="text-stone-900 text-lg font-bold ml-1">
                     {rating.toFixed(1)}
                   </span>
-                  <span className="text-gray-500 text-sm">(0)</span>
+                  <span className="text-gray-500 text-sm">({reviewCount})</span>
                 </div>
 
                 <div className="flex gap-2 flex-wrap justify-center mb-6">
@@ -361,7 +493,7 @@ export default function PetsitterProfilePage() {
                   <span className="text-sm font-bold text-stone-900">
                     {rating.toFixed(1)}
                   </span>
-                  <span className="text-xs text-gray-400">(0)</span>
+                  <span className="text-xs text-gray-400">({reviewCount})</span>
                 </div>
                 <div className="flex flex-wrap gap-1.5 px-5 pb-3">
                   {serviceLabels.map((s) => (
