@@ -489,17 +489,22 @@ export function MessageBubble({
     const data = msg.reservationEditResponseData;
     if (!data) return null;
     return (
-      <div>
-        {data.accepted ? (
-          <ReservationEditAcceptedCard sentByMe={data.sentByMe ?? false} />
-        ) : (
-          <ReservationEditRejectedCard sentByMe={data.sentByMe ?? false} />
+      <div className={`flex ${data.sentByMe ? "justify-end" : "items-start gap-3"}`}>
+        {!data.sentByMe && (
+          <Avatar initial={senderInitial} src={senderProfileImage} size="sm" />
         )}
-        {msg.time && (
-          <p className={`text-gray-500 text-xs mt-1 ${data.sentByMe ? "text-right pr-3" : "text-left"}`}>
-            {msg.time}
-          </p>
-        )}
+        <div>
+          {data.accepted ? (
+            <ReservationEditAcceptedCard sentByMe={data.sentByMe ?? false} />
+          ) : (
+            <ReservationEditRejectedCard sentByMe={data.sentByMe ?? false} />
+          )}
+          {msg.time && (
+            <p className={`text-gray-500 text-xs mt-1 ${data.sentByMe ? "text-right pr-3" : "text-left pl-3"}`}>
+              {msg.time}
+            </p>
+          )}
+        </div>
       </div>
     );
   }
@@ -2222,25 +2227,23 @@ function fmtDt(iso: string) {
 // 예약 수정 승인 카드
 export function ReservationEditAcceptedCard({ sentByMe }: { sentByMe: boolean }) {
   return (
-    <div className={sentByMe ? "flex justify-end" : ""}>
-      <div className="w-79.5 p-4 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 bg-[#ECFDF5] rounded-full flex items-center justify-center shrink-0">
-            <CheckCircle size={18} className="text-[#10B981]" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-[#065F46] text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
-              예약 수정 승인
-            </span>
-            <span className="text-[#111827] text-sm leading-5 mt-0.5">
-              {sentByMe ? "예약 수정 요청을 승인했습니다." : "예약 수정이 승인되었습니다."}
-            </span>
-          </div>
+    <div className="w-79.5 p-4 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col">
+      <div className="flex items-center gap-2.5">
+        <div className="w-9 h-9 bg-[#ECFDF5] rounded-full flex items-center justify-center shrink-0">
+          <CheckCircle size={18} className="text-[#10B981]" />
         </div>
-        <p className="pt-3 text-[#6B7280] text-xs leading-5">
-          {sentByMe ? "예약 정보가 변경되었습니다." : "예약 일정이 변경되었습니다."}
-        </p>
+        <div className="flex flex-col">
+          <span className="text-[#065F46] text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
+            예약 수정 승인
+          </span>
+          <span className="text-[#111827] text-sm leading-5 mt-0.5">
+            {sentByMe ? "예약 수정 요청을 승인했습니다." : "예약 수정이 승인되었습니다."}
+          </span>
+        </div>
       </div>
+      <p className="pt-3 text-[#6B7280] text-xs leading-5">
+        {sentByMe ? "예약 정보가 변경되었습니다." : "예약 일정이 변경되었습니다."}
+      </p>
     </div>
   );
 }
@@ -2248,25 +2251,23 @@ export function ReservationEditAcceptedCard({ sentByMe }: { sentByMe: boolean })
 // 예약 수정 거절 카드
 export function ReservationEditRejectedCard({ sentByMe }: { sentByMe: boolean }) {
   return (
-    <div className={sentByMe ? "flex justify-end" : ""}>
-      <div className="w-79.5 p-4 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col">
-        <div className="flex items-start gap-2.5">
-          <div className="w-9 h-9 bg-red-50 rounded-full flex items-center justify-center shrink-0">
-            <XCircle size={18} className="text-red-500" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-red-800 text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
-              예약 수정 거절
-            </span>
-            <span className="text-[#111827] text-sm leading-5 mt-0.5">
-              {sentByMe ? "예약 수정 요청을 거절했습니다." : "예약 수정 요청이 거절되었습니다."}
-            </span>
-          </div>
+    <div className="w-79.5 p-4 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col">
+      <div className="flex items-start gap-2.5">
+        <div className="w-9 h-9 bg-red-50 rounded-full flex items-center justify-center shrink-0">
+          <XCircle size={18} className="text-red-500" />
         </div>
-        <p className="pt-3 text-[#6B7280] text-xs leading-5">
-          기존 예약 일정이 유지됩니다.
-        </p>
+        <div className="flex flex-col">
+          <span className="text-red-800 text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
+            예약 수정 거절
+          </span>
+          <span className="text-[#111827] text-sm leading-5 mt-0.5">
+            {sentByMe ? "예약 수정 요청을 거절했습니다." : "예약 수정 요청이 거절되었습니다."}
+          </span>
+        </div>
       </div>
+      <p className="pt-3 text-[#6B7280] text-xs leading-5">
+        기존 예약 일정이 유지됩니다.
+      </p>
     </div>
   );
 }
