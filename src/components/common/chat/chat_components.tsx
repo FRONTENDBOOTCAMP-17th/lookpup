@@ -691,7 +691,11 @@ export function MessageBubble({
             costItems={data.costItems}
           />
         )}
-        {msg.time && <p className="text-right text-gray-500 text-xs pr-3 mt-1">{msg.time}</p>}
+        {msg.time && (
+          <p className={`text-gray-500 text-xs mt-1 ${data.sentByMe ? "text-right pr-3" : "text-left pl-11"}`}>
+            {msg.time}
+          </p>
+        )}
       </div>
     );
   }
