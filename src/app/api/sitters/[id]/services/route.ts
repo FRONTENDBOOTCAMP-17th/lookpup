@@ -27,6 +27,7 @@ export async function GET(
     .select("id, sitter_id, title, service_type, animal_type, price, description, is_active")
     .eq("sitter_id", id)
     .eq("is_active", true)
+    .is("deleted_at", null)
     .order("created_at", { ascending: true });
 
   if (error) {
