@@ -1,19 +1,29 @@
 const STEPS_OWNER = [
-  { num: 1, title: "펫시터 검색", desc: "지역·서비스 종류·가격대로 필터링" },
-  { num: 2, title: "프로필 비교", desc: "자격증·경력·후기 꼼꼼히 확인" },
-  { num: 3, title: "채팅 문의", desc: "예약 전 궁금한 점을 직접 질문" },
-  { num: 4, title: "예약 & 결제", desc: "날짜·시간 선택 후 안전하게 결제" },
-  { num: 5, title: "돌봄 진행", desc: "실시간 채팅으로 상태 확인" },
-  { num: 6, title: "후기 작성", desc: "솔직한 후기로 커뮤니티에 기여" },
+  {
+    num: 1,
+    title: "펫시터 검색",
+    desc: "지역·서비스·가격대로 원하는 시터 찾기",
+  },
+  { num: 2, title: "돌봄 요청", desc: "날짜·반려동물 선택 후 요청 전송" },
+  { num: 3, title: "확정 & 결제", desc: "펫시터 수락 후 결제하면 예약 확정" },
+  { num: 4, title: "돌봄 진행", desc: "실시간 채팅으로 상태 확인" },
+  {
+    num: 5,
+    title: "후기 작성",
+    desc: "솔직한 경험 공유로 다른 보호자에게 도움",
+  },
 ];
 
 const STEPS_SITTER = [
-  { num: 1, title: "회원가입", desc: "기본 정보 입력 후 가입" },
-  { num: 2, title: "신원 인증", desc: "신분증·자격증 서류 제출" },
-  { num: 3, title: "프로필 작성", desc: "서비스·가격·일정 설정" },
-  { num: 4, title: "예약 수락", desc: "보호자 요청 검토 후 수락" },
-  { num: 5, title: "돌봄 제공", desc: "약속된 서비스 성실히 수행" },
-  { num: 6, title: "정산 수령", desc: "서비스 완료 후 자동 정산" },
+  { num: 1, title: "펫시터 등록", desc: "본인 인증 후 서비스·가격 등록" },
+  {
+    num: 2,
+    title: "예약 매칭",
+    desc: "받은 예약 요청 수락 또는 구인글에 직접 지원",
+  },
+  { num: 3, title: "예약 확정", desc: "보호자 결제 완료로 예약 확정" },
+  { num: 4, title: "돌봄 제공", desc: "약속된 서비스 성실히 수행" },
+  { num: 5, title: "정산 수령", desc: "서비스 완료 후 수익 지급" },
 ];
 
 export default function HowItWorksSection() {
@@ -30,7 +40,7 @@ export default function HowItWorksSection() {
         {/* 보호자 플로우 */}
         <p className="text-orange-500 font-semibold text-center mb-6">보호자</p>
         <div className="flex flex-col md:flex-row md:items-start md:justify-between relative gap-6 md:gap-0 mb-14">
-          <div className="hidden md:block absolute top-8 left-[calc(8%+32px)] right-[calc(8%+32px)] h-px border-t-2 border-dashed border-orange-100" />
+          <div className="hidden md:block absolute top-8 left-18 right-18 h-px border-t-2 border-dashed border-orange-100" />
           {STEPS_OWNER.map(({ num, title, desc }) => (
             <div
               key={num}
@@ -40,7 +50,9 @@ export default function HowItWorksSection() {
                 {num}
               </div>
               <div>
-                <h3 className="text-stone-900 text-base font-semibold mb-1">{title}</h3>
+                <h3 className="text-stone-900 text-base font-semibold mb-1">
+                  {title}
+                </h3>
                 <p className="text-gray-500 text-sm leading-5">{desc}</p>
               </div>
             </div>
@@ -50,7 +62,7 @@ export default function HowItWorksSection() {
         {/* 펫시터 플로우 */}
         <p className="text-stone-600 font-semibold text-center mb-6">펫시터</p>
         <div className="flex flex-col md:flex-row md:items-start md:justify-between relative gap-6 md:gap-0">
-          <div className="hidden md:block absolute top-8 left-[calc(8%+32px)] right-[calc(8%+32px)] h-px border-t-2 border-dashed border-stone-200" />
+          <div className="hidden md:block absolute top-8 left-18 right-18 h-px border-t-2 border-dashed border-stone-200" />
           {STEPS_SITTER.map(({ num, title, desc }) => (
             <div
               key={num}
@@ -60,7 +72,9 @@ export default function HowItWorksSection() {
                 {num}
               </div>
               <div>
-                <h3 className="text-stone-900 text-base font-semibold mb-1">{title}</h3>
+                <h3 className="text-stone-900 text-base font-semibold mb-1">
+                  {title}
+                </h3>
                 <p className="text-gray-500 text-sm leading-5">{desc}</p>
               </div>
             </div>
