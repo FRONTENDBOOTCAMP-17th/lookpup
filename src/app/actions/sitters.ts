@@ -314,6 +314,10 @@ export async function updateSitterProfile(input: UpdateSitterProfileInput) {
   }
 
   if (input.deletedServiceIds.length > 0) {
+    await db
+      .from("reservations")
+      .update({ service_id: null })
+      .in("service_id", input.deletedServiceIds);
     await db.from("services").delete().in("id", input.deletedServiceIds);
   }
 

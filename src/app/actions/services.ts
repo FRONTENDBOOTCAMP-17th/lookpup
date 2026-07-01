@@ -185,6 +185,12 @@ export async function deleteService(id: string) {
     };
   }
 
+  // 완료·취소·대기 상태 예약의 service_id 참조를 끊어 FK 제약 해소
+  await db
+    .from("reservations")
+    .update({ service_id: null })
+    .eq("service_id", id);
+
   const { error } = await db.from("services").delete().eq("id", id);
 
   if (error) {
