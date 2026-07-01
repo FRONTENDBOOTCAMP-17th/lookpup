@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import { Dialog as DialogPrimitive } from "radix-ui";
 import {
   Star,
   Trash2,
@@ -453,6 +454,43 @@ export function ChatWindowHeader({
   );
 }
 
+function ChatImageLightbox({ url, onClose }: { url: string | null; onClose: () => void }) {
+  return (
+    <DialogPrimitive.Root open={url !== null} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 duration-200" />
+        <DialogPrimitive.Content
+          className="fixed inset-0 z-50 flex items-center justify-center outline-none cursor-pointer data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 duration-200"
+          onClick={onClose}
+        >
+          <DialogPrimitive.Title className="sr-only">이미지 보기</DialogPrimitive.Title>
+          <div
+            className="absolute top-4 right-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <DialogPrimitive.Close className="flex items-center justify-center w-9 h-9 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors cursor-pointer">
+              <X size={18} />
+              <span className="sr-only">닫기</span>
+            </DialogPrimitive.Close>
+          </div>
+          {url && (
+            <div
+              className="w-full max-w-4xl px-4 md:px-6 cursor-default"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img
+                src={url}
+                alt=""
+                className="w-full object-contain max-h-[78vh] rounded-2xl"
+              />
+            </div>
+          )}
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
+  );
+}
+
 // 채팅 메시지 관련
 type MessageBubbleProps = {
   msg: Message;
@@ -497,6 +535,8 @@ export function MessageBubble({
   onReservationEditReject,
   confirmedEditIds,
 }: MessageBubbleProps) {
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+
   if (msg.from === "reservation_edit_response") {
     const data = msg.reservationEditResponseData;
     if (!data) return null;
@@ -810,15 +850,21 @@ export function MessageBubble({
         <Avatar initial={senderInitial} src={senderProfileImage} size="sm" />
         <div>
           {msg.imageUrl ? (
-            <div className="max-w-xs overflow-hidden rounded-tl-sm rounded-tr-2xl rounded-bl-2xl rounded-br-2xl shadow-sm">
-              <Image
-                src={msg.imageUrl}
-                alt="사진"
-                width={240}
-                height={240}
-                className="object-cover w-60 h-auto"
-              />
-            </div>
+            <>
+              <button
+                onClick={() => setLightboxUrl(msg.imageUrl!)}
+                className="max-w-xs overflow-hidden rounded-tl-sm rounded-tr-2xl rounded-bl-2xl rounded-br-2xl shadow-sm block focus:outline-none cursor-pointer"
+              >
+                <Image
+                  src={msg.imageUrl}
+                  alt="사진"
+                  width={240}
+                  height={240}
+                  className="object-cover w-60 h-auto"
+                />
+              </button>
+              <ChatImageLightbox url={lightboxUrl} onClose={() => setLightboxUrl(null)} />
+            </>
           ) : (
             <div className="max-w-xs px-5 py-4 bg-white rounded-tl-sm rounded-tr-2xl rounded-bl-2xl rounded-br-2xl shadow-sm">
               <p className="text-stone-900 text-sm leading-6">{msg.text}</p>
@@ -832,15 +878,21 @@ export function MessageBubble({
   return (
     <div className="flex flex-col items-end gap-1">
       {msg.imageUrl ? (
-        <div className="max-w-xs overflow-hidden rounded-tl-2xl rounded-tr-sm rounded-bl-2xl rounded-br-2xl">
-          <Image
-            src={msg.imageUrl}
-            alt="사진"
-            width={240}
-            height={240}
-            className="object-cover w-60 h-auto"
-          />
-        </div>
+        <>
+          <button
+            onClick={() => setLightboxUrl(msg.imageUrl!)}
+            className="max-w-xs overflow-hidden rounded-tl-2xl rounded-tr-sm rounded-bl-2xl rounded-br-2xl block focus:outline-none cursor-pointer"
+          >
+            <Image
+              src={msg.imageUrl}
+              alt="사진"
+              width={240}
+              height={240}
+              className="object-cover w-60 h-auto"
+            />
+          </button>
+          <ChatImageLightbox url={lightboxUrl} onClose={() => setLightboxUrl(null)} />
+        </>
       ) : (
         <div className="max-w-xs px-5 py-4 bg-orange-500 rounded-tl-2xl rounded-tr-sm rounded-bl-2xl rounded-br-2xl">
           <p className="text-white text-sm leading-6">{msg.text}</p>

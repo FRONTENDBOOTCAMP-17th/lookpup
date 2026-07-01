@@ -48,6 +48,14 @@ export async function findOrCreateRoom(input: {
       .eq("sitter_id", input.sitter_id)
       .maybeSingle();
     existingRoom = data;
+  } else if (input.reservation_id) {
+    const { data } = await db
+      .from("chat_rooms")
+      .select("id")
+      .eq("reservation_id", input.reservation_id)
+      .eq("room_type", "direct")
+      .maybeSingle();
+    existingRoom = data;
   } else {
     const [{ data: otherSitter }, { data: mySitter }] = await Promise.all([
       db
@@ -113,13 +121,23 @@ export async function findOrCreateRoom(input: {
   return { data: { room_id: newRoom.id } };
 }
 
-export async function findChatRoomAsSitter(ownerId: string) {
+export async function findChatRoomAsSitter(ownerId: string, reservationId?: string) {
   const user = await getAuthUser();
   if (!user) {
     return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
   }
 
   const db = createServiceClient();
+
+  if (reservationId) {
+    const { data: room } = await db
+      .from("chat_rooms")
+      .select("id")
+      .eq("reservation_id", reservationId)
+      .eq("room_type", "direct")
+      .maybeSingle();
+    if (room) return { data: { room_id: room.id } };
+  }
 
   const { data: sitterProfile } = await db
     .from("sitters")
@@ -376,6 +394,7 @@ export async function sendPaymentRequestMessage(
       description: string;
     }[];
   },
+  reservationId?: string,
 ) {
   const user = await getAuthUser();
   if (!user) {
@@ -403,7 +422,7 @@ export async function sendPaymentRequestMessage(
 
   const { data: room } = await db
     .from("chat_rooms")
-    .select("id, owner_id, sitters!inner(user_id)")
+    .select("id, owner_id, sitters!inner(id, user_id)")
     .eq("id", roomId)
     .single();
 
@@ -417,6 +436,17 @@ export async function sendPaymentRequestMessage(
         title: "결제 요청이 도착했어요",
         content: `${data.amount.toLocaleString("ko-KR")}원 결제 요청이 왔어요.`,
         linkUrl: `/chat?roomId=${roomId}`,
+      });
+    }
+
+    if (data.isExtra && reservationId) {
+      await db.from("extra_charges").insert({
+        reservation_id: reservationId,
+        sitter_id: room.sitters.id,
+        owner_id: room.owner_id,
+        amount: data.amount,
+        reason: data.reason,
+        status: "pending",
       });
     }
   }

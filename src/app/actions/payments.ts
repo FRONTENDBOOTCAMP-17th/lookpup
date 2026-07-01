@@ -88,6 +88,13 @@ export async function createPayment(
   const settleAmount = amount - platformFee;
   const paymentId = `pay_${reservationId.replace(/-/g, "")}_${Date.now()}`;
 
+  if (requestedAmount && requestedAmount !== reservation.total_price) {
+    await db
+      .from("reservations")
+      .update({ total_price: requestedAmount })
+      .eq("id", reservationId);
+  }
+
   const { error } = await db.from("payments").insert({
     reservation_id: reservationId,
     payment_id: paymentId,
@@ -179,6 +186,27 @@ export async function createExtraPayment(
 
   if (error) {
     return { error: { code: "INTERNAL_ERROR", message: error.message } };
+  }
+
+  const { data: pendingCharge } = await db
+    .from("extra_charges")
+    .select("id")
+    .eq("reservation_id", reservationId)
+    .eq("status", "pending")
+    .eq("amount", amount)
+    .order("requested_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (pendingCharge) {
+    await db
+      .from("extra_charges")
+      .update({
+        status: "approved",
+        payment_id: paymentId,
+        responded_at: new Date().toISOString(),
+      })
+      .eq("id", pendingCharge.id);
   }
 
   const sitter = reservation.sitters as unknown as {

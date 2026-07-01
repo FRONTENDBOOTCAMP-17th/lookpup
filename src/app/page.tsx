@@ -3,7 +3,6 @@ import type { LucideIcon } from "lucide-react";
 import {
   MapPin,
   Star,
-  ChevronRight,
   Shield,
   CreditCard,
   MessageSquare,
@@ -20,58 +19,41 @@ import HeroButtons from "@/components/home/HeroButtons";
 
 // 더미데이터 꼬라박기
 
-const SERVICES: { Icon: LucideIcon; label: string; desc: string; href: string }[] = [
-  { Icon: Home, label: "방문돌봄", desc: "집에서 안전하게", href: "/board?category=방문돌봄" },
-  { Icon: User, label: "위탁돌봄", desc: "펫시터 집에서", href: "/board?category=위탁돌봄" },
-  { Icon: Activity, label: "산책", desc: "건강한 산책", href: "/board?category=산책" },
-  { Icon: Building, label: "펫호텔", desc: "프리미엄 케어", href: "/board?category=펫호텔" },
-  { Icon: Car, label: "픽업", desc: "편리한 이동", href: "/board?category=픽업" },
-];
-
-const PETSITTERS = [
+const SERVICES: {
+  Icon: LucideIcon;
+  label: string;
+  desc: string;
+  href: string;
+}[] = [
   {
-    id: 1,
-    name: "김민지",
-    initial: "김",
-    district: "마포구",
-    rating: 4.9,
-    reviews: 47,
-    price: "30,000",
-    services: ["방문돌봄", "산책"],
-    certified: true,
+    Icon: Home,
+    label: "방문돌봄",
+    desc: "집에서 안전하게",
+    href: "/board?category=방문돌봄",
   },
   {
-    id: 2,
-    name: "이서연",
-    initial: "이",
-    district: "강남구",
-    rating: 4.8,
-    reviews: 32,
-    price: "35,000",
-    services: ["방문돌봄", "산책"],
-    certified: false,
+    Icon: User,
+    label: "위탁돌봄",
+    desc: "펫시터 집에서",
+    href: "/board?category=위탁돌봄",
   },
   {
-    id: 3,
-    name: "박준호",
-    initial: "박",
-    district: "용산구",
-    rating: 4.7,
-    reviews: 28,
-    price: "28,000",
-    services: ["방문돌봄", "산책"],
-    certified: false,
+    Icon: Activity,
+    label: "산책",
+    desc: "건강한 산책",
+    href: "/board?category=산책",
   },
   {
-    id: 4,
-    name: "최예진",
-    initial: "최",
-    district: "성동구",
-    rating: 4.6,
-    reviews: 15,
-    price: "32,000",
-    services: ["방문돌봄", "산책"],
-    certified: false,
+    Icon: Building,
+    label: "펫호텔",
+    desc: "프리미엄 케어",
+    href: "/board?category=펫호텔",
+  },
+  {
+    Icon: Car,
+    label: "픽업",
+    desc: "편리한 이동",
+    href: "/board?category=픽업",
   },
 ];
 
@@ -89,7 +71,7 @@ const TRUST_ITEMS: { Icon: LucideIcon; title: string; desc: string }[] = [
   {
     Icon: Shield,
     title: "인증된 펫시터",
-    desc: "신원확인과 자격증 검증을 거친 펫시터만 등록됩니다",
+    desc: "승인을 거친 펫시터만 등록됩니다",
   },
   {
     Icon: CreditCard,
@@ -102,71 +84,6 @@ const TRUST_ITEMS: { Icon: LucideIcon; title: string; desc: string }[] = [
     desc: "검증된 이용자의 진짜 후기를 확인하세요",
   },
 ];
-
-// 컴포넌트
-
-function PetsitterCard({
-  id,
-  name,
-  initial,
-  district,
-  rating,
-  reviews,
-  price,
-  services,
-  certified,
-}: (typeof PETSITTERS)[0]) {
-  return (
-    <Link
-      href={`/petsitters/${id}`}
-      className="p-5 bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100 flex flex-col gap-4 hover:shadow-[0px_4px_16px_0px_rgba(232,116,42,0.18)] transition-shadow"
-    >
-      <div className="flex items-start gap-3">
-        <Avatar initial={initial} size="lg" variant="orange" />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between">
-            <span className="text-stone-900 text-base font-semibold">
-              {name}
-            </span>
-            {certified && (
-              <span className="px-2 py-0.5 bg-orange-500 rounded text-white text-[9px] font-medium">
-                인증
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-1 mt-1">
-            <MapPin className="w-3 h-3 text-gray-400" />
-            <span className="text-gray-500 text-xs">{district}</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex gap-2 flex-wrap">
-        {services.map((s) => (
-          <span
-            key={s}
-            className="px-3 py-1 bg-orange-50 rounded-full text-orange-500 text-[10px] font-medium"
-          >
-            {s}
-          </span>
-        ))}
-      </div>
-
-      <div className="flex items-center justify-between pt-3 border-t border-orange-100">
-        <div className="flex items-center gap-1">
-          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-          <span className="text-stone-900 text-sm font-bold">
-            {rating.toFixed(1)}
-          </span>
-          <span className="text-gray-500 text-xs">({reviews})</span>
-        </div>
-        <span className="text-orange-500 text-sm font-semibold">
-          {price}원~
-        </span>
-      </div>
-    </Link>
-  );
-}
 
 // 페이지
 
@@ -351,35 +268,6 @@ export default function HomePage() {
                     {desc}
                   </span>
                 </Link>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* 내 주변 펫시터 */}
-        <section className="py-16 md:py-20 bg-orange-50">
-          <div className="max-w-[1280px] mx-auto px-4 sm:px-10">
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center gap-3">
-                <h2 className="text-2xl md:text-3xl font-semibold text-stone-900">
-                  내 주변 펫시터
-                </h2>
-                <span className="px-3 py-1 bg-orange-50 border border-orange-100 rounded-full text-orange-500 text-xs font-medium">
-                  서울 마포구
-                </span>
-              </div>
-              <Link
-                href="/petsitters"
-                className="flex items-center gap-1 text-orange-500 text-base font-medium hover:opacity-80 transition-opacity"
-              >
-                더보기
-                <ChevronRight className="w-5 h-5" />
-              </Link>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-              {PETSITTERS.map((sitter) => (
-                <PetsitterCard key={sitter.name} {...sitter} />
               ))}
             </div>
           </div>

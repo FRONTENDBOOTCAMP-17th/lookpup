@@ -258,6 +258,9 @@ function ChatPageContent({
         return;
       }
       updateReservationRequestStatus(roomId, "canceled");
+      if (result.data?.message) {
+        addMessage(result.data.message);
+      }
     } catch {
       setApplicationActionError("오류가 발생했습니다. 다시 시도해주세요.");
     } finally {
@@ -335,6 +338,7 @@ function ChatPageContent({
         setApplicationActionError(result.error.message);
         return;
       }
+      const reservationId = "reservationId" in result ? result.reservationId : null;
       confirmApplicant(id);
       updateApplicantStatus(id, "selected");
       broadcastConfirmation();
@@ -358,9 +362,11 @@ function ChatPageContent({
         const roomResult = await findOrCreateRoom({
           sitter_id: confirmingApplicant.sitterId,
           room_type: "direct",
+          reservation_id: reservationId ?? undefined,
         });
         if ("data" in roomResult && roomResult.data) {
           const newRoomId = roomResult.data.room_id;
+          broadcastReservationAccepted(newRoomId);
 
           if (overrides.totalPrice && overrides.totalPrice > 0) {
             const deadline = getPaymentDeadline();
@@ -479,12 +485,23 @@ function ChatPageContent({
     if (!activeRoomId) return;
     try {
       const deadline = getPaymentDeadline();
-      const result = await sendPaymentRequestMessage(activeRoomId, {
-        amount: data.amount,
-        reason: data.reason,
-        deadline,
-        isExtra: data.type === "extra",
-      });
+      const isExtra = data.type === "extra";
+      const reservationId = isExtra
+        ? (selectedRoom?.reservationId ??
+          (selectedRoom?.sitterId
+            ? await getAcceptedReservationBySitter(selectedRoom.sitterId)
+            : null))
+        : undefined;
+      const result = await sendPaymentRequestMessage(
+        activeRoomId,
+        {
+          amount: data.amount,
+          reason: data.reason,
+          deadline,
+          isExtra,
+        },
+        reservationId ?? undefined,
+      );
       if (result.error) {
         setSendError(result.error.message);
         return;
@@ -514,7 +531,7 @@ function ChatPageContent({
         : null);
 
     if (reservationId) {
-      const payResult = await createPayment(reservationId, "CARD", data.amount);
+      const payResult = await createPayment(reservationId, "CARD", totalAmount);
       if (payResult.error?.code === "FORBIDDEN") {
         const extraResult = await createExtraPayment(
           reservationId,
@@ -534,7 +551,6 @@ function ChatPageContent({
         return;
       } else {
         portonePaymentId = payResult.data!.payment_id;
-        totalAmount = payResult.data!.amount;
         orderName = payResult.data!.order_name;
       }
     }

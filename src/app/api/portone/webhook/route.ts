@@ -16,7 +16,6 @@ function verifySignature(
     .update(signedContent)
     .digest("base64");
 
-  // 공백 구분자로 여러 서명 포함 가능 (키 교체 대응)
   return webhookSignature.split(" ").some((sig) => {
     const [version, value] = sig.split(",");
     return version === "v1" && value === computed;
@@ -58,7 +57,7 @@ export async function POST(request: NextRequest) {
 
   const { data: payment } = await db
     .from("payments")
-    .select("id, reservation_id")
+    .select("id, reservation_id, amount")
     .eq("payment_id", paymentId)
     .maybeSingle();
 
@@ -69,6 +68,42 @@ export async function POST(request: NextRequest) {
   const now = new Date().toISOString();
 
   if (type === "Transaction.Paid") {
+    const portoneRes = await fetch(
+      `https://api.portone.io/payments/${paymentId}`,
+      {
+        headers: {
+          Authorization: `PortOne ${process.env.PORTONE_API_SECRET}`,
+        },
+        cache: "no-store",
+      },
+    );
+
+    if (!portoneRes.ok) {
+      console.error("PortOne 결제 조회 실패", {
+        paymentId,
+        status: portoneRes.status,
+      });
+      return NextResponse.json(
+        { error: { code: "INTERNAL_ERROR", message: "결제 정보 조회 실패" } },
+        { status: 500 },
+      );
+    }
+
+    const portonePayment = await portoneRes.json();
+    const paidAmount: number = portonePayment?.amount?.total;
+
+    if (paidAmount !== payment.amount) {
+      console.error("결제 금액 불일치", {
+        paymentId,
+        paidAmount,
+        expected: payment.amount,
+      });
+      return NextResponse.json(
+        { error: { code: "AMOUNT_MISMATCH", message: "결제 금액 불일치" } },
+        { status: 400 },
+      );
+    }
+
     const { data: reservation } = await db
       .from("reservations")
       .select("status")
@@ -79,6 +114,11 @@ export async function POST(request: NextRequest) {
       .from("payments")
       .update({ status: "paid", paid_at: now })
       .eq("id", payment.id);
+
+    await db
+      .from("extra_charges")
+      .update({ status: "paid" })
+      .eq("payment_id", paymentId);
 
     if (reservation?.status === "accepted") {
       await db
@@ -96,9 +136,19 @@ export async function POST(request: NextRequest) {
         .from("reservations")
         .update({ status: "canceled", canceled_at: now })
         .eq("id", payment.reservation_id),
+      db
+        .from("extra_charges")
+        .update({ status: "canceled" })
+        .eq("payment_id", paymentId),
     ]);
   } else if (type === "Transaction.Failed") {
-    await db.from("payments").update({ status: "failed" }).eq("id", payment.id);
+    await Promise.all([
+      db.from("payments").update({ status: "failed" }).eq("id", payment.id),
+      db
+        .from("extra_charges")
+        .update({ status: "rejected" })
+        .eq("payment_id", paymentId),
+    ]);
   }
 
   return NextResponse.json({ data: { ok: true } });

@@ -141,7 +141,7 @@ export function useChatRooms(activeRoomId: string | null) {
           name: r.other_user_full_name ?? "",
           initial: (r.other_user_full_name ?? "?")[0],
           profileImage: r.other_user_profile_image ?? null,
-          sub: "1:1 채팅",
+          sub: r.request_title ?? "예약 채팅",
           lastMessage: formatPreview(r.last_message ?? ""),
           time: formatTime(r.last_message_at),
           unread: r.unread_count ?? 0,
