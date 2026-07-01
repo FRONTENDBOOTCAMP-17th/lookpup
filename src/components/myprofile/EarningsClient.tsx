@@ -46,18 +46,15 @@ function formatCurrency(amount: number) {
   return amount.toLocaleString("ko-KR") + "원";
 }
 
-export default function EarningsClient() {
+export default function EarningsClient({ initialData }: { initialData?: EarningsData | null }) {
   const router = useRouter();
-  const [data, setData] = useState<EarningsData>({
-    total: 0,
-    thisMonth: 0,
-    thisWeek: 0,
-    monthly: [],
-    transactions: [],
-  });
-  const [isLoading, setIsLoading] = useState(true);
+  const [data, setData] = useState<EarningsData>(
+    initialData ?? { total: 0, thisMonth: 0, thisWeek: 0, monthly: [], transactions: [] },
+  );
+  const [isLoading, setIsLoading] = useState(!initialData);
 
   useEffect(() => {
+    if (initialData) return;
     fetch("/api/earnings")
       .then((r) => r.json())
       .then(({ data: d }) => {
@@ -65,7 +62,7 @@ export default function EarningsClient() {
       })
       .catch(() => {})
       .finally(() => setIsLoading(false));
-  }, []);
+  }, [initialData]);
 
   return (
     <div className="min-h-screen bg-[#FFF8F3]">

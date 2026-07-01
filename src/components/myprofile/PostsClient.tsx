@@ -265,10 +265,14 @@ function PostCard({
   );
 }
 
-export default function PostsClient() {
+export type { RequestRow };
+
+export default function PostsClient({ initialPosts }: { initialPosts?: RequestRow[] }) {
   const router = useRouter();
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [postsLoading, setPostsLoading] = useState(true);
+  const [posts, setPosts] = useState<Post[]>(
+    initialPosts ? initialPosts.map(toPost) : [],
+  );
+  const [postsLoading, setPostsLoading] = useState(!initialPosts);
   const [activeTab, setActiveTab] = useState<TabId>("all");
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
@@ -293,6 +297,7 @@ export default function PostsClient() {
   }, []);
 
   useEffect(() => {
+    if (initialPosts) return;
     fetch("/api/requests?mine=true")
       .then((res) => res.json())
       .then((result) => {
@@ -301,7 +306,7 @@ export default function PostsClient() {
         }
       })
       .finally(() => setPostsLoading(false));
-  }, []);
+  }, [initialPosts]);
 
   const scrollTabs = (dir: "left" | "right") => {
     const el = tabsRef.current;

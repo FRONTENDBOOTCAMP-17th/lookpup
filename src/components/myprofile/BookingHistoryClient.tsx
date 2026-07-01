@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -43,7 +43,7 @@ type TabId =
   | "completed"
   | "cancelled";
 
-interface Booking {
+export interface Booking {
   id: string;
   bookingNo: string;
   serviceType: string;
@@ -61,7 +61,7 @@ interface Booking {
   reviewWritten?: boolean;
 }
 
-interface Application {
+export interface Application {
   id: string;
   bookingNo: string;
   title: string;
@@ -418,25 +418,49 @@ const SITTER_TABS: { id: TabId; label: string }[] = [
   { id: "cancelled", label: "취소" },
 ];
 
-export default function BookingHistoryClient() {
+export default function BookingHistoryClient({
+  initialOwnerBookings,
+  initialSitterBookings,
+  initialSitterApplications,
+  initialIsSitter,
+}: {
+  initialOwnerBookings?: Booking[];
+  initialSitterBookings?: Booking[];
+  initialSitterApplications?: Application[];
+  initialIsSitter?: boolean;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useUserStore();
-  const isSitter = user?.role === "both" || user?.role === "admin";
+  const isSitter = user ? user.role === "both" || user.role === "admin" : (initialIsSitter ?? false);
   const roleParam = searchParams.get("role");
   const fixedRole =
     roleParam === "owner" || roleParam === "sitter" ? roleParam : null;
 
-  const [role, setRole] = useState<"owner" | "sitter">(fixedRole ?? "owner");
+  const initialRole = fixedRole ?? "owner";
+  const hasInitialData = (initialRole === "owner" && initialOwnerBookings !== undefined) ||
+    (initialRole === "sitter" && initialSitterBookings !== undefined);
+  const skipInitialLoad = useRef(hasInitialData);
+
+  const [role, setRole] = useState<"owner" | "sitter">(initialRole);
   const [activeTab, setActiveTab] = useState<TabId>("all");
   const [page, setPage] = useState(1);
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [applications, setApplications] = useState<Application[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [bookings, setBookings] = useState<Booking[]>(
+    initialRole === "owner" ? (initialOwnerBookings ?? []) : (initialSitterBookings ?? []),
+  );
+  const [applications, setApplications] = useState<Application[]>(
+    initialRole === "sitter" ? (initialSitterApplications ?? []) : [],
+  );
+  const [loading, setLoading] = useState(!hasInitialData);
   const [cancelingId, setCancelingId] = useState<string | null>(null);
   const [cancelingApplicationId, setCancelingApplicationId] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
+    if (skipInitialLoad.current) {
+      skipInitialLoad.current = false;
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     if (role === "sitter") {
       const [resResult, appResult] = await Promise.all([

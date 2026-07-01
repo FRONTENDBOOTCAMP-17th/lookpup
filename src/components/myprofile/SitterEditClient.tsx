@@ -8,7 +8,7 @@ import { CustomModal } from "@/components/common/CustomModal";
 import Avatar from "@/components/ui/Avatar";
 import StatGrid from "@/components/ui/StatGrid";
 import SitterProfileCard from "@/components/sitter/SitterProfileCard";
-import { useUserStore } from "@/store/userStore";
+import { useUserStore, type SitterData } from "@/store/userStore";
 import { updateSitterProfile, getMySitterProfile, getSitterServices } from "@/app/actions/sitters";
 import { updateProfile } from "@/app/actions/users";
 import { uploadToCloudinary } from "@/utils/cloudinary";
@@ -53,7 +53,18 @@ interface ServiceItem {
   unit: string;
   price: string;
   desc: string;
+  enabled: boolean;
 }
+
+const DEFAULT_SERVICE_LIST: ServiceItem[] = SERVICE_OPTIONS.map((name, i) => ({
+  id: i + 1,
+  dbId: undefined,
+  name,
+  unit: SERVICE_DEFAULT_UNIT[name] ?? "1회",
+  price: "10000",
+  desc: "",
+  enabled: false,
+}));
 
 const EMPTY_FORM = {
   fullName: "",
@@ -62,7 +73,7 @@ const EMPTY_FORM = {
   completedCount: 0,
   services: [] as string[],
   pets: [] as string[],
-  serviceList: [] as ServiceItem[],
+  serviceList: DEFAULT_SERVICE_LIST,
   photos: [null, null, null, null, null, null] as (string | null)[],
 };
 
@@ -87,14 +98,13 @@ function ToggleChip({ label, selected, onToggle }: { label: string; selected: bo
   );
 }
 
-function ServiceRow({ item, onChange, onRemove }: { item: ServiceItem; onChange: (updated: ServiceItem) => void; onRemove: () => void }) {
+function ServiceRow({ item, onChange }: { item: ServiceItem; onChange: (updated: ServiceItem) => void }) {
   return (
     <div className="bg-orange-50 rounded-xl p-4 space-y-2">
       <input
         value={item.name}
-        onChange={(e) => onChange({ ...item, name: e.target.value })}
-        placeholder="서비스명"
-        className="w-full h-9 px-3 bg-white border border-orange-100 rounded-[10px] text-sm text-stone-900 outline-none focus:border-orange-300"
+        disabled
+        className="w-full h-9 px-3 bg-white border border-orange-100 rounded-[10px] text-sm text-stone-900 outline-none opacity-70 cursor-not-allowed"
       />
       <div className="flex items-center gap-2">
         <input
@@ -112,13 +122,6 @@ function ServiceRow({ item, onChange, onRemove }: { item: ServiceItem; onChange:
           />
           <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">원</span>
         </div>
-        <button
-          type="button"
-          onClick={onRemove}
-          className="size-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-400 transition-colors"
-        >
-          <X size={14} />
-        </button>
       </div>
       <input
         value={item.desc}
@@ -130,7 +133,13 @@ function ServiceRow({ item, onChange, onRemove }: { item: ServiceItem; onChange:
   );
 }
 
-export default function SitterEditClient() {
+export default function SitterEditClient({
+  initialProfile,
+  initialServices,
+}: {
+  initialProfile?: { user: { fullName: string; profileImage: string | null }; sitter: SitterData } | null;
+  initialServices?: { id: string; title: string; price: number; description: string | null; is_active: boolean }[];
+}) {
   const router = useRouter();
   const { user, sitter, setSitter, setUser } = useUserStore();
   const profileFileRef = useRef<HTMLInputElement>(null);
@@ -148,86 +157,90 @@ export default function SitterEditClient() {
   const [activeTab, setActiveTab] = useState<Tab>("소개");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const nextId = useRef(100);
   const photoFilesRef = useRef<(File | null)[]>([null, null, null, null, null, null]);
-  const deletedServiceIdsRef = useRef<string[]>([]);
 
-  useEffect(() => {
-    if (!user || !sitter) return;
+  const formInitialized = useRef(false);
 
-    sitterIdRef.current = sitter.id;
+  const initForm = (
+    u: { fullName: string; profileImage: string | null },
+    s: SitterData,
+    services: { id: string; title: string; price: number; description: string | null }[],
+  ) => {
+    sitterIdRef.current = s.id;
+    setProfilePreview(u.profileImage);
 
     const photoSlots: (string | null)[] = [null, null, null, null, null, null];
-    sitter.activityPhotoUrls.forEach((url, i) => {
-      if (i < 6) photoSlots[i] = url;
-    });
+    s.activityPhotoUrls.forEach((url, i) => { if (i < 6) photoSlots[i] = url; });
 
-    if (sitter.latitude && sitter.longitude && sitter.availableArea) {
+    if (s.latitude && s.longitude && s.availableArea) {
       setLocationValue({
-        address: sitter.availableArea,
-        lat: sitter.latitude,
-        lng: sitter.longitude,
-        displayArea: sitter.displayArea ?? sitter.availableArea,
+        address: s.availableArea,
+        lat: s.latitude,
+        lng: s.longitude,
+        displayArea: s.displayArea ?? s.availableArea,
       });
     }
 
-    const baseValues = {
-      fullName: user.fullName,
-      bio: sitter.introduction ?? "",
-      career: sitter.career ?? "",
-      completedCount: sitter.reviewCount,
-      pets: sitter.availableAnimals.map((a) => ANIMAL_TO_LABEL[a] ?? a),
+    const serviceList: ServiceItem[] = SERVICE_OPTIONS.map((name, idx) => {
+      const dbService = services.find((sv) => sv.title === name);
+      return {
+        id: idx + 1,
+        dbId: dbService?.id,
+        name,
+        unit: SERVICE_DEFAULT_UNIT[name] ?? "1회",
+        price: dbService ? String(dbService.price) : "10000",
+        desc: dbService?.description ?? "",
+        enabled: !!dbService,
+      };
+    });
+
+    setForm({
+      fullName: u.fullName,
+      bio: s.introduction ?? "",
+      career: s.career ?? "",
+      completedCount: s.reviewCount,
+      pets: s.availableAnimals.map((a) => ANIMAL_TO_LABEL[a] ?? a),
       photos: photoSlots,
-    };
+      services: serviceList.filter((sv) => sv.enabled).map((sv) => sv.name),
+      serviceList,
+    });
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    if (formInitialized.current) return;
+
+    if (initialProfile && initialServices) {
+      formInitialized.current = true;
+      initForm(initialProfile.user, initialProfile.sitter, initialServices);
+      return;
+    }
+
+    if (!user || !sitter) return;
+    formInitialized.current = true;
 
     getSitterServices(sitter.id).then(({ data }) => {
-      const dbServices: ServiceItem[] = data.map((s, idx) => ({
-        id: idx + 1,
-        dbId: s.id,
-        name: s.title,
-        unit: SERVICE_DEFAULT_UNIT[s.title] ?? "1회",
-        price: String(s.price),
-        desc: s.description ?? "",
-      }));
-      nextId.current = dbServices.length + 100;
-      setForm((f) => ({ ...f, ...baseValues, services: dbServices.map((s) => s.name), serviceList: dbServices }));
-      setLoading(false);
+      initForm(
+        { fullName: user.fullName, profileImage: user.profileImage },
+        sitter,
+        data,
+      );
     });
-  }, [user, sitter]);
+  }, [user, sitter, initialProfile, initialServices]);
 
-  const toggleService = (s: string) =>
+  const toggleServiceEnabled = (id: number) =>
     setForm((f) => {
-      const isSelected = f.services.includes(s);
-      if (isSelected) {
-        return { ...f, services: f.services.filter((x) => x !== s), serviceList: f.serviceList.filter((item) => item.name !== s) };
-      }
-      nextId.current += 1;
-      return {
-        ...f,
-        services: [...f.services, s],
-        serviceList: [...f.serviceList, { id: nextId.current, name: s, unit: SERVICE_DEFAULT_UNIT[s] ?? "1회", price: "1000", desc: "" }],
-      };
+      const serviceList = f.serviceList.map((s) => (s.id === id ? { ...s, enabled: !s.enabled } : s));
+      return { ...f, serviceList, services: serviceList.filter((s) => s.enabled).map((s) => s.name) };
     });
 
   const togglePet = (p: string) =>
     setForm((f) => ({ ...f, pets: f.pets.includes(p) ? f.pets.filter((x) => x !== p) : [...f.pets, p] }));
 
   const updateServiceItem = (updated: ServiceItem) =>
-    setForm((f) => ({
-      ...f,
-      serviceList: f.serviceList.map((s) => (s.id === updated.id ? updated : s)),
-      services: f.serviceList.map((s) => (s.id === updated.id ? updated.name : s.name)),
-    }));
-
-  const removeServiceItem = (id: number) =>
     setForm((f) => {
-      const target = f.serviceList.find((s) => s.id === id);
-      if (target?.dbId) deletedServiceIdsRef.current = [...deletedServiceIdsRef.current, target.dbId];
-      return {
-        ...f,
-        serviceList: f.serviceList.filter((s) => s.id !== id),
-        services: target ? f.services.filter((s) => s !== target.name) : f.services,
-      };
+      const serviceList = f.serviceList.map((s) => (s.id === updated.id ? updated : s));
+      return { ...f, serviceList };
     });
 
   const handleProfileFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -300,8 +313,8 @@ export default function SitterEditClient() {
         career: form.career,
         availableAnimals: form.pets.map((p) => LABEL_TO_ANIMAL[p] ?? p),
         activityPhotoUrls: finalPhotoUrls,
-        services: form.serviceList.map((s) => ({ id: s.dbId, title: s.name, price: Number(s.price) || 0, description: s.desc })),
-        deletedServiceIds: deletedServiceIdsRef.current,
+        services: form.serviceList.filter((s) => s.enabled).map((s) => ({ id: s.dbId, title: s.name, price: Number(s.price) || 0, description: s.desc })),
+        deletedServiceIds: form.serviceList.filter((s) => !s.enabled && s.dbId).map((s) => s.dbId!),
       });
 
       if (result?.error) {
@@ -422,18 +435,20 @@ export default function SitterEditClient() {
             <h3 className="font-bold text-stone-900 mb-4">제공 서비스</h3>
             <div className="flex flex-wrap gap-2">
               {SERVICE_OPTIONS.map((s) => (
-                <ToggleChip key={s} label={s} selected={form.services.includes(s)} onToggle={() => toggleService(s)} />
+                <ToggleChip key={s} label={s} selected={form.services.includes(s)} onToggle={() => toggleServiceEnabled(form.serviceList.find((item) => item.name === s)!.id)} />
               ))}
             </div>
           </div>
-          <div className={CARD}>
-            <h3 className="font-bold text-stone-900 mb-4">서비스 및 가격</h3>
-            <div className="space-y-3">
-              {form.serviceList.map((item) => (
-                <ServiceRow key={item.id} item={item} onChange={updateServiceItem} onRemove={() => removeServiceItem(item.id)} />
-              ))}
+          {form.serviceList.some((item) => item.enabled) && (
+            <div className={CARD}>
+              <h3 className="font-bold text-stone-900 mb-4">서비스 및 가격</h3>
+              <div className="space-y-3">
+                {form.serviceList.filter((item) => item.enabled).map((item) => (
+                  <ServiceRow key={item.id} item={item} onChange={updateServiceItem} />
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 

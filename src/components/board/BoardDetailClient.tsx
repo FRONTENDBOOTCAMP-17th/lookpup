@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   MapPin,
   Calendar,
@@ -48,7 +48,7 @@ type Application = {
   status: string;
   sitters: { id: string; users: { full_name: string } | null } | null;
 };
-type OtherPost = {
+export type OtherPost = {
   id: string;
   title: string;
   location: string;
@@ -57,7 +57,7 @@ type OtherPost = {
   created_at: string;
 };
 
-type RequestDetail = {
+export type RequestDetail = {
   id: string;
   owner_id: string;
   title: string;
@@ -126,8 +126,15 @@ function formatJoinDate(dateStr: string) {
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
 }
 
-export default function BoardDetailClient() {
-  const { id } = useParams() as { id: string };
+export default function BoardDetailClient({
+  id,
+  initialPost,
+  initialOtherPosts,
+}: {
+  id: string;
+  initialPost?: RequestDetail | null;
+  initialOtherPosts?: OtherPost[];
+}) {
   const router = useRouter();
   const user = useUserStore((state) => state.user);
   const isLoggedIn = useUserStore((state) => state.isLoggedIn);
@@ -139,11 +146,12 @@ export default function BoardDetailClient() {
   const [applyError, setApplyError] = useState<string | null>(null);
   const applyCancelledRef = useRef(false);
   const applyInFlightRef = useRef(false);
-  const [post, setPost] = useState<RequestDetail | null>(null);
-  const [postLoading, setPostLoading] = useState(true);
-  const [otherPosts, setOtherPosts] = useState<OtherPost[] | null>(null);
+  const [post, setPost] = useState<RequestDetail | null>(initialPost ?? null);
+  const [postLoading, setPostLoading] = useState(!initialPost);
+  const [otherPosts, setOtherPosts] = useState<OtherPost[] | null>(initialOtherPosts ?? null);
 
   useEffect(() => {
+    if (initialPost !== undefined) return;
     fetch(`/api/requests/${id}`)
       .then((res) => res.json())
       .then((result) => {
@@ -152,7 +160,7 @@ export default function BoardDetailClient() {
         }
       })
       .finally(() => setPostLoading(false));
-  }, [id]);
+  }, [id, initialPost]);
 
   useEffect(() => {
     incrementViewCount(id);
@@ -187,6 +195,7 @@ export default function BoardDetailClient() {
   };
 
   useEffect(() => {
+    if (initialOtherPosts !== undefined) return;
     if (!post?.owner_id) return;
     fetch(`/api/requests?owner_id=${post.owner_id}`)
       .then((res) => res.json())
@@ -199,7 +208,7 @@ export default function BoardDetailClient() {
           );
         }
       });
-  }, [post?.owner_id, post?.id]);
+  }, [post?.owner_id, post?.id, initialOtherPosts]);
 
   if (!post) {
     return (

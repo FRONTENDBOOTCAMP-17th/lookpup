@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Mail, Phone, MapPin, Calendar, ChevronLeft } from "lucide-react";
+import { Mail, Phone, MapPin, Calendar, ChevronLeft, Building2, Check, X, Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
 import Header from "@/components/layout/Header";
 import { AvatarWithCamera } from "@/components/ui/Avatar";
 import { Switch } from "@/components/ui/switch";
 import { CustomModal } from "@/components/common/CustomModal";
-import { useUserStore } from "@/store/userStore";
+import { useUserStore, type UserProfile } from "@/store/userStore";
 import { updateUserInfo, updateOwnerLocation } from "@/app/actions/users";
 import {
   searchAddressList,
@@ -28,11 +28,26 @@ interface PendingAddress {
   dong: string;
 }
 
-type Tab = "profile" | "notifications";
+interface BankAccount {
+  id: string;
+  bank_name: string;
+  account_number: string;
+  account_holder: string;
+}
+
+const BANK_LIST = [
+  "국민은행", "신한은행", "우리은행", "하나은행", "농협은행",
+  "기업은행", "카카오뱅크", "토스뱅크", "케이뱅크", "SC제일은행",
+  "씨티은행", "수협은행", "부산은행", "대구은행", "경남은행",
+  "광주은행", "전북은행", "제주은행",
+];
+
+type Tab = "profile" | "notifications" | "bank";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "profile", label: "프로필 정보" },
   { id: "notifications", label: "알림 설정" },
+  { id: "bank", label: "정산 계좌" },
 ];
 
 const NOTIFICATION_ITEMS: {
@@ -62,9 +77,15 @@ const NOTIFICATION_ITEMS: {
   },
 ];
 
-export default function SettingsClient() {
+export default function SettingsClient({
+  initialUser,
+  initialBankAccount,
+}: {
+  initialUser?: UserProfile | null;
+  initialBankAccount?: BankAccount | null;
+}) {
   const router = useRouter();
-  const user = useUserStore((s) => s.user);
+  const user = useUserStore((s) => s.user) ?? initialUser ?? null;
   const setUser = useUserStore((s) => s.setUser);
 
   const [activeTab, setActiveTab] = useState<Tab>("profile");
@@ -73,11 +94,18 @@ export default function SettingsClient() {
   );
   const [showSaveModal, setShowSaveModal] = useState(false);
 
-  const [fullName, setFullName] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [birthdate, setBirthdate] = useState("");
+  const [fullName, setFullName] = useState(initialUser?.fullName ?? "");
+  const [phoneNumber, setPhoneNumber] = useState(initialUser?.phoneNumber ?? "");
+  const [birthdate, setBirthdate] = useState(initialUser?.birthdate ?? "");
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  const [bankAccount, setBankAccount] = useState<BankAccount | null>(initialBankAccount ?? null);
+  const [bankLoading, setBankLoading] = useState(initialBankAccount === undefined);
+  const [isEditingBank, setIsEditingBank] = useState(false);
+  const [bankForm, setBankForm] = useState({ bank_name: "", account_number: "", account_holder: "" });
+  const [bankSaving, setBankSaving] = useState(false);
+  const [bankError, setBankError] = useState("");
 
   const [savedAddress, setSavedAddress] = useState<{
     address: string;
@@ -95,6 +123,29 @@ export default function SettingsClient() {
     setPhoneNumber(user.phoneNumber);
     setBirthdate(user.birthdate ?? "");
   }, [user]);
+
+  useEffect(() => {
+    if (initialBankAccount !== undefined) {
+      if (initialBankAccount) {
+        setBankForm({ bank_name: initialBankAccount.bank_name, account_number: initialBankAccount.account_number, account_holder: initialBankAccount.account_holder });
+      } else {
+        setIsEditingBank(true);
+      }
+      return;
+    }
+    fetch("/api/bank-account")
+      .then((r) => r.json())
+      .then(({ data: d }) => {
+        if (d) {
+          setBankAccount(d);
+          setBankForm({ bank_name: d.bank_name, account_number: d.account_number, account_holder: d.account_holder });
+        } else {
+          setIsEditingBank(true);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setBankLoading(false));
+  }, [initialBankAccount]);
 
   useEffect(() => {
     if (!user?.address) return;
@@ -133,6 +184,41 @@ export default function SettingsClient() {
       : s.addressName;
     setPendingAddress({ address: s.addressName, lat: s.lat, lng: s.lng, dong });
   };
+
+  function startEditBank() {
+    if (bankAccount) {
+      setBankForm({ bank_name: bankAccount.bank_name, account_number: bankAccount.account_number, account_holder: bankAccount.account_holder });
+    }
+    setBankError("");
+    setIsEditingBank(true);
+  }
+
+  async function saveBank() {
+    if (!bankForm.bank_name || !bankForm.account_number.trim() || !bankForm.account_holder.trim()) {
+      setBankError("모든 항목을 입력해주세요.");
+      return;
+    }
+    setBankSaving(true);
+    setBankError("");
+    try {
+      const res = await fetch("/api/bank-account", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bankForm),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setBankError(json.error?.message ?? "저장에 실패했습니다.");
+        return;
+      }
+      setBankAccount(json.data);
+      setIsEditingBank(false);
+    } catch {
+      setBankError("저장 중 오류가 발생했습니다.");
+    } finally {
+      setBankSaving(false);
+    }
+  }
 
   const toggleNotification = (id: NotificationCategory) => {
     setNotificationPrefs((prev) => {
@@ -374,6 +460,107 @@ export default function SettingsClient() {
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {activeTab === "bank" && (
+              <div className="bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-[#FFE9D6] p-5">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-[#FFF8F3] flex items-center justify-center shrink-0">
+                      <Building2 size={20} className="text-[var(--color-orange-500)]" />
+                    </div>
+                    <div>
+                      <h2 className="text-[#281A0E] text-xl font-bold">정산 계좌</h2>
+                      <p className="text-xs text-[#6B7280] mt-0.5">수익 정산에 사용할 계좌를 등록해주세요</p>
+                    </div>
+                  </div>
+                  {!bankLoading && bankAccount && !isEditingBank && (
+                    <button
+                      onClick={startEditBank}
+                      className="flex items-center gap-1.5 text-sm text-[var(--color-orange-500)] font-medium hover:opacity-80 transition-opacity"
+                    >
+                      <Pencil size={15} />
+                      수정
+                    </button>
+                  )}
+                </div>
+
+                {bankLoading ? (
+                  <div className="py-8 text-center text-[#6B7280] text-sm">불러오는 중...</div>
+                ) : isEditingBank ? (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-[#281A0E] mb-1.5">은행 선택</label>
+                      <select
+                        value={bankForm.bank_name}
+                        onChange={(e) => setBankForm((f) => ({ ...f, bank_name: e.target.value }))}
+                        className="w-full h-11 px-3 rounded-xl border border-[#FFE9D6] bg-white text-[#281A0E] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-orange-500)] focus:border-transparent"
+                      >
+                        <option value="">은행을 선택해주세요</option>
+                        {BANK_LIST.map((b) => (
+                          <option key={b} value={b}>{b}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[#281A0E] mb-1.5">계좌번호</label>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="- 없이 숫자만 입력"
+                        value={bankForm.account_number}
+                        onChange={(e) => setBankForm((f) => ({ ...f, account_number: e.target.value.replace(/\D/g, "") }))}
+                        className="w-full h-11 px-3 rounded-xl border border-[#FFE9D6] bg-white text-[#281A0E] text-sm placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[var(--color-orange-500)] focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[#281A0E] mb-1.5">예금주</label>
+                      <input
+                        type="text"
+                        placeholder="예금주명 입력"
+                        value={bankForm.account_holder}
+                        onChange={(e) => setBankForm((f) => ({ ...f, account_holder: e.target.value }))}
+                        className="w-full h-11 px-3 rounded-xl border border-[#FFE9D6] bg-white text-[#281A0E] text-sm placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[var(--color-orange-500)] focus:border-transparent"
+                      />
+                    </div>
+                    {bankError && <p className="text-sm text-red-500">{bankError}</p>}
+                    <div className="flex gap-3 pt-1 justify-end">
+                      {bankAccount && (
+                        <button
+                          onClick={() => { setIsEditingBank(false); setBankError(""); }}
+                          className="flex items-center gap-1.5 h-11 px-5 rounded-xl border border-[#FFE9D6] text-sm font-medium text-[#6B7280] hover:bg-[#FFF8F3] transition-colors"
+                        >
+                          <X size={15} />
+                          취소
+                        </button>
+                      )}
+                      <button
+                        onClick={saveBank}
+                        disabled={bankSaving}
+                        className="flex items-center gap-1.5 h-11 px-6 rounded-xl bg-[var(--color-orange-500)] text-white text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
+                      >
+                        <Check size={15} />
+                        {bankSaving ? "저장 중..." : "저장"}
+                      </button>
+                    </div>
+                  </div>
+                ) : bankAccount ? (
+                  <div className="grid sm:grid-cols-3 gap-4">
+                    <div className="p-4 bg-[#FFF8F3] rounded-xl">
+                      <p className="text-xs text-[#6B7280] mb-1">은행</p>
+                      <p className="font-semibold text-[#281A0E]">{bankAccount.bank_name}</p>
+                    </div>
+                    <div className="p-4 bg-[#FFF8F3] rounded-xl">
+                      <p className="text-xs text-[#6B7280] mb-1">계좌번호</p>
+                      <p className="font-semibold text-[#281A0E]">{bankAccount.account_number}</p>
+                    </div>
+                    <div className="p-4 bg-[#FFF8F3] rounded-xl">
+                      <p className="text-xs text-[#6B7280] mb-1">예금주</p>
+                      <p className="font-semibold text-[#281A0E]">{bankAccount.account_holder}</p>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             )}
           </div>

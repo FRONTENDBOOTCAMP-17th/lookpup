@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { DateRange } from "react-day-picker";
 import {
   ChevronLeft,
@@ -33,6 +33,20 @@ import {
 } from "@/lib/board";
 import type { Pet, PetRow } from "@/types/board";
 
+type PostData = {
+  status: string;
+  request_type: string;
+  budget: number;
+  start_datetime: string;
+  end_datetime: string;
+  content: string | null;
+  location: string;
+  latitude: number | null;
+  longitude: number | null;
+  pets: { id: string } | null;
+  title: string;
+};
+
 type FormState = {
   service_type: string;
   budget: string;
@@ -49,8 +63,15 @@ type FormState = {
   conditions: string;
 };
 
-export default function BoardEditClient() {
-  const { id } = useParams() as { id: string };
+export default function BoardEditClient({
+  id,
+  initialData,
+  initialPets,
+}: {
+  id: string;
+  initialData?: PostData | null;
+  initialPets?: Pet[];
+}) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isMatched, setIsMatched] = useState(false);
@@ -88,7 +109,43 @@ export default function BoardEditClient() {
     }
   };
 
+  const formInitialized = useRef(false);
+
+  const initFromData = (data: PostData) => {
+    if (data.status === "matched") {
+      setIsMatched(true);
+      return;
+    }
+    const start = new Date(data.start_datetime);
+    const end = new Date(data.end_datetime);
+    const split = splitConditions(data.content ?? "");
+    setForm({
+      service_type: data.request_type,
+      budget: String(data.budget),
+      startDate: start,
+      endDate: end,
+      start_time: `${String(start.getHours()).padStart(2, "0")}:${String(start.getMinutes()).padStart(2, "0")}`,
+      end_time: `${String(end.getHours()).padStart(2, "0")}:${String(end.getMinutes()).padStart(2, "0")}`,
+      location: data.location,
+      latitude: data.latitude ?? null,
+      longitude: data.longitude ?? null,
+      selected_pets: data.pets ? [data.pets.id] : [],
+      title: data.title,
+      content: split.content,
+      conditions: split.conditions,
+    });
+  };
+
   useEffect(() => {
+    if (formInitialized.current) return;
+    formInitialized.current = true;
+
+    if (initialData) {
+      initFromData(initialData);
+      if (initialPets) setPets(initialPets);
+      return;
+    }
+
     async function fetchData() {
       const supabase = createClient();
       const {
@@ -104,29 +161,7 @@ export default function BoardEditClient() {
       );
 
       if ("data" in result && result.data) {
-        const data = result.data;
-        if (data.status === "matched") {
-          setIsMatched(true);
-          return;
-        }
-        const start = new Date(data.start_datetime);
-        const end = new Date(data.end_datetime);
-        const split = splitConditions(data.content ?? "");
-        setForm({
-          service_type: data.request_type,
-          budget: String(data.budget),
-          startDate: start,
-          endDate: end,
-          start_time: `${String(start.getHours()).padStart(2, "0")}:${String(start.getMinutes()).padStart(2, "0")}`,
-          end_time: `${String(end.getHours()).padStart(2, "0")}:${String(end.getMinutes()).padStart(2, "0")}`,
-          location: data.location,
-          latitude: data.latitude ?? null,
-          longitude: data.longitude ?? null,
-          selected_pets: data.pets ? [data.pets.id] : [],
-          title: data.title,
-          content: split.content,
-          conditions: split.conditions,
-        });
+        initFromData(result.data);
       }
 
       const petResult = await fetch("/api/pets").then((res) => res.json());
@@ -137,7 +172,7 @@ export default function BoardEditClient() {
       }
     }
     fetchData();
-  }, [id]);
+  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const togglePet = (petId: string) =>
     setForm((prev) => ({

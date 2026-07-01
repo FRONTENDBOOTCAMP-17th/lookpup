@@ -244,15 +244,25 @@ function ReceivedReviewCard({ review }: { review: ReceivedReview }) {
   );
 }
 
-export default function ReviewsClient() {
+export default function ReviewsClient({
+  initialSitterId,
+  initialWrittenReviews,
+}: {
+  initialSitterId?: string | null;
+  initialWrittenReviews?: WrittenReview[];
+}) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabId>("written");
-  const [sitterId, setSitterId] = useState<string | null | undefined>(undefined);
+  const [sitterId, setSitterId] = useState<string | null | undefined>(
+    initialSitterId !== undefined ? initialSitterId : undefined,
+  );
 
-  const writtenFetchedRef = useRef(false);
+  const writtenFetchedRef = useRef(initialWrittenReviews !== undefined);
   const receivedFetchedRef = useRef(false);
 
-  const [writtenReviews, setWrittenReviews] = useState<WrittenReview[] | null>(null);
+  const [writtenReviews, setWrittenReviews] = useState<WrittenReview[] | null>(
+    initialWrittenReviews ?? null,
+  );
   const [receivedReviews, setReceivedReviews] = useState<ReceivedReview[] | null>(null);
   const [receivedTotal, setReceivedTotal] = useState(0);
   const [receivedNextCursor, setReceivedNextCursor] = useState<string | null>(null);
@@ -263,6 +273,7 @@ export default function ReviewsClient() {
   const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
 
   useEffect(() => {
+    if (initialSitterId !== undefined) return;
     const controller = new AbortController();
     fetch("/api/users/me", { signal: controller.signal })
       .then((r) => r.json())
@@ -271,7 +282,7 @@ export default function ReviewsClient() {
         if (err instanceof Error && err.name !== "AbortError") setSitterId(null);
       });
     return () => controller.abort();
-  }, []);
+  }, [initialSitterId]);
 
   useEffect(() => {
     if (activeTab !== "written" || writtenFetchedRef.current || writtenReviews !== null)
