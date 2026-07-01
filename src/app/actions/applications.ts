@@ -328,6 +328,11 @@ export async function updateApplication(
         request_id: requestRow.id,
         reservation_id: reservation.id,
       });
+    } else {
+      await db
+        .from("chat_rooms")
+        .update({ reservation_id: reservation.id })
+        .eq("id", existingRoom.id);
     }
 
     await db

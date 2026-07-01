@@ -346,21 +346,31 @@ export async function cancelReservationAndNotify(
   const user = await getAuthUser();
   if (!user) return result;
 
-  const { data: reservation } = await db
-    .from("reservations")
-    .select("owner_id, sitter_id")
-    .eq("id", id)
-    .single();
-
-  if (!reservation) return result;
-
-  const { data: room } = await db
+  const { data: roomByReservation } = await db
     .from("chat_rooms")
     .select("id")
-    .eq("owner_id", reservation.owner_id)
-    .eq("sitter_id", reservation.sitter_id)
+    .eq("reservation_id", id)
     .eq("room_type", "direct")
     .maybeSingle();
+
+  let room = roomByReservation;
+  if (!room) {
+    const { data: reservation } = await db
+      .from("reservations")
+      .select("owner_id, sitter_id")
+      .eq("id", id)
+      .single();
+    if (reservation) {
+      const { data: fallbackRoom } = await db
+        .from("chat_rooms")
+        .select("id")
+        .eq("owner_id", reservation.owner_id)
+        .eq("sitter_id", reservation.sitter_id)
+        .eq("room_type", "direct")
+        .maybeSingle();
+      room = fallbackRoom;
+    }
+  }
 
   if (!room) return result;
 
@@ -388,7 +398,7 @@ export async function getActiveReservationsForRoom(roomId: string) {
 
   const { data: room } = await db
     .from("chat_rooms")
-    .select("id, owner_id, sitter_id, sitters!inner(user_id)")
+    .select("id, owner_id, sitter_id, reservation_id, sitters!inner(user_id)")
     .eq("id", roomId)
     .single();
 
@@ -406,7 +416,7 @@ export async function getActiveReservationsForRoom(roomId: string) {
     };
   }
 
-  const { data, error } = await db
+  const activeQuery = db
     .from("reservations")
     .select(
       `
@@ -415,21 +425,16 @@ export async function getActiveReservationsForRoom(roomId: string) {
       reservation_items(pets(name, animal_type))
     `,
     )
-    .eq("owner_id", room.owner_id)
-    .eq("sitter_id", room.sitter_id)
     .in("status", ["accepted", "paid", "in_progress"])
     .order("created_at", { ascending: false });
 
+  const { data, error } = room.reservation_id
+    ? await activeQuery.eq("id", room.reservation_id)
+    : await activeQuery.eq("owner_id", room.owner_id).eq("sitter_id", room.sitter_id);
+
   if (error) {
-    console.error("[getActiveReservationsForRoom] Supabase error:", error);
     return { error: { code: "INTERNAL_ERROR", message: error.message } };
   }
-
-  console.log(
-    "[getActiveReservationsForRoom] found:",
-    data?.length ?? 0,
-    "reservations",
-  );
 
   const SERVICE_TYPE_LABEL: Record<string, string> = {
     walk: "산책",
@@ -1086,29 +1091,11 @@ export async function acceptReservationRequest(reservationId: string) {
       error: { code: "INTERNAL_ERROR", message: reservationError.message },
     };
 
-  const { data: existingDirectRoom } = await db
+  await db
     .from("chat_rooms")
-    .select("id")
-    .eq("owner_id", reservation.owner_id)
-    .eq("sitter_id", reservation.sitter_id)
-    .eq("room_type", "direct")
-    .maybeSingle();
-
-  let directRoomId: string;
-  if (existingDirectRoom) {
-    await db
-      .from("chat_rooms")
-      .update({ reservation_id: reservationId })
-      .eq("id", existingDirectRoom.id);
-    await db.from("chat_rooms").delete().eq("id", room.id);
-    directRoomId = existingDirectRoom.id;
-  } else {
-    await db
-      .from("chat_rooms")
-      .update({ room_type: "direct" })
-      .eq("id", room.id);
-    directRoomId = room.id;
-  }
+    .update({ room_type: "direct" })
+    .eq("id", room.id);
+  const directRoomId = room.id;
 
   const msgContent = `${RESERVATION_ACCEPTED_PREFIX}${JSON.stringify({
     reservationId,
@@ -1145,7 +1132,7 @@ export async function getReadyReservationsForRoom(roomId: string) {
 
   const { data: room } = await db
     .from("chat_rooms")
-    .select("id, owner_id, sitter_id")
+    .select("id, owner_id, sitter_id, reservation_id")
     .eq("id", roomId)
     .single();
 
@@ -1154,7 +1141,7 @@ export async function getReadyReservationsForRoom(roomId: string) {
       error: { code: "NOT_FOUND", message: "채팅방을 찾을 수 없습니다." },
     };
 
-  const { data, error } = await db
+  const readyQuery = db
     .from("reservations")
     .select(
       `
@@ -1163,10 +1150,12 @@ export async function getReadyReservationsForRoom(roomId: string) {
       reservation_items(pets(name, animal_type))
     `,
     )
-    .eq("owner_id", room.owner_id)
-    .eq("sitter_id", room.sitter_id)
     .in("status", ["accepted", "paid"])
     .order("created_at", { ascending: false });
+
+  const { data, error } = room.reservation_id
+    ? await readyQuery.eq("id", room.reservation_id)
+    : await readyQuery.eq("owner_id", room.owner_id).eq("sitter_id", room.sitter_id);
 
   if (error)
     return { error: { code: "INTERNAL_ERROR", message: error.message } };

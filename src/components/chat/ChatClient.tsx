@@ -338,6 +338,7 @@ function ChatPageContent({
         setApplicationActionError(result.error.message);
         return;
       }
+      const reservationId = "reservationId" in result ? result.reservationId : null;
       confirmApplicant(id);
       updateApplicantStatus(id, "selected");
       broadcastConfirmation();
@@ -361,9 +362,11 @@ function ChatPageContent({
         const roomResult = await findOrCreateRoom({
           sitter_id: confirmingApplicant.sitterId,
           room_type: "direct",
+          reservation_id: reservationId ?? undefined,
         });
         if ("data" in roomResult && roomResult.data) {
           const newRoomId = roomResult.data.room_id;
+          broadcastReservationAccepted(newRoomId);
 
           if (overrides.totalPrice && overrides.totalPrice > 0) {
             const deadline = getPaymentDeadline();
@@ -517,7 +520,7 @@ function ChatPageContent({
         : null);
 
     if (reservationId) {
-      const payResult = await createPayment(reservationId, "CARD");
+      const payResult = await createPayment(reservationId, "CARD", totalAmount);
       if (payResult.error?.code === "FORBIDDEN") {
         const extraResult = await createExtraPayment(
           reservationId,
@@ -537,7 +540,6 @@ function ChatPageContent({
         return;
       } else {
         portonePaymentId = payResult.data!.payment_id;
-        totalAmount = payResult.data!.amount;
         orderName = payResult.data!.order_name;
       }
     }
