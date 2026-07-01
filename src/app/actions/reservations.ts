@@ -878,13 +878,15 @@ export async function createPetsitterReservationRequest(
 
   const { data: existingRoom } = await db
     .from("chat_rooms")
-    .select("id")
+    .select("id, reservations(status)")
     .eq("owner_id", user.id)
     .eq("sitter_id", input.sitter_id)
     .eq("room_type", "reservation_request")
     .maybeSingle();
 
-  if (existingRoom)
+  const activeStatuses = ["pending", "accepted", "paid", "in_progress"];
+  const reservationStatus = (existingRoom?.reservations as { status: string } | null)?.status;
+  if (existingRoom && reservationStatus && activeStatuses.includes(reservationStatus))
     return {
       error: {
         code: "CONFLICT",
