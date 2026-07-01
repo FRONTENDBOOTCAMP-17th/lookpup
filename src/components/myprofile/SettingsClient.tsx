@@ -235,6 +235,7 @@ export default function SettingsClient() {
             <div className="flex flex-col items-center">
               <AvatarWithCamera
                 initial={user?.fullName?.[0] ?? ""}
+                src={user?.profileImage}
                 className="mb-4"
               />
               <p className="text-[#281A0E] text-xl font-bold">{user?.fullName ?? ""}</p>
@@ -267,8 +268,8 @@ export default function SettingsClient() {
                     <p className="text-[#281A0E] text-sm font-medium">이름</p>
                     <input
                       value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      className="w-full h-12 rounded-xl border border-[#FFE9D6] flex items-center px-4 text-[#281A0E] text-base outline-none focus:border-[var(--color-orange-500)]"
+                      disabled
+                      className="w-full h-12 rounded-xl border border-[#FFE9D6] flex items-center px-4 text-[#6B7280] text-base bg-[#F9FAFB] cursor-not-allowed"
                     />
                   </div>
                   <div className="flex flex-col gap-2">
@@ -286,8 +287,8 @@ export default function SettingsClient() {
                       <Phone className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-[#6B7280]" />
                       <input
                         value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value)}
-                        className="w-full h-12 rounded-xl border border-[#FFE9D6] flex items-center pl-12 pr-4 text-[#281A0E] text-base outline-none focus:border-[var(--color-orange-500)]"
+                        disabled
+                        className="w-full h-12 rounded-xl border border-[#FFE9D6] flex items-center pl-12 pr-4 text-[#6B7280] text-base bg-[#F9FAFB] cursor-not-allowed"
                       />
                     </div>
                   </div>
@@ -297,15 +298,11 @@ export default function SettingsClient() {
                       <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-[#6B7280]" />
                       <input
                         value={addressQuery}
-                        onChange={(e) => handleAddressInputChange(e.target.value)}
-                        onFocus={() =>
-                          addressSuggestions.length > 0 &&
-                          setShowAddressSuggestions(true)
-                        }
+                        disabled
                         placeholder="도로명 또는 지번 주소 검색"
-                        className="w-full h-12 rounded-xl border border-[#FFE9D6] flex items-center pl-12 pr-4 text-[#281A0E] text-base outline-none focus:border-[var(--color-orange-500)]"
+                        className="w-full h-12 rounded-xl border border-[#FFE9D6] flex items-center pl-12 pr-4 text-[#6B7280] text-base bg-[#F9FAFB] cursor-not-allowed"
                       />
-                      {showAddressSuggestions && addressSuggestions.length > 0 && (
+                      {false && showAddressSuggestions && addressSuggestions.length > 0 && (
                         <ul className="absolute left-0 right-0 top-[calc(100%+4px)] z-20 max-h-52 overflow-y-auto bg-white border border-[#FFE9D6] rounded-xl shadow-lg py-1">
                           {addressSuggestions.map((s, i) => (
                             <li key={`${s.addressName}-${i}`}>
@@ -348,36 +345,10 @@ export default function SettingsClient() {
                       <input
                         type="date"
                         value={birthdate}
-                        onChange={(e) => setBirthdate(e.target.value)}
-                        className="w-full h-12 rounded-xl border border-[#FFE9D6] pl-12 pr-4 text-[#281A0E] text-base outline-none focus:border-[var(--color-orange-500)]"
+                        disabled
+                        className="w-full h-12 rounded-xl border border-[#FFE9D6] pl-12 pr-4 text-[#6B7280] text-base bg-[#F9FAFB] cursor-not-allowed"
                       />
                     </div>
-                  </div>
-                  {saveError && <p className="text-sm text-red-500">{saveError}</p>}
-                  <div className="flex gap-3 pt-4">
-                    <button
-                      onClick={() => {
-                        if (!user) return;
-                        setFullName(user.fullName);
-                        setPhoneNumber(user.phoneNumber);
-                        setBirthdate(user.birthdate ?? "");
-                        setAddressQuery(savedAddress?.address ?? "");
-                        setPendingAddress(null);
-                        setAddressSuggestions([]);
-                        setShowAddressSuggestions(false);
-                        setSaveError(null);
-                      }}
-                      className="flex-1 h-12 px-6 bg-white rounded-[10px] border border-[var(--color-orange-500)] text-[var(--color-orange-500)] text-base font-semibold"
-                    >
-                      취소
-                    </button>
-                    <button
-                      onClick={handleSave}
-                      disabled={isSaving}
-                      className="flex-1 h-12 px-6 bg-[var(--color-orange-500)] rounded-[10px] text-white text-base font-semibold disabled:opacity-50"
-                    >
-                      {isSaving ? "저장 중..." : "저장하기"}
-                    </button>
                   </div>
                 </div>
               </div>

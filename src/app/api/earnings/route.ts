@@ -70,6 +70,31 @@ export async function GET() {
     .filter((p) => p.paid_at && p.paid_at >= weekAgoStart)
     .reduce((sum, p) => sum + (p.settle_amount ?? 0), 0);
 
+  const twelveMonthsAgoStart = new Date(now.getFullYear(), now.getMonth() - 11, 1).toISOString();
+
+  const { data: monthlyPayments, error: monthlyError } = await db
+    .from("payments")
+    .select("settle_amount, paid_at")
+    .eq("sitter_id", sitterProfile.id)
+    .eq("status", "paid")
+    .gte("paid_at", twelveMonthsAgoStart);
+
+  if (monthlyError) {
+    return NextResponse.json(
+      { error: { code: "INTERNAL_ERROR", message: monthlyError.message } },
+      { status: 500 },
+    );
+  }
+
+  const monthly = Array.from({ length: 12 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - 11 + i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const monthTotal = monthlyPayments
+      .filter((p) => (p.paid_at ?? "").slice(0, 7) === key)
+      .reduce((sum, p) => sum + (p.settle_amount ?? 0), 0);
+    return { month: key, label: `${d.getMonth() + 1}월`, total: monthTotal };
+  });
+
   const transactions = payments.map((p) => {
     const dateStr = (p.paid_at ?? p.created_at ?? "").slice(0, 10);
     return {
@@ -82,5 +107,5 @@ export async function GET() {
     };
   });
 
-  return NextResponse.json({ data: { total, thisMonth, thisWeek, transactions } });
+  return NextResponse.json({ data: { total, thisMonth, thisWeek, monthly, transactions } });
 }

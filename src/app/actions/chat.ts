@@ -394,6 +394,7 @@ export async function sendPaymentRequestMessage(
       description: string;
     }[];
   },
+  reservationId?: string,
 ) {
   const user = await getAuthUser();
   if (!user) {
@@ -421,7 +422,7 @@ export async function sendPaymentRequestMessage(
 
   const { data: room } = await db
     .from("chat_rooms")
-    .select("id, owner_id, sitters!inner(user_id)")
+    .select("id, owner_id, sitters!inner(id, user_id)")
     .eq("id", roomId)
     .single();
 
@@ -435,6 +436,17 @@ export async function sendPaymentRequestMessage(
         title: "결제 요청이 도착했어요",
         content: `${data.amount.toLocaleString("ko-KR")}원 결제 요청이 왔어요.`,
         linkUrl: `/chat?roomId=${roomId}`,
+      });
+    }
+
+    if (data.isExtra && reservationId) {
+      await db.from("extra_charges").insert({
+        reservation_id: reservationId,
+        sitter_id: room.sitters.id,
+        owner_id: room.owner_id,
+        amount: data.amount,
+        reason: data.reason,
+        status: "pending",
       });
     }
   }

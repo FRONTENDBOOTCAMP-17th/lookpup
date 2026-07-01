@@ -12,7 +12,7 @@ export async function GET(
     .from("reservations")
     .select("start_datetime, end_datetime")
     .eq("sitter_id", id)
-    .neq("status", "cancelled");
+    .in("status", ["pending", "accepted", "paid", "in_progress"]);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { MapPin, Calendar, DollarSign, ChevronRight, ChevronLeft } from "lucide-react";
 import Header from "@/components/layout/Header";
@@ -113,7 +114,24 @@ function PostCard({ post }: { post: Post }) {
 
 export default function BoardListClient() {
   const { isLoggedIn } = useUserStore();
-  const [activeCategory, setActiveCategory] = useState("전체");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const [activeCategory, setActiveCategory] = useState(() => {
+    const cat = searchParams.get("category");
+    return cat && CATEGORIES.includes(cat) ? cat : "전체";
+  });
+
+  function handleCategoryChange(cat: string) {
+    setActiveCategory(cat);
+    const params = new URLSearchParams(searchParams.toString());
+    if (cat === "전체") {
+      params.delete("category");
+    } else {
+      params.set("category", cat);
+    }
+    const qs = params.toString();
+    router.replace(`/board${qs ? `?${qs}` : ""}`, { scroll: false });
+  }
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [posts, setPosts] = useState<Post[]>([]);
@@ -205,7 +223,7 @@ export default function BoardListClient() {
               placeholder="제목, 내용으로 검색"
               filters={CATEGORIES}
               activeFilter={activeCategory}
-              onFilterChange={setActiveCategory}
+              onFilterChange={handleCategoryChange}
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
               className="[&>div:first-child>div:last-child]:hidden"

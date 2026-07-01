@@ -188,6 +188,27 @@ export async function createExtraPayment(
     return { error: { code: "INTERNAL_ERROR", message: error.message } };
   }
 
+  const { data: pendingCharge } = await db
+    .from("extra_charges")
+    .select("id")
+    .eq("reservation_id", reservationId)
+    .eq("status", "pending")
+    .eq("amount", amount)
+    .order("requested_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (pendingCharge) {
+    await db
+      .from("extra_charges")
+      .update({
+        status: "approved",
+        payment_id: paymentId,
+        responded_at: new Date().toISOString(),
+      })
+      .eq("id", pendingCharge.id);
+  }
+
   const sitter = reservation.sitters as unknown as {
     users: { full_name: string };
   };

@@ -485,12 +485,23 @@ function ChatPageContent({
     if (!activeRoomId) return;
     try {
       const deadline = getPaymentDeadline();
-      const result = await sendPaymentRequestMessage(activeRoomId, {
-        amount: data.amount,
-        reason: data.reason,
-        deadline,
-        isExtra: data.type === "extra",
-      });
+      const isExtra = data.type === "extra";
+      const reservationId = isExtra
+        ? (selectedRoom?.reservationId ??
+          (selectedRoom?.sitterId
+            ? await getAcceptedReservationBySitter(selectedRoom.sitterId)
+            : null))
+        : undefined;
+      const result = await sendPaymentRequestMessage(
+        activeRoomId,
+        {
+          amount: data.amount,
+          reason: data.reason,
+          deadline,
+          isExtra,
+        },
+        reservationId ?? undefined,
+      );
       if (result.error) {
         setSendError(result.error.message);
         return;
