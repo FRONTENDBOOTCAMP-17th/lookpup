@@ -628,7 +628,10 @@ export async function getMyReservations() {
     const service = r.services as { title: string } | null;
     const items = (r.reservation_items as ItemRow[]) ?? [];
     const firstPet = items[0]?.pets;
-    const reviews = (r.reviews as unknown as { id: string }[] | null) ?? [];
+    // reservation_id가 unique라 PostgREST가 reviews를 단일 객체로 임베드할 수 있어
+    // 배열/객체 두 형태 모두 안전하게 처리
+    const review = r.reviews as unknown as { id: string } | { id: string }[] | null;
+    const reviewWritten = Array.isArray(review) ? review.length > 0 : review != null;
 
     return {
       id: r.id,
@@ -644,7 +647,7 @@ export async function getMyReservations() {
       petName: firstPet?.name ?? "-",
       petType: firstPet?.breed ?? firstPet?.animal_type ?? "-",
       price: r.total_price,
-      reviewWritten: reviews.length > 0,
+      reviewWritten,
     };
   });
 
@@ -794,7 +797,10 @@ export async function getReservationById(id: string) {
   const service = r.services as { title: string } | null;
   const items = (r.reservation_items as { pets: PetRow }[]) ?? [];
   const firstPet = items[0]?.pets;
-  const reviews = (r.reviews as unknown as { id: string }[] | null) ?? [];
+  // reservation_id가 unique라 PostgREST가 reviews를 단일 객체로 임베드할 수 있어
+  // 배열/객체 두 형태 모두 안전하게 처리
+  const review = r.reviews as unknown as { id: string } | { id: string }[] | null;
+  const reviewWritten = Array.isArray(review) ? review.length > 0 : review != null;
 
   const { count: reviewCount } = await db
     .from("reviews")
@@ -825,7 +831,7 @@ export async function getReservationById(id: string) {
         gradient: PET_GRADIENT[firstPet?.animal_type ?? ""] ?? DEFAULT_GRADIENT,
       },
       price: r.total_price,
-      reviewWritten: reviews.length > 0,
+      reviewWritten,
     },
   };
 }
