@@ -7,8 +7,8 @@ import { CreditCard, X } from "lucide-react";
 type RequestType = "extra" | "payment";
 
 const REQUEST_TYPES: { value: RequestType; label: string; sub: string }[] = [
-  { value: "extra", label: "추가금 요청", sub: "추가 서비스 발생 시" },
   { value: "payment", label: "결제 요청", sub: "예약 연장 등" },
+  { value: "extra", label: "추가금 요청", sub: "추가 서비스 발생 시" },
 ];
 
 interface CustomModalPaymentProps {
@@ -27,7 +27,7 @@ export function CustomModalPayment({
   onSubmit,
 }: CustomModalPaymentProps) {
   const [mounted, setMounted] = useState(false);
-  const [requestType, setRequestType] = useState<RequestType>("extra");
+  const [requestType, setRequestType] = useState<RequestType>("payment");
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -55,7 +55,7 @@ export function CustomModalPayment({
 
   useEffect(() => {
     if (!open) {
-      setRequestType("extra");
+      setRequestType("payment");
       setAmount("");
       setReason("");
       setSubmitError(null);
@@ -74,7 +74,7 @@ export function CustomModalPayment({
   }
 
   async function handleSubmit() {
-    if (!total || !reason.trim() || submitting) return;
+    if (!total || (requestType === "extra" && !reason.trim()) || submitting) return;
     setSubmitError(null);
     setSubmitting(true);
     try {
@@ -189,8 +189,8 @@ export function CustomModalPayment({
             </p>
           </div>
 
-          {/* 요청 사유 */}
-          <div>
+          {/* 요청 사유 — 추가금 요청 시에만 표시 */}
+          {requestType === "extra" && <div>
             <div className="flex items-center justify-between mb-2">
               <p className="text-[#281A0E] text-sm font-semibold">
                 요청 사유<span className="text-red-500">*</span>
@@ -208,7 +208,7 @@ export function CustomModalPayment({
               rows={4}
               className="w-full px-4 py-3.5 rounded-xl outline outline-orange-200 outline-offset-[-1.11px] text-[15px] text-[#281A0E] placeholder-[rgba(40,26,14,0.50)] resize-none focus:outline-orange-500 transition-colors leading-relaxed"
             />
-          </div>
+          </div>}
 
           {/* 총 요청 금액 */}
           <div className="bg-orange-50 rounded-2xl border border-orange-200 px-5 py-5 flex items-center justify-between">
@@ -238,7 +238,7 @@ export function CustomModalPayment({
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={!total || !reason.trim() || submitting}
+            disabled={!total || (requestType === "extra" && !reason.trim()) || submitting}
             className="flex-1 h-13 rounded-xl bg-orange-500 flex items-center justify-center gap-2 text-white text-[15px] font-semibold hover:bg-orange-600 transition-colors disabled:opacity-40 disabled:cursor-default"
           >
             <CreditCard size={17} className="text-white" />
