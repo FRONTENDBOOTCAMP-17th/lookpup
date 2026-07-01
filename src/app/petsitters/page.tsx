@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import PetsitterSearchClient from "./_components/PetsitterSearchClient";
+import PetsitterSearchClient from "@/components/petsitters/PetsitterSearchClient";
 
 export default function PetsittersPage() {
   return (

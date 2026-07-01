@@ -1,4 +1,4 @@
-import SitterDetailClient from "./_components/SitterDetailClient";
+import SitterDetailClient from "@/components/petsitters/SitterDetailClient";
 
 export default async function PetsitterProfilePage({
   params,
