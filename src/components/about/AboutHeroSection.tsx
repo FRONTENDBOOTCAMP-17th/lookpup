@@ -22,7 +22,11 @@ export default function AboutHeroSection() {
         <br></br>
 
         <p className="text-gray-500 text-sm md:text-lg leading-6 md:leading-7 w-[300px] md:w-auto">
-          lookpup은 <strong className="text-stone-700">보호자</strong>와{" "}
+          <strong className="text-stone-700">
+            봐주<span className="text-orange-500">개</span>
+          </strong>
+          는{" "}
+          <strong className="text-stone-700">보호자</strong>와{" "}
           <strong className="text-stone-700">펫시터</strong>를 신뢰 기반으로
           연결하는
           <br className="md:hidden" /> 반려동물 케어 중개 플랫폼입니다.
