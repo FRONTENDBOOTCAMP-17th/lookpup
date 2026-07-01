@@ -1,5 +1,4 @@
 import Image from "next/image";
-import { Camera } from "lucide-react";
 import type { ReactNode } from "react";
 
 interface AvatarProps {
@@ -47,6 +46,7 @@ export function AvatarMobile({ initial, src, className = "" }: AvatarMobileProps
 
 interface AvatarWithCameraProps {
   initial: string;
+  src?: string | null;
   variant?: AvatarProps["variant"];
   onCameraClick?: () => void;
   className?: string;
@@ -54,20 +54,14 @@ interface AvatarWithCameraProps {
 
 export function AvatarWithCamera({
   initial,
+  src,
   variant = "default",
   onCameraClick,
   className = "",
 }: AvatarWithCameraProps) {
   return (
     <div className={`relative ${className}`}>
-      <Avatar initial={initial} size="2xl" variant={variant} />
-      <button
-        type="button"
-        onClick={onCameraClick}
-        className="absolute bottom-0 right-0 size-8 bg-[var(--color-orange-500)] rounded-full flex justify-center items-center"
-      >
-        <Camera className="size-4 text-white" />
-      </button>
+      <Avatar initial={initial} src={src} size="2xl" variant={variant} />
     </div>
   );
 }
