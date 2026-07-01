@@ -105,6 +105,7 @@ export function useChatRooms(activeRoomId: string | null) {
   userIdRef.current = userId;
 
   const myRoomIdsRef = useRef(new Set<string>());
+  const reservationRequestIdsRef = useRef(new Set<string>());
 
   const broadcastChannelsRef = useRef<RealtimeChannel[]>([]);
   const broadcastSupabaseRef = useRef<ReturnType<typeof createClient> | null>(
@@ -117,6 +118,7 @@ export function useChatRooms(activeRoomId: string | null) {
     ...applicants.map((a) => a.id),
     ...reservationRequests.map((rr) => rr.id),
   ]);
+  reservationRequestIdsRef.current = new Set(reservationRequests.map((rr) => rr.id));
 
   useEffect(() => {
     createClient()
@@ -232,8 +234,32 @@ export function useChatRooms(activeRoomId: string | null) {
           table: "chat_rooms",
           filter: `owner_id=eq.${userId}`,
         },
-        () => {
+        (payload) => {
           fetchRooms(true);
+          const newRoom = payload.new as { id?: string; room_type?: string };
+          if (newRoom?.room_type === "direct" && newRoom.id) {
+            setAcceptedDirectRoomId(newRoom.id);
+          }
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "chat_rooms",
+          filter: `owner_id=eq.${userId}`,
+        },
+        (payload) => {
+          const updated = payload.new as { id?: string; room_type?: string };
+          if (
+            updated?.room_type === "direct" &&
+            updated.id &&
+            reservationRequestIdsRef.current.has(updated.id)
+          ) {
+            fetchRooms(true);
+            setAcceptedDirectRoomId(updated.id);
+          }
         },
       )
       .subscribe();

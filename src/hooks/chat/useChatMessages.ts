@@ -286,10 +286,12 @@ export interface PaymentStateInfo {
 function derivePaymentState(messages: Message[]): PaymentStateInfo | null {
   const reqIdx = messages.findLastIndex((m) => m.from === "payment_request");
   if (reqIdx === -1) return null;
-  const completeIdx = messages.findLastIndex(
-    (m) => m.from === "payment_complete",
-  );
-  const paid = completeIdx > reqIdx;
+  const paid = messages.some((m) => {
+    if (m.from !== "payment_complete") return false;
+    if (!m.paymentRequestMessageId) return true;
+    const ref = messages.find((r) => r.id === m.paymentRequestMessageId);
+    return !ref?.paymentData?.isExtra;
+  });
   const data = messages[reqIdx].paymentData!;
   return {
     amount: data.amount,

@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
     await db
       .from("extra_charges")
       .update({ status: "paid" })
-      .eq("payment_id", paymentId);
+      .eq("payment_id", payment.id);
 
     const { data: paidPayments } = await db
       .from("payments")
@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
       db
         .from("extra_charges")
         .update({ status: "canceled" })
-        .eq("payment_id", paymentId),
+        .eq("payment_id", payment.id),
     ]);
   } else if (type === "Transaction.Failed") {
     await Promise.all([
@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
       db
         .from("extra_charges")
         .update({ status: "rejected" })
-        .eq("payment_id", paymentId),
+        .eq("payment_id", payment.id),
     ]);
   }
 

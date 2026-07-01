@@ -238,6 +238,7 @@ function ChatPageContent({
         setSelectedRoomId(result.data.room_id);
         setSelectedReservationRequestId(null);
         setMobileChatView("room");
+        setMessagesRefreshKey((k) => k + 1);
       }
     } catch {
       setApplicationActionError("오류가 발생했습니다. 다시 시도해주세요.");
@@ -484,6 +485,15 @@ function ChatPageContent({
     reason: string;
   }) {
     if (!activeRoomId) return;
+    const isBasePaid = paymentState?.paid === true || isPaymentAlreadyPaid;
+    if (data.type !== "extra" && isBasePaid) {
+      setSendError("이미 결제된 예약입니다. 추가금 요청을 이용해주세요.");
+      return;
+    }
+    if (data.type === "extra" && !isBasePaid) {
+      setSendError("기본 결제가 완료된 후 추가금 요청을 보낼 수 있습니다.");
+      return;
+    }
     try {
       const deadline = getPaymentDeadline();
       const isExtra = data.type === "extra";
@@ -672,11 +682,18 @@ function ChatPageContent({
   const [searchQuery, setSearchQuery] = useState("");
 
   const hasAutoSelected = useRef(false);
+  const hasRetried = useRef(false);
+  const prevInitialRoomId = useRef<string | null | undefined>(null);
   useEffect(() => {
+    if (prevInitialRoomId.current !== initialRoomId) {
+      prevInitialRoomId.current = initialRoomId;
+      hasAutoSelected.current = false;
+      hasRetried.current = false;
+    }
     if (!initialRoomId || hasAutoSelected.current || loading) return;
-    hasAutoSelected.current = true;
     const room = rooms.find((r) => r.id === initialRoomId);
     if (room) {
+      hasAutoSelected.current = true;
       setActiveTab("one_on_one");
       setSelectedRoomId(room.id);
       setMobileChatView("room");
@@ -684,6 +701,7 @@ function ChatPageContent({
     }
     const applicant = applicants.find((a) => a.id === initialRoomId);
     if (applicant) {
+      hasAutoSelected.current = true;
       setActiveTab("applicants");
       setSelectedApplicantId(applicant.id);
       setMobileChatView("room");
@@ -691,11 +709,17 @@ function ChatPageContent({
     }
     const rr = reservationRequests.find((r) => r.id === initialRoomId);
     if (rr) {
+      hasAutoSelected.current = true;
       setActiveTab("reservations");
       setSelectedReservationRequestId(rr.id);
       setMobileChatView("room");
+      return;
     }
-  }, [initialRoomId, rooms, applicants, reservationRequests, loading]);
+    if (!hasRetried.current) {
+      hasRetried.current = true;
+      refresh();
+    }
+  }, [initialRoomId, rooms, applicants, reservationRequests, loading, refresh]);
 
   const [profilePopup, setProfilePopup] = useState<{
     data: ProfilePopupData;
@@ -704,6 +728,8 @@ function ChatPageContent({
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [sendingPhoto, setSendingPhoto] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [paymentReservationAmount, setPaymentReservationAmount] = useState<number | undefined>(undefined);
+  const [isPaymentAlreadyPaid, setIsPaymentAlreadyPaid] = useState(false);
   const [careRecordOpen, setCareRecordOpen] = useState(false);
   const [confirmedServiceIds, setConfirmedServiceIds] = useState<Set<string>>(
     new Set(),
@@ -1479,7 +1505,21 @@ function ChatPageContent({
     onSend: handleSend,
     onLoadMore: handleLoadMore,
     onPayNow: handlePayNow,
-    onOpenPaymentModal: () => setPaymentModalOpen(true),
+    onOpenPaymentModal: async () => {
+      if (activeRoomId) {
+        const result = await getActiveReservationsForRoom(activeRoomId);
+        if ("data" in result && result.data && result.data.length > 0) {
+          const reservation = result.data[0];
+          setPaymentReservationAmount(reservation.totalPrice);
+          setIsPaymentAlreadyPaid(reservation.isBasePaid);
+        } else {
+          setIsPaymentAlreadyPaid(paymentState?.paid === true);
+        }
+      } else {
+        setIsPaymentAlreadyPaid(paymentState?.paid === true);
+      }
+      setPaymentModalOpen(true);
+    },
     onOpenCareRecord: () => setCareRecordOpen(true),
     onServiceStart: handleServiceStart,
     onServiceComplete: handleServiceComplete,
@@ -1637,6 +1677,8 @@ function ChatPageContent({
       <CustomModalPayment
         open={paymentModalOpen}
         onClose={() => setPaymentModalOpen(false)}
+        paymentAmount={paymentReservationAmount}
+        isAlreadyPaid={isPaymentAlreadyPaid || paymentState?.paid === true}
         onSubmit={handlePaymentSubmit}
       />
 
