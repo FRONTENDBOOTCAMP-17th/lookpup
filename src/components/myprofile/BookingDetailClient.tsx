@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   Calendar,
   Clock,
@@ -36,7 +36,7 @@ type BookingStatus =
   | "completed"
   | "cancelled";
 
-interface Booking {
+export interface Booking {
   id: string;
   bookingNo: string;
   serviceType: string;
@@ -191,19 +191,25 @@ function CareRecordTimeline({ records }: { records: CareRecord[] }) {
   );
 }
 
-export default function BookingDetailClient() {
+export default function BookingDetailClient({
+  id,
+  initialBooking,
+}: {
+  id: string;
+  initialBooking?: Booking | null;
+}) {
   const router = useRouter();
-  const { id } = useParams<{ id: string }>();
-  const [booking, setBooking] = useState<Booking | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [booking, setBooking] = useState<Booking | null>(initialBooking ?? null);
+  const [loading, setLoading] = useState(!initialBooking);
   const [notFound, setNotFound] = useState(false);
-  const [reviewWritten, setReviewWritten] = useState(false);
+  const [reviewWritten, setReviewWritten] = useState(initialBooking?.reviewWritten ?? false);
   const [careRecords, setCareRecords] = useState<CareRecord[]>([]);
   const [canceling, setCanceling] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [cancelConfirm, setCancelConfirm] = useState(false);
 
   useEffect(() => {
+    if (initialBooking !== undefined) return;
     if (!id) return;
     getReservationById(id).then((res) => {
       if ("error" in res || !res.data) {
@@ -214,11 +220,9 @@ export default function BookingDetailClient() {
       }
       setLoading(false);
     });
-  }, [id]);
+  }, [id, initialBooking]);
 
   useEffect(() => {
-    if (!id) return;
-
     const fetchRecords = () =>
       getCareRecordsByReservationId(id).then((res) => {
         if ("data" in res && res.data) setCareRecords(res.data);

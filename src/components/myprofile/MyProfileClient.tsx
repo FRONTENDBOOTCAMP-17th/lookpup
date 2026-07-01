@@ -4,7 +4,7 @@ import { useState, useEffect, type ReactNode } from "react";
 import Link from "next/link";
 import Script from "next/script";
 import { useRouter } from "next/navigation";
-import { useUserStore } from "@/store/userStore";
+import { useUserStore, type UserProfile, type SitterData } from "@/store/userStore";
 import {
   ChevronRight,
   Dog,
@@ -174,9 +174,17 @@ function SitterActions() {
   );
 }
 
-export default function MyProfileClient() {
+export default function MyProfileClient({
+  initialUser,
+  initialSitter,
+}: {
+  initialUser?: UserProfile | null;
+  initialSitter?: SitterData | null;
+}) {
   const router = useRouter();
-  const { user, sitter, isLoading } = useUserStore();
+  const { user: storeUser, sitter: storeSitter, isLoading } = useUserStore();
+  const user = storeUser ?? initialUser ?? null;
+  const sitter = storeSitter ?? initialSitter ?? null;
   const isSitter = user?.role === "both" || user?.role === "admin";
 
   useEffect(() => {

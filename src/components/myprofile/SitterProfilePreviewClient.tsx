@@ -12,7 +12,7 @@ import Pill from "@/components/ui/Pill";
 import { MapPin, ChevronLeft, Eye } from "lucide-react";
 import StarRow from "@/components/ui/StarRow";
 import StatGrid from "@/components/ui/StatGrid";
-import { useUserStore } from "@/store/userStore";
+import { useUserStore, type SitterData } from "@/store/userStore";
 import { getSitterServices } from "@/app/actions/sitters";
 import { useSitterReviews } from "@/hooks/queries/useSitterReviews";
 
@@ -26,19 +26,29 @@ interface ServiceDetail {
   is_active: boolean;
 }
 
-export default function SitterProfilePreviewClient() {
+export default function SitterProfilePreviewClient({
+  initialSitter,
+  initialServiceDetails,
+}: {
+  initialSitter?: SitterData | null;
+  initialServiceDetails?: ServiceDetail[];
+}) {
   const router = useRouter();
-  const { user, sitter } = useUserStore();
+  const { user, sitter: storeSitter } = useUserStore();
+  const sitter = storeSitter ?? initialSitter ?? null;
   const [activeTab, setActiveTab] = useState<Tab>("소개");
-  const [serviceDetails, setServiceDetails] = useState<ServiceDetail[]>([]);
+  const [serviceDetails, setServiceDetails] = useState<ServiceDetail[]>(
+    initialServiceDetails ?? [],
+  );
   const { data: reviews = [] } = useSitterReviews(sitter?.id ?? "");
 
   useEffect(() => {
+    if (initialServiceDetails !== undefined) return;
     if (!sitter?.id) return;
     getSitterServices(sitter.id).then(({ data }) =>
       setServiceDetails(data.filter((s) => s.is_active)),
     );
-  }, [sitter?.id]);
+  }, [sitter?.id, initialServiceDetails]);
 
   if (!user || !sitter) return null;
 

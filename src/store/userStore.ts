@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-interface UserProfile {
+export interface UserProfile {
   id: string;
   email: string;
   fullName: string;
