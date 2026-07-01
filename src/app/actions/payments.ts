@@ -13,7 +13,7 @@ async function getAuthUser() {
   return user;
 }
 
-export async function getAcceptedReservationBySitter(sitterId: string) {
+export async function getActiveReservationBySitter(sitterId: string) {
   const user = await getAuthUser();
   if (!user) return null;
 
@@ -24,7 +24,7 @@ export async function getAcceptedReservationBySitter(sitterId: string) {
     .select("id")
     .eq("owner_id", user.id)
     .eq("sitter_id", sitterId)
-    .eq("status", "accepted")
+    .in("status", ["accepted", "in_progress"])
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -158,7 +158,7 @@ export async function createExtraPayment(
     return { error: { code: "FORBIDDEN", message: "결제 권한이 없습니다." } };
   }
 
-  if (reservation.status !== "in_progress") {
+  if (!["in_progress", "paid"].includes(reservation.status)) {
     return {
       error: {
         code: "FORBIDDEN",
@@ -217,6 +217,85 @@ export async function createExtraPayment(
   return {
     data: { payment_id: paymentId, amount, order_name: orderName, reason },
   };
+}
+
+export async function verifyAndConfirmPayment(paymentId: string) {
+  const user = await getAuthUser();
+  if (!user) {
+    return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
+  }
+
+  const db = createServiceClient();
+
+  const { data: payment } = await db
+    .from("payments")
+    .select("id, reservation_id, amount, status")
+    .eq("payment_id", paymentId)
+    .maybeSingle();
+
+  if (!payment) {
+    return { error: { code: "NOT_FOUND", message: "결제 정보를 찾을 수 없습니다." } };
+  }
+
+  if (payment.status === "paid") {
+    return { data: { ok: true } };
+  }
+
+  const portoneRes = await fetch(
+    `https://api.portone.io/payments/${paymentId}`,
+    {
+      headers: {
+        Authorization: `PortOne ${process.env.PORTONE_API_SECRET}`,
+      },
+      cache: "no-store",
+    },
+  );
+
+  if (!portoneRes.ok) {
+    return { error: { code: "INTERNAL_ERROR", message: "PortOne 결제 조회 실패" } };
+  }
+
+  const portonePayment = await portoneRes.json();
+  const paidAmount: number = portonePayment?.amount?.total;
+
+  if (paidAmount !== payment.amount) {
+    return { error: { code: "AMOUNT_MISMATCH", message: "결제 금액이 일치하지 않습니다." } };
+  }
+
+  const now = new Date().toISOString();
+
+  await db
+    .from("payments")
+    .update({ status: "paid", paid_at: now })
+    .eq("id", payment.id);
+
+  const { data: paidPayments } = await db
+    .from("payments")
+    .select("amount")
+    .eq("reservation_id", payment.reservation_id)
+    .eq("status", "paid");
+
+  const totalPrice = (paidPayments ?? []).reduce((sum, p) => sum + p.amount, 0);
+
+  const { data: reservation } = await db
+    .from("reservations")
+    .select("status")
+    .eq("id", payment.reservation_id)
+    .single();
+
+  if (reservation?.status === "accepted") {
+    await db
+      .from("reservations")
+      .update({ status: "paid", paid_at: now, total_price: totalPrice })
+      .eq("id", payment.reservation_id);
+  } else {
+    await db
+      .from("reservations")
+      .update({ total_price: totalPrice })
+      .eq("id", payment.reservation_id);
+  }
+
+  return { data: { ok: true } };
 }
 
 export async function cancelPayment(paymentId: string, reason: string) {

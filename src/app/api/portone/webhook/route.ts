@@ -120,10 +120,23 @@ export async function POST(request: NextRequest) {
       .update({ status: "paid" })
       .eq("payment_id", paymentId);
 
+    const { data: paidPayments } = await db
+      .from("payments")
+      .select("amount")
+      .eq("reservation_id", payment.reservation_id)
+      .eq("status", "paid");
+
+    const totalPrice = (paidPayments ?? []).reduce((sum, p) => sum + p.amount, 0);
+
     if (reservation?.status === "accepted") {
       await db
         .from("reservations")
-        .update({ status: "paid", paid_at: now })
+        .update({ status: "paid", paid_at: now, total_price: totalPrice })
+        .eq("id", payment.reservation_id);
+    } else {
+      await db
+        .from("reservations")
+        .update({ total_price: totalPrice })
         .eq("id", payment.reservation_id);
     }
   } else if (type === "Transaction.Cancelled") {
