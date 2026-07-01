@@ -767,11 +767,19 @@ export function MessageBubble({
     );
   }
   if (msg.from === "payment_complete") {
+    const sentByMe = msg.paymentData?.sentByMe ?? msg.sentByMe ?? true;
     return (
       <div>
-        <PaymentCompleteCard amount={msg.paymentData?.amount ?? 0} />
+        <PaymentCompleteCard
+          amount={msg.paymentData?.amount ?? 0}
+          sentByMe={sentByMe}
+          otherInitial={senderInitial}
+          otherProfileImage={senderProfileImage}
+        />
         {msg.time && (
-          <p className="text-right text-gray-500 text-xs pr-3 mt-1">
+          <p
+            className={`text-gray-500 text-xs mt-1 ${sentByMe ? "text-right pr-3" : "text-left pl-11"}`}
+          >
             {msg.time}
           </p>
         )}
@@ -2082,42 +2090,58 @@ export function SitterServiceStartCard({
 // 결제 완료 카드 (보호자 + 펫시터 모두)
 type PaymentCompleteCardProps = {
   amount: number;
+  sentByMe?: boolean;
+  otherInitial?: string;
+  otherProfileImage?: string | null;
 };
 
-export function PaymentCompleteCard({ amount }: PaymentCompleteCardProps) {
-  return (
-    <div className="flex justify-end">
-      <div className="w-79.5 p-4 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col gap-3">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 bg-[#ECFDF5] rounded-full flex items-center justify-center shrink-0">
-            <CheckCircle size={18} className="text-[#10B981]" />
-          </div>
-          <div>
-            <span className="text-[#065F46] text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
-              결제 완료
-            </span>
-            <p className="text-[#281A0E] text-sm leading-5 mt-0.5">
-              결제가 완료되었어요!
-            </p>
-          </div>
+export function PaymentCompleteCard({
+  amount,
+  sentByMe = true,
+  otherInitial = "",
+  otherProfileImage,
+}: PaymentCompleteCardProps) {
+  const inner = (
+    <div className="w-79.5 p-4 bg-white rounded-2xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex flex-col gap-3">
+      <div className="flex items-center gap-2.5">
+        <div className="w-9 h-9 bg-[#ECFDF5] rounded-full flex items-center justify-center shrink-0">
+          <CheckCircle size={18} className="text-[#10B981]" />
         </div>
-
-        <div className="w-full px-3 py-2 bg-orange-100 rounded-xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex justify-between items-center">
-          <span className="text-[#6B7280] text-xs">결제 금액</span>
-          <span className="text-orange-500 text-sm font-bold">
-            {amount.toLocaleString("ko-KR")}원
+        <div>
+          <span className="text-[#065F46] text-[10px] font-bold uppercase tracking-[0.3px] leading-4">
+            결제 완료
           </span>
-        </div>
-
-        <div className="pt-3 border-t border-orange-200">
-          <p className="text-[#9CA3AF] text-[11px] leading-[17.6px]">
-            봐주개가 결제 금액을 안전하게 보관하고 있어요. 예약 완료 후
-            펫시터에게 지급됩니다.
+          <p className="text-[#281A0E] text-sm leading-5 mt-0.5">
+            결제가 완료되었어요!
           </p>
         </div>
       </div>
+
+      <div className="w-full px-3 py-2 bg-orange-100 rounded-xl outline-[1.11px] outline-orange-200 outline-offset-[-1.11px] flex justify-between items-center">
+        <span className="text-[#6B7280] text-xs">결제 금액</span>
+        <span className="text-orange-500 text-sm font-bold">
+          {amount.toLocaleString("ko-KR")}원
+        </span>
+      </div>
+
+      <div className="pt-3 border-t border-orange-200">
+        <p className="text-[#9CA3AF] text-[11px] leading-[17.6px]">
+          봐주개가 결제 금액을 안전하게 보관하고 있어요. 예약 완료 후
+          펫시터에게 지급됩니다.
+        </p>
+      </div>
     </div>
   );
+
+  if (!sentByMe) {
+    return (
+      <div className="flex items-start gap-3">
+        <Avatar initial={otherInitial} src={otherProfileImage} size="sm" />
+        {inner}
+      </div>
+    );
+  }
+  return <div className="flex justify-end">{inner}</div>;
 }
 
 // 예약 요청 메시지 카드
