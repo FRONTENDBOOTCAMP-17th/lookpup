@@ -10,6 +10,7 @@ import { useSitterBookingInfo } from "@/hooks/queries/useSitterBookingInfo";
 import { useSitterAvailability } from "@/hooks/queries/useSitterAvailability";
 import { usePets } from "@/hooks/queries/usePets";
 import { createPetsitterReservationRequest } from "@/app/actions/reservations";
+import { toast } from "sonner";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { step1Schema, step2Schema, step3Schema, type Step1Values, type Step2Values, type Step3Values } from "@/schemas/booking.schema";
@@ -115,7 +116,10 @@ export default function BookingClient({ sitterId }: { sitterId: string }) {
     });
 
     setIsSubmitting(false);
-    if (result.error) return;
+    if (result.error) {
+      toast.error(result.error.message);
+      return;
+    }
 
     setStep(4);
     if (result.data) setChatRoomId(result.data.room_id);
@@ -125,12 +129,11 @@ export default function BookingClient({ sitterId }: { sitterId: string }) {
     if (step === 1) {
       if (!dateRange?.from) return false;
       if (startTime && endTime && startTime >= endTime) return false;
-      if (startTime) {
-        const [h, m] = startTime.split(":").map(Number);
-        const startDt = new Date(dateRange.from);
-        startDt.setHours(h, m, 0, 0);
-        if (startDt <= new Date()) return false;
-      }
+      const effectiveTime = startTime || "00:00";
+      const [h, m] = effectiveTime.split(":").map(Number);
+      const startDt = new Date(dateRange.from);
+      startDt.setHours(h, m, 0, 0);
+      if (startDt <= new Date()) return false;
       return true;
     }
     if (step === 2) return petIds.length > 0 && !!selectedService;
