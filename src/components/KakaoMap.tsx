@@ -30,6 +30,9 @@ interface KakaoMapProps {
   onMarkerClick?: (id: string | number) => void;
   onMapClick?: (lat: number, lng: number) => void;
   basePosition?: { lat: number; lng: number };
+  /** true면 markers[0]을 드래그로 이동시킬 수 있는 단일 마커 모드로 동작한다. */
+  draggable?: boolean;
+  onMarkerDragEnd?: (lat: number, lng: number) => void;
 }
 
 function markerImageUrl(selected = false): string {
@@ -64,14 +67,19 @@ export default function KakaoMap({
   onMarkerClick,
   onMapClick,
   basePosition,
+  draggable = false,
+  onMarkerDragEnd,
 }: KakaoMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const markerOverlaysRef = useRef<any[]>([]);
+  const draggableMarkerRef = useRef<any>(null);
   const overlayRef = useRef<any>(null);
   const polylineRef = useRef<any>(null);
   const onMarkerClickRef = useRef(onMarkerClick);
   const onMapClickRef = useRef(onMapClick);
+  const onMarkerDragEndRef = useRef(onMarkerDragEnd);
+  const draggableRef = useRef(draggable);
   const basePositionRef = useRef(basePosition);
   const markersRef = useRef(markers);
   const selectedMarkerIdRef = useRef(selectedMarkerId);
@@ -87,6 +95,14 @@ export default function KakaoMap({
   useEffect(() => {
     onMapClickRef.current = onMapClick;
   }, [onMapClick]);
+
+  useEffect(() => {
+    onMarkerDragEndRef.current = onMarkerDragEnd;
+  }, [onMarkerDragEnd]);
+
+  useEffect(() => {
+    draggableRef.current = draggable;
+  }, [draggable]);
 
   useEffect(() => {
     basePositionRef.current = basePosition;
@@ -107,6 +123,10 @@ export default function KakaoMap({
       }
       clearMarkerOverlays();
       clearSelectedGraphics();
+      if (draggableMarkerRef.current) {
+        draggableMarkerRef.current.setMap(null);
+        draggableMarkerRef.current = null;
+      }
     };
   }, []);
 
@@ -169,9 +189,55 @@ export default function KakaoMap({
     }
   }
 
+  function drawDraggableMarker() {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const marker = markersRef.current[0];
+    if (!marker) {
+      if (draggableMarkerRef.current) {
+        draggableMarkerRef.current.setMap(null);
+        draggableMarkerRef.current = null;
+      }
+      return;
+    }
+
+    const position = new window.kakao.maps.LatLng(marker.lat, marker.lng);
+    const opt = getMarkerSize(false);
+    const markerImage = new window.kakao.maps.MarkerImage(
+      markerImageUrl(false),
+      new window.kakao.maps.Size(opt.width, opt.height),
+      { offset: new window.kakao.maps.Point(opt.offsetX, opt.offsetY) },
+    );
+
+    if (!draggableMarkerRef.current) {
+      draggableMarkerRef.current = new window.kakao.maps.Marker({
+        map,
+        position,
+        image: markerImage,
+        draggable: true,
+      });
+      window.kakao.maps.event.addListener(
+        draggableMarkerRef.current,
+        "dragend",
+        () => {
+          const pos = draggableMarkerRef.current.getPosition();
+          onMarkerDragEndRef.current?.(pos.getLat(), pos.getLng());
+        },
+      );
+    } else {
+      draggableMarkerRef.current.setPosition(position);
+    }
+  }
+
   function drawMarkers() {
     const map = mapRef.current;
     if (!map) return;
+
+    if (draggableRef.current) {
+      drawDraggableMarker();
+      return;
+    }
 
     clearMarkerOverlays();
 

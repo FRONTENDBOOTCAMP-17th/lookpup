@@ -2,6 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { fuzzCoordinate } from "@/utils/geoPrivacy";
 
 interface ServiceInput {
   service_type: "walk" | "care" | "hotel" | "pickup";
@@ -129,7 +130,12 @@ export async function createSitter(input: SitterInput) {
 
   const { data: sitter, error: sitterError } = await db
     .from("sitters")
-    .insert({ ...sitterFields, user_id: user.id })
+    .insert({
+      ...sitterFields,
+      latitude: fuzzCoordinate(sitterFields.latitude),
+      longitude: fuzzCoordinate(sitterFields.longitude),
+      user_id: user.id,
+    })
     .select()
     .single();
 
@@ -195,9 +201,13 @@ export async function updateSitter(id: string, input: Partial<Omit<SitterInput, 
     };
   }
 
+  const updateInput = { ...input };
+  if (updateInput.latitude != null) updateInput.latitude = fuzzCoordinate(updateInput.latitude);
+  if (updateInput.longitude != null) updateInput.longitude = fuzzCoordinate(updateInput.longitude);
+
   const { data, error } = await db
     .from("sitters")
-    .update(input)
+    .update(updateInput)
     .eq("id", id)
     .select()
     .single();
@@ -301,8 +311,8 @@ export async function updateSitterProfile(input: UpdateSitterProfileInput) {
     activity_photo_urls: input.activityPhotoUrls,
   };
   if (input.displayArea != null) updatePayload.display_area = input.displayArea;
-  if (input.latitude != null) updatePayload.latitude = input.latitude;
-  if (input.longitude != null) updatePayload.longitude = input.longitude;
+  if (input.latitude != null) updatePayload.latitude = fuzzCoordinate(input.latitude);
+  if (input.longitude != null) updatePayload.longitude = fuzzCoordinate(input.longitude);
 
   const { error: updateError } = await db
     .from("sitters")

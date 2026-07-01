@@ -2,6 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { fuzzCoordinate } from "@/utils/geoPrivacy";
 
 export async function updateProfile(profileImage: string | null) {
   const supabase = await createClient();
@@ -149,8 +150,8 @@ export async function updateOwnerLocation(location: {
   const { error } = await db
     .from("users")
     .update({
-      latitude: location.lat,
-      longitude: location.lng,
+      latitude: fuzzCoordinate(location.lat),
+      longitude: fuzzCoordinate(location.lng),
       address: location.address,
       display_area: location.dong,
     })

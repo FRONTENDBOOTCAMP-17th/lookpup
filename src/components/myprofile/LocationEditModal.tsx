@@ -8,6 +8,7 @@ import {
   coordToAddress,
   type AddressSuggestion,
 } from "@/utils/kakaoGeocode";
+import { ORANGE_MARKER_URL, ORANGE_MARKER_SIZE } from "@/utils/mapMarker";
 import { updateOwnerLocation } from "@/app/actions/users";
 import { useUserStore } from "@/store/userStore";
 
@@ -65,25 +66,65 @@ export default function LocationEditModal({
     }
   }, [open]);
 
-  const updateMiniMap = useCallback((lat: number, lng: number) => {
-    if (!window.kakao?.maps || !miniMapContainerRef.current) return;
-    const coords = new window.kakao.maps.LatLng(lat, lng);
-
-    if (!miniMapRef.current) {
-      miniMapRef.current = new window.kakao.maps.Map(miniMapContainerRef.current, {
-        center: coords,
-        level: 4,
-      });
-    } else {
-      miniMapRef.current.setCenter(coords);
-    }
-
-    if (miniMarkerRef.current) miniMarkerRef.current.setMap(null);
-    miniMarkerRef.current = new window.kakao.maps.Marker({
-      map: miniMapRef.current,
-      position: coords,
-    });
+  const handleMarkerDragEnd = useCallback(async () => {
+    if (!miniMarkerRef.current) return;
+    const pos = miniMarkerRef.current.getPosition();
+    const lat = pos.getLat();
+    const lng = pos.getLng();
+    const [region, address] = await Promise.all([
+      coordToRegion(lat, lng),
+      coordToAddress(lat, lng),
+    ]);
+    const dong = region
+      ? [region.sido, region.sigungu, region.dong].filter(Boolean).join(" ")
+      : (address ?? "");
+    setLocationInput(address ?? "");
+    setPendingLocation({ address: address ?? "", lat, lng, dong });
   }, []);
+
+  const updateMiniMap = useCallback(
+    (lat: number, lng: number) => {
+      if (!window.kakao?.maps || !miniMapContainerRef.current) return;
+      const coords = new window.kakao.maps.LatLng(lat, lng);
+
+      if (!miniMapRef.current) {
+        miniMapRef.current = new window.kakao.maps.Map(miniMapContainerRef.current, {
+          center: coords,
+          level: 4,
+        });
+      } else {
+        miniMapRef.current.setCenter(coords);
+      }
+
+      const markerImage = new window.kakao.maps.MarkerImage(
+        ORANGE_MARKER_URL,
+        new window.kakao.maps.Size(ORANGE_MARKER_SIZE.width, ORANGE_MARKER_SIZE.height),
+        {
+          offset: new window.kakao.maps.Point(
+            ORANGE_MARKER_SIZE.offsetX,
+            ORANGE_MARKER_SIZE.offsetY,
+          ),
+        },
+      );
+
+      if (!miniMarkerRef.current) {
+        miniMarkerRef.current = new window.kakao.maps.Marker({
+          map: miniMapRef.current,
+          position: coords,
+          image: markerImage,
+          draggable: true,
+        });
+        window.kakao.maps.event.addListener(
+          miniMarkerRef.current,
+          "dragend",
+          handleMarkerDragEnd,
+        );
+      } else {
+        miniMarkerRef.current.setPosition(coords);
+      }
+    },
+    [handleMarkerDragEnd],
+  );
 
   useEffect(() => {
     if (!pendingLocation) return;
@@ -186,7 +227,7 @@ export default function LocationEditModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+      <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-stone-900 text-lg font-semibold">위치 수정</h2>
           <button
@@ -252,6 +293,9 @@ export default function LocationEditModal({
               <div>
                 <p className="text-sm font-medium text-stone-900">{pendingLocation.dong}</p>
                 <p className="text-xs text-gray-400">{pendingLocation.address}</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  마커를 드래그해 위치를 조정할 수 있어요.
+                </p>
               </div>
             </div>
           </div>
@@ -286,7 +330,8 @@ export default function LocationEditModal({
         )}
 
         <p className="text-xs text-gray-400 mb-4">
-          프로필에는 &quot;동&quot; 단위까지만 표시됩니다. 좌표는 거리 계산에만 사용돼요.
+          프로필에는 &quot;동&quot; 단위까지만 표시됩니다. 개인정보 보호를 위해 좌표는 약
+          100m 오차 내로 저장되며, 거리 계산에만 사용돼요.
         </p>
 
         <div className="flex gap-3">
