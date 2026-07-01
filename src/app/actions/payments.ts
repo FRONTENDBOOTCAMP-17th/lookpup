@@ -171,7 +171,7 @@ export async function createExtraPayment(
   const settleAmount = amount - platformFee;
   const paymentId = `extra_${reservationId.replace(/-/g, "")}_${Date.now()}`;
 
-  const { error } = await db.from("payments").insert({
+  const { data: newPayment, error } = await db.from("payments").insert({
     reservation_id: reservationId,
     payment_id: paymentId,
     owner_id: user.id,
@@ -182,7 +182,7 @@ export async function createExtraPayment(
     platform_fee: platformFee,
     settle_amount: settleAmount,
     status: "ready",
-  });
+  }).select("id").single();
 
   if (error) {
     return { error: { code: "INTERNAL_ERROR", message: error.message } };
@@ -203,7 +203,7 @@ export async function createExtraPayment(
       .from("extra_charges")
       .update({
         status: "approved",
-        payment_id: paymentId,
+        payment_id: newPayment.id,
         responded_at: new Date().toISOString(),
       })
       .eq("id", pendingCharge.id);
