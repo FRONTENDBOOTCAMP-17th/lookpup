@@ -1,10 +1,5 @@
-"use client";
-
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
+import LegalPage, { type LegalArticle } from "@/components/legal/LegalPage";
 
 const PRIVACY_LINKS: Record<string, string> = {
   개인정보처리방침: "/privacy",
@@ -29,7 +24,7 @@ function renderItemText(text: string) {
   return text;
 }
 
-const ARTICLES = [
+const ARTICLES: LegalArticle[] = [
   {
     title: "제1조 약관의 목적",
     content: [
@@ -101,110 +96,30 @@ const ARTICLES = [
 ];
 
 export default function TermsPage() {
-  const router = useRouter();
-
   return (
-    <div className="min-h-screen bg-[#FFF8F3]">
-      <Header />
-
-      {/* 모바일 헤더 */}
-      <div className="md:hidden sticky top-16 z-50 bg-white border-b border-[#FFE9D6]">
-        <div className="h-14 px-5 flex items-center gap-3">
-          <button onClick={() => router.back()} className="p-1 -ml-1">
-            <ChevronLeft size={24} className="text-[#281A0E]" />
-          </button>
-          <span className="flex-1 font-semibold text-[#281A0E]">이용약관</span>
-        </div>
-      </div>
-
-      <div className="w-full max-w-200 mx-auto px-4 md:px-6 pt-6 md:pt-12 pb-16">
-        {/* 데스크탑 타이틀 */}
-        <div className="hidden md:flex items-center gap-4 mb-8">
-          <button
-            onClick={() => router.back()}
-            className="w-10 h-10 rounded-xl border border-[#FFE9D6] flex items-center justify-center hover:bg-[#FFF8F3] transition-colors shrink-0"
-          >
-            <ChevronLeft size={20} className="text-[#281A0E]" />
-          </button>
-          <div>
-            <h2 className="text-2xl font-bold text-[#281A0E]">이용약관</h2>
-            <p className="text-sm text-[#6B7280] mt-1">
-              봐주개 서비스 이용약관
-            </p>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-4">
-          {/* 인사말 + 조항 전체 박스 */}
-          <div className="bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-[#FFE9D6] p-6 flex flex-col gap-6">
-            {/* 인사말 */}
-            <div>
-              <h1 className="text-xl font-bold text-[#281A0E] mb-4">
-                봐주개 이용약관
-              </h1>
-              <p className="text-sm text-[#6B7280] leading-relaxed">
-                안녕하십니까. 우리 아이를 믿고 맡길 수 있는 반려동물 돌봄 플랫폼
-                봐주개의 서비스를 이용해주셔서 감사합니다.
-              </p>
-              <p className="text-sm text-[#6B7280] leading-relaxed mt-2">
-                본 약관은 봐주개가 제공하는 펫시팅 서비스의 이용과 관련하여
-                봐주개와 이용자 간의 권리, 의무 및 책임사항을 정하고 있습니다.
-              </p>
-              <p className="text-sm text-[#6B7280] leading-relaxed mt-2">
-                본 약관에 동의하여 봐주개가 제공하는 다양한 서비스를
-                이용해주시길 바랍니다.
-              </p>
-            </div>
-
-            {/* 조항 목록 */}
-            {ARTICLES.map((article, index) => (
-              <div key={article.title}>
-                {index > 0 && (
-                  <div className="border-t border-[#FFE9D6] mb-6" />
-                )}
-                <h2 className="text-base font-bold text-[var(--color-orange-500)] mb-3">
-                  {article.title}
-                </h2>
-                {"content" in article && article.content ? (
-                  <div className="flex flex-col gap-2">
-                    {article.content.map((text, i) => (
-                      <p
-                        key={i}
-                        className="text-sm text-[#281A0E] leading-relaxed"
-                      >
-                        {text}
-                      </p>
-                    ))}
-                  </div>
-                ) : (
-                  <ol className="flex flex-col gap-3">
-                    {article.items?.map((item, i) => (
-                      <li key={i} className="flex gap-2">
-                        <span className="text-sm font-semibold text-[var(--color-orange-500)] leading-relaxed shrink-0">
-                          {i + 1}.
-                        </span>
-                        <p className="text-sm text-[#281A0E] leading-relaxed whitespace-pre-line">
-                          {renderItemText(item)}
-                        </p>
-                      </li>
-                    ))}
-                  </ol>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* 적용일자 */}
-          <div className="bg-[#FFF0E8] rounded-2xl border border-[#FFE9D6] px-6 py-4">
-            <p className="text-sm font-semibold text-[var(--color-orange-500)]">적용일자</p>
-            <p className="text-sm text-[#6B7280] mt-1">
-              본 약관은 2026년 7월 1일부터 적용됩니다.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <Footer />
-    </div>
+    <LegalPage
+      title="이용약관"
+      subtitle="봐주개 서비스 이용약관"
+      heading="봐주개 이용약관"
+      intro={
+        <>
+          <p className="text-sm text-[#6B7280] leading-relaxed">
+            안녕하십니까. 우리 아이를 믿고 맡길 수 있는 반려동물 돌봄 플랫폼
+            봐주개의 서비스를 이용해주셔서 감사합니다.
+          </p>
+          <p className="text-sm text-[#6B7280] leading-relaxed mt-2">
+            본 약관은 봐주개가 제공하는 펫시팅 서비스의 이용과 관련하여 봐주개와
+            이용자 간의 권리, 의무 및 책임사항을 정하고 있습니다.
+          </p>
+          <p className="text-sm text-[#6B7280] leading-relaxed mt-2">
+            본 약관에 동의하여 봐주개가 제공하는 다양한 서비스를 이용해주시길
+            바랍니다.
+          </p>
+        </>
+      }
+      articles={ARTICLES}
+      effectiveDate="본 약관은 2026년 7월 1일부터 적용됩니다."
+      renderItemText={renderItemText}
+    />
   );
 }
