@@ -16,15 +16,16 @@ import {
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import Avatar from "@/components/ui/Avatar";
+import HeroButtons from "@/components/home/HeroButtons";
 
 // 더미데이터 꼬라박기
 
-const SERVICES: { Icon: LucideIcon; label: string; desc: string }[] = [
-  { Icon: Home, label: "방문돌봄", desc: "집에서 안전하게" },
-  { Icon: User, label: "위탁돌봄", desc: "펫시터 집에서" },
-  { Icon: Activity, label: "산책", desc: "건강한 산책" },
-  { Icon: Building, label: "펫호텔", desc: "프리미엄 케어" },
-  { Icon: Car, label: "픽업", desc: "편리한 이동" },
+const SERVICES: { Icon: LucideIcon; label: string; desc: string; href: string }[] = [
+  { Icon: Home, label: "방문돌봄", desc: "집에서 안전하게", href: "/board?category=방문돌봄" },
+  { Icon: User, label: "위탁돌봄", desc: "펫시터 집에서", href: "/board?category=위탁돌봄" },
+  { Icon: Activity, label: "산책", desc: "건강한 산책", href: "/board?category=산책" },
+  { Icon: Building, label: "펫호텔", desc: "프리미엄 케어", href: "/board?category=펫호텔" },
+  { Icon: Car, label: "픽업", desc: "편리한 이동", href: "/board?category=픽업" },
 ];
 
 const PETSITTERS = [
@@ -213,20 +214,7 @@ export default function HomePage() {
                 안전한 예약과 결제까지 한 번에
               </p>
 
-              <div className="flex flex-col sm:flex-row items-center gap-4 mb-10">
-                <Link
-                  href="/petsitters"
-                  className="w-40 h-12 bg-orange-500 hover:bg-orange-600 text-white text-base font-semibold rounded-[10px] flex items-center justify-center shadow-[0px_4px_4px_0px_rgba(232,116,42,0.15)] transition-colors"
-                >
-                  펫시터 찾기
-                </Link>
-                <Link
-                  href="/sitter-register"
-                  className="w-40 h-12 bg-white hover:bg-orange-50 text-orange-500 text-base font-semibold rounded-[10px] border border-orange-500 flex items-center justify-center shadow-[0px_4px_4px_0px_rgba(232,116,42,0.15)] transition-colors"
-                >
-                  펫시터 등록하기
-                </Link>
-              </div>
+              <HeroButtons />
 
               <div className="flex items-center gap-8">
                 <div className="text-center lg:text-left">
@@ -347,10 +335,11 @@ export default function HomePage() {
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 lg:gap-5">
-              {SERVICES.map(({ Icon, label, desc }) => (
-                <div
+              {SERVICES.map(({ Icon, label, desc, href }) => (
+                <Link
                   key={label}
-                  className="flex flex-col items-center p-5 bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100 hover:shadow-[0px_4px_16px_0px_rgba(232,116,42,0.18)] transition-shadow cursor-pointer"
+                  href={href}
+                  className="flex flex-col items-center p-5 bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100 hover:shadow-[0px_4px_16px_0px_rgba(232,116,42,0.18)] transition-shadow"
                 >
                   <div className="w-14 h-14 bg-orange-50 rounded-2xl flex items-center justify-center mb-4">
                     <Icon className="w-7 h-7 text-orange-500" strokeWidth={2} />
@@ -361,7 +350,7 @@ export default function HomePage() {
                   <span className="text-gray-500 text-sm mt-2 text-center">
                     {desc}
                   </span>
-                </div>
+                </Link>
               ))}
             </div>
           </div>
