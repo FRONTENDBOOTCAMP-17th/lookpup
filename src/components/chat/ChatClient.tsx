@@ -258,6 +258,9 @@ function ChatPageContent({
         return;
       }
       updateReservationRequestStatus(roomId, "canceled");
+      if (result.data?.message) {
+        addMessage(result.data.message);
+      }
     } catch {
       setApplicationActionError("오류가 발생했습니다. 다시 시도해주세요.");
     } finally {

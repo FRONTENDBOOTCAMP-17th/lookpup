@@ -1319,11 +1319,15 @@ export async function rejectReservationRequest(reservationId: string) {
       error: { code: "INTERNAL_ERROR", message: reservationError.message },
     };
 
-  await db.from("messages").insert({
-    room_id: room.id,
-    sender_id: user.id,
-    content: RESERVATION_REJECTED_PREFIX,
-  });
+  const { data: insertedMessage } = await db
+    .from("messages")
+    .insert({
+      room_id: room.id,
+      sender_id: user.id,
+      content: RESERVATION_REJECTED_PREFIX,
+    })
+    .select("id, sender_id, content, created_at")
+    .single();
   await db
     .from("chat_rooms")
     .update({ last_message: "예약 거절", last_message_at: now })
@@ -1337,7 +1341,7 @@ export async function rejectReservationRequest(reservationId: string) {
     linkUrl: `/chat`,
   });
 
-  return { data: { ok: true } };
+  return { data: { ok: true, message: insertedMessage } };
 }
 
 export async function getReservationRequestDetails(reservationId: string) {
