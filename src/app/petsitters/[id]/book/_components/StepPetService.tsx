@@ -44,6 +44,14 @@ export default function StepPetService({
   const router = useRouter();
   const { watch, setValue, formState: { errors } } = useFormContext<Step2Values>();
   const { dateRange, petIds, togglePet } = useBookingStore();
+
+  function handleTogglePet(id: string, name: string) {
+    togglePet(id, name);
+    const next = petIds.includes(id)
+      ? petIds.filter((p) => p !== id)
+      : [...petIds, id];
+    setValue("petIds", next, { shouldValidate: true });
+  }
   const selectedService = watch("selectedService");
 
   const petNames = petIds
@@ -68,7 +76,7 @@ export default function StepPetService({
               <button
                 key={pet.id}
                 type="button"
-                onClick={() => togglePet(pet.id, pet.name)}
+                onClick={() => handleTogglePet(pet.id, pet.name)}
                 className={`w-full p-4 sm:p-5 rounded-2xl border text-left flex items-center gap-3 sm:gap-4 transition-colors ${
                   selected
                     ? "bg-orange-50 border-orange-500"

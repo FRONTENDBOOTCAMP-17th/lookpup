@@ -72,8 +72,7 @@ export default function BookingClient({ sitterId }: { sitterId: string }) {
       if (!ok) return;
     }
     if (step === 2) {
-      // petIds는 Zustand에서 관리하므로 수동 검증
-      if (petIds.length === 0) return;
+      step2Form.setValue("petIds", petIds);
       const ok = await step2Form.trigger();
       if (!ok) return;
     }
