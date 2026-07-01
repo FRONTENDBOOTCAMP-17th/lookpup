@@ -851,6 +851,7 @@ export type Database = {
         Row: {
           animal_type: string | null
           created_at: string | null
+          deleted_at: string | null
           description: string | null
           id: string
           image_url: string | null
@@ -867,6 +868,7 @@ export type Database = {
         Insert: {
           animal_type?: string | null
           created_at?: string | null
+          deleted_at?: string | null
           description?: string | null
           id?: string
           image_url?: string | null
@@ -883,6 +885,7 @@ export type Database = {
         Update: {
           animal_type?: string | null
           created_at?: string | null
+          deleted_at?: string | null
           description?: string | null
           id?: string
           image_url?: string | null
@@ -1079,6 +1082,14 @@ export type Database = {
           longitude: number
           rating: number
           service_types: string[]
+        }[]
+      }
+      get_public_user_profiles: {
+        Args: { user_ids: string[] }
+        Returns: {
+          full_name: string
+          id: string
+          profile_image: string
         }[]
       }
       get_unread_counts: {

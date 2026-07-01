@@ -14,7 +14,7 @@ import StarRow from "@/components/ui/StarRow";
 import StatGrid from "@/components/ui/StatGrid";
 import { useUserStore } from "@/store/userStore";
 import { getSitterServices } from "@/app/actions/sitters";
-import { supabase } from "@/lib/supabase";
+import { useSitterReviews } from "@/hooks/queries/useSitterReviews";
 
 const TABS = ["소개", "서비스", "후기", "위치"] as const;
 type Tab = (typeof TABS)[number];
@@ -26,46 +26,18 @@ interface ServiceDetail {
   is_active: boolean;
 }
 
-interface ReviewRow {
-  id: string;
-  rating: number;
-  content: string;
-  image_urls: string[] | null;
-  tags: string[];
-  created_at: string;
-  owner: {
-    full_name: string | null;
-    profile_image: string | null;
-  } | null;
-}
-
 export default function SitterProfilePreviewClient() {
   const router = useRouter();
   const { user, sitter } = useUserStore();
   const [activeTab, setActiveTab] = useState<Tab>("소개");
   const [serviceDetails, setServiceDetails] = useState<ServiceDetail[]>([]);
-  const [reviews, setReviews] = useState<ReviewRow[]>([]);
+  const { data: reviews = [] } = useSitterReviews(sitter?.id ?? "");
 
   useEffect(() => {
     if (!sitter?.id) return;
     getSitterServices(sitter.id).then(({ data }) =>
       setServiceDetails(data.filter((s) => s.is_active)),
     );
-  }, [sitter?.id]);
-
-  useEffect(() => {
-    if (!sitter?.id) return;
-    async function fetchReviews() {
-      const { data } = await supabase
-        .from("reviews")
-        .select(
-          "id, rating, content, image_urls, tags, created_at, owner:users!reviews_owner_id_fkey(full_name, profile_image)",
-        )
-        .eq("sitter_id", sitter!.id)
-        .order("created_at", { ascending: false });
-      if (data) setReviews(data as ReviewRow[]);
-    }
-    fetchReviews();
   }, [sitter?.id]);
 
   if (!user || !sitter) return null;
