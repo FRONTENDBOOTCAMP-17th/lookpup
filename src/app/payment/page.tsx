@@ -6,14 +6,12 @@ import { CreditCard, ChevronLeft } from "lucide-react";
 import Header from "@/components/layout/Header";
 import { CustomModal } from "@/components/common/CustomModal";
 import { usePortOne } from "@/hooks/usePortOne";
+import { createPayment } from "@/app/actions/payments";
 
-//total 결제 페이지
-//  금액 포맷
 function formatKRW(value: number) {
   return value.toLocaleString("ko-KR") + "원";
 }
 
-// 가격 요약 카드
 function PriceBreakdown({
   amount,
   feeRate,
@@ -46,43 +44,52 @@ function PriceBreakdown({
   );
 }
 
-//  실제 컨텐츠 (searchParams 사용)
 function PaymentPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isPending, requestPayment } = usePortOne();
 
-  // URL 파라미터
-  // 예: /payment?amount=35000&fee=0.05&source=chat&roomId=1&sitterName=김민지&serviceName=방문돌봄
-  const amount = Number(searchParams.get("amount") ?? 35000);
+  const reservationId = searchParams.get("reservationId");
+  const displayAmount = Number(searchParams.get("amount") ?? 0);
   const feeRate = Number(searchParams.get("fee") ?? 0.05);
-  const source = searchParams.get("source") ?? "chat"; // "chat" | "board"
+  const source = searchParams.get("source") ?? "chat";
   const roomId = searchParams.get("roomId");
   const postId = searchParams.get("postId");
   const sitterName = searchParams.get("sitterName") ?? "펫시터";
   const serviceName = searchParams.get("serviceName") ?? "서비스";
 
-  const fee = Math.round(amount * feeRate);
-  const total = amount + fee;
-
-  // 모달 상태
   const [showPayModal, setShowPayModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [payError, setPayError] = useState<string | null>(null);
 
-  // 뒤로가기 목적지
   function getBackHref() {
     if (source === "chat" && roomId) return `/chat?roomId=${roomId}`;
     if (source === "board" && postId) return `/board/${postId}`;
     return "/";
   }
 
-  const handlePay = () => {
+  const handlePay = async () => {
+    if (!reservationId) {
+      setPayError("예약 정보가 없습니다.");
+      setShowPayModal(false);
+      return;
+    }
+
+    const result = await createPayment(reservationId, "CARD");
+    if (result.error) {
+      setPayError(result.error.message);
+      setShowPayModal(false);
+      return;
+    }
+
+    const { payment_id, amount, order_name } = result.data!;
+
     requestPayment(
       {
-        paymentId: `pay_${Date.now()}`,
-        orderName: serviceName,
-        totalAmount: total,
+        paymentId: payment_id,
+        orderName: order_name,
+        totalAmount: amount,
         currency: "KRW",
         payMethod: "CARD",
         redirectUrl: `${window.location.origin}/payment/complete`,
@@ -119,8 +126,7 @@ function PaymentPageContent() {
       <Header />
 
       <main className="min-h-screen bg-orange-50 flex flex-col items-center px-4 py-8 sm:py-12">
-        {/* 뒤로가기 + 타이틀 */}
-        <div className="w-full max-w-[800px] flex items-center gap-3 mb-6">
+        <div className="w-full max-w-200 flex items-center gap-3 mb-6">
           <button
             onClick={() => router.push(getBackHref())}
             className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-orange-100 flex items-center justify-center text-stone-900 hover:bg-orange-100 transition-colors shrink-0"
@@ -132,9 +138,7 @@ function PaymentPageContent() {
           </h1>
         </div>
 
-        {/* 메인 카드 */}
-        <div className="w-full max-w-[800px] bg-white rounded-2xl shadow-[0px_4px_20px_0px_rgba(232,116,42,0.15)] overflow-hidden">
-          {/* 상단: 아이콘 + 타이틀 */}
+        <div className="w-full max-w-200 bg-white rounded-2xl shadow-[0px_4px_20px_0px_rgba(232,116,42,0.15)] overflow-hidden">
           <div className="px-6 sm:px-7 pt-8 pb-6 flex flex-col items-center gap-4">
             <div className="w-20 h-20 sm:w-24 sm:h-24 bg-orange-50 rounded-2xl flex items-center justify-center shrink-0">
               <CreditCard
@@ -155,9 +159,7 @@ function PaymentPageContent() {
 
           <div className="h-px bg-orange-100" />
 
-          {/* 예약 정보 요약 */}
           <div className="px-6 sm:px-7 py-5 flex flex-col items-center gap-3">
-            {/* 예약 주체 정보 */}
             <div className="w-full max-w-sm sm:max-w-96 flex items-center gap-3 px-4 py-3 bg-orange-50 rounded-xl border border-orange-100">
               <div className="w-9 h-9 bg-white rounded-full border border-orange-100 flex items-center justify-center shrink-0">
                 <span className="text-orange-500 text-sm font-semibold">
@@ -172,31 +174,35 @@ function PaymentPageContent() {
               </div>
             </div>
 
-            {/* 금액 내역 */}
             <div className="w-full max-w-sm sm:max-w-96">
-              <PriceBreakdown amount={amount} feeRate={feeRate} />
+              <PriceBreakdown amount={displayAmount} feeRate={feeRate} />
             </div>
           </div>
 
           <div className="h-px bg-orange-100" />
 
-          {/* 버튼 영역 */}
           <div className="px-6 sm:px-7 py-5 flex flex-col items-center gap-3">
+            {payError && (
+              <p className="text-red-500 text-sm text-center">{payError}</p>
+            )}
             <button
-              onClick={() => setShowPayModal(true)}
-              className="w-full max-w-sm sm:max-w-96 min-h-[44px] h-11 bg-orange-500 hover:bg-orange-600 text-white text-base font-semibold rounded-[10px] transition-colors"
+              onClick={() => {
+                setPayError(null);
+                setShowPayModal(true);
+              }}
+              className="w-full max-w-sm sm:max-w-96 min-h-11 h-11 bg-orange-500 hover:bg-orange-600 text-white text-base font-semibold rounded-[10px] transition-colors"
             >
-              결제하기 {formatKRW(total)}
+              결제하기{" "}
+              {formatKRW(displayAmount + Math.round(displayAmount * feeRate))}
             </button>
             <button
               onClick={() => setShowCancelModal(true)}
-              className="w-full max-w-sm sm:max-w-96 min-h-[44px] h-11 bg-white border border-orange-500 text-orange-500 text-base font-semibold rounded-[10px] hover:bg-orange-50 transition-colors"
+              className="w-full max-w-sm sm:max-w-96 min-h-11 h-11 bg-white border border-orange-500 text-orange-500 text-base font-semibold rounded-[10px] hover:bg-orange-50 transition-colors"
             >
               취소
             </button>
           </div>
 
-          {/* 안내 문구 */}
           <div className="px-6 sm:px-7 pb-6 text-center">
             <p className="text-gray-400 text-xs leading-5">
               결제 진행 시{" "}
@@ -210,7 +216,6 @@ function PaymentPageContent() {
         </div>
       </main>
 
-      {/* 결제 확인 모달 */}
       <CustomModal
         open={showPayModal}
         preset="payment"
@@ -220,10 +225,9 @@ function PaymentPageContent() {
         closeOnOverlay={!isPending}
         confirmText={isPending ? "결제 중..." : "결제하기"}
       >
-        <PriceBreakdown amount={amount} feeRate={feeRate} />
+        <PriceBreakdown amount={displayAmount} feeRate={feeRate} />
       </CustomModal>
 
-      {/* 취소 확인 모달 */}
       <CustomModal
         open={showCancelModal}
         preset="cancelReservation"
@@ -233,7 +237,6 @@ function PaymentPageContent() {
         onConfirm={handleCancelConfirm}
       />
 
-      {/* 결제 완료 모달 */}
       <CustomModal
         open={showSuccessModal}
         preset="success"
@@ -248,7 +251,6 @@ function PaymentPageContent() {
   );
 }
 
-//Suspense 래핑
 export default function PaymentPage() {
   return (
     <Suspense
