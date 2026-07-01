@@ -24,6 +24,8 @@ import {
   RESERVATION_REQUEST_PREFIX,
   RESERVATION_ACCEPTED_PREFIX,
   RESERVATION_REJECTED_PREFIX,
+  RESERVATION_EDIT_PREFIX,
+  RESERVATION_EDIT_RESPONSE_PREFIX,
 } from "@/lib/chatMessagePrefixes";
 
 function formatTime(iso: string | null): string {
@@ -72,6 +74,15 @@ function formatPreview(content: string): string {
   if (content.startsWith(RESERVATION_REQUEST_PREFIX)) return "예약 요청";
   if (content.startsWith(RESERVATION_ACCEPTED_PREFIX)) return "예약 확정";
   if (content === RESERVATION_REJECTED_PREFIX) return "예약 거절";
+  if (content.startsWith(RESERVATION_EDIT_PREFIX)) return "예약 수정 요청";
+  if (content.startsWith(RESERVATION_EDIT_RESPONSE_PREFIX)) {
+    try {
+      const payload = JSON.parse(content.slice(RESERVATION_EDIT_RESPONSE_PREFIX.length));
+      return payload.accepted ? "예약 수정 승인" : "예약 수정 거절";
+    } catch {
+      return "예약 수정 응답";
+    }
+  }
   return content;
 }
 
