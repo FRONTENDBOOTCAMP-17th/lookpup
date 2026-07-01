@@ -116,7 +116,7 @@ function BookingCard({
 
   async function handleChatClick() {
     if (viewAs === "sitter") {
-      const result = await findChatRoomAsSitter(booking.ownerId ?? "");
+      const result = await findChatRoomAsSitter(booking.ownerId ?? "", booking.id);
       if ("data" in result && result.data) {
         router.push(`/chat?roomId=${result.data.room_id}`);
       } else {
@@ -126,6 +126,7 @@ function BookingCard({
       const result = await findOrCreateRoom({
         sitter_id: booking.sitterId,
         room_type: "direct",
+        reservation_id: booking.id,
       });
       if ("data" in result && result.data) {
         router.push(`/chat?roomId=${result.data.room_id}`);

@@ -88,6 +88,13 @@ export async function createPayment(
   const settleAmount = amount - platformFee;
   const paymentId = `pay_${reservationId.replace(/-/g, "")}_${Date.now()}`;
 
+  if (requestedAmount && requestedAmount !== reservation.total_price) {
+    await db
+      .from("reservations")
+      .update({ total_price: requestedAmount })
+      .eq("id", reservationId);
+  }
+
   const { error } = await db.from("payments").insert({
     reservation_id: reservationId,
     payment_id: paymentId,
