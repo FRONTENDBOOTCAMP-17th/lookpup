@@ -422,7 +422,8 @@ export async function getActiveReservationsForRoom(roomId: string) {
       `
       id, status, start_datetime, end_datetime, total_price,
       services(title, service_type),
-      reservation_items(pets(name, animal_type))
+      reservation_items(pets(name, animal_type)),
+      payments(amount, status)
     `,
     )
     .in("status", ["accepted", "paid", "in_progress"])
@@ -446,6 +447,7 @@ export async function getActiveReservationsForRoom(roomId: string) {
   type ServiceRow = { title: string; service_type: string } | null;
   type PetRow = { name: string; animal_type: string } | null;
   type ItemRow = { pets: PetRow };
+  type PaymentRow = { amount: number; status: string };
 
   const reservations = (data ?? []).map((r) => {
     const service = r.services as ServiceRow;
@@ -457,12 +459,16 @@ export async function getActiveReservationsForRoom(roomId: string) {
         ? (SERVICE_TYPE_LABEL[service.service_type] ?? service.service_type)
         : null) ||
       "펫시팅 서비스";
+    const paidPayments = (r.payments as PaymentRow[] | null) ?? [];
+    const paidTotal = paidPayments
+      .filter((p) => p.status === "paid")
+      .reduce((sum, p) => sum + p.amount, 0);
     return {
       id: r.id,
       status: r.status,
       startDatetime: r.start_datetime ?? null,
       endDatetime: r.end_datetime ?? null,
-      totalPrice: r.total_price ?? 0,
+      totalPrice: paidTotal || (r.total_price ?? 0),
       serviceTitle,
       petName: firstPet?.name ?? null,
     };
@@ -1147,7 +1153,8 @@ export async function getReadyReservationsForRoom(roomId: string) {
       `
       id, status, start_datetime, end_datetime, total_price,
       services(title, service_type),
-      reservation_items(pets(name, animal_type))
+      reservation_items(pets(name, animal_type)),
+      payments(amount, status)
     `,
     )
     .in("status", ["accepted", "paid"])
@@ -1169,6 +1176,7 @@ export async function getReadyReservationsForRoom(roomId: string) {
   type ServiceRow = { title: string; service_type: string } | null;
   type PetRow = { name: string; animal_type: string } | null;
   type ItemRow = { pets: PetRow };
+  type PaymentRow = { amount: number; status: string };
 
   const reservations = (data ?? []).map((r) => {
     const service = r.services as ServiceRow;
@@ -1180,12 +1188,16 @@ export async function getReadyReservationsForRoom(roomId: string) {
         ? (SERVICE_TYPE_LABEL[service.service_type] ?? service.service_type)
         : null) ||
       "펫시팅 서비스";
+    const paidPayments = (r.payments as PaymentRow[] | null) ?? [];
+    const paidTotal = paidPayments
+      .filter((p) => p.status === "paid")
+      .reduce((sum, p) => sum + p.amount, 0);
     return {
       id: r.id,
       status: r.status,
       startDatetime: r.start_datetime ?? null,
       endDatetime: r.end_datetime ?? null,
-      totalPrice: r.total_price ?? 0,
+      totalPrice: paidTotal || (r.total_price ?? 0),
       serviceTitle,
       petName: firstPet?.name ?? null,
     };
