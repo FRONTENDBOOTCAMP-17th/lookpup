@@ -483,6 +483,15 @@ function ChatPageContent({
     reason: string;
   }) {
     if (!activeRoomId) return;
+    const isBasePaid = paymentState?.paid === true || isPaymentAlreadyPaid;
+    if (data.type !== "extra" && isBasePaid) {
+      setSendError("이미 결제된 예약입니다. 추가금 요청을 이용해주세요.");
+      return;
+    }
+    if (data.type === "extra" && !isBasePaid) {
+      setSendError("기본 결제가 완료된 후 추가금 요청을 보낼 수 있습니다.");
+      return;
+    }
     try {
       const deadline = getPaymentDeadline();
       const isExtra = data.type === "extra";
@@ -694,6 +703,8 @@ function ChatPageContent({
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [sendingPhoto, setSendingPhoto] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [paymentReservationAmount, setPaymentReservationAmount] = useState<number | undefined>(undefined);
+  const [isPaymentAlreadyPaid, setIsPaymentAlreadyPaid] = useState(false);
   const [careRecordOpen, setCareRecordOpen] = useState(false);
   const [confirmedServiceIds, setConfirmedServiceIds] = useState<Set<string>>(
     new Set(),
@@ -1469,7 +1480,21 @@ function ChatPageContent({
     onSend: handleSend,
     onLoadMore: handleLoadMore,
     onPayNow: handlePayNow,
-    onOpenPaymentModal: () => setPaymentModalOpen(true),
+    onOpenPaymentModal: async () => {
+      if (activeRoomId) {
+        const result = await getActiveReservationsForRoom(activeRoomId);
+        if ("data" in result && result.data && result.data.length > 0) {
+          const reservation = result.data[0];
+          setPaymentReservationAmount(reservation.totalPrice);
+          setIsPaymentAlreadyPaid(reservation.isBasePaid);
+        } else {
+          setIsPaymentAlreadyPaid(paymentState?.paid === true);
+        }
+      } else {
+        setIsPaymentAlreadyPaid(paymentState?.paid === true);
+      }
+      setPaymentModalOpen(true);
+    },
     onOpenCareRecord: () => setCareRecordOpen(true),
     onServiceStart: handleServiceStart,
     onServiceComplete: handleServiceComplete,
@@ -1627,6 +1652,8 @@ function ChatPageContent({
       <CustomModalPayment
         open={paymentModalOpen}
         onClose={() => setPaymentModalOpen(false)}
+        paymentAmount={paymentReservationAmount}
+        isAlreadyPaid={isPaymentAlreadyPaid || paymentState?.paid === true}
         onSubmit={handlePaymentSubmit}
       />
 

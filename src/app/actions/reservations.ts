@@ -469,6 +469,7 @@ export async function getActiveReservationsForRoom(roomId: string) {
       startDatetime: r.start_datetime ?? null,
       endDatetime: r.end_datetime ?? null,
       totalPrice: paidTotal || (r.total_price ?? 0),
+      isBasePaid: r.status === "paid" || r.status === "in_progress" || paidTotal > 0,
       serviceTitle,
       petName: firstPet?.name ?? null,
     };

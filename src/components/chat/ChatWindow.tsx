@@ -82,18 +82,26 @@ function MessageList({
           </button>
         </div>
       )}
-      {messages.map((msg) => {
+      {(() => {
+        const hasBasePaymentComplete = messages.some((m) => {
+          if (m.from !== "payment_complete") return false;
+          if (!m.paymentRequestMessageId) return true;
+          const ref = messages.find((r) => r.id === m.paymentRequestMessageId);
+          return ref?.paymentData?.isExtra === false;
+        });
+        return messages.map((msg) => {
         const postId =
           msg.applicationData?.postId ||
           msg.paymentData?.postId ||
           selectedApplicantPostId;
         const isThisPaymentPaid =
           msg.from === "payment_request" &&
-          messages.some(
+          (messages.some(
             (m) =>
               m.from === "payment_complete" &&
               m.paymentRequestMessageId === msg.id,
-          );
+          ) ||
+            (msg.paymentData?.isExtra === false && hasBasePaymentComplete));
         return (
           <MessageBubble
             key={msg.id}
@@ -126,7 +134,8 @@ function MessageList({
             confirmedEditIds={confirmedEditIds}
           />
         );
-      })}
+      });
+      })()}
     </>
   );
 }

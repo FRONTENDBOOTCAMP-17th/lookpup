@@ -14,6 +14,8 @@ const REQUEST_TYPES: { value: RequestType; label: string; sub: string }[] = [
 interface CustomModalPaymentProps {
   open: boolean;
   onClose: () => void;
+  paymentAmount?: number;
+  isAlreadyPaid?: boolean;
   onSubmit?: (data: {
     type: RequestType;
     amount: number;
@@ -24,6 +26,8 @@ interface CustomModalPaymentProps {
 export function CustomModalPayment({
   open,
   onClose,
+  paymentAmount,
+  isAlreadyPaid = false,
   onSubmit,
 }: CustomModalPaymentProps) {
   const [mounted, setMounted] = useState(false);
@@ -54,19 +58,26 @@ export function CustomModalPayment({
   }, [open, onClose]);
 
   useEffect(() => {
-    if (!open) {
-      setRequestType("payment");
+    if (open) {
+      setRequestType(isAlreadyPaid ? "extra" : "payment");
+    } else {
       setAmount("");
       setReason("");
       setSubmitError(null);
       setSubmitting(false);
     }
-  }, [open]);
+  }, [open, isAlreadyPaid]);
 
   if (!open || !mounted) return null;
 
+  const isPaymentType = requestType === "payment";
   const amountNum = Number(amount.replace(/,/g, ""));
-  const total = amount && !isNaN(amountNum) && amountNum > 0 ? amountNum : null;
+  const total = isPaymentType
+    ? (paymentAmount && paymentAmount > 0 ? paymentAmount : null)
+    : (amount && !isNaN(amountNum) && amountNum > 0 ? amountNum : null);
+  const displayAmount = isPaymentType
+    ? (paymentAmount ? paymentAmount.toLocaleString("ko-KR") : "")
+    : amount;
 
   function handleAmountChange(value: string) {
     const digits = value.replace(/[^0-9]/g, "");
@@ -133,28 +144,33 @@ export function CustomModalPayment({
             <div className="flex gap-3">
               {REQUEST_TYPES.map(({ value, label, sub }) => {
                 const selected = requestType === value;
+                const blocked =
+                  isAlreadyPaid ? value === "payment" : value === "extra";
                 return (
                   <button
                     key={value}
                     type="button"
-                    onClick={() => setRequestType(value)}
+                    onClick={() => !blocked && setRequestType(value)}
+                    disabled={blocked}
                     className={`flex-1 p-4 rounded-xl flex items-start gap-3 text-left transition-colors ${
-                      selected
-                        ? "bg-orange-100 outline-[1.11px] outline-orange-500"
-                        : "bg-white outline-[1.11px] outline-orange-200 hover:bg-orange-50"
+                      blocked
+                        ? "bg-gray-50 outline-[1.11px] outline-gray-200 opacity-40 cursor-not-allowed"
+                        : selected
+                          ? "bg-orange-100 outline-[1.11px] outline-orange-500"
+                          : "bg-white outline-[1.11px] outline-orange-200 hover:bg-orange-50"
                     }`}
                   >
                     <div
                       className="mt-0.5 shrink-0 w-5 h-5 rounded-full flex items-center justify-center outline-[1.11px] outline-offset-[-1.11px] transition-colors"
-                      style={{ outlineColor: selected ? "#f97316" : "#D1D5DB" }}
+                      style={{ outlineColor: selected && !blocked ? "#f97316" : "#D1D5DB" }}
                     >
-                      {selected && (
+                      {selected && !blocked && (
                         <div className="w-2.5 h-2.5 rounded-full bg-orange-500" />
                       )}
                     </div>
                     <div>
                       <p
-                        className={`text-sm font-semibold leading-5 ${selected ? "text-orange-500" : "text-[#281A0E]"}`}
+                        className={`text-sm font-semibold leading-5 ${selected && !blocked ? "text-orange-500" : "text-[#281A0E]"}`}
                       >
                         {label}
                       </p>
@@ -175,17 +191,18 @@ export function CustomModalPayment({
               <input
                 type="text"
                 inputMode="numeric"
-                value={amount}
-                onChange={(e) => handleAmountChange(e.target.value)}
+                value={displayAmount}
+                onChange={(e) => !isPaymentType && handleAmountChange(e.target.value)}
+                readOnly={isPaymentType}
                 placeholder="20,000"
-                className="w-full h-13.5 pl-4 pr-10 rounded-xl outline outline-orange-200 outline-offset-[-1.11px] text-[15px] text-[#281A0E] placeholder-[rgba(40,26,14,0.50)] focus:outline-orange-500 transition-colors"
+                className={`w-full h-13.5 pl-4 pr-10 rounded-xl outline outline-orange-200 outline-offset-[-1.11px] text-[15px] text-[#281A0E] placeholder-[rgba(40,26,14,0.50)] transition-colors ${isPaymentType ? "bg-gray-50 cursor-default" : "focus:outline-orange-500"}`}
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-gray-500">
                 원
               </span>
             </div>
             <p className="text-[#9CA3AF] text-xs mt-1.5">
-              최소 1,000원 · 최대 500,000원
+              {isPaymentType ? "예약 시 확정된 금액입니다" : "최소 1,000원 · 최대 500,000원"}
             </p>
           </div>
 
@@ -220,6 +237,17 @@ export function CustomModalPayment({
             </span>
           </div>
 
+          {isPaymentType && isAlreadyPaid && (
+            <p className="text-amber-600 text-sm text-center bg-amber-50 rounded-xl px-4 py-3">
+              이미 결제된 예약입니다. 추가 비용은 추가금 요청을 이용해주세요.
+            </p>
+          )}
+          {!isPaymentType && !isAlreadyPaid && (
+            <p className="text-amber-600 text-sm text-center bg-amber-50 rounded-xl px-4 py-3">
+              기본 결제가 완료된 후 추가금 요청이 가능합니다.
+            </p>
+          )}
+
           {submitError && (
             <p className="text-red-500 text-sm text-center">{submitError}</p>
           )}
@@ -238,7 +266,7 @@ export function CustomModalPayment({
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={!total || (requestType === "extra" && !reason.trim()) || submitting}
+            disabled={!total || (requestType === "extra" && !reason.trim()) || (isPaymentType && isAlreadyPaid) || submitting}
             className="flex-1 h-13 rounded-xl bg-orange-500 flex items-center justify-center gap-2 text-white text-[15px] font-semibold hover:bg-orange-600 transition-colors disabled:opacity-40 disabled:cursor-default"
           >
             <CreditCard size={17} className="text-white" />
