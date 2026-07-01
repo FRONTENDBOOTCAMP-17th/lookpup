@@ -80,6 +80,11 @@ export async function POST(request: NextRequest) {
       .update({ status: "paid", paid_at: now })
       .eq("id", payment.id);
 
+    await db
+      .from("extra_charges")
+      .update({ status: "paid" })
+      .eq("payment_id", paymentId);
+
     if (reservation?.status === "accepted") {
       await db
         .from("reservations")
@@ -96,9 +101,19 @@ export async function POST(request: NextRequest) {
         .from("reservations")
         .update({ status: "canceled", canceled_at: now })
         .eq("id", payment.reservation_id),
+      db
+        .from("extra_charges")
+        .update({ status: "canceled" })
+        .eq("payment_id", paymentId),
     ]);
   } else if (type === "Transaction.Failed") {
-    await db.from("payments").update({ status: "failed" }).eq("id", payment.id);
+    await Promise.all([
+      db.from("payments").update({ status: "failed" }).eq("id", payment.id),
+      db
+        .from("extra_charges")
+        .update({ status: "rejected" })
+        .eq("payment_id", paymentId),
+    ]);
   }
 
   return NextResponse.json({ data: { ok: true } });
