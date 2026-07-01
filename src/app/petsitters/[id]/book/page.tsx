@@ -1,4 +1,4 @@
-import BookingClient from "./_components/BookingClient";
+import BookingClient from "@/components/petsitters/BookingClient";
 
 export default async function BookPage({
   params,
