@@ -344,7 +344,7 @@ function DesktopReviewView({
   const setDetailRating = (label: string, val: number) =>
     setReviewData((prev) => ({ ...prev, detailRatings: { ...prev.detailRatings, [label]: val } }));
 
-  const canSubmit = reviewData.overallRating > 0 && reviewData.content.length >= 10 && !isSubmitting;
+  const canSubmit = reviewData.overallRating > 0 && !isSubmitting;
 
   return (
     <div className="flex flex-col gap-5">
@@ -375,8 +375,7 @@ function DesktopReviewView({
       </div>
 
       <div className="bg-white border border-orange-100 rounded-2xl p-7">
-        <h3 className="font-semibold text-stone-900 mb-1">후기 내용<span className="text-red-500 ml-0.5">*</span></h3>
-        <p className="text-sm text-gray-500 mb-5">최소 10자 이상 작성해주세요</p>
+        <h3 className="font-semibold text-stone-900 mb-5">후기 내용<span className="text-red-500 ml-0.5">*</span></h3>
         <div className="mb-5">
           <p className="text-sm font-medium text-stone-900 mb-3">이런 점이 좋았어요</p>
           <div className="flex flex-wrap gap-2">
@@ -567,7 +566,7 @@ function MobileScreen2({
   isSubmitting: boolean;
   photoError: string | null;
 }) {
-  const canSubmit = reviewData.content.length >= 10;
+  const canSubmit = true;
 
   return (
     <div className="flex flex-col gap-4 pb-50">
@@ -576,7 +575,6 @@ function MobileScreen2({
           <h3 className="font-semibold text-stone-900">후기 내용<span className="text-red-500 ml-0.5">*</span></h3>
           <span className="text-xs text-gray-500">{reviewData.content.length} / 1000</span>
         </div>
-        <p className="text-xs text-gray-500 mb-3">최소 10자 이상 작성해주세요</p>
         <textarea
           value={reviewData.content}
           onChange={(e) => e.target.value.length <= 1000 && setReviewData((p) => ({ ...p, content: e.target.value }))}
@@ -742,6 +740,7 @@ function ReviewWriteContent() {
     }
 
     setShowSubmitModal(false);
+    router.refresh();
     router.back();
   };
 

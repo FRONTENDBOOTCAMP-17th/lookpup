@@ -52,15 +52,11 @@ export async function createReview(input: {
       },
     };
   }
-  if (
-    !input.content ||
-    input.content.length < 10 ||
-    input.content.length > 1000
-  ) {
+  if (input.content.length > 1000) {
     return {
       error: {
         code: "VALIDATION_ERROR",
-        message: "후기는 10자 이상 1000자 이하여야 합니다.",
+        message: "후기는 1000자 이하여야 합니다.",
       },
     };
   }
