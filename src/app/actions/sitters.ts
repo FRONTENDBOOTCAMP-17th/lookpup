@@ -231,7 +231,7 @@ export async function getMySitterProfile() {
 
   const { data, error } = await db
     .from("sitters")
-    .select("id, available_area, display_area, career, introduction, rating, latitude, longitude, request_type, available_animals, activity_photo_urls, services(title, is_active)")
+    .select("id, available_area, display_area, career, introduction, rating, latitude, longitude, request_type, available_animals, activity_photo_urls, services(title, is_active, deleted_at)")
     .eq("user_id", user.id)
     .single();
 
@@ -252,8 +252,8 @@ export async function getMySitterProfile() {
       career: data.career ?? null,
       introduction: data.introduction ?? null,
       rating: data.rating ?? 0,
-      services: (data.services as { title: string; is_active: boolean }[])
-        .filter((s) => s.is_active)
+      services: (data.services as { title: string; is_active: boolean; deleted_at: string | null }[])
+        .filter((s) => s.is_active && s.deleted_at === null)
         .map((s) => s.title),
       reviewCount: reviewCount ?? 0,
       requestType: (data.request_type as string[]) ?? [],
@@ -338,14 +338,35 @@ export async function updateSitterProfile(input: UpdateSitterProfileInput) {
         description: service.description,
       }).eq("id", service.id);
     } else {
-      await db.from("services").insert({
-        sitter_id: sitter.id,
-        service_type: service.title,
-        title: service.title,
-        price: service.price,
-        description: service.description,
-        is_active: true,
-      });
+      // soft-deleted 행이 있으면 복원, 없으면 신규 INSERT
+      const { data: deletedList } = await db
+        .from("services")
+        .select("id")
+        .eq("sitter_id", sitter.id)
+        .eq("title", service.title)
+        .not("deleted_at", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      const deletedRow = deletedList?.[0] ?? null;
+
+      if (deletedRow) {
+        await db.from("services").update({
+          deleted_at: null,
+          price: service.price,
+          description: service.description,
+          is_active: true,
+        }).eq("id", deletedRow.id);
+      } else {
+        await db.from("services").insert({
+          sitter_id: sitter.id,
+          service_type: service.title,
+          title: service.title,
+          price: service.price,
+          description: service.description,
+          is_active: true,
+        });
+      }
     }
   }
 
