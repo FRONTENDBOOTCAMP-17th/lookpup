@@ -7,6 +7,7 @@ import Header from "@/components/layout/Header";
 import { CustomModal } from "@/components/common/CustomModal";
 import Avatar from "@/components/ui/Avatar";
 import StatGrid from "@/components/ui/StatGrid";
+import SitterProfileCard from "@/components/sitter/SitterProfileCard";
 import { useUserStore } from "@/store/userStore";
 import { updateSitterProfile, getMySitterProfile, getSitterServices } from "@/app/actions/sitters";
 import { updateProfile } from "@/app/actions/users";
@@ -449,50 +450,46 @@ export default function SitterEditClient() {
     <>
       <Header />
 
-      <div className="md:hidden flex flex-col bg-orange-50 min-h-screen">
-        <div className="relative w-full h-44 bg-linear-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+      <div className="md:hidden flex flex-col bg-orange-50">
+        <div className="px-5 pt-4">
           <button
             onClick={() => router.back()}
-            className="absolute top-4 left-4 w-9 h-9 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm z-10"
+            className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-orange-100 transition-colors"
           >
             <ChevronLeft size={20} className="text-stone-900" />
           </button>
-
-          <Avatar initial={form.fullName[0] ?? "?"} size="2xl" variant="dark" src={profilePreview ?? user?.profileImage} />
-
-          <button
-            type="button"
-            onClick={() => profileFileRef.current?.click()}
-            className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1.5 bg-white/80 backdrop-blur-sm border border-white/50 rounded-full shadow-sm text-xs text-stone-900"
-          >
-            <Camera size={12} className="text-orange-500" />
-            사진 변경
-          </button>
-
-          <input ref={profileFileRef} type="file" accept="image/*" className="hidden" onChange={handleProfileFileChange} />
-          <input ref={photoFileRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoFileChange} />
-
-          <div className="absolute bottom-0 left-0 right-0 h-20 bg-linear-to-t from-black/40 to-transparent" aria-hidden="true" />
-
-          <div className="absolute bottom-4 left-4 right-16">
-            <input
-              value={form.fullName}
-              disabled
-              className="text-xl font-bold text-white bg-transparent border-b border-white/20 outline-none w-full mb-1 opacity-80 cursor-not-allowed"
-              placeholder="이름"
-            />
-            <div className="flex items-center gap-1 text-white/80">
-              <MapPin size={11} aria-hidden="true" />
-              <span className="text-sm flex-1 truncate" onClick={() => setActiveTab("위치")}>
-                {locationValue?.displayArea ?? "위치 탭에서 설정하세요"}
-              </span>
-            </div>
-          </div>
         </div>
 
-        <StatGrid stats={stats} className="px-5 pb-4 bg-white" />
+        <div className="px-5 pt-3 pb-5">
+          <SitterProfileCard
+            profile={{
+              name: form.fullName,
+              initial: form.fullName[0] ?? "?",
+              src: profilePreview ?? user?.profileImage,
+              verified: user?.isVerified ?? false,
+              location: locationValue?.displayArea ?? sitter?.displayArea ?? sitter?.availableArea ?? "위치 탭에서 설정하세요",
+              rating: sitter?.rating,
+              reviewCount: sitter?.reviewCount,
+              services: form.services,
+              career: form.career || "-",
+            }}
+            action={
+              <button
+                type="button"
+                onClick={() => profileFileRef.current?.click()}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 border border-orange-100 rounded-full text-xs text-stone-900 shrink-0 self-start hover:bg-orange-100 transition-colors"
+              >
+                <Camera size={12} className="text-orange-500" />
+                사진 변경
+              </button>
+            }
+          />
+        </div>
 
-        <div className="bg-white border-b border-orange-100 px-5 sticky top-16 z-10">
+        <input ref={profileFileRef} type="file" accept="image/*" className="hidden" onChange={handleProfileFileChange} />
+        <input ref={photoFileRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoFileChange} />
+
+        <div className="bg-orange-50 border-b border-orange-100 px-5 sticky top-0 z-10">
           <div className="flex gap-6">
             {TABS.map((tab) => (
               <button
