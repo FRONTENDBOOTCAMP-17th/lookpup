@@ -341,9 +341,10 @@ export default function ReportClient() {
               </div>
 
               <div className="bg-white border border-orange-100 rounded-2xl p-6 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)]">
-                <div className="flex items-center justify-between">
-                  <p className="text-lg font-bold text-stone-900">증거 자료 첨부<span className="text-sm font-normal text-gray-400 ml-1.5">(선택사항)</span></p>
-                  <span className="text-xs text-gray-500">최대 5장</span>
+                <div className="flex items-center gap-2">
+                  <p className="text-lg font-bold text-stone-900">증거 자료 첨부</p>
+                  <span className="text-xs px-2 py-0.5 bg-orange-50 border border-orange-100 rounded-full text-gray-500">선택</span>
+                  <span className="ml-auto text-xs text-gray-500">최대 5장</span>
                 </div>
 
                 {images.length > 0 && (

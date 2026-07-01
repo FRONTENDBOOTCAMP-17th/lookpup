@@ -352,7 +352,7 @@ function DesktopReviewView({
 
       <div className="bg-white border border-orange-100 rounded-2xl p-7">
         <div className="flex flex-col items-center mb-6">
-          <h3 className="font-semibold text-stone-900 mb-5 text-center">전반적인 만족도</h3>
+          <h3 className="font-semibold text-stone-900 mb-5 text-center">전반적인 만족도<span className="text-red-500 ml-0.5">*</span></h3>
           <StarRating value={reviewData.overallRating} onChange={(v) => setReviewData((p) => ({ ...p, overallRating: v }))} starSize={48} gap={10} />
           <div className="h-7 mt-3 flex items-center justify-center">
             {reviewData.overallRating > 0 && (
@@ -375,7 +375,7 @@ function DesktopReviewView({
       </div>
 
       <div className="bg-white border border-orange-100 rounded-2xl p-7">
-        <h3 className="font-semibold text-stone-900 mb-1">후기 내용</h3>
+        <h3 className="font-semibold text-stone-900 mb-1">후기 내용<span className="text-red-500 ml-0.5">*</span></h3>
         <p className="text-sm text-gray-500 mb-5">최소 10자 이상 작성해주세요</p>
         <div className="mb-5">
           <p className="text-sm font-medium text-stone-900 mb-3">이런 점이 좋았어요</p>
@@ -494,7 +494,7 @@ function MobileScreen1({
       ) : null}
 
       <div className="bg-white border border-orange-100 rounded-2xl p-6 flex flex-col items-center">
-        <p className="text-sm font-semibold text-stone-900 mb-4 text-center">전반적인 만족도</p>
+        <p className="text-sm font-semibold text-stone-900 mb-4 text-center">전반적인 만족도<span className="text-red-500 ml-0.5">*</span></p>
         <StarRating value={reviewData.overallRating} onChange={(v) => setReviewData((p) => ({ ...p, overallRating: v }))} starSize={44} gap={8} />
         <div className="h-6 mt-3 flex items-center">
           {reviewData.overallRating > 0 && <span className="text-sm font-semibold text-orange-500">{RATING_LABELS[reviewData.overallRating]}</span>}
@@ -573,7 +573,7 @@ function MobileScreen2({
     <div className="flex flex-col gap-4 pb-50">
       <div className="bg-white border border-orange-100 rounded-2xl p-5">
         <div className="flex items-center justify-between mb-1">
-          <h3 className="font-semibold text-stone-900">후기 내용</h3>
+          <h3 className="font-semibold text-stone-900">후기 내용<span className="text-red-500 ml-0.5">*</span></h3>
           <span className="text-xs text-gray-500">{reviewData.content.length} / 1000</span>
         </div>
         <p className="text-xs text-gray-500 mb-3">최소 10자 이상 작성해주세요</p>
