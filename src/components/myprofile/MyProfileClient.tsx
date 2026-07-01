@@ -91,7 +91,6 @@ const OWNER_MENU: MenuItem[] = [
 const SITTER_MENU: MenuItem[] = [
   { id: "profile", icon: User, label: "내 프로필", link: "/myprofile", color: "var(--color-orange-500)" },
   { id: "bookings", icon: Calendar, label: "예약 관리", link: "/myprofile/booking-history?role=sitter", color: "var(--color-orange-500)" },
-  { id: "posts", icon: FileText, label: "게시글 관리", link: "/myprofile/posts", color: "var(--color-orange-500)" },
   { id: "reviews", icon: BookOpen, label: "후기 관리", link: "/myprofile/reviews", color: "#F59E0B" },
   { id: "earnings", icon: Wallet, label: "수익 관리", link: "/myprofile/earnings", color: "#3B82F6" },
   { id: "settings", icon: Settings, label: "설정", link: "/myprofile/settings", color: "#8B5CF6" },
