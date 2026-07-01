@@ -185,7 +185,10 @@ export async function deleteService(id: string) {
     };
   }
 
-  const { error } = await db.from("services").delete().eq("id", id);
+  const { error } = await db
+    .from("services")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id);
 
   if (error) {
     return { error: { code: "INTERNAL_ERROR", message: error.message } };

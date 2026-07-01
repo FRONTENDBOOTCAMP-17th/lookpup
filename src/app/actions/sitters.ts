@@ -314,7 +314,10 @@ export async function updateSitterProfile(input: UpdateSitterProfileInput) {
   }
 
   if (input.deletedServiceIds.length > 0) {
-    await db.from("services").delete().in("id", input.deletedServiceIds);
+    await db
+      .from("services")
+      .update({ deleted_at: new Date().toISOString() })
+      .in("id", input.deletedServiceIds);
   }
 
   for (const service of input.services) {
@@ -370,6 +373,7 @@ export async function getSitterServices(sitterId: string) {
     .from("services")
     .select("id, title, price, description, is_active")
     .eq("sitter_id", sitterId)
+    .is("deleted_at", null)
     .order("created_at", { ascending: true });
 
   if (error) return { data: [] };
