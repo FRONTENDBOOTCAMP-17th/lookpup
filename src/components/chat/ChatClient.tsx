@@ -237,6 +237,7 @@ function ChatPageContent({
         setSelectedRoomId(result.data.room_id);
         setSelectedReservationRequestId(null);
         setMobileChatView("room");
+        setMessagesRefreshKey((k) => k + 1);
       }
     } catch {
       setApplicationActionError("오류가 발생했습니다. 다시 시도해주세요.");
@@ -671,11 +672,18 @@ function ChatPageContent({
   const [searchQuery, setSearchQuery] = useState("");
 
   const hasAutoSelected = useRef(false);
+  const hasRetried = useRef(false);
+  const prevInitialRoomId = useRef<string | null | undefined>(null);
   useEffect(() => {
+    if (prevInitialRoomId.current !== initialRoomId) {
+      prevInitialRoomId.current = initialRoomId;
+      hasAutoSelected.current = false;
+      hasRetried.current = false;
+    }
     if (!initialRoomId || hasAutoSelected.current || loading) return;
-    hasAutoSelected.current = true;
     const room = rooms.find((r) => r.id === initialRoomId);
     if (room) {
+      hasAutoSelected.current = true;
       setActiveTab("one_on_one");
       setSelectedRoomId(room.id);
       setMobileChatView("room");
@@ -683,6 +691,7 @@ function ChatPageContent({
     }
     const applicant = applicants.find((a) => a.id === initialRoomId);
     if (applicant) {
+      hasAutoSelected.current = true;
       setActiveTab("applicants");
       setSelectedApplicantId(applicant.id);
       setMobileChatView("room");
@@ -690,11 +699,17 @@ function ChatPageContent({
     }
     const rr = reservationRequests.find((r) => r.id === initialRoomId);
     if (rr) {
+      hasAutoSelected.current = true;
       setActiveTab("reservations");
       setSelectedReservationRequestId(rr.id);
       setMobileChatView("room");
+      return;
     }
-  }, [initialRoomId, rooms, applicants, reservationRequests, loading]);
+    if (!hasRetried.current) {
+      hasRetried.current = true;
+      refresh();
+    }
+  }, [initialRoomId, rooms, applicants, reservationRequests, loading, refresh]);
 
   const [profilePopup, setProfilePopup] = useState<{
     data: ProfilePopupData;
