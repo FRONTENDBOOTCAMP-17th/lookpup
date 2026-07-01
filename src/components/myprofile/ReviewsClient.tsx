@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Star, Trash2, ChevronLeft } from "lucide-react";
+import { Star, Trash2, ChevronLeft, Flag } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Avatar from "@/components/ui/Avatar";
 import { deleteReview } from "@/app/actions/reviews";
 import { CustomModal } from "@/components/common/CustomModal";
+import { ImageGallery } from "@/components/common/ImageGallery";
 
 interface WrittenReview {
   id: string;
@@ -40,6 +41,7 @@ const TABS: { id: TabId; label: string }[] = [
   { id: "written", label: "작성한 후기" },
   { id: "received", label: "받은 후기" },
 ];
+
 
 function MiniStarRating({ value }: { value: number }) {
   return (
@@ -125,24 +127,13 @@ function WrittenReviewCard({
           </div>
         )}
 
-        <div className="px-5 pt-4 border-t border-orange-100">
-          <div className="flex gap-3">
-            {review.image_urls.length > 0 && (
-              <div className="flex flex-col gap-1.5 shrink-0">
-                {review.image_urls.map((url, i) => (
-                  <img
-                    key={i}
-                    src={url}
-                    alt=""
-                    className="w-20 h-20 rounded-xl object-cover"
-                  />
-                ))}
-              </div>
-            )}
-            <p className="text-sm text-stone-900 leading-relaxed flex-1">
-              {review.content}
-            </p>
-          </div>
+        <div className="px-5 pt-4 border-t border-orange-100 space-y-3">
+          {review.image_urls.length > 0 && (
+            <ImageGallery urls={review.image_urls} />
+          )}
+          <p className="text-sm text-stone-900 leading-relaxed">
+            {review.content}
+          </p>
         </div>
 
         <div className="px-5 py-3 border-t border-orange-100 mt-4 flex items-center justify-between gap-2">
@@ -222,28 +213,17 @@ function ReceivedReviewCard({ review }: { review: ReceivedReview }) {
         </div>
       )}
 
-      <div className="px-5 pt-4 pb-5 border-t border-orange-100">
-        <div className="flex gap-3">
-          {review.image_urls.length > 0 && (
-            <div className="flex flex-col gap-1.5 shrink-0">
-              {review.image_urls.map((url, i) => (
-                <img
-                  key={i}
-                  src={url}
-                  alt=""
-                  className="w-20 h-20 rounded-xl object-cover"
-                />
-              ))}
-            </div>
-          )}
-          <p className="text-sm text-stone-900 leading-relaxed flex-1">
-            {review.content}
-          </p>
-        </div>
+      <div className="px-5 pt-4 pb-5 border-t border-orange-100 space-y-3">
+        {review.image_urls.length > 0 && (
+          <ImageGallery urls={review.image_urls} />
+        )}
+        <p className="text-sm text-stone-900 leading-relaxed">
+          {review.content}
+        </p>
       </div>
 
-      {review.tags.length > 0 && (
-        <div className="px-5 py-3 border-t border-orange-100 mt-4 flex flex-wrap gap-1.5">
+      <div className="px-5 py-3 border-t border-orange-100 mt-4 flex items-center justify-between gap-2">
+        <div className="flex flex-wrap gap-1.5">
           {review.tags.map((tag) => (
             <span
               key={tag}
@@ -253,7 +233,13 @@ function ReceivedReviewCard({ review }: { review: ReceivedReview }) {
             </span>
           ))}
         </div>
-      )}
+        <Link
+          href={`/myprofile/report?targetId=${review.owner_id}&targetName=${encodeURIComponent(review.owner_full_name)}${review.owner_profile_image ? `&targetImage=${encodeURIComponent(review.owner_profile_image)}` : ""}`}
+          className="flex items-center gap-1 text-xs text-stone-400 hover:text-red-400 transition-colors shrink-0"
+        >
+          <Flag size={12} /> 신고
+        </Link>
+      </div>
     </div>
   );
 }

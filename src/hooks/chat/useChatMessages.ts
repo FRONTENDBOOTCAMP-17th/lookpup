@@ -96,7 +96,12 @@ function toMessage(m: MessageApiItem, userId: string): Message {
         id: m.id,
         from: "payment_complete" as const,
         text: "",
-        paymentData: { amount: data.amount, reason: "", deadline: "" },
+        paymentData: {
+          amount: data.amount,
+          reason: "",
+          deadline: "",
+          sentByMe: m.sender_id === userId,
+        },
         paymentRequestMessageId: data.paymentRequestMessageId,
         time: m.created_at ? formatTime(m.created_at) : undefined,
         rawDate: m.created_at ?? undefined,
