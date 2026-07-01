@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   coordToRegion,
   searchAddressToCoord,
   searchPlaceToCoord,
 } from "@/utils/kakaoGeocode";
-import { createClient } from "@/utils/supabase/client";
 import { getOwnerLocation } from "@/app/actions/users";
+import { useLocationConsentQuery } from "./useLocationConsentQuery";
+import { useGrantLocationConsentMutation } from "./useGrantLocationConsentMutation";
 
 export const DEFAULT_CENTER = { lat: 37.4979, lng: 127.0276 };
 
@@ -27,7 +28,10 @@ export function usePetsitterLocation({
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [showLocationModal, setShowLocationModal] = useState(false);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  const { data: consent } = useLocationConsentQuery();
+  const grantConsent = useGrantLocationConsentMutation();
+  const consentHandledRef = useRef(false);
 
   async function requestLocationSilently() {
     if (!navigator.geolocation) {
@@ -97,45 +101,22 @@ export function usePetsitterLocation({
     }
   }, [urlCity, urlDistrict, urlDong]);
 
-  // 위치 동의 확인
+  // 위치 동의 확인 (TanStack Query 결과 기반, 최초 1회만 처리)
   useEffect(() => {
-    const browserClient = createClient();
-    async function checkLocationConsent() {
-      const {
-        data: { user },
-      } = await browserClient.auth.getUser();
-      if (!user) {
-        if (!urlDistrict) {
-          const localConsent = localStorage.getItem("location_consent");
-          if (localConsent !== "true") setShowLocationModal(true);
-          else requestLocationSilently();
-        }
-        return;
-      }
-      setCurrentUserId(user.id);
-      const { data } = await browserClient
-        .from("users")
-        .select("location_consent")
-        .eq("id", user.id)
-        .single();
-      if (data?.location_consent) {
-        if (!urlDistrict) requestLocationSilently();
-      } else {
-        if (!urlDistrict) setShowLocationModal(true);
-      }
+    if (!consent || consentHandledRef.current) return;
+    consentHandledRef.current = true;
+    if (urlDistrict) return;
+    if (consent.hasConsent) {
+      requestLocationSilently();
+    } else {
+      setShowLocationModal(true);
     }
-    checkLocationConsent();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [consent, urlDistrict]);
 
   async function requestLocation() {
     setShowLocationModal(false);
-    const browserClient = createClient();
-    if (currentUserId) {
-      await browserClient.from("users").update({ location_consent: true }).eq("id", currentUserId);
-    } else {
-      localStorage.setItem("location_consent", "true");
-    }
+    await grantConsent.mutateAsync(consent?.userId ?? null);
     requestLocationSilently();
   }
 
@@ -148,7 +129,7 @@ export function usePetsitterLocation({
     locationError,
     showLocationModal,
     dismissLocationModal: () => setShowLocationModal(false),
-    currentUserId,
+    currentUserId: consent?.userId ?? null,
     requestLocation,
   };
 }
