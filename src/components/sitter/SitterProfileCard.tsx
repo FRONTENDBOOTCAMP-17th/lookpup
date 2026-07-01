@@ -102,7 +102,7 @@ export default function SitterProfileCard({
 
         {isSitterCard && !!p.services?.length && (
           <div className="flex gap-2 flex-wrap">
-            {p.services.map((s) => (
+            {[...new Set(p.services)].map((s) => (
               <Pill key={s}>{s}</Pill>
             ))}
           </div>
