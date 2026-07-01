@@ -1,5 +1,5 @@
 import { getAdminReservations } from "@/app/actions/admin";
-import AdminStateClient from "./AdminStateClient";
+import AdminStateClient from "@/components/admin/AdminStateClient";
 
 export default async function AdminStatePage() {
   const { data: reservations } = await getAdminReservations();

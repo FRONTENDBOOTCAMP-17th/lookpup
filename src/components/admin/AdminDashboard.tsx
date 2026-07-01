@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { Flag, CalendarClock } from "lucide-react";
-import AdminReportsClient from "./reports/AdminReportsClient";
-import AdminStateClient from "./state/AdminStateClient";
+import AdminReportsClient, { type AdminReportsClientProps } from "@/components/admin/AdminReportsClient";
+import AdminStateClient from "@/components/admin/AdminStateClient";
 
 type Tab = "reports" | "state";
 
@@ -13,7 +13,7 @@ const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
 ];
 
 interface AdminDashboardProps {
-  initialReports: React.ComponentProps<typeof AdminReportsClient>["initialReports"];
+  initialReports: AdminReportsClientProps["initialReports"];
   initialReservations: React.ComponentProps<typeof AdminStateClient>["initialReservations"];
 }
 
@@ -25,7 +25,6 @@ export default function AdminDashboard({
 
   return (
     <div className="min-h-screen bg-stone-50">
-      {/* 탭 바 */}
       <div className="sticky top-0 z-10 bg-white border-b border-stone-200">
         <div className="max-w-5xl mx-auto px-4 flex gap-1 pt-4">
           {TABS.map((tab) => {
@@ -49,7 +48,6 @@ export default function AdminDashboard({
         </div>
       </div>
 
-      {/* 탭 콘텐츠 */}
       {activeTab === "reports" && (
         <AdminReportsClient initialReports={initialReports} />
       )}

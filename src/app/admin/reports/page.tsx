@@ -1,5 +1,5 @@
 import { createServiceClient } from "@/utils/supabase/service";
-import AdminReportsClient from "./AdminReportsClient";
+import AdminReportsClient from "@/components/admin/AdminReportsClient";
 
 export default async function AdminReportsPage() {
   const db = createServiceClient();
