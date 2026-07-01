@@ -2,6 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { fuzzCoordinate } from "@/utils/geoPrivacy";
 
 type SitterCondition =
   | "require_badge"
@@ -113,6 +114,8 @@ export async function createRequest(input: RequestInput) {
     .from("requests")
     .insert({
       ...requestFields,
+      latitude: fuzzCoordinate(requestFields.latitude),
+      longitude: fuzzCoordinate(requestFields.longitude),
       id: crypto.randomUUID(),
       pet_id: pet_ids[0],
       owner_id: user.id,
@@ -168,6 +171,9 @@ export async function updateRequest(
   }
 
   const { pet_ids, ...requestFields } = input;
+
+  if (requestFields.latitude != null) requestFields.latitude = fuzzCoordinate(requestFields.latitude);
+  if (requestFields.longitude != null) requestFields.longitude = fuzzCoordinate(requestFields.longitude);
 
   // request_pets 테이블이 없어 pet_id 단일 컬럼 사용
   const { data, error } = await db

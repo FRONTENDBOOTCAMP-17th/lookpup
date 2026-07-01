@@ -16,6 +16,7 @@ import { CustomModal } from "@/components/common/CustomModal";
 import RangePicker from "@/components/ui/RangePicker";
 import SimpleTimePicker from "@/components/ui/SimpleTimePicker";
 import KakaoMap from "@/components/KakaoMap";
+import { coordToAddress } from "@/utils/kakaoGeocode";
 import {
   mergeConditions,
   splitConditions,
@@ -78,6 +79,14 @@ export default function BoardEditClient() {
     handleAddressSearch,
     handleUseCurrentLocation,
   } = useAddressSearch(setForm);
+
+  const handleMapClick = async (lat: number, lng: number) => {
+    setForm((prev) => ({ ...prev, latitude: lat, longitude: lng }));
+    const address = await coordToAddress(lat, lng);
+    if (address) {
+      setForm((prev) => ({ ...prev, location: address }));
+    }
+  };
 
   useEffect(() => {
     async function fetchData() {
@@ -409,7 +418,8 @@ export default function BoardEditClient() {
               </div>
 
               <p className="text-gray-400 text-xs mt-2">
-                도로명 주소로 검색해주세요.
+                도로명 주소를 입력하거나, 지도를 누르거나 마커를 드래그해 위치를
+                지정하세요.
               </p>
 
               <div className="relative w-full h-56 rounded-xl overflow-hidden border border-[#ffe9d6] mt-3">
@@ -432,6 +442,9 @@ export default function BoardEditClient() {
                   }
                   level={4}
                   className="w-full h-full"
+                  onMapClick={handleMapClick}
+                  draggable
+                  onMarkerDragEnd={handleMapClick}
                 />
                 {form.latitude === null && (
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -462,6 +475,11 @@ export default function BoardEditClient() {
                 <LocateFixed className="w-4 h-4" />
                 {addressSearching ? "위치 확인 중..." : "현재 위치 사용"}
               </button>
+
+              <p className="text-xs text-gray-400 mt-2">
+                개인정보 보호를 위해 좌표는 약 100m 오차 내로 저장돼요. 지도 핀
+                위치가 입력한 주소와 약간 다르게 보일 수 있어요.
+              </p>
             </div>
 
             {/* 반려동물 선택 */}

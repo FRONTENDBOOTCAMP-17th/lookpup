@@ -5,8 +5,10 @@ import { MapPin, Search, X } from "lucide-react";
 import Script from "next/script";
 import {
   searchAddressList,
+  coordToAddress,
   type AddressSuggestion,
 } from "@/utils/kakaoGeocode";
+import { ORANGE_MARKER_URL, ORANGE_MARKER_SIZE } from "@/utils/mapMarker";
 
 export interface LocationValue {
   address: string;
@@ -73,11 +75,31 @@ export default function LocationPickerWithMap({
     }
   }, []);
 
-  function buildDisplayArea(suggestion: AddressSuggestion): string {
-    const addr = suggestion.addressName;
+  function buildDisplayAreaFromAddress(addr: string): string {
     const parts = addr.split(" ");
     if (parts.length >= 3) return parts.slice(1).join(" ");
     return addr;
+  }
+
+  function buildDisplayArea(suggestion: AddressSuggestion): string {
+    return buildDisplayAreaFromAddress(suggestion.addressName);
+  }
+
+  async function handleMarkerDragEnd() {
+    if (!markerRef.current) return;
+    const pos = markerRef.current.getPosition();
+    const lat = pos.getLat();
+    const lng = pos.getLng();
+    const address = await coordToAddress(lat, lng);
+    const resolvedAddress = address ?? query;
+    setQuery(resolvedAddress);
+    selectedRef.current = { lat, lng };
+    onChange({
+      address: resolvedAddress,
+      lat,
+      lng,
+      displayArea: buildDisplayAreaFromAddress(resolvedAddress),
+    });
   }
 
   function placeMarker(lat: number, lng: number) {
@@ -85,9 +107,32 @@ export default function LocationPickerWithMap({
     if (!map) return;
 
     const position = new window.kakao.maps.LatLng(lat, lng);
+    const markerImage = new window.kakao.maps.MarkerImage(
+      ORANGE_MARKER_URL,
+      new window.kakao.maps.Size(ORANGE_MARKER_SIZE.width, ORANGE_MARKER_SIZE.height),
+      {
+        offset: new window.kakao.maps.Point(
+          ORANGE_MARKER_SIZE.offsetX,
+          ORANGE_MARKER_SIZE.offsetY,
+        ),
+      },
+    );
 
-    if (markerRef.current) markerRef.current.setMap(null);
-    markerRef.current = new window.kakao.maps.Marker({ map, position });
+    if (!markerRef.current) {
+      markerRef.current = new window.kakao.maps.Marker({
+        map,
+        position,
+        image: markerImage,
+        draggable: true,
+      });
+      window.kakao.maps.event.addListener(
+        markerRef.current,
+        "dragend",
+        handleMarkerDragEnd,
+      );
+    } else {
+      markerRef.current.setPosition(position);
+    }
 
     map.setCenter(position);
     map.setLevel(7);
@@ -217,6 +262,11 @@ export default function LocationPickerWithMap({
             {value.displayArea}
           </p>
         )}
+        <p className="mt-2 text-xs text-gray-400">
+          지도 핀을 드래그해 위치를 조정할 수 있어요. 개인정보 보호를 위해
+          좌표는 약 100m 오차 내로 저장되어, 핀 위치가 입력한 주소와 약간
+          다르게 보일 수 있어요.
+        </p>
       </div>
     </div>
   );
