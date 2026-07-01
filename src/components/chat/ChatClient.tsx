@@ -514,7 +514,7 @@ function ChatPageContent({
         : null);
 
     if (reservationId) {
-      const payResult = await createPayment(reservationId, "CARD", data.amount);
+      const payResult = await createPayment(reservationId, "CARD");
       if (payResult.error?.code === "FORBIDDEN") {
         const extraResult = await createExtraPayment(
           reservationId,
