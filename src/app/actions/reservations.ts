@@ -665,11 +665,17 @@ export async function getReservationById(id: string) {
 
   const db = createServiceClient();
 
+  const { data: sitterProfile } = await db
+    .from("sitters")
+    .select("id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
   const { data: r, error } = await db
     .from("reservations")
     .select(
       `
-      id, status, start_datetime, end_datetime, total_price, created_at, sitter_id,
+      id, status, start_datetime, end_datetime, total_price, created_at, sitter_id, owner_id,
       services(title),
       sitters(available_area, rating, users(full_name, is_verified, profile_image)),
       reservation_items(pets(name, breed, animal_type, age, weight, image_url)),
@@ -677,10 +683,16 @@ export async function getReservationById(id: string) {
     `,
     )
     .eq("id", id)
-    .eq("owner_id", user.id)
     .single();
 
   if (error || !r)
+    return {
+      error: { code: "NOT_FOUND", message: "예약 정보를 찾을 수 없습니다." },
+    };
+
+  const isOwner = r.owner_id === user.id;
+  const isSitter = sitterProfile != null && r.sitter_id === sitterProfile.id;
+  if (!isOwner && !isSitter)
     return {
       error: { code: "NOT_FOUND", message: "예약 정보를 찾을 수 없습니다." },
     };

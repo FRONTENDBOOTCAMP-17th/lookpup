@@ -212,7 +212,7 @@ export default function BookingDetailClient({
   const [cancelConfirm, setCancelConfirm] = useState(false);
 
   useEffect(() => {
-    if (initialBooking !== undefined) return;
+    if (initialBooking) return;
     if (!id) return;
     getReservationById(id).then((res) => {
       if ("error" in res || !res.data) {
