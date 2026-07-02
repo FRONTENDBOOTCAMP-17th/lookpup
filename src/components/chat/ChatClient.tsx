@@ -930,6 +930,7 @@ function ChatPageContent({
           "예약 수정 승인",
           result.data.created_at ?? "",
         );
+        refresh();
       }
     } catch {
       setSendError("예약 수정에 실패했습니다. 다시 시도해주세요.");

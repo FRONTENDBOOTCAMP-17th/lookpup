@@ -33,7 +33,8 @@ function isReservationStatusChangeMessage(content: string): boolean {
   return (
     content.startsWith(SERVICE_COMPLETE_CONFIRMED_PREFIX) ||
     content.startsWith(RESERVATION_CANCELED_PREFIX) ||
-    content.startsWith(SERVICE_START_PREFIX)
+    content.startsWith(SERVICE_START_PREFIX) ||
+    content.startsWith(RESERVATION_EDIT_RESPONSE_PREFIX)
   );
 }
 

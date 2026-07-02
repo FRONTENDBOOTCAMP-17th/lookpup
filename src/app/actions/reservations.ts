@@ -1438,7 +1438,7 @@ export async function getReservationsByRoom(roomId: string) {
 
   const { data: room } = await db
     .from("chat_rooms")
-    .select("owner_id, sitter_id, sitters!inner(user_id)")
+    .select("owner_id, sitter_id, reservation_id, sitters!inner(user_id)")
     .eq("id", roomId)
     .single();
 
@@ -1451,16 +1451,20 @@ export async function getReservationsByRoom(roomId: string) {
     return { error: { code: "FORBIDDEN", message: "채팅방 참여자만 조회할 수 있습니다." } };
   }
 
-  const { data, error } = await db
+  const reservationsQuery = db
     .from("reservations")
     .select(
       `id, start_datetime, end_datetime, total_price, status, memo,
        reservation_items(pets(id, name, animal_type))`,
     )
-    .eq("owner_id", room.owner_id)
-    .eq("sitter_id", room.sitter_id)
     .in("status", ["pending", "accepted", "paid", "in_progress"])
     .order("created_at", { ascending: false });
+
+  const { data, error } = room.reservation_id
+    ? await reservationsQuery.eq("id", room.reservation_id)
+    : await reservationsQuery
+        .eq("owner_id", room.owner_id)
+        .eq("sitter_id", room.sitter_id);
 
   if (error) {
     return { error: { code: "INTERNAL_ERROR", message: error.message } };
