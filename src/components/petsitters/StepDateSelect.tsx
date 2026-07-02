@@ -43,7 +43,6 @@ export default function StepDateSelect({
   const nights = dateRange?.from && dateRange?.to
     ? Math.max(1, differenceInDays(dateRange.to, dateRange.from))
     : 1;
-  const total = sitter.pricePerDay * nights;
 
   function handleDateChange(range: DateRange | undefined) {
     setDateRange(range);
@@ -120,7 +119,6 @@ export default function StepDateSelect({
       <BookingSummary
         rows={[
           { label: "펫시터", value: sitter.name },
-          { label: "금액", value: `${total.toLocaleString()}원` },
         ]}
       />
     </div>
