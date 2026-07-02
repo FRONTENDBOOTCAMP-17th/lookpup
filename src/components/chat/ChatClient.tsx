@@ -253,10 +253,10 @@ function ChatPageContent({
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const syntheticCardRef = useRef<{ roomId: string | null; insertAt: number }>({
-    roomId: null,
-    insertAt: 0,
-  });
+  const [syntheticCard, setSyntheticCard] = useState<{
+    roomId: string | null;
+    insertAt: number;
+  }>({ roomId: null, insertAt: 0 });
 
   const activeRoomId =
     activeTab === "one_on_one"
@@ -1631,7 +1631,7 @@ function ChatPageContent({
     [reservationRequests, searchQuery],
   );
 
-  const processedMessages = useMemo(() => {
+  const { card: nextSyntheticCard, messages: processedMessages } = useMemo(() => {
     const fillPostTitles = (msgs: typeof messages) =>
       msgs.map((msg) => {
         if (
@@ -1654,39 +1654,39 @@ function ChatPageContent({
         return msg;
       });
 
+    const prevCard = syntheticCard;
+
     if (activeTab !== "applicants" || !selectedApplicant)
-      return withDateSeparators(messages);
+      return { card: prevCard, messages: withDateSeparators(messages) };
     const hasCard = messages.some(
       (m) =>
         m.from === "application_selected" || m.from === "application_rejected",
     );
-    if (hasCard) return withDateSeparators(fillPostTitles(messages));
+    if (hasCard)
+      return {
+        card: prevCard,
+        messages: withDateSeparators(fillPostTitles(messages)),
+      };
 
     const status = selectedApplicant.applicationStatus;
     if (status !== "selected" && status !== "rejected")
-      return withDateSeparators(messages);
+      return { card: prevCard, messages: withDateSeparators(messages) };
 
-    if (hasMore) return withDateSeparators(messages);
+    if (hasMore)
+      return { card: prevCard, messages: withDateSeparators(messages) };
 
-    if (
-      syntheticCardRef.current.roomId !== selectedApplicant.id ||
-      messages.length === 0
-    ) {
+    let card = prevCard;
+    if (card.roomId !== selectedApplicant.id || messages.length === 0) {
       if (messages.length === 0) {
-        syntheticCardRef.current = { roomId: null, insertAt: 0 };
-        return withDateSeparators(messages);
+        const isAlreadyEmpty = card.roomId === null && card.insertAt === 0;
+        card = isAlreadyEmpty ? card : { roomId: null, insertAt: 0 };
+        return { card, messages: withDateSeparators(messages) };
       }
-      syntheticCardRef.current = {
-        roomId: selectedApplicant.id,
-        insertAt: messages.length,
-      };
+      card = { roomId: selectedApplicant.id, insertAt: messages.length };
     }
 
-    const insertAt = Math.min(
-      syntheticCardRef.current.insertAt,
-      messages.length,
-    );
-    const card =
+    const insertAt = Math.min(card.insertAt, messages.length);
+    const syntheticMsg =
       status === "selected"
         ? {
             id: "__synthetic_selected__",
@@ -1711,13 +1711,16 @@ function ChatPageContent({
             },
           };
 
-    return withDateSeparators(
-      fillPostTitles([
-        ...messages.slice(0, insertAt),
-        card,
-        ...messages.slice(insertAt),
-      ]),
-    );
+    return {
+      card,
+      messages: withDateSeparators(
+        fillPostTitles([
+          ...messages.slice(0, insertAt),
+          syntheticMsg,
+          ...messages.slice(insertAt),
+        ]),
+      ),
+    };
   }, [
     messages,
     hasMore,
@@ -1726,7 +1729,12 @@ function ChatPageContent({
     confirmedPostTitle,
     isOwnerOfSelectedRoom,
     posts,
+    syntheticCard,
   ]);
+
+  if (nextSyntheticCard !== syntheticCard) {
+    setSyntheticCard(nextSyntheticCard);
+  }
 
   const sharedSidebarProps = {
     activeTab,

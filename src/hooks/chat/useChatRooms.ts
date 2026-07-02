@@ -212,10 +212,14 @@ export function useChatRooms(
   >(null);
 
   const activeRoomIdRef = useRef(activeRoomId);
-  activeRoomIdRef.current = activeRoomId;
+  useEffect(() => {
+    activeRoomIdRef.current = activeRoomId;
+  }, [activeRoomId]);
 
   const userIdRef = useRef(userId);
-  userIdRef.current = userId;
+  useEffect(() => {
+    userIdRef.current = userId;
+  }, [userId]);
 
   const myRoomIdsRef = useRef(new Set<string>());
   const reservationRequestIdsRef = useRef(new Set<string>());
@@ -226,14 +230,19 @@ export function useChatRooms(
   );
   const subscribedRoomIdsRef = useRef(new Set<string>());
 
-  myRoomIdsRef.current = new Set([
-    ...rooms.map((r) => r.id),
-    ...applicants.map((a) => a.id),
-    ...reservationRequests.map((rr) => rr.id),
-  ]);
-  reservationRequestIdsRef.current = new Set(
-    reservationRequests.map((rr) => rr.id),
-  );
+  useEffect(() => {
+    myRoomIdsRef.current = new Set([
+      ...rooms.map((r) => r.id),
+      ...applicants.map((a) => a.id),
+      ...reservationRequests.map((rr) => rr.id),
+    ]);
+  }, [rooms, applicants, reservationRequests]);
+
+  useEffect(() => {
+    reservationRequestIdsRef.current = new Set(
+      reservationRequests.map((rr) => rr.id),
+    );
+  }, [reservationRequests]);
 
   useEffect(() => {
     createClient()
