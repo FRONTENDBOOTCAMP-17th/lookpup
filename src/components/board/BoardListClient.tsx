@@ -205,14 +205,13 @@ export default function BoardListClient() {
             </div>
             <Link
               href="/board/write"
-              aria-disabled={!isLoggedIn}
-              tabIndex={isLoggedIn ? undefined : -1}
-              title={isLoggedIn ? undefined : "로그인 후 작성할 수 있어요"}
-              className={`h-12 px-6 bg-orange-500 text-white text-base font-semibold rounded-[10px] flex items-center transition-all ${
-                isLoggedIn
-                  ? "hover:bg-orange-600"
-                  : "opacity-40 pointer-events-none cursor-not-allowed"
-              }`}
+              onClick={(e) => {
+                if (!isLoggedIn) {
+                  e.preventDefault();
+                  router.push("/auth/login");
+                }
+              }}
+              className="h-12 px-6 bg-orange-500 text-white text-base font-semibold rounded-[10px] flex items-center transition-all hover:bg-orange-600"
             >
               글쓰기
             </Link>

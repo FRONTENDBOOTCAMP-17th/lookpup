@@ -1,8 +1,11 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
-import PetRegisterClient from "@/components/pet-register/PetRegisterClient";
 
-export default async function PetRegisterPage() {
+export default async function MyProfileLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -10,5 +13,5 @@ export default async function PetRegisterPage() {
 
   if (!user) redirect("/auth/login");
 
-  return <PetRegisterClient />;
+  return <>{children}</>;
 }
