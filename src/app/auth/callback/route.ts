@@ -5,6 +5,7 @@ import { createServiceClient } from "@/utils/supabase/service";
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
+  const next = searchParams.get("next") ?? "/";
 
   if (code) {
     const supabase = await createClient();
@@ -27,7 +28,7 @@ export async function GET(request: Request) {
           return NextResponse.redirect(`${origin}/auth/restore`);
 
         if (existingUser?.is_verified)
-          return NextResponse.redirect(`${origin}/`);
+          return NextResponse.redirect(`${origin}${next}`);
 
         //신규 유저면 기본 정보만 INSERT
         if (!existingUser) {

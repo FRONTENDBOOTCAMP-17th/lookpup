@@ -2,18 +2,21 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 
 export default function LoginPage() {
   const supabase = createClient();
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next") ?? "/";
+
+  const callbackUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=${encodeURIComponent(next)}`;
 
   // 카카오 로그인
   const signInWithKakao = async () => {
     await supabase.auth.signInWithOAuth({
       provider: "kakao",
-      options: {
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
-      },
+      options: { redirectTo: callbackUrl },
     });
   };
 
@@ -21,9 +24,7 @@ export default function LoginPage() {
   const signInWithGoogle = async () => {
     await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: {
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
-      },
+      options: { redirectTo: callbackUrl },
     });
   };
 
