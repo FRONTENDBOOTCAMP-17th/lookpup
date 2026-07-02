@@ -49,6 +49,7 @@ export interface Booking {
   serviceType: string;
   status: BookingStatus;
   sitterName: string;
+  sitterImage?: string | null;
   sitterRating: number;
   sitterId: string;
   ownerId?: string;
@@ -67,6 +68,7 @@ export interface Application {
   title: string;
   status: string;
   ownerName: string;
+  ownerImage?: string | null;
   date: string;
   time: string;
   location: string;
@@ -169,7 +171,7 @@ function BookingCard({
 
       <div className="px-6 py-5">
         <div className="flex items-start gap-4">
-          <Avatar initial={booking.sitterName[0]} />
+          <Avatar initial={booking.sitterName[0]} src={booking.sitterImage} />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <span className="font-semibold text-stone-900">{booking.sitterName}</span>
@@ -360,7 +362,7 @@ function ApplicationCard({
 
       <div className="px-6 py-5">
         <div className="flex items-start gap-4">
-          <Avatar initial={application.ownerName[0]} />
+          <Avatar initial={application.ownerName[0]} src={application.ownerImage} />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <span className="font-semibold text-stone-900">{application.ownerName}</span>

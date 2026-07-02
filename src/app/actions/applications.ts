@@ -415,7 +415,7 @@ export async function getMySitterApplications() {
       id, status, proposed_price, created_at,
       requests!inner(
         title, start_datetime, end_datetime, location, budget,
-        users!requests_owner_id_fkey(full_name)
+        users!requests_owner_id_fkey(full_name, profile_image)
       )
     `,
     )
@@ -434,7 +434,7 @@ export async function getMySitterApplications() {
     end_datetime: string | null;
     location: string | null;
     budget: number | null;
-    users: { full_name: string } | null;
+    users: { full_name: string; profile_image: string | null } | null;
   };
 
   const applications = (data ?? []).map((a) => {
@@ -450,6 +450,7 @@ export async function getMySitterApplications() {
       title: req?.title ?? "-",
       status: a.status,
       ownerName: req?.users?.full_name ?? "-",
+      ownerImage: req?.users?.profile_image ?? null,
       date: req?.start_datetime
         ? `${start.getFullYear()}년 ${start.getMonth() + 1}월 ${start.getDate()}일 (${DAYS[start.getDay()]})`
         : "-",

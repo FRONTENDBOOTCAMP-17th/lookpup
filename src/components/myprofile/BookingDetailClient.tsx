@@ -14,6 +14,7 @@ import {
   ClipboardList,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
+import Avatar from "@/components/ui/Avatar";
 import { getReservationById, cancelReservationAndNotify } from "@/app/actions/reservations";
 import { getCareRecordsByReservationId, type CareRecord } from "@/app/actions/care-records";
 import { CARE_RECORD_TYPES } from "@/components/common/chat/CareRecordModal";
@@ -43,6 +44,7 @@ export interface Booking {
   status: BookingStatus;
   sitter: {
     name: string;
+    image?: string | null;
     rating: number;
     reviewCount: number;
     certified: boolean;
@@ -361,9 +363,12 @@ export default function BookingDetailClient({
           <div className="bg-white border border-orange-100 rounded-2xl px-6 py-5 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)]">
             <h3 className="text-sm font-semibold text-gray-500 mb-4">펫시터 정보</h3>
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-orange-50 rounded-full border border-orange-100 flex items-center justify-center shrink-0">
-                <span className="text-orange-500 text-lg font-semibold">{booking.sitter.name[0]}</span>
-              </div>
+              <Avatar
+                initial={booking.sitter.name[0]}
+                src={booking.sitter.image}
+                size="md"
+                variant="orange"
+              />
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-semibold text-stone-900">{booking.sitter.name}</span>
