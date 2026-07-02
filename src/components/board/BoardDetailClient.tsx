@@ -46,7 +46,10 @@ type Application = {
   message: string | null;
   proposed_price: number | null;
   status: string;
-  sitters: { id: string; users: { full_name: string } | null } | null;
+  sitters: {
+    id: string;
+    users: { full_name: string; profile_image: string | null } | null;
+  } | null;
 };
 export type OtherPost = {
   id: string;
@@ -457,6 +460,7 @@ export default function BoardDetailClient({
                         >
                           <Avatar
                             initial={app.sitters?.users?.full_name?.[0] ?? "?"}
+                            src={app.sitters?.users?.profile_image}
                             size="md"
                             variant="orange"
                           />
@@ -493,6 +497,7 @@ export default function BoardDetailClient({
                 <div className="flex items-center gap-3">
                   <Avatar
                     initial={post.users?.full_name?.[0] ?? "?"}
+                    src={post.users?.profile_image}
                     size="lg"
                     variant="orange"
                   />
