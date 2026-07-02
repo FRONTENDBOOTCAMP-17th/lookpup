@@ -6,6 +6,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
 import type { RealtimeChannel } from "@supabase/supabase-js";
+import type { RoomApiItem } from "@/app/actions/chat";
 import type {
   ChatRoom,
   Applicant,
@@ -51,29 +52,6 @@ export interface Post {
   title: string;
   status: string;
   createdAt: string | null;
-}
-
-interface RoomApiItem {
-  id: string;
-  room_type: "direct" | "request" | "reservation_request";
-  owner_id: string | null;
-  sitter_id: string | null;
-  reservation_id: string | null;
-  other_user_full_name: string | null;
-  other_user_profile_image: string | null;
-  sitter_rating: number | null;
-  last_message: string | null;
-  last_message_at: string | null;
-  unread_count: number | null;
-  request_id: string | null;
-  request_title: string | null;
-  request_status: string | null;
-  request_created_at: string | null;
-  application_status: string | null;
-  reservation_status: string | null;
-  reservation_service_title: string | null;
-  reservation_pet_names: string[];
-  reservation_start_datetime: string | null;
 }
 
 function formatRoomSub(r: RoomApiItem, fallback = "1:1 채팅"): string {
@@ -125,14 +103,108 @@ function formatPreview(content: string): string {
   return content;
 }
 
-export function useChatRooms(activeRoomId: string | null) {
-  const [rooms, setRooms] = useState<ChatRoom[]>([]);
-  const [applicants, setApplicants] = useState<Applicant[]>([]);
+function transformRoomsData(data: RoomApiItem[]): {
+  rooms: ChatRoom[];
+  applicants: Applicant[];
+  reservationRequests: ReservationRequest[];
+  posts: Post[];
+} {
+  const directRooms = data
+    .filter((r) => r.room_type === "direct")
+    .map((r) => ({
+      id: r.id,
+      ownerId: r.owner_id ?? null,
+      sitterId: r.sitter_id ?? null,
+      reservationId: r.reservation_id ?? null,
+      reservationStatus: r.reservation_status ?? null,
+      name: r.other_user_full_name ?? "",
+      initial: (r.other_user_full_name ?? "?")[0],
+      profileImage: r.other_user_profile_image ?? null,
+      sub: formatRoomSub(r),
+      lastMessage: formatPreview(r.last_message ?? ""),
+      time: formatTime(r.last_message_at),
+      unread: r.unread_count ?? 0,
+    }));
+
+  const requestRooms = data.filter((r) => r.room_type === "request");
+  const applicantList = requestRooms.map((r) => ({
+    id: r.id,
+    sitterId: r.sitter_id ?? null,
+    ownerId: r.owner_id ?? null,
+    postId: r.request_id ?? "",
+    name: r.other_user_full_name ?? "",
+    initial: (r.other_user_full_name ?? "?")[0],
+    profileImage: r.other_user_profile_image ?? null,
+    rating: r.sitter_rating ?? 0,
+    preview: formatPreview(r.last_message ?? ""),
+    time: formatTime(r.last_message_at),
+    unread: r.unread_count ?? 0,
+    applicationStatus: r.application_status ?? null,
+  }));
+
+  const reservationRequestList = data
+    .filter((r) => r.room_type === "reservation_request")
+    .map((r) => ({
+      id: r.id,
+      sitterId: r.sitter_id ?? null,
+      ownerId: r.owner_id ?? null,
+      reservationId: r.reservation_id ?? null,
+      name: r.other_user_full_name ?? "",
+      initial: (r.other_user_full_name ?? "?")[0],
+      profileImage: r.other_user_profile_image ?? null,
+      rating: r.sitter_rating ?? 0,
+      sub: formatRoomSub(r, "예약 요청"),
+      preview: formatPreview(r.last_message ?? ""),
+      time: formatTime(r.last_message_at),
+      unread: r.unread_count ?? 0,
+      reservationStatus: r.reservation_status ?? null,
+    }));
+
+  const seen = new Set<string>();
+  const posts: Post[] = [];
+  for (const r of requestRooms) {
+    if (r.request_id && !seen.has(r.request_id)) {
+      seen.add(r.request_id);
+      posts.push({
+        id: r.request_id,
+        title: r.request_title ?? "구인글",
+        status: r.request_status ?? "open",
+        createdAt: r.request_created_at ?? null,
+      });
+    }
+  }
+  posts.sort((a, b) => {
+    if (!a.createdAt) return 1;
+    if (!b.createdAt) return -1;
+    return b.createdAt.localeCompare(a.createdAt);
+  });
+
+  return {
+    rooms: directRooms,
+    applicants: applicantList,
+    reservationRequests: reservationRequestList,
+    posts,
+  };
+}
+
+export function useChatRooms(
+  activeRoomId: string | null,
+  initialData?: RoomApiItem[],
+) {
+  const [initialTransformed] = useState(() =>
+    initialData ? transformRoomsData(initialData) : null,
+  );
+  const [rooms, setRooms] = useState<ChatRoom[]>(
+    initialTransformed?.rooms ?? [],
+  );
+  const [applicants, setApplicants] = useState<Applicant[]>(
+    initialTransformed?.applicants ?? [],
+  );
   const [reservationRequests, setReservationRequests] = useState<
     ReservationRequest[]
-  >([]);
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
+  >(initialTransformed?.reservationRequests ?? []);
+  const [posts, setPosts] = useState<Post[]>(initialTransformed?.posts ?? []);
+  const [loading, setLoading] = useState(!initialData);
   const [error, setError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [acceptedDirectRoomId, setAcceptedDirectRoomId] = useState<
@@ -176,80 +248,11 @@ export function useChatRooms(activeRoomId: string | null) {
       if (!res.ok) throw new Error("채팅 목록을 불러오지 못했습니다");
       const { data }: { data: RoomApiItem[] } = await res.json();
 
-      const directRooms = data
-        .filter((r) => r.room_type === "direct")
-        .map((r) => ({
-          id: r.id,
-          ownerId: r.owner_id ?? null,
-          sitterId: r.sitter_id ?? null,
-          reservationId: r.reservation_id ?? null,
-          reservationStatus: r.reservation_status ?? null,
-          name: r.other_user_full_name ?? "",
-          initial: (r.other_user_full_name ?? "?")[0],
-          profileImage: r.other_user_profile_image ?? null,
-          sub: formatRoomSub(r),
-          lastMessage: formatPreview(r.last_message ?? ""),
-          time: formatTime(r.last_message_at),
-          unread: r.unread_count ?? 0,
-        }));
-
-      const requestRooms = data.filter((r) => r.room_type === "request");
-      const applicantList = requestRooms.map((r) => ({
-        id: r.id,
-        sitterId: r.sitter_id ?? null,
-        ownerId: r.owner_id ?? null,
-        postId: r.request_id ?? "",
-        name: r.other_user_full_name ?? "",
-        initial: (r.other_user_full_name ?? "?")[0],
-        profileImage: r.other_user_profile_image ?? null,
-        rating: r.sitter_rating ?? 0,
-        preview: formatPreview(r.last_message ?? ""),
-        time: formatTime(r.last_message_at),
-        unread: r.unread_count ?? 0,
-        applicationStatus: r.application_status ?? null,
-      }));
-
-      const reservationRequestList = data
-        .filter((r) => r.room_type === "reservation_request")
-        .map((r) => ({
-          id: r.id,
-          sitterId: r.sitter_id ?? null,
-          ownerId: r.owner_id ?? null,
-          reservationId: r.reservation_id ?? null,
-          name: r.other_user_full_name ?? "",
-          initial: (r.other_user_full_name ?? "?")[0],
-          profileImage: r.other_user_profile_image ?? null,
-          rating: r.sitter_rating ?? 0,
-          sub: formatRoomSub(r, "예약 요청"),
-          preview: formatPreview(r.last_message ?? ""),
-          time: formatTime(r.last_message_at),
-          unread: r.unread_count ?? 0,
-          reservationStatus: r.reservation_status ?? null,
-        }));
-
-      setRooms(directRooms);
-      setApplicants(applicantList);
-      setReservationRequests(reservationRequestList);
-
-      const seen = new Set<string>();
-      const derivedPosts: Post[] = [];
-      for (const r of requestRooms) {
-        if (r.request_id && !seen.has(r.request_id)) {
-          seen.add(r.request_id);
-          derivedPosts.push({
-            id: r.request_id,
-            title: r.request_title ?? "구인글",
-            status: r.request_status ?? "open",
-            createdAt: r.request_created_at ?? null,
-          });
-        }
-      }
-      derivedPosts.sort((a, b) => {
-        if (!a.createdAt) return 1;
-        if (!b.createdAt) return -1;
-        return b.createdAt.localeCompare(a.createdAt);
-      });
-      setPosts(derivedPosts);
+      const transformed = transformRoomsData(data);
+      setRooms(transformed.rooms);
+      setApplicants(transformed.applicants);
+      setReservationRequests(transformed.reservationRequests);
+      setPosts(transformed.posts);
     } catch (err) {
       if (!silent) setError((err as Error).message);
     } finally {
@@ -294,8 +297,9 @@ export function useChatRooms(activeRoomId: string | null) {
   }, []);
 
   useEffect(() => {
+    if (initialData) return;
     fetchRooms();
-  }, [fetchRooms]);
+  }, [fetchRooms, initialData]);
 
   useEffect(() => {
     if (!userId) return;

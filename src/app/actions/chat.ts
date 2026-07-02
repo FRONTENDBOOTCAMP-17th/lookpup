@@ -25,6 +25,220 @@ async function getAuthUser() {
   return user;
 }
 
+export interface RoomApiItem {
+  id: string;
+  room_type: "direct" | "request" | "reservation_request";
+  owner_id: string | null;
+  sitter_id: string | null;
+  reservation_id: string | null;
+  other_user_full_name: string | null;
+  other_user_profile_image: string | null;
+  sitter_rating: number | null;
+  last_message: string | null;
+  last_message_at: string | null;
+  unread_count: number | null;
+  request_id: string | null;
+  request_title: string | null;
+  request_status: string | null;
+  request_created_at: string | null;
+  application_status: string | null;
+  reservation_status: string | null;
+  reservation_service_title: string | null;
+  reservation_pet_names: string[];
+  reservation_start_datetime: string | null;
+}
+
+export async function getChatRoomsData(): Promise<
+  | { data: RoomApiItem[]; error?: undefined }
+  | {
+      data?: undefined;
+      error: { code: "UNAUTHORIZED" | "INTERNAL_ERROR"; message: string };
+    }
+> {
+  const user = await getAuthUser();
+
+  if (!user) {
+    return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
+  }
+
+  const db = createServiceClient();
+
+  const { data: sitterProfile } = await db
+    .from("sitters")
+    .select("id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  const sitterId = sitterProfile?.id ?? null;
+
+  let roomsQuery = db
+    .from("chat_rooms")
+    .select(
+      `id, room_type, owner_id, sitter_id, reservation_id, request_id,
+       last_message, last_message_at,
+       owner:users!owner_id(full_name, profile_image),
+       sitter:sitters!sitter_id(
+         user_id,
+         rating,
+         sitter_user:users(full_name, profile_image)
+       ),
+       request:requests!request_id(title, status, created_at)`,
+    )
+    .order("last_message_at", { ascending: false, nullsFirst: false });
+
+  if (sitterId) {
+    roomsQuery = roomsQuery.or(
+      `and(owner_id.eq.${user.id},owner_left.is.false),and(sitter_id.eq.${sitterId},sitter_left.is.false)`,
+    );
+  } else {
+    roomsQuery = roomsQuery.eq("owner_id", user.id).eq("owner_left", false);
+  }
+
+  const { data: rooms, error } = await roomsQuery;
+
+  if (error) {
+    return { error: { code: "INTERNAL_ERROR", message: error.message } };
+  }
+
+  if (!rooms || rooms.length === 0) {
+    return { data: [] };
+  }
+
+  const requestRooms = rooms.filter((r) => r.room_type === "request");
+  const applicationStatusMap = new Map<string, string>();
+  if (requestRooms.length > 0) {
+    const requestIds = requestRooms
+      .map((r) => r.request_id)
+      .filter(Boolean) as string[];
+    const sitterIds = requestRooms
+      .map((r) => r.sitter_id)
+      .filter(Boolean) as string[];
+    const { data: applications } = await db
+      .from("applications")
+      .select("request_id, sitter_id, status")
+      .in("request_id", requestIds)
+      .in("sitter_id", sitterIds);
+    (applications ?? []).forEach((a) => {
+      applicationStatusMap.set(`${a.request_id}-${a.sitter_id}`, a.status);
+    });
+  }
+
+  const roomsWithReservation = rooms.filter(
+    (r) =>
+      (r.room_type === "reservation_request" || r.room_type === "direct") &&
+      r.reservation_id,
+  );
+  const reservationStatusMap = new Map<string, string>();
+  const reservationLabelMap = new Map<
+    string,
+    {
+      serviceTitle: string | null;
+      petNames: string[];
+      startDatetime: string | null;
+    }
+  >();
+  if (roomsWithReservation.length > 0) {
+    const reservationIds = roomsWithReservation
+      .map((r) => r.reservation_id)
+      .filter(Boolean) as string[];
+    const { data: reservations } = await db
+      .from("reservations")
+      .select(
+        "id, status, start_datetime, services(title), reservation_items(pets(name))",
+      )
+      .in("id", reservationIds);
+    type ServiceRow = { title: string | null };
+    type PetRow = { name: string } | null;
+    type ItemRow = { pets: PetRow };
+    (reservations ?? []).forEach((r) => {
+      const rawService = r.services as ServiceRow | ServiceRow[] | null;
+      const service = Array.isArray(rawService) ? rawService[0] : rawService;
+      const items = (r.reservation_items as ItemRow[]) ?? [];
+
+      reservationStatusMap.set(r.id, r.status);
+      reservationLabelMap.set(r.id, {
+        serviceTitle: service?.title ?? null,
+        petNames: items
+          .map((item) => item.pets?.name)
+          .filter((name): name is string => Boolean(name)),
+        startDatetime: r.start_datetime ?? null,
+      });
+    });
+  }
+
+  const roomIds = rooms.map((r) => r.id);
+  const { data: unreadData } = await db.rpc("get_unread_counts", {
+    room_ids: roomIds,
+    my_id: user.id,
+  });
+
+  const unreadCounts: Record<string, number> = {};
+  (unreadData ?? []).forEach(({ room_id, count }) => {
+    unreadCounts[room_id] = Number(count);
+  });
+
+  const result: RoomApiItem[] = rooms.map((room) => {
+    const isOwner = room.owner_id === user.id;
+    const owner = room.owner;
+    const sitter = room.sitter;
+    const request = room.request;
+
+    return {
+      id: room.id,
+      room_type: room.room_type as RoomApiItem["room_type"],
+      owner_id: room.owner_id,
+      sitter_id: room.sitter_id,
+      other_user_full_name: isOwner
+        ? (sitter?.sitter_user?.full_name ?? "")
+        : (owner?.full_name ?? ""),
+      other_user_profile_image: isOwner
+        ? (sitter?.sitter_user?.profile_image ?? null)
+        : (owner?.profile_image ?? null),
+      sitter_rating: sitter?.rating ?? null,
+      unread_count: unreadCounts[room.id] ?? 0,
+      reservation_id: room.reservation_id,
+      request_id: room.request_id ?? null,
+      request_title: request?.title ?? null,
+      request_status: request?.status ?? null,
+      request_created_at: request?.created_at ?? null,
+      application_status:
+        room.room_type === "request" && room.request_id && room.sitter_id
+          ? (applicationStatusMap.get(`${room.request_id}-${room.sitter_id}`) ??
+            null)
+          : null,
+      reservation_status:
+        (room.room_type === "reservation_request" ||
+          room.room_type === "direct") &&
+        room.reservation_id
+          ? (reservationStatusMap.get(room.reservation_id) ?? null)
+          : null,
+      reservation_service_title:
+        (room.room_type === "direct" ||
+          room.room_type === "reservation_request") &&
+        room.reservation_id
+          ? (reservationLabelMap.get(room.reservation_id)?.serviceTitle ?? null)
+          : null,
+      reservation_pet_names:
+        (room.room_type === "direct" ||
+          room.room_type === "reservation_request") &&
+        room.reservation_id
+          ? (reservationLabelMap.get(room.reservation_id)?.petNames ?? [])
+          : [],
+      reservation_start_datetime:
+        (room.room_type === "direct" ||
+          room.room_type === "reservation_request") &&
+        room.reservation_id
+          ? (reservationLabelMap.get(room.reservation_id)?.startDatetime ??
+            null)
+          : null,
+      last_message: room.last_message ?? null,
+      last_message_at: room.last_message_at ?? null,
+    };
+  });
+
+  return { data: result };
+}
+
 export async function findOrCreateRoom(input: {
   sitter_id: string;
   room_type: "request" | "direct" | "reservation_request";
@@ -121,7 +335,10 @@ export async function findOrCreateRoom(input: {
   return { data: { room_id: newRoom.id } };
 }
 
-export async function findChatRoomAsSitter(ownerId: string, reservationId?: string) {
+export async function findChatRoomAsSitter(
+  ownerId: string,
+  reservationId?: string,
+) {
   const user = await getAuthUser();
   if (!user) {
     return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
@@ -403,7 +620,10 @@ export async function sendPaymentRequestMessage(
 
   if (!data.amount || data.amount <= 0) {
     return {
-      error: { code: "VALIDATION_ERROR", message: "요청 금액은 0원보다 커야 합니다." },
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "요청 금액은 0원보다 커야 합니다.",
+      },
     };
   }
 
@@ -900,8 +1120,16 @@ export async function sendReservationEditMessage(
   roomId: string,
   payload: {
     reservationId: string;
-    original: { start_datetime: string; end_datetime: string; memo?: string | null };
-    proposed: { start_datetime: string; end_datetime: string; memo?: string | null };
+    original: {
+      start_datetime: string;
+      end_datetime: string;
+      memo?: string | null;
+    };
+    proposed: {
+      start_datetime: string;
+      end_datetime: string;
+      memo?: string | null;
+    };
   },
 ) {
   const user = await getAuthUser();
@@ -918,13 +1146,18 @@ export async function sendReservationEditMessage(
     .single();
 
   if (!room) {
-    return { error: { code: "NOT_FOUND", message: "채팅방을 찾을 수 없습니다." } };
+    return {
+      error: { code: "NOT_FOUND", message: "채팅방을 찾을 수 없습니다." },
+    };
   }
 
   const sitter = room.sitters as unknown as { user_id: string };
   if (room.owner_id !== user.id && sitter.user_id !== user.id) {
     return {
-      error: { code: "FORBIDDEN", message: "채팅방 참여자만 메시지를 보낼 수 있습니다." },
+      error: {
+        code: "FORBIDDEN",
+        message: "채팅방 참여자만 메시지를 보낼 수 있습니다.",
+      },
     };
   }
 
@@ -949,7 +1182,8 @@ export async function sendReservationEditMessage(
     .eq("id", roomId);
 
   const sitterForNotif = room.sitters as unknown as { user_id: string };
-  const recipientId = user.id === room.owner_id ? sitterForNotif.user_id : room.owner_id;
+  const recipientId =
+    user.id === room.owner_id ? sitterForNotif.user_id : room.owner_id;
   if (recipientId) {
     await createNotification({
       userId: recipientId,
@@ -981,13 +1215,18 @@ export async function sendReservationEditResponseMessage(
     .single();
 
   if (!room) {
-    return { error: { code: "NOT_FOUND", message: "채팅방을 찾을 수 없습니다." } };
+    return {
+      error: { code: "NOT_FOUND", message: "채팅방을 찾을 수 없습니다." },
+    };
   }
 
   const sitter = room.sitters as unknown as { user_id: string };
   if (room.owner_id !== user.id && sitter.user_id !== user.id) {
     return {
-      error: { code: "FORBIDDEN", message: "채팅방 참여자만 메시지를 보낼 수 있습니다." },
+      error: {
+        code: "FORBIDDEN",
+        message: "채팅방 참여자만 메시지를 보낼 수 있습니다.",
+      },
     };
   }
 
@@ -1006,15 +1245,21 @@ export async function sendReservationEditResponseMessage(
   const lastMsg = payload.accepted ? "예약 수정 승인" : "예약 수정 거절";
   await db
     .from("chat_rooms")
-    .update({ last_message: lastMsg, last_message_at: new Date().toISOString() })
+    .update({
+      last_message: lastMsg,
+      last_message_at: new Date().toISOString(),
+    })
     .eq("id", roomId);
 
-  const recipientId = user.id === room.owner_id ? sitter.user_id : room.owner_id;
+  const recipientId =
+    user.id === room.owner_id ? sitter.user_id : room.owner_id;
   if (recipientId) {
     await createNotification({
       userId: recipientId,
       type: "message",
-      title: payload.accepted ? "예약 수정이 승인되었어요" : "예약 수정 요청이 거절되었어요",
+      title: payload.accepted
+        ? "예약 수정이 승인되었어요"
+        : "예약 수정 요청이 거절되었어요",
       content: payload.accepted
         ? "예약 수정 요청이 승인되었습니다."
         : "예약 수정 요청이 거절되었습니다.",

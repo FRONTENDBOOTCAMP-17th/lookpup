@@ -69,6 +69,7 @@ import {
 } from "@/app/actions/payments";
 import type { ReservationDetails } from "@/components/common/chat/ReservationConfirmModal";
 import { useChatRooms } from "@/hooks/chat/useChatRooms";
+import type { RoomApiItem } from "@/app/actions/chat";
 import { useRequest } from "@/hooks/chat/useRequest";
 import { useChatMessages } from "@/hooks/chat/useChatMessages";
 import { useUserStore } from "@/store/userStore";
@@ -141,9 +142,11 @@ function withDateSeparators(msgs: Message[]): Message[] {
 function ChatPageContent({
   initialTab,
   initialRoomId,
+  initialRoomsData,
 }: {
   initialTab: "one_on_one" | "reservations" | "applicants";
   initialRoomId?: string | null;
+  initialRoomsData?: RoomApiItem[];
 }) {
   const router = useRouter();
   const { user, isLoading } = useUserStore();
@@ -280,7 +283,7 @@ function ChatPageContent({
     refresh,
     acceptedDirectRoomId,
     clearAcceptedDirectRoomId,
-  } = useChatRooms(activeRoomId);
+  } = useChatRooms(activeRoomId, initialRoomsData);
 
   const {
     rejectedIds,
@@ -2027,7 +2030,11 @@ function ChatPageContent({
   );
 }
 
-export default function ChatClient() {
+export default function ChatClient({
+  initialRoomsData,
+}: {
+  initialRoomsData?: RoomApiItem[];
+}) {
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
   const initialTab =
@@ -2038,6 +2045,10 @@ export default function ChatClient() {
         : "one_on_one";
   const initialRoomId = searchParams.get("roomId");
   return (
-    <ChatPageContent initialTab={initialTab} initialRoomId={initialRoomId} />
+    <ChatPageContent
+      initialTab={initialTab}
+      initialRoomId={initialRoomId}
+      initialRoomsData={initialRoomsData}
+    />
   );
 }
