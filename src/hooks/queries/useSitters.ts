@@ -11,6 +11,7 @@ interface SitterRow {
   base_price: number | null;
   rating: number | null;
   full_name: string | null;
+  profile_image: string | null;
   service_types: string[];
 }
 

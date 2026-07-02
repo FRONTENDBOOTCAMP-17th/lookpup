@@ -1065,6 +1065,7 @@ export type Database = {
           id: string
           latitude: number
           longitude: number
+          profile_image: string
           rating: number
           service_types: string[]
           user_id: string

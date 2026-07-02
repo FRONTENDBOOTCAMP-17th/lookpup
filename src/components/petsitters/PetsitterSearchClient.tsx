@@ -51,6 +51,7 @@ export default function PetsitterSearchClient() {
       user_id: row.user_id ?? null,
       name,
       initial: name.charAt(0),
+      profileImage: row.profile_image ?? null,
       city,
       district,
       neighborhood,

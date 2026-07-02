@@ -6,6 +6,7 @@ interface PetsitterListItem {
   id: string;
   name: string;
   initial: string;
+  profileImage: string | null;
   district: string;
   neighborhood: string;
   rating: number;
