@@ -424,6 +424,16 @@ function ChatPageContent({
     return null;
   }, [messages]);
 
+  const isPaymentComplete = paymentState?.paid === true;
+  const hasServiceStarted = useMemo(
+    () => messages.some((m) => m.from === "service_start"),
+    [messages],
+  );
+  const hasServiceCompleted = useMemo(
+    () => messages.some((m) => m.from === "service_complete"),
+    [messages],
+  );
+
   useEffect(() => {
     if (!activeRoomId) return;
     markRoomAsRead(activeRoomId);
@@ -1491,6 +1501,9 @@ function ChatPageContent({
     isPaymentPending,
     isServiceConfirming,
     isCurrentUserSitter,
+    isPaymentComplete,
+    hasServiceStarted,
+    hasServiceCompleted,
     input,
     sending,
     sendError,

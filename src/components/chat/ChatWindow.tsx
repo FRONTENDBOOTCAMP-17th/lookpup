@@ -169,6 +169,9 @@ export interface ChatWindowProps {
   isPaymentPending: boolean;
   isServiceConfirming: boolean;
   isCurrentUserSitter: boolean;
+  isPaymentComplete: boolean;
+  hasServiceStarted: boolean;
+  hasServiceCompleted: boolean;
 
   input: string;
   sending: boolean;
@@ -238,6 +241,9 @@ export function ChatWindow({
   isPaymentPending,
   isServiceConfirming,
   isCurrentUserSitter,
+  isPaymentComplete,
+  hasServiceStarted,
+  hasServiceCompleted,
   input,
   sending,
   sendError,
@@ -281,7 +287,7 @@ export function ChatWindow({
           : undefined
       }
       onSendCareRecord={
-        isCurrentUserSitter
+        isCurrentUserSitter && hasServiceStarted && !hasServiceCompleted
           ? () => {
               setPlusMenuOpen(false);
               onOpenCareRecord();
@@ -289,7 +295,7 @@ export function ChatWindow({
           : undefined
       }
       onServiceStart={
-        isCurrentUserSitter
+        isCurrentUserSitter && isPaymentComplete && !hasServiceStarted
           ? () => {
               setPlusMenuOpen(false);
               onServiceStart();
@@ -297,7 +303,7 @@ export function ChatWindow({
           : undefined
       }
       onServiceComplete={
-        isCurrentUserSitter
+        isCurrentUserSitter && hasServiceStarted
           ? () => {
               setPlusMenuOpen(false);
               onServiceComplete();
