@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Mail, Phone, MapPin, Calendar, ChevronLeft, Building2, Check, X, Pencil } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Script from "next/script";
 import Header from "@/components/layout/Header";
 import { AvatarWithCamera } from "@/components/ui/Avatar";
@@ -85,10 +85,14 @@ export default function SettingsClient({
   initialBankAccount?: BankAccount | null;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const user = useUserStore((s) => s.user) ?? initialUser ?? null;
   const setUser = useUserStore((s) => s.setUser);
 
-  const [activeTab, setActiveTab] = useState<Tab>("profile");
+  const initialTab = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState<Tab>(
+    initialTab === "bank" || initialTab === "notifications" ? initialTab : "profile",
+  );
   const [notificationPrefs, setNotificationPrefs] = useState(
     loadNotificationPrefs(),
   );

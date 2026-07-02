@@ -18,6 +18,13 @@ export default async function EarningsPage() {
 
   if (!sitterProfile) return <EarningsClient />;
 
+  // bank_accounts가 generated types에 없어서 타입 우회
+  const { data: bankAccount } = await (db as any)
+    .from("bank_accounts")
+    .select("id")
+    .eq("user_id", user.id)
+    .maybeSingle() as { data: { id: string } | null };
+
   const now = new Date();
   const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
   const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString();
@@ -74,6 +81,9 @@ export default async function EarningsPage() {
   }));
 
   return (
-    <EarningsClient initialData={{ total, thisMonth, thisWeek, monthly, transactions }} />
+    <EarningsClient
+      initialData={{ total, thisMonth, thisWeek, monthly, transactions }}
+      hasBankAccount={!!bankAccount}
+    />
   );
 }
