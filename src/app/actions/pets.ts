@@ -188,12 +188,23 @@ export async function deletePet(id: string) {
     };
   }
 
-  const { data: activeReservations } = await db
-    .from("reservations")
-    .select("id")
-    .eq("pet_id", id)
-    .in("status", ["paid", "in_progress"])
-    .limit(1);
+  const { data: petReservationLinks } = await db
+    .from("reservation_items")
+    .select("reservation_id")
+    .eq("pet_id", id);
+
+  const linkedReservationIds = (petReservationLinks ?? []).map(
+    (item) => item.reservation_id,
+  );
+
+  const { data: activeReservations } = linkedReservationIds.length
+    ? await db
+        .from("reservations")
+        .select("id")
+        .in("id", linkedReservationIds)
+        .in("status", ["paid", "in_progress"])
+        .limit(1)
+    : { data: [] };
 
   if (activeReservations && activeReservations.length > 0) {
     return {
