@@ -22,7 +22,8 @@ export default function Header() {
               alt="봐주개"
               width={120}
               height={36}
-              priority
+              preload
+              fetchPriority="high"
               className="w-24 h-auto object-contain"
             />
           </Link>
