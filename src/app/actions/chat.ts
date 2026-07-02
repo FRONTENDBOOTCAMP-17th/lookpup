@@ -401,6 +401,12 @@ export async function sendPaymentRequestMessage(
     return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
   }
 
+  if (!data.amount || data.amount <= 0) {
+    return {
+      error: { code: "VALIDATION_ERROR", message: "요청 금액은 0원보다 커야 합니다." },
+    };
+  }
+
   const db = createServiceClient();
   const now = new Date().toISOString();
   const content = `${PAYMENT_REQUEST_PREFIX}${JSON.stringify(data)}`;

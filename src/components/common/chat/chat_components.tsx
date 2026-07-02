@@ -1781,6 +1781,13 @@ export function PaymentRequestCard({
           >
             {isPaying ? "결제 중..." : "결제하기"}
           </button>
+        ) : amount <= 0 ? (
+          <button
+            disabled
+            className="w-full h-10 rounded-xl bg-stone-50 outline-[1.11px] outline-stone-200 outline-offset-[-1.11px] text-stone-400 text-sm cursor-default"
+          >
+            결제할 수 없어요
+          </button>
         ) : (
           <button
             disabled

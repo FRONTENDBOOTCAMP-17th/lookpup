@@ -548,10 +548,13 @@ function ChatPageContent({
     messageId: string;
   }) {
     if (payingNow || isPaymentPending || !activeRoomId) return;
+
+    const totalAmount = Number(data.amount);
+    if (!totalAmount || totalAmount <= 0) return;
+
     setPayingNow(true);
 
     let portonePaymentId = `pay_${Date.now()}`;
-    let totalAmount = Number(data.amount);
     let orderName = data.reason || "서비스 결제";
 
     const reservationId =
@@ -562,12 +565,6 @@ function ChatPageContent({
 
     if (!reservationId) {
       setSendError("예약 정보를 찾을 수 없습니다.");
-      setPayingNow(false);
-      return;
-    }
-
-    if (!totalAmount || totalAmount <= 0) {
-      setSendError("결제 금액이 올바르지 않습니다.");
       setPayingNow(false);
       return;
     }

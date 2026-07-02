@@ -202,7 +202,7 @@ export function CustomModalPayment({
               </span>
             </div>
             <p className="text-[#9CA3AF] text-xs mt-1.5">
-              {isPaymentType ? "예약 시 확정된 금액입니다" : "최소 1,000원 · 최대 500,000원"}
+              {isPaymentType ? "예약 시 확정된 금액입니다" : "0원보다 큰 금액을 입력해주세요"}
             </p>
           </div>
 

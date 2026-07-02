@@ -114,7 +114,9 @@ function MessageList({
             senderProfileImage={senderProfileImage}
             isCurrentUserSitter={isCurrentUserSitter}
             onPaymentRequest={
-              msg.from === "payment_request" && msg.paymentData
+              msg.from === "payment_request" &&
+              msg.paymentData &&
+              msg.paymentData.amount > 0
                 ? () =>
                     onPaymentRequest({
                       amount: msg.paymentData!.amount,
