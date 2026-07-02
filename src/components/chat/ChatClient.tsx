@@ -283,6 +283,19 @@ function ChatPageContent({
 
   const { requestPayment, isPending: isPaymentPending } = usePortOne();
 
+  const activeRoomIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    activeRoomIdRef.current = activeRoomId;
+  }, [activeRoomId]);
+
+  const deliverMessage = useCallback(
+    (roomId: string, message: Parameters<typeof addMessage>[0]) => {
+      if (activeRoomIdRef.current === roomId) addMessage(message);
+      broadcastMessage(roomId, message);
+    },
+    [addMessage, broadcastMessage],
+  );
+
   const selectedRoom =
     selectedRoomId !== null
       ? rooms.find((r) => r.id === selectedRoomId)
@@ -510,7 +523,8 @@ function ChatPageContent({
         }
         updateReservationRequestStatus(roomId, "canceled");
         if (result.data?.message) {
-          addMessage(result.data.message);
+          if (activeRoomIdRef.current === roomId)
+            addMessage(result.data.message);
         }
       } catch {
         setApplicationActionError("오류가 발생했습니다. 다시 시도해주세요.");
@@ -550,8 +564,7 @@ function ChatPageContent({
         rejectApplicant(id);
         const msgResult = await sendApplicationRejectedMessage(id);
         if (msgResult.data) {
-          addMessage(msgResult.data);
-          broadcastMessage(msgResult.data);
+          deliverMessage(id, msgResult.data);
           updatePreview(id, "지원 거절", msgResult.data.created_at ?? "");
         }
       } catch {
@@ -560,7 +573,7 @@ function ChatPageContent({
         setActioningId(null);
       }
     },
-    [actioningId, rejectApplicant, addMessage, broadcastMessage, updatePreview],
+    [actioningId, rejectApplicant, deliverMessage, updatePreview],
   );
 
   const handleConfirmClick = useCallback(
@@ -625,8 +638,7 @@ function ChatPageContent({
         };
         const msgResult = await sendApplicationSelectedMessage(id, appData);
         if (msgResult.data) {
-          addMessage(msgResult.data);
-          broadcastMessage(msgResult.data);
+          deliverMessage(id, msgResult.data);
           updatePreview(id, "선택 확정", msgResult.data.created_at ?? "");
         }
 
@@ -678,8 +690,7 @@ function ChatPageContent({
       broadcastConfirmation,
       applicants,
       posts,
-      addMessage,
-      broadcastMessage,
+      deliverMessage,
       updatePreview,
       broadcastReservationAccepted,
     ],
@@ -735,8 +746,7 @@ function ChatPageContent({
           return;
         }
         if (result.data) {
-          addMessage(result.data);
-          broadcastMessage(result.data);
+          deliverMessage(activeRoomId, result.data);
           updatePreview(
             activeRoomId,
             "결제 요청",
@@ -752,8 +762,7 @@ function ChatPageContent({
       paymentState,
       isPaymentAlreadyPaid,
       selectedRoom,
-      addMessage,
-      broadcastMessage,
+      deliverMessage,
       updatePreview,
     ],
   );
@@ -828,8 +837,7 @@ function ChatPageContent({
                 paymentRequestMessageId: data.messageId,
               });
               if (result.data) {
-                addMessage(result.data);
-                broadcastMessage(result.data);
+                deliverMessage(activeRoomId, result.data);
                 updatePreview(
                   activeRoomId,
                   "결제 완료",
@@ -852,8 +860,7 @@ function ChatPageContent({
       activeRoomId,
       selectedRoom,
       requestPayment,
-      addMessage,
-      broadcastMessage,
+      deliverMessage,
       updatePreview,
     ],
   );
@@ -869,8 +876,7 @@ function ChatPageContent({
         return;
       }
       if (result.data) {
-        addMessage(result.data);
-        broadcastMessage(result.data);
+        deliverMessage(activeRoomId, result.data);
 
         updatePreview(
           activeRoomId,
@@ -884,14 +890,7 @@ function ChatPageContent({
     } finally {
       setSending(false);
     }
-  }, [
-    input,
-    activeRoomId,
-    sending,
-    addMessage,
-    broadcastMessage,
-    updatePreview,
-  ]);
+  }, [input, activeRoomId, sending, deliverMessage, updatePreview]);
 
   const handlePhotoSelect = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -916,8 +915,7 @@ function ChatPageContent({
           return;
         }
         if (result.data) {
-          addMessage(result.data);
-          broadcastMessage(result.data);
+          deliverMessage(activeRoomId, result.data);
           updatePreview(activeRoomId, "사진", result.data.created_at ?? "");
         }
       } catch {
@@ -926,7 +924,7 @@ function ChatPageContent({
         setSendingPhoto(false);
       }
     },
-    [activeRoomId, sendingPhoto, addMessage, broadcastMessage, updatePreview],
+    [activeRoomId, sendingPhoto, deliverMessage, updatePreview],
   );
 
   const handleCareRecordSubmit = async (record: CareRecordPayload) => {
@@ -949,8 +947,7 @@ function ChatPageContent({
       const content = `[돌봄기록] ${record.title}`;
       const result = await sendSystemMessage(activeRoomId, content);
       if (result.data) {
-        addMessage(result.data);
-        broadcastMessage(result.data);
+        deliverMessage(activeRoomId, result.data);
         updatePreview(activeRoomId, content, result.data.created_at ?? "");
       }
     } catch {
@@ -994,8 +991,7 @@ function ChatPageContent({
         return;
       }
       if (result.data) {
-        addMessage(result.data);
-        broadcastMessage(result.data);
+        deliverMessage(activeRoomId, result.data);
         updatePreview(
           activeRoomId,
           "서비스 시작",
@@ -1036,8 +1032,7 @@ function ChatPageContent({
         return;
       }
       if (result.data) {
-        addMessage(result.data);
-        broadcastMessage(result.data);
+        deliverMessage(activeRoomId, result.data);
         updatePreview(
           activeRoomId,
           "예약 수정 요청",
@@ -1078,8 +1073,7 @@ function ChatPageContent({
           return;
         }
         if (result.data) {
-          addMessage(result.data);
-          broadcastMessage(result.data);
+          deliverMessage(activeRoomId, result.data);
           updatePreview(
             activeRoomId,
             "예약 수정 승인",
@@ -1091,7 +1085,7 @@ function ChatPageContent({
         setSendError("예약 수정에 실패했습니다. 다시 시도해주세요.");
       }
     },
-    [activeRoomId, addMessage, broadcastMessage, updatePreview, refresh],
+    [activeRoomId, deliverMessage, updatePreview, refresh],
   );
 
   const handleReservationEditReject = useCallback(
@@ -1107,8 +1101,7 @@ function ChatPageContent({
           return;
         }
         if (result.data) {
-          addMessage(result.data);
-          broadcastMessage(result.data);
+          deliverMessage(activeRoomId, result.data);
           updatePreview(
             activeRoomId,
             "예약 수정 거절",
@@ -1119,7 +1112,7 @@ function ChatPageContent({
         setSendError("예약 수정 거절 전송에 실패했습니다. 다시 시도해주세요.");
       }
     },
-    [activeRoomId, addMessage, broadcastMessage, updatePreview],
+    [activeRoomId, deliverMessage, updatePreview],
   );
 
   async function handleServiceComplete() {
@@ -1156,8 +1149,7 @@ function ChatPageContent({
         return;
       }
       if (result.data) {
-        addMessage(result.data);
-        broadcastMessage(result.data);
+        deliverMessage(activeRoomId, result.data);
         updatePreview(
           activeRoomId,
           "서비스 완료",
@@ -1183,8 +1175,7 @@ function ChatPageContent({
       }
       setConfirmedServiceIds((prev) => new Set([...prev, reservationId]));
       if (activeRoomId && result.completionMessage) {
-        addMessage(result.completionMessage);
-        broadcastMessage(result.completionMessage);
+        deliverMessage(activeRoomId, result.completionMessage);
         updatePreview(
           activeRoomId,
           "서비스 완료 확정",

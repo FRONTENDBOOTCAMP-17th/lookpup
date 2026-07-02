@@ -176,7 +176,9 @@ function toMessage(m: MessageApiItem, userId: string): Message {
     const jsonPart = m.content.slice(SERVICE_COMPLETE_CONFIRMED_PREFIX.length);
     if (jsonPart) {
       try {
-        serviceCompleteConfirmedData = JSON.parse(jsonPart) as ServiceCompleteData;
+        serviceCompleteConfirmedData = JSON.parse(
+          jsonPart,
+        ) as ServiceCompleteData;
       } catch {}
     }
     return {
@@ -277,7 +279,10 @@ function toMessage(m: MessageApiItem, userId: string): Message {
         id: m.id,
         from: "reservation_edit_response" as const,
         text: "",
-        reservationEditResponseData: { ...payload, sentByMe: m.sender_id === userId },
+        reservationEditResponseData: {
+          ...payload,
+          sentByMe: m.sender_id === userId,
+        },
         time: m.created_at ? formatTime(m.created_at) : undefined,
         rawDate: m.created_at ?? undefined,
       };
@@ -427,13 +432,27 @@ export function useChatMessages(
     [userId],
   );
 
-  const broadcastMessage = useCallback((m: MessageApiItem) => {
-    channelRef.current?.send({
-      type: "broadcast",
-      event: "new_message",
-      payload: m,
-    });
-  }, []);
+  const broadcastMessage = useCallback(
+    (roomId: string, m: MessageApiItem) => {
+      if (roomId === activeRoomId) {
+        channelRef.current?.send({
+          type: "broadcast",
+          event: "new_message",
+          payload: m,
+        });
+        return;
+      }
+      const supabase = createClient();
+      const channel = supabase.channel(`room-${roomId}`);
+      channel.subscribe((status) => {
+        if (status !== "SUBSCRIBED") return;
+        channel
+          .send({ type: "broadcast", event: "new_message", payload: m })
+          .finally(() => supabase.removeChannel(channel));
+      });
+    },
+    [activeRoomId],
+  );
 
   const broadcastConfirmation = useCallback(() => {
     channelRef.current?.send({
