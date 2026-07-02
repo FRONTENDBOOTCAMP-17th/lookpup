@@ -257,6 +257,11 @@ export function ChatRoomItem({
             </span>
           )}
         </div>
+        {room.sub && (
+          <span className="inline-block max-w-full truncate text-xs font-medium px-2 py-0.5 my-1 rounded-full bg-orange-100 text-orange-600">
+            {room.sub}
+          </span>
+        )}
         <p className="text-gray-500 text-sm leading-5 py-1 truncate">
           {room.lastMessage}
         </p>
@@ -351,7 +356,7 @@ export function ApplicantCard({
           </span>
         </div>
         <p className="text-xs text-gray-400 truncate mb-3">
-          "{applicant.preview}"
+          &ldquo;{applicant.preview}&rdquo;
         </p>
         {isRejected ? (
           <p className="text-xs text-gray-400">거절한 지원자</p>
@@ -1006,15 +1011,21 @@ export function ProfilePopup({
   const [fetchedProfile, setFetchedProfile] = useState<SitterProfile | null>(
     null,
   );
-  const [loadingProfile, setLoadingProfile] = useState(false);
+  const [resolvedSitterId, setResolvedSitterId] = useState<string | null>(
+    null,
+  );
+  const loadingProfile =
+    cardVariant === "sitter" &&
+    !!data.sitterId &&
+    resolvedSitterId !== data.sitterId;
 
   useEffect(() => {
     if (cardVariant !== "sitter" || !data.sitterId) return;
-    setLoadingProfile(true);
+    let cancelled = false;
     fetch(`/api/sitters/${data.sitterId}`)
       .then((res) => res.json())
       .then(({ data: d }) => {
-        if (!d) return;
+        if (cancelled || !d) return;
         setFetchedProfile({
           name: d.full_name,
           initial: d.full_name?.charAt(0) ?? "",
@@ -1030,7 +1041,12 @@ export function ProfilePopup({
         });
       })
       .catch(() => {})
-      .finally(() => setLoadingProfile(false));
+      .finally(() => {
+        if (!cancelled) setResolvedSitterId(data.sitterId ?? null);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [data.sitterId, cardVariant]);
 
   const profile: SitterProfile = fetchedProfile ?? {

@@ -88,16 +88,36 @@ export async function GET() {
       r.reservation_id,
   );
   const reservationStatusMap = new Map<string, string>();
+  const reservationLabelMap = new Map<
+    string,
+    { serviceTitle: string | null; petNames: string[]; startDatetime: string | null }
+  >();
   if (roomsWithReservation.length > 0) {
     const reservationIds = roomsWithReservation
       .map((r) => r.reservation_id)
       .filter(Boolean) as string[];
     const { data: reservations } = await db
       .from("reservations")
-      .select("id, status")
+      .select(
+        "id, status, start_datetime, services(title), reservation_items(pets(name))",
+      )
       .in("id", reservationIds);
+    type ServiceRow = { title: string | null };
+    type PetRow = { name: string } | null;
+    type ItemRow = { pets: PetRow };
     (reservations ?? []).forEach((r) => {
+      const rawService = r.services as ServiceRow | ServiceRow[] | null;
+      const service = Array.isArray(rawService) ? rawService[0] : rawService;
+      const items = (r.reservation_items as ItemRow[]) ?? [];
+
       reservationStatusMap.set(r.id, r.status);
+      reservationLabelMap.set(r.id, {
+        serviceTitle: service?.title ?? null,
+        petNames: items
+          .map((item) => item.pets?.name)
+          .filter((name): name is string => Boolean(name)),
+        startDatetime: r.start_datetime ?? null,
+      });
     });
   }
 
@@ -142,6 +162,19 @@ export async function GET() {
           room.room_type === "direct") &&
         room.reservation_id
           ? (reservationStatusMap.get(room.reservation_id) ?? null)
+          : null,
+      reservation_service_title:
+        room.room_type === "direct" && room.reservation_id
+          ? (reservationLabelMap.get(room.reservation_id)?.serviceTitle ?? null)
+          : null,
+      reservation_pet_names:
+        room.room_type === "direct" && room.reservation_id
+          ? (reservationLabelMap.get(room.reservation_id)?.petNames ?? [])
+          : [],
+      reservation_start_datetime:
+        room.room_type === "direct" && room.reservation_id
+          ? (reservationLabelMap.get(room.reservation_id)?.startDatetime ??
+            null)
           : null,
       last_message: room.last_message ?? null,
       last_message_at: room.last_message_at ?? null,

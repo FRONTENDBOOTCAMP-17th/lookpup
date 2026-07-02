@@ -67,6 +67,28 @@ interface RoomApiItem {
   request_status: string | null;
   application_status: string | null;
   reservation_status: string | null;
+  reservation_service_title: string | null;
+  reservation_pet_names: string[];
+  reservation_start_datetime: string | null;
+}
+
+function formatRoomSub(r: RoomApiItem): string {
+  if (r.request_title) return r.request_title;
+  if (!r.reservation_service_title && r.reservation_pet_names.length === 0) {
+    return "1:1 채팅";
+  }
+  const date = r.reservation_start_datetime
+    ? new Date(r.reservation_start_datetime).toLocaleDateString("ko-KR", {
+        month: "numeric",
+        day: "numeric",
+      })
+    : null;
+  const parts = [
+    r.reservation_service_title,
+    r.reservation_pet_names.join(", ") || null,
+    date,
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join(" · ") : "1:1 채팅";
 }
 
 function formatPreview(content: string): string {
@@ -161,7 +183,7 @@ export function useChatRooms(activeRoomId: string | null) {
           name: r.other_user_full_name ?? "",
           initial: (r.other_user_full_name ?? "?")[0],
           profileImage: r.other_user_profile_image ?? null,
-          sub: r.request_title ?? "예약 채팅",
+          sub: formatRoomSub(r),
           lastMessage: formatPreview(r.last_message ?? ""),
           time: formatTime(r.last_message_at),
           unread: r.unread_count ?? 0,
