@@ -190,7 +190,7 @@ export async function adminUpdateReservationStatus(
   if (!reservation) return { error: { code: "NOT_FOUND", message: "예약을 찾을 수 없습니다." } };
 
   const now = new Date().toISOString();
-  const updates: Record<string, string | null> = { status };
+  const updates: { status: string; accepted_at?: string; started_at?: string; completed_at?: string; canceled_at?: string; cancel_reason?: string | null } = { status };
 
   if (status === "accepted") updates.accepted_at = now;
   else if (status === "in_progress") updates.started_at = now;

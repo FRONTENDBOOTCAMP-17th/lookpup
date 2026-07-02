@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import Header from "@/components/layout/Header";
@@ -31,9 +32,29 @@ type LegalPageProps = {
   articles: LegalArticle[];
   /** 적용일자 박스 문장 */
   effectiveDate: string;
-  /** 문자열 항목의 텍스트를 커스텀 렌더 (예: 링크 삽입). 미지정 시 그대로 출력 */
-  renderItemText?: (text: string) => ReactNode;
+  /** [텍스트] 형태로 감싼 단어를 링크로 변환하는 맵 */
+  linkMap?: Record<string, string>;
 };
+
+function renderWithLinks(text: string, linkMap?: Record<string, string>): ReactNode {
+  if (!linkMap) return text;
+  const match = text.match(/^([\s\S]*?)\[([^\]]+)\]([\s\S]*)$/);
+  if (match && linkMap[match[2]]) {
+    return (
+      <>
+        {match[1]}
+        <Link
+          href={linkMap[match[2]]}
+          className="text-[var(--color-orange-500)] underline underline-offset-2 hover:opacity-70 transition-opacity"
+        >
+          {match[2]}
+        </Link>
+        {match[3]}
+      </>
+    );
+  }
+  return text;
+}
 
 export default function LegalPage({
   title,
@@ -42,7 +63,7 @@ export default function LegalPage({
   intro,
   articles,
   effectiveDate,
-  renderItemText,
+  linkMap,
 }: LegalPageProps) {
   const router = useRouter();
 
@@ -117,7 +138,7 @@ export default function LegalPage({
                           </p>
                         ) : (
                           <p className="text-sm text-[#281A0E] leading-relaxed whitespace-pre-line">
-                            {renderItemText ? renderItemText(item) : item}
+                            {renderWithLinks(item, linkMap)}
                           </p>
                         )}
                       </li>

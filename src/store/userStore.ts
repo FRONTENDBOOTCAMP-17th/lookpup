@@ -37,11 +37,13 @@ interface UserState {
   isLoggedIn: boolean;
   isLoading: boolean;
   isDeletedAccount: boolean;
+  unreadCount: number;
   setUser: (user: UserProfile) => void;
   setSitter: (sitter: SitterData) => void;
   clearUser: () => void;
   verifyUser: () => void;
   setDeletedAccount: () => void;
+  setUnreadCount: (count: number) => void;
 }
 
 export const useUserStore = create<UserState>((set) => ({
@@ -50,6 +52,7 @@ export const useUserStore = create<UserState>((set) => ({
   isLoggedIn: false,
   isLoading: true,
   isDeletedAccount: false,
+  unreadCount: 0,
   setUser: (user) =>
     set({ user, isLoggedIn: true, isLoading: false, isDeletedAccount: false }),
   setSitter: (sitter) => set({ sitter }),
@@ -73,4 +76,5 @@ export const useUserStore = create<UserState>((set) => ({
       isLoading: false,
       isDeletedAccount: true,
     }),
+  setUnreadCount: (count) => set({ unreadCount: count }),
 }));
