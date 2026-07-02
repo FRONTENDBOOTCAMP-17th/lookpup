@@ -3,14 +3,14 @@
 import { useFormContext } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
-import { format } from "date-fns";
+import { format, differenceInDays } from "date-fns";
 import { ko } from "date-fns/locale";
 import { DateRange } from "react-day-picker";
 import { useBookingStore } from "@/store/bookingStore";
 import BookingSummary from "./BookingSummary";
 import type { Step2Values } from "@/schemas/booking.schema";
 import type { Pet } from "@/hooks/queries/usePets";
-import type { SitterService } from "@/hooks/queries/useSitterBookingInfo";
+import type { SitterBookingInfo, SitterService } from "@/hooks/queries/useSitterBookingInfo";
 
 const SERVICES: { key: string; label: string; emoji: string; desc: string }[] = [
   { key: "visit", label: "방문돌봄", emoji: "🏠", desc: "보호자님 집에서 돌봄" },
@@ -37,13 +37,20 @@ function formatDateRange(range: DateRange | undefined): string {
 export default function StepPetService({
   pets,
   sitterServices,
+  sitter,
 }: {
   pets: Pet[];
   sitterServices: SitterService[];
+  sitter: SitterBookingInfo;
 }) {
   const router = useRouter();
   const { watch, setValue, formState: { errors } } = useFormContext<Step2Values>();
   const { dateRange, petIds, togglePet } = useBookingStore();
+
+  const nights = dateRange?.from && dateRange?.to
+    ? Math.max(1, differenceInDays(dateRange.to, dateRange.from))
+    : 1;
+  const total = sitter.pricePerDay * nights;
 
   function handleTogglePet(id: string, name: string) {
     togglePet(id, name);
@@ -162,6 +169,7 @@ export default function StepPetService({
               : "-",
           },
           { label: "반려동물", value: petNames },
+          { label: "금액", value: `${total.toLocaleString()}원` },
         ]}
       />
     </div>

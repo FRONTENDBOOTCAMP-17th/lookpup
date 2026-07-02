@@ -240,7 +240,7 @@ export default function BookingClient({ sitterId }: { sitterId: string }) {
             )}
             {step === 2 && (
               <FormProvider {...step2Form}>
-                <StepPetService pets={pets} sitterServices={sitter.services} />
+                <StepPetService pets={pets} sitterServices={sitter.services} sitter={sitter} />
               </FormProvider>
             )}
             {step === 3 && (
