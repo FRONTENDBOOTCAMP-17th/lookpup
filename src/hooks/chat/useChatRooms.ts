@@ -20,6 +20,7 @@ import {
   APPLICATION_REJECTED_PREFIX,
   RESERVATION_CANCELED_PREFIX,
   SERVICE_COMPLETE_PREFIX,
+  SERVICE_COMPLETE_CONFIRMED_PREFIX,
   SERVICE_START_PREFIX,
   RESERVATION_REQUEST_PREFIX,
   RESERVATION_ACCEPTED_PREFIX,
@@ -69,6 +70,8 @@ function formatPreview(content: string): string {
   if (content.startsWith(APPLICATION_SELECTED_PREFIX)) return "선택 확정";
   if (content.startsWith(APPLICATION_REJECTED_PREFIX)) return "지원 거절";
   if (content.startsWith(RESERVATION_CANCELED_PREFIX)) return "예약 취소";
+  if (content.startsWith(SERVICE_COMPLETE_CONFIRMED_PREFIX))
+    return "서비스 완료 확정";
   if (content.startsWith(SERVICE_COMPLETE_PREFIX)) return "서비스 완료";
   if (content.startsWith(SERVICE_START_PREFIX)) return "서비스 시작";
   if (content.startsWith(RESERVATION_REQUEST_PREFIX)) return "예약 요청";

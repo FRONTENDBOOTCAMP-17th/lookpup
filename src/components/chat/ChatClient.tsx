@@ -1011,6 +1011,15 @@ function ChatPageContent({
         return;
       }
       setConfirmedServiceIds((prev) => new Set([...prev, reservationId]));
+      if (activeRoomId && result.completionMessage) {
+        addMessage(result.completionMessage);
+        broadcastMessage(result.completionMessage);
+        updatePreview(
+          activeRoomId,
+          "서비스 완료 확정",
+          result.completionMessage.created_at ?? "",
+        );
+      }
     } catch {
       setSendError("서비스 완료 확인에 실패했습니다. 다시 시도해주세요.");
     } finally {

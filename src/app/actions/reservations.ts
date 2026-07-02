@@ -9,6 +9,7 @@ import {
   RESERVATION_ACCEPTED_PREFIX,
   RESERVATION_REJECTED_PREFIX,
   PAYMENT_REQUEST_PREFIX,
+  SERVICE_COMPLETE_CONFIRMED_PREFIX,
 } from "@/lib/chatMessagePrefixes";
 
 const FEE_RATE = 0.05;
@@ -414,7 +415,9 @@ export async function ownerConfirmServiceComplete(reservationId: string) {
 
   const { data: reservation } = await db
     .from("reservations")
-    .select("id, owner_id, status, sitter_id")
+    .select(
+      "id, owner_id, status, sitter_id, service_id, start_datetime, end_datetime, total_price",
+    )
     .eq("id", reservationId)
     .single();
 
@@ -459,17 +462,78 @@ export async function ownerConfirmServiceComplete(reservationId: string) {
     .eq("id", reservation.sitter_id)
     .single();
 
+  const { data: room } = await db
+    .from("chat_rooms")
+    .select("id")
+    .eq("reservation_id", reservationId)
+    .maybeSingle();
+
+  let completionMessage = null;
+
+  if (room) {
+    const { data: service } = reservation.service_id
+      ? await db
+          .from("services")
+          .select("title, service_type")
+          .eq("id", reservation.service_id)
+          .maybeSingle()
+      : { data: null };
+    const { data: items } = await db
+      .from("reservation_items")
+      .select("pets(name)")
+      .eq("reservation_id", reservationId);
+
+    const serviceTitle =
+      service?.title ||
+      SERVICE_TYPE_LABEL_MAP[service?.service_type ?? ""] ||
+      "펫시팅 서비스";
+    const petName = (
+      items?.[0]?.pets as { name: string } | null | undefined
+    )?.name;
+
+    const completionContent = `${SERVICE_COMPLETE_CONFIRMED_PREFIX}${JSON.stringify(
+      {
+        reservationId,
+        serviceTitle,
+        petName,
+        startDatetime: reservation.start_datetime,
+        endDatetime: reservation.end_datetime,
+        totalPrice: reservation.total_price,
+      },
+    )}`;
+
+    const { data: insertedMessage } = await db
+      .from("messages")
+      .insert({ room_id: room.id, sender_id: user.id, content: completionContent })
+      .select()
+      .single();
+    completionMessage = insertedMessage;
+
+    await db
+      .from("chat_rooms")
+      .update({ last_message: "서비스 완료 확정", last_message_at: now })
+      .eq("id", room.id);
+  }
+
   if (sitterProfile?.user_id) {
     await createNotification({
       userId: sitterProfile.user_id,
       type: "reservation",
       title: "서비스 완료 확인되었어요",
       content: "보호자가 서비스 완료를 확인했습니다.",
-      linkUrl: `/myprofile`,
+      linkUrl: room ? `/chat?roomId=${room.id}` : `/myprofile`,
     });
   }
 
-  return { data };
+  await createNotification({
+    userId: reservation.owner_id,
+    type: "reservation",
+    title: "서비스 완료를 확인했어요",
+    content: "펫시터에게 서비스 완료 확인 소식이 전달되었습니다.",
+    linkUrl: room ? `/chat?roomId=${room.id}` : `/myprofile`,
+  });
+
+  return { data, completionMessage };
 }
 
 const STATUS_MAP: Record<string, string> = {

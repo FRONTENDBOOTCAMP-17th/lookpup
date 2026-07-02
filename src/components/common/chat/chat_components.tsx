@@ -157,6 +157,7 @@ export type Message = {
     | "application_rejected"
     | "reservation_canceled"
     | "service_complete"
+    | "service_complete_confirmed"
     | "reservation_request"
     | "reservation_accepted"
     | "reservation_rejected"
@@ -171,6 +172,7 @@ export type Message = {
   paymentRequestMessageId?: string;
   applicationData?: ApplicationData;
   serviceCompleteData?: ServiceCompleteData;
+  serviceCompleteConfirmedData?: ServiceCompleteData;
   serviceStartData?: ServiceCompleteData;
   reservationRequestData?: ReservationRequestData;
   reservationAcceptedData?: ReservationAcceptedData;
@@ -760,6 +762,25 @@ export function MessageBubble({
         />
         {msg.time && (
           <p className="text-left text-gray-500 text-xs pl-11 mt-1">
+            {msg.time}
+          </p>
+        )}
+      </div>
+    );
+  }
+  if (msg.from === "service_complete_confirmed") {
+    return (
+      <div>
+        <ServiceCompletedCard
+          sentByMe={msg.sentByMe ?? false}
+          senderInitial={senderInitial}
+          senderProfileImage={senderProfileImage}
+          data={msg.serviceCompleteConfirmedData}
+        />
+        {msg.time && (
+          <p
+            className={`text-gray-500 text-xs mt-1 ${msg.sentByMe ? "text-right pr-3" : "text-left pl-11"}`}
+          >
             {msg.time}
           </p>
         )}
@@ -1985,6 +2006,114 @@ export function SitterServiceCompleteCard({
           보호자의 확인 후 서비스가 완료됩니다.
         </p>
       </div>
+    </div>
+  );
+}
+
+// 서비스 최종 완료 안내 카드 (보호자 확인 완료 - 보호자/펫시터 공통)
+type ServiceCompletedCardProps = {
+  sentByMe: boolean;
+  senderInitial: string;
+  senderProfileImage?: string | null;
+  data?: ServiceCompleteData;
+};
+
+export function ServiceCompletedCard({
+  sentByMe,
+  senderInitial,
+  senderProfileImage,
+  data,
+}: ServiceCompletedCardProps) {
+  const hasInfo =
+    data?.serviceTitle ||
+    data?.petName ||
+    data?.startDatetime ||
+    data?.totalPrice !== undefined;
+
+  const inner = (
+    <div
+      className={`w-79.5 p-4 rounded-2xl flex flex-col gap-3 ${
+        sentByMe
+          ? "bg-orange-100 outline-[1.11px] outline-orange-400 outline-offset-[-1.11px]"
+          : "bg-white outline-[1.11px] outline-orange-200 outline-offset-[-1.11px]"
+      }`}
+    >
+      <div className="flex items-center gap-2.5">
+        <div className="w-9 h-9 bg-[#ECFDF5] rounded-full flex items-center justify-center shrink-0">
+          <CheckCircle size={18} className="text-[#10B981]" />
+        </div>
+        <div>
+          <span
+            className={`text-[10px] font-bold uppercase tracking-[0.3px] leading-4 ${
+              sentByMe ? "text-orange-500" : "text-[#065F46]"
+            }`}
+          >
+            서비스 완료
+          </span>
+          <p className="text-[#281A0E] text-sm leading-5 mt-0.5">
+            {sentByMe
+              ? "서비스 완료를 확인했어요."
+              : "보호자가 서비스 완료를 확인했어요."}
+          </p>
+        </div>
+      </div>
+      {hasInfo && (
+        <div
+          className={`flex flex-col gap-2 px-3 py-2.5 rounded-xl ${
+            sentByMe ? "bg-orange-200" : "bg-orange-50"
+          }`}
+        >
+          {(data?.serviceTitle || data?.petName) && (
+            <div className="flex items-center gap-1.5">
+              {data?.serviceTitle && (
+                <span className="text-xs text-stone-700 font-medium">
+                  {data.serviceTitle}
+                </span>
+              )}
+              {data?.serviceTitle && data?.petName && (
+                <span className="text-gray-300 text-xs">·</span>
+              )}
+              {data?.petName && (
+                <span className="text-xs text-stone-500">{data.petName}</span>
+              )}
+            </div>
+          )}
+          {data?.startDatetime && (
+            <div className="flex items-center gap-2">
+              <span className="text-[#6B7280] text-xs shrink-0">일정</span>
+              <span className="text-[#374151] text-xs">
+                {formatServiceDate(data.startDatetime)}
+                {data.endDatetime
+                  ? ` ~ ${formatServiceDate(data.endDatetime)}`
+                  : ""}
+              </span>
+            </div>
+          )}
+          {data?.totalPrice !== undefined && (
+            <div className="flex items-center gap-2">
+              <span className="text-[#6B7280] text-xs shrink-0">금액</span>
+              <span className="text-orange-500 text-xs font-medium">
+                {data.totalPrice.toLocaleString("ko-KR")}원
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+      <p className="text-[#6B7280] text-xs leading-relaxed">
+        {sentByMe
+          ? "펫시터에게 완료 확인 소식이 전달되었어요."
+          : "정산 및 리뷰 작성이 가능해요."}
+      </p>
+    </div>
+  );
+
+  if (sentByMe) {
+    return <div className="flex justify-end">{inner}</div>;
+  }
+  return (
+    <div className="flex items-start gap-3">
+      <Avatar initial={senderInitial} src={senderProfileImage} size="sm" />
+      {inner}
     </div>
   );
 }
