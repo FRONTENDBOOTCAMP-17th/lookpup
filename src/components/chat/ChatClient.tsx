@@ -9,6 +9,8 @@ import {
   type Applicant,
   type Message,
   type ReservationRequest,
+  canLeaveDirectRoom,
+  canLeaveReservationRequest,
 } from "@/components/common/chat/chat_components";
 import { ChatSidebar } from "@/components/chat/ChatSidebar";
 import { ChatWindow } from "@/components/chat/ChatWindow";
@@ -271,6 +273,8 @@ function ChatPageContent({
   }
 
   function handleDeleteReservationRequest(id: string) {
+    const rr = reservationRequests.find((r) => r.id === id);
+    if (rr && !canLeaveReservationRequest(rr)) return;
     setPendingDelete({ id, type: "reservation" });
     setDeleteError(null);
   }
@@ -340,7 +344,8 @@ function ChatPageContent({
         setApplicationActionError(result.error.message);
         return;
       }
-      const reservationId = "reservationId" in result ? result.reservationId : null;
+      const reservationId =
+        "reservationId" in result ? result.reservationId : null;
       confirmApplicant(id);
       updateApplicantStatus(id, "selected");
       broadcastConfirmation();
@@ -537,7 +542,11 @@ function ChatPageContent({
     }
   }
 
-  async function handlePayNow(data: { amount: number; reason: string; messageId: string }) {
+  async function handlePayNow(data: {
+    amount: number;
+    reason: string;
+    messageId: string;
+  }) {
     if (payingNow || isPaymentPending || !activeRoomId) return;
     setPayingNow(true);
 
@@ -598,7 +607,8 @@ function ChatPageContent({
       {
         onSuccess: async () => {
           try {
-            const verifyResult = await verifyAndConfirmPayment(portonePaymentId);
+            const verifyResult =
+              await verifyAndConfirmPayment(portonePaymentId);
             if (verifyResult.error) {
               setSendError(verifyResult.error.message);
               return;
@@ -738,7 +748,9 @@ function ChatPageContent({
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [sendingPhoto, setSendingPhoto] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-  const [paymentReservationAmount, setPaymentReservationAmount] = useState<number | undefined>(undefined);
+  const [paymentReservationAmount, setPaymentReservationAmount] = useState<
+    number | undefined
+  >(undefined);
   const [isPaymentAlreadyPaid, setIsPaymentAlreadyPaid] = useState(false);
   const [careRecordOpen, setCareRecordOpen] = useState(false);
   const [confirmedServiceIds, setConfirmedServiceIds] = useState<Set<string>>(
@@ -839,6 +851,7 @@ function ChatPageContent({
           result.data.created_at ?? "",
         );
       }
+      refresh();
       setServiceStartModalOpen(false);
     } catch {
       setSendError("서비스 시작 전송에 실패했습니다. 다시 시도해주세요.");
@@ -1002,7 +1015,7 @@ function ChatPageContent({
   }
 
   async function handleServiceConfirm(reservationId: string) {
-    if (!reservationId || isServiceConfirming) return;
+    if (!reservationId || isServiceConfirming || !activeRoomId) return;
     setIsServiceConfirming(true);
     try {
       const result = await ownerConfirmServiceComplete(reservationId);
@@ -1020,11 +1033,16 @@ function ChatPageContent({
           result.completionMessage.created_at ?? "",
         );
       }
+      refresh();
     } catch {
       setSendError("서비스 완료 확인에 실패했습니다. 다시 시도해주세요.");
     } finally {
       setIsServiceConfirming(false);
     }
+  }
+
+  function handleWriteReview(reservationId: string) {
+    router.push(`/myprofile/reviews/write?bookingId=${reservationId}`);
   }
 
   useEffect(() => {
@@ -1146,6 +1164,8 @@ function ChatPageContent({
     : undefined;
 
   function handleDeleteRoom(id: string) {
+    const room = rooms.find((r) => r.id === id);
+    if (room && !canLeaveDirectRoom(room)) return;
     setPendingDelete({ id, type: "room" });
     setDeleteError(null);
   }
@@ -1308,6 +1328,13 @@ function ChatPageContent({
     selectedRoom.ownerId !== null &&
     selectedRoom.ownerId !== userId;
 
+  const canStartService = !(
+    selectedRoom?.reservationStatus &&
+    ["in_progress", "completed", "canceled"].includes(
+      selectedRoom.reservationStatus,
+    )
+  );
+
   const isOwnerOfSelectedRoom =
     selectedApplicant?.ownerId !== null &&
     selectedApplicant?.ownerId === userId;
@@ -1456,6 +1483,14 @@ function ChatPageContent({
       handleDeleteApplicant(selectedApplicantId);
   };
 
+  const canLeaveActiveRoom =
+    activeTab === "one_on_one"
+      ? !selectedRoom || canLeaveDirectRoom(selectedRoom)
+      : activeTab === "reservations"
+        ? !selectedReservationRequest ||
+          canLeaveReservationRequest(selectedReservationRequest)
+        : true;
+
   const sharedSidebarProps = {
     activeTab,
     searchQuery,
@@ -1513,6 +1548,8 @@ function ChatPageContent({
     isPaymentComplete,
     hasServiceStarted,
     hasServiceCompleted,
+    canLeaveChat: canLeaveActiveRoom,
+    canStartService,
     input,
     sending,
     sendError,
@@ -1521,6 +1558,7 @@ function ChatPageContent({
     applicationActionError,
     actioningId,
     onLeaveChat: leaveChat,
+    onWriteReview: handleWriteReview,
     onReport: () => router.push(getReportUrl()),
     onNavigateToPost: (postId: string) => router.push(`/board/${postId}`),
     onSetInput: setInput,
