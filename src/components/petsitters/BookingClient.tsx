@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQueryClient } from "@tanstack/react-query";
 import { useBookingStore } from "@/store/bookingStore";
 import { useSitterBookingInfo } from "@/hooks/queries/useSitterBookingInfo";
 import { useSitterAvailability } from "@/hooks/queries/useSitterAvailability";
@@ -35,6 +36,7 @@ export { SERVICE_KEY_TO_TYPE };
 
 export default function BookingClient({ sitterId }: { sitterId: string }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
   const [chatRoomId, setChatRoomId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -121,6 +123,7 @@ export default function BookingClient({ sitterId }: { sitterId: string }) {
       return;
     }
 
+    queryClient.invalidateQueries({ queryKey: ["sitter-availability", sitterId] });
     setStep(4);
     if (result.data) setChatRoomId(result.data.room_id);
   }
