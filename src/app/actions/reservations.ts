@@ -8,6 +8,7 @@ import {
   RESERVATION_REQUEST_PREFIX,
   RESERVATION_ACCEPTED_PREFIX,
   RESERVATION_REJECTED_PREFIX,
+  PAYMENT_REQUEST_PREFIX,
 } from "@/lib/chatMessagePrefixes";
 
 const FEE_RATE = 0.05;
@@ -949,7 +950,7 @@ export async function acceptReservationRequest(reservationId: string) {
   const { data: reservation } = await db
     .from("reservations")
     .select(
-      "id, owner_id, sitter_id, status, total_price, start_datetime, end_datetime",
+      "id, owner_id, sitter_id, service_id, status, total_price, start_datetime, end_datetime",
     )
     .eq("id", reservationId)
     .single();
@@ -1022,6 +1023,41 @@ export async function acceptReservationRequest(reservationId: string) {
     .from("chat_rooms")
     .update({ last_message: "예약 확정", last_message_at: now })
     .eq("id", directRoomId);
+
+  if (reservation.total_price && reservation.total_price > 0) {
+    const { data: service } = reservation.service_id
+      ? await db
+          .from("services")
+          .select("title, service_type")
+          .eq("id", reservation.service_id)
+          .maybeSingle()
+      : { data: null };
+
+    const reason =
+      service?.title ||
+      SERVICE_TYPE_LABEL_MAP[service?.service_type ?? ""] ||
+      "펫시팅 서비스";
+
+    const deadlineDate = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const deadline = `${deadlineDate.getFullYear()}-${pad(deadlineDate.getMonth() + 1)}-${pad(deadlineDate.getDate())} ${pad(deadlineDate.getHours())}:${pad(deadlineDate.getMinutes())}`;
+
+    const paymentContent = `${PAYMENT_REQUEST_PREFIX}${JSON.stringify({
+      amount: reservation.total_price,
+      reason,
+      deadline,
+    })}`;
+
+    await db.from("messages").insert({
+      room_id: directRoomId,
+      sender_id: user.id,
+      content: paymentContent,
+    });
+    await db
+      .from("chat_rooms")
+      .update({ last_message: "결제 요청", last_message_at: now })
+      .eq("id", directRoomId);
+  }
 
   await createNotification({
     userId: reservation.owner_id,
