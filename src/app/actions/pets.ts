@@ -188,7 +188,8 @@ export async function deletePet(id: string) {
     };
   }
 
-  const { data: activeReservations } = await db
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: activeReservations } = await (db as any)
     .from("reservations")
     .select("id")
     .eq("pet_id", id)
