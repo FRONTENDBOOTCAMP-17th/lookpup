@@ -8,7 +8,7 @@ import { test, expect, Page } from "@playwright/test";
 // Kakao Map은 도메인 미등록으로 빈 캔버스 — known limitation.
 // networkidle 금지 (Supabase Realtime websocket으로 hang).
 
-const IMG = "../images/2026-06-24";
+const IMG = "../images/2026-07-02";
 const AUTH_STATE = ".auth/lookpup.json";
 
 async function visit(page: Page, path: string) {
@@ -193,4 +193,51 @@ test.describe("인증 후", () => {
     await shot(page, "A4-book");
     assertLoggedIn(page, "A4");
   });
+
+  // ── 17차 신규 엔드포인트 (delta) ─────────────────────────────────────────
+  test("A5 정산 수익 차트 (recharts 신규, /myprofile/earnings)", async ({ page }) => {
+    await visit(page, "/myprofile/earnings");
+    await shot(page, "A5-earnings-chart");
+    assertLoggedIn(page, "A5");
+  });
+
+  test("A6 예약 내역 목록/상세 (신규)", async ({ page }) => {
+    await visit(page, "/myprofile/booking-history");
+    await shot(page, "A6a-booking-history");
+    const row = page.locator('a[href*="/booking-history/"]').first();
+    if (await row.isVisible().catch(() => false)) {
+      const href = await row.getAttribute("href");
+      await visit(page, href ?? "/myprofile/booking-history");
+      await shot(page, "A6b-booking-detail");
+    }
+    assertLoggedIn(page, "A6");
+  });
+
+  test("A7 시터 프로필 편집 (신규)", async ({ page }) => {
+    await visit(page, "/myprofile/sitter-profile");
+    await shot(page, "A7-sitter-profile");
+    assertLoggedIn(page, "A7");
+  });
+});
+
+// ── 정책/안내 페이지 (신규 delta: about/terms/privacy 리팩토링) ────────────────
+test("P1 서비스 소개 /about", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const s = await visit(page, "/about");
+  await shot(page, "P1-about");
+  expect(s).toBeLessThan(500);
+});
+
+test("P2 이용약관 /terms", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const s = await visit(page, "/terms");
+  await shot(page, "P2-terms");
+  expect(s).toBeLessThan(500);
+});
+
+test("P3 개인정보처리방침 /privacy", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const s = await visit(page, "/privacy");
+  await shot(page, "P3-privacy");
+  expect(s).toBeLessThan(500);
 });
