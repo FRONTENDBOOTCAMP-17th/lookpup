@@ -65,13 +65,7 @@ export function useRequest(applicants: Applicant[]) {
     const applicant = applicants.find((a) => a.id === id);
     if (applicant && confirmedIds.get(applicant.postId) === id)
       return { label: "선택됨", className: "bg-orange-50 text-orange-500" };
-    const unread = applicant?.unread ?? 0;
-    if (unread > 0)
-      return {
-        label: `새 메시지 ${unread}`,
-        className: "bg-green-50 text-green-700",
-      };
-    return { label: "읽음", className: "bg-stone-100 text-stone-400" };
+    return null;
   }
 
   return {

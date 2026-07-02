@@ -59,6 +59,7 @@ interface RoomApiItem {
   reservation_id: string | null;
   other_user_full_name: string | null;
   other_user_profile_image: string | null;
+  sitter_rating: number | null;
   last_message: string | null;
   last_message_at: string | null;
   unread_count: number | null;
@@ -198,8 +199,9 @@ export function useChatRooms(activeRoomId: string | null) {
         name: r.other_user_full_name ?? "",
         initial: (r.other_user_full_name ?? "?")[0],
         profileImage: r.other_user_profile_image ?? null,
-        rating: 0,
+        rating: r.sitter_rating ?? 0,
         preview: formatPreview(r.last_message ?? ""),
+        time: formatTime(r.last_message_at),
         unread: r.unread_count ?? 0,
         applicationStatus: r.application_status ?? null,
       }));
@@ -214,6 +216,7 @@ export function useChatRooms(activeRoomId: string | null) {
           name: r.other_user_full_name ?? "",
           initial: (r.other_user_full_name ?? "?")[0],
           profileImage: r.other_user_profile_image ?? null,
+          rating: r.sitter_rating ?? 0,
           preview: formatPreview(r.last_message ?? ""),
           time: formatTime(r.last_message_at),
           unread: r.unread_count ?? 0,
@@ -420,7 +423,9 @@ export function useChatRooms(activeRoomId: string | null) {
       ),
     );
     setApplicants((prev) =>
-      prev.map((a) => (a.id === roomId ? { ...a, preview: content } : a)),
+      prev.map((a) =>
+        a.id === roomId ? { ...a, preview: content, time } : a,
+      ),
     );
     setReservationRequests((prev) =>
       prev.map((rr) =>

@@ -36,7 +36,7 @@ interface ChatSidebarProps {
   rejectedIds: Set<string>;
   confirmedIds: Map<string, string>;
   actioningId: string | null;
-  getApplicantBadge: (id: string) => Badge;
+  getApplicantBadge: (id: string) => Badge | null;
   onTabChange: (tab: "one_on_one" | "reservations" | "applicants") => void;
   onSearchChange: (q: string) => void;
   onRoomSelect: (id: string) => void;

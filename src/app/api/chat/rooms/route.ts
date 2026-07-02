@@ -34,6 +34,7 @@ export async function GET() {
        owner:users!owner_id(full_name, profile_image),
        sitter:sitters!sitter_id(
          user_id,
+         rating,
          sitter_user:users(full_name, profile_image)
        ),
        request:requests!request_id(title, status)`,
@@ -147,6 +148,7 @@ export async function GET() {
       other_user_profile_image: isOwner
         ? (sitter?.sitter_user?.profile_image ?? null)
         : (owner?.profile_image ?? null),
+      sitter_rating: sitter?.rating ?? null,
       unread_count: unreadCounts[room.id] ?? 0,
       reservation_id: room.reservation_id,
       request_id: room.request_id ?? null,

@@ -49,6 +49,7 @@ export type Applicant = {
   profileImage?: string | null;
   rating: number;
   preview: string;
+  time: string;
   unread: number;
   applicationStatus?: string | null;
   location?: string;
@@ -66,6 +67,7 @@ export type ReservationRequest = {
   name: string;
   initial: string;
   profileImage?: string | null;
+  rating: number;
   preview: string;
   time: string;
   unread: number;
@@ -210,6 +212,26 @@ export type Badge = {
   className: string;
 };
 
+// 새 메시지 알림 뱃지 (1:1 채팅 / 지원 목록 / 예약 목록 공통)
+function UnreadBadge({ count }: { count: number }) {
+  if (count <= 0) return null;
+  return (
+    <span className="w-6 h-5 px-1.5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-medium shrink-0">
+      {count}
+    </span>
+  );
+}
+
+// 별점 표시 (지원 목록 / 예약 목록 공통)
+function RatingDisplay({ rating }: { rating: number }) {
+  return (
+    <span className="flex items-center gap-1 text-xs text-gray-400">
+      <Star size={10} className="text-yellow-400 fill-yellow-400" />
+      {rating.toFixed(1)}
+    </span>
+  );
+}
+
 // 편집 관련
 type ChatRoomItemProps = {
   room: ChatRoom;
@@ -251,11 +273,7 @@ export function ChatRoomItem({
           <span className="text-stone-900 text-base font-semibold">
             {room.name}
           </span>
-          {room.unread > 0 && !editMode && (
-            <span className="w-6 h-5 px-1.5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-medium">
-              {room.unread}
-            </span>
-          )}
+          {!editMode && <UnreadBadge count={room.unread} />}
         </div>
         {room.sub && (
           <span className="inline-block max-w-full truncate text-xs font-medium px-2 py-0.5 my-1 rounded-full bg-orange-100 text-orange-600">
@@ -274,7 +292,7 @@ export function ChatRoomItem({
 // 지원 목록 카드
 type ApplicantCardProps = {
   applicant: Applicant;
-  badge: Badge;
+  badge: Badge | null;
   isRejected: boolean;
   isConfirmed: boolean;
   isSelected: boolean;
@@ -340,24 +358,25 @@ export function ApplicantCard({
               size="sm"
             />
           </button>
-          <span className="text-sm font-semibold text-stone-900 flex-1">
+          <span className="text-sm font-semibold text-stone-900 flex-1 truncate">
             {applicant.name}
           </span>
-          <span
-            className={`text-xs px-2 py-0.5 rounded-full font-medium ${badge.className}`}
-          >
-            {badge.label}
-          </span>
+          {badge && (
+            <span
+              className={`text-xs px-2 py-0.5 rounded-full font-medium ${badge.className}`}
+            >
+              {badge.label}
+            </span>
+          )}
+          <UnreadBadge count={applicant.unread} />
         </div>
-        <div className="flex items-center justify-end mb-1.5">
-          <span className="flex items-center gap-1 text-xs text-gray-400">
-            <Star size={10} className="text-yellow-400 fill-yellow-400" />
-            {applicant.rating}
-          </span>
-        </div>
-        <p className="text-xs text-gray-400 truncate mb-3">
+        <p className="text-xs text-gray-400 truncate mb-1.5">
           &ldquo;{applicant.preview}&rdquo;
         </p>
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-xs text-gray-400">{applicant.time}</span>
+          <RatingDisplay rating={applicant.rating} />
+        </div>
         {isRejected ? (
           <p className="text-xs text-gray-400">거절한 지원자</p>
         ) : isConfirmed ? (
@@ -1452,7 +1471,7 @@ type ApplicantPostGroupProps = {
   onConfirm: (id: string) => void;
   onSelect: (id: string) => void;
   onAvatarClick?: (id: string) => void;
-  getApplicantBadge: (id: string) => Badge;
+  getApplicantBadge: (id: string) => Badge | null;
 };
 
 export function ApplicantPostGroup({
@@ -1570,7 +1589,7 @@ export function ReservationRequestCard({
         </button>
       )}
       <div className="px-5 py-4 flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
+        <div className="flex items-center gap-2 mb-2">
           <button
             onClick={(e) => {
               if (!editMode && onAvatarClick) {
@@ -1605,20 +1624,15 @@ export function ReservationRequestCard({
               거절됨
             </span>
           )}
+          <UnreadBadge count={rr.unread} />
         </div>
-        <div className="flex items-center gap-1.5 mb-2.5">
-          {rr.unread > 0 && (
-            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-green-50 text-green-700 shrink-0">
-              {rr.unread}
-            </span>
-          )}
-          <span className="text-xs text-gray-400 ml-auto shrink-0">
-            {rr.time}
-          </span>
-        </div>
-        <p className="text-xs text-gray-400 truncate mb-3">
+        <p className="text-xs text-gray-400 truncate mb-1.5">
           &quot;{rr.preview}&quot;
         </p>
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-xs text-gray-400">{rr.time}</span>
+          <RatingDisplay rating={rr.rating} />
+        </div>
         {isPending && isSitter && !editMode && (
           <div className="flex gap-2">
             <button
