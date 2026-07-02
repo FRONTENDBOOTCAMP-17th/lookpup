@@ -82,12 +82,14 @@ export async function GET() {
     });
   }
 
-  const reservationRequestRooms = rooms.filter(
-    (r) => r.room_type === "reservation_request",
+  const roomsWithReservation = rooms.filter(
+    (r) =>
+      (r.room_type === "reservation_request" || r.room_type === "direct") &&
+      r.reservation_id,
   );
   const reservationStatusMap = new Map<string, string>();
-  if (reservationRequestRooms.length > 0) {
-    const reservationIds = reservationRequestRooms
+  if (roomsWithReservation.length > 0) {
+    const reservationIds = roomsWithReservation
       .map((r) => r.reservation_id)
       .filter(Boolean) as string[];
     const { data: reservations } = await db
@@ -136,7 +138,9 @@ export async function GET() {
             null)
           : null,
       reservation_status:
-        room.room_type === "reservation_request" && room.reservation_id
+        (room.room_type === "reservation_request" ||
+          room.room_type === "direct") &&
+        room.reservation_id
           ? (reservationStatusMap.get(room.reservation_id) ?? null)
           : null,
       last_message: room.last_message ?? null,

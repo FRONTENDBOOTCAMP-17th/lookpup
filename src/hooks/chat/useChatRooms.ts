@@ -29,6 +29,14 @@ import {
   RESERVATION_EDIT_RESPONSE_PREFIX,
 } from "@/lib/chatMessagePrefixes";
 
+function isReservationStatusChangeMessage(content: string): boolean {
+  return (
+    content.startsWith(SERVICE_COMPLETE_CONFIRMED_PREFIX) ||
+    content.startsWith(RESERVATION_CANCELED_PREFIX) ||
+    content.startsWith(SERVICE_START_PREFIX)
+  );
+}
+
 function formatTime(iso: string | null): string {
   if (!iso) return "";
   return new Date(iso).toLocaleTimeString("ko-KR", {
@@ -80,7 +88,9 @@ function formatPreview(content: string): string {
   if (content.startsWith(RESERVATION_EDIT_PREFIX)) return "예약 수정 요청";
   if (content.startsWith(RESERVATION_EDIT_RESPONSE_PREFIX)) {
     try {
-      const payload = JSON.parse(content.slice(RESERVATION_EDIT_RESPONSE_PREFIX.length));
+      const payload = JSON.parse(
+        content.slice(RESERVATION_EDIT_RESPONSE_PREFIX.length),
+      );
       return payload.accepted ? "예약 수정 승인" : "예약 수정 거절";
     } catch {
       return "예약 수정 응답";
@@ -99,7 +109,9 @@ export function useChatRooms(activeRoomId: string | null) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
-  const [acceptedDirectRoomId, setAcceptedDirectRoomId] = useState<string | null>(null);
+  const [acceptedDirectRoomId, setAcceptedDirectRoomId] = useState<
+    string | null
+  >(null);
 
   const activeRoomIdRef = useRef(activeRoomId);
   activeRoomIdRef.current = activeRoomId;
@@ -121,7 +133,9 @@ export function useChatRooms(activeRoomId: string | null) {
     ...applicants.map((a) => a.id),
     ...reservationRequests.map((rr) => rr.id),
   ]);
-  reservationRequestIdsRef.current = new Set(reservationRequests.map((rr) => rr.id));
+  reservationRequestIdsRef.current = new Set(
+    reservationRequests.map((rr) => rr.id),
+  );
 
   useEffect(() => {
     createClient()
@@ -143,6 +157,7 @@ export function useChatRooms(activeRoomId: string | null) {
           ownerId: r.owner_id ?? null,
           sitterId: r.sitter_id ?? null,
           reservationId: r.reservation_id ?? null,
+          reservationStatus: r.reservation_status ?? null,
           name: r.other_user_full_name ?? "",
           initial: (r.other_user_full_name ?? "?")[0],
           profileImage: r.other_user_profile_image ?? null,
@@ -290,6 +305,10 @@ export function useChatRooms(activeRoomId: string | null) {
 
           if (!myRoomIdsRef.current.has(room_id)) return;
           updateRoomPreview(room_id, formatPreview(content), created_at);
+
+          if (isReservationStatusChangeMessage(content)) {
+            fetchRooms(true);
+          }
         },
       )
       .subscribe();
@@ -297,7 +316,7 @@ export function useChatRooms(activeRoomId: string | null) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [userId]);
+  }, [userId, fetchRooms]);
 
   useEffect(() => {
     if (!userId) return;
@@ -332,6 +351,11 @@ export function useChatRooms(activeRoomId: string | null) {
             roomId !== activeRoomIdRef.current
           ) {
             incrementUnread(roomId);
+          }
+
+          // 예약 상태(reservation_status)가 바뀌었을 수 있으므로 목록을 다시 불러옴
+          if (isReservationStatusChangeMessage(m.content)) {
+            fetchRooms(true);
           }
         })
         .on("broadcast", { event: "application_confirmed" }, () => {

@@ -44,6 +44,8 @@ interface MessageListProps {
     },
   ) => void;
   onReservationEditReject: (messageId: string) => void;
+  onWriteReview: (reservationId: string) => void;
+  onLeaveChat: () => void;
 }
 
 function MessageList({
@@ -68,6 +70,8 @@ function MessageList({
   onServiceConfirm,
   onReservationEditConfirm,
   onReservationEditReject,
+  onWriteReview,
+  onLeaveChat,
 }: MessageListProps) {
   return (
     <>
@@ -132,6 +136,8 @@ function MessageList({
             onReservationEditConfirm={onReservationEditConfirm}
             onReservationEditReject={onReservationEditReject}
             confirmedEditIds={confirmedEditIds}
+            onWriteReview={onWriteReview}
+            onLeaveChat={onLeaveChat}
           />
         );
       });
@@ -172,6 +178,8 @@ export interface ChatWindowProps {
   isPaymentComplete: boolean;
   hasServiceStarted: boolean;
   hasServiceCompleted: boolean;
+  canLeaveChat: boolean;
+  canStartService: boolean;
 
   input: string;
   sending: boolean;
@@ -210,6 +218,7 @@ export interface ChatWindowProps {
     },
   ) => void;
   onReservationEditReject: (messageId: string) => void;
+  onWriteReview: (reservationId: string) => void;
 
   onRejectApplicant: () => void;
   onConfirmApplicant: () => void;
@@ -244,6 +253,8 @@ export function ChatWindow({
   isPaymentComplete,
   hasServiceStarted,
   hasServiceCompleted,
+  canLeaveChat,
+  canStartService,
   input,
   sending,
   sendError,
@@ -270,6 +281,7 @@ export function ChatWindow({
   onServiceConfirm,
   onReservationEditConfirm,
   onReservationEditReject,
+  onWriteReview,
   onRejectApplicant,
   onConfirmApplicant,
 }: ChatWindowProps) {
@@ -295,7 +307,10 @@ export function ChatWindow({
           : undefined
       }
       onServiceStart={
-        isCurrentUserSitter && isPaymentComplete && !hasServiceStarted
+        isCurrentUserSitter &&
+        isPaymentComplete &&
+        !hasServiceStarted &&
+        canStartService
           ? () => {
               setPlusMenuOpen(false);
               onServiceStart();
@@ -348,6 +363,8 @@ export function ChatWindow({
       onServiceConfirm={onServiceConfirm}
       onReservationEditConfirm={onReservationEditConfirm}
       onReservationEditReject={onReservationEditReject}
+      onWriteReview={onWriteReview}
+      onLeaveChat={onLeaveChat}
     />
   );
 
@@ -394,15 +411,17 @@ export function ChatWindow({
                   >
                     프로필로 이동하기
                   </button>
-                  <button
-                    onClick={() => {
-                      onLeaveChat();
-                      setMobileMenuOpen(false);
-                    }}
-                    className="w-full px-4 py-3 text-left text-sm text-stone-700 hover:bg-orange-50 transition-colors border-t border-orange-50"
-                  >
-                    채팅 나가기
-                  </button>
+                  {canLeaveChat && (
+                    <button
+                      onClick={() => {
+                        onLeaveChat();
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full px-4 py-3 text-left text-sm text-stone-700 hover:bg-orange-50 transition-colors border-t border-orange-50"
+                    >
+                      채팅 나가기
+                    </button>
+                  )}
                   <button
                     onClick={() => {
                       onReport();
@@ -555,6 +574,7 @@ export function ChatWindow({
         badge={headerBadge}
         onGoToProfile={onGoToProfile}
         onLeaveChat={onLeaveChat}
+        canLeaveChat={canLeaveChat}
         onReport={onReport}
       />
 

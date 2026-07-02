@@ -28,6 +28,7 @@ export type ChatRoom = {
   ownerId: string | null;
   sitterId: string | null;
   reservationId: string | null;
+  reservationStatus: string | null;
   name: string;
   initial: string;
   profileImage?: string | null;
@@ -70,6 +71,28 @@ export type ReservationRequest = {
   unread: number;
   reservationStatus: string | null;
 };
+
+// 채팅방 나가기 제한
+const ACTIVE_RESERVATION_STATUSES = new Set([
+  "pending",
+  "accepted",
+  "paid",
+  "in_progress",
+]);
+
+export function canLeaveDirectRoom(
+  room: Pick<ChatRoom, "reservationId" | "reservationStatus">,
+): boolean {
+  if (!room.reservationId) return true;
+  if (!room.reservationStatus) return false;
+  return !ACTIVE_RESERVATION_STATUSES.has(room.reservationStatus);
+}
+
+export function canLeaveReservationRequest(
+  rr: Pick<ReservationRequest, "reservationStatus">,
+): boolean {
+  return rr.reservationStatus !== "pending";
+}
 
 export type CostItem = {
   id: string;
@@ -212,7 +235,7 @@ export function ChatRoomItem({
         !editMode ? "cursor-pointer hover:bg-orange-50" : ""
       } ${isSelected && !editMode ? "bg-orange-50" : ""}`}
     >
-      {editMode && (
+      {editMode && canLeaveDirectRoom(room) && (
         <button
           onClick={() => onDelete(room.id)}
           className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center shrink-0 mt-4"
@@ -374,6 +397,7 @@ type ChatWindowHeaderProps = {
   badge: Badge;
   onGoToProfile?: () => void;
   onLeaveChat?: () => void;
+  canLeaveChat?: boolean;
   onReport?: () => void;
 };
 
@@ -385,6 +409,7 @@ export function ChatWindowHeader({
   badge,
   onGoToProfile,
   onLeaveChat,
+  canLeaveChat = true,
   onReport,
 }: ChatWindowHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -429,15 +454,17 @@ export function ChatWindowHeader({
                 >
                   프로필 보기
                 </button>
-                <button
-                  onClick={() => {
-                    onLeaveChat?.();
-                    setMenuOpen(false);
-                  }}
-                  className="w-full px-4 py-3 text-left text-sm text-stone-700 hover:bg-orange-50 transition-colors border-t border-orange-50"
-                >
-                  채팅 나가기
-                </button>
+                {canLeaveChat && (
+                  <button
+                    onClick={() => {
+                      onLeaveChat?.();
+                      setMenuOpen(false);
+                    }}
+                    className="w-full px-4 py-3 text-left text-sm text-stone-700 hover:bg-orange-50 transition-colors border-t border-orange-50"
+                  >
+                    채팅 나가기
+                  </button>
+                )}
                 <button
                   onClick={() => {
                     onReport?.();
@@ -456,16 +483,29 @@ export function ChatWindowHeader({
   );
 }
 
-function ChatImageLightbox({ url, onClose }: { url: string | null; onClose: () => void }) {
+function ChatImageLightbox({
+  url,
+  onClose,
+}: {
+  url: string | null;
+  onClose: () => void;
+}) {
   return (
-    <DialogPrimitive.Root open={url !== null} onOpenChange={(open) => { if (!open) onClose(); }}>
+    <DialogPrimitive.Root
+      open={url !== null}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 duration-200" />
         <DialogPrimitive.Content
           className="fixed inset-0 z-50 flex items-center justify-center outline-none cursor-pointer data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 duration-200"
           onClick={onClose}
         >
-          <DialogPrimitive.Title className="sr-only">이미지 보기</DialogPrimitive.Title>
+          <DialogPrimitive.Title className="sr-only">
+            이미지 보기
+          </DialogPrimitive.Title>
           <div
             className="absolute top-4 right-4"
             onClick={(e) => e.stopPropagation()}
@@ -518,6 +558,8 @@ type MessageBubbleProps = {
   ) => void;
   onReservationEditReject?: (messageId: string) => void;
   confirmedEditIds?: Set<string>;
+  onWriteReview?: (reservationId: string) => void;
+  onLeaveChat?: () => void;
 };
 
 export function MessageBubble({
@@ -536,6 +578,8 @@ export function MessageBubble({
   onReservationEditConfirm,
   onReservationEditReject,
   confirmedEditIds,
+  onWriteReview,
+  onLeaveChat,
 }: MessageBubbleProps) {
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
@@ -769,13 +813,19 @@ export function MessageBubble({
     );
   }
   if (msg.from === "service_complete_confirmed") {
+    const confirmedReservationId =
+      msg.serviceCompleteConfirmedData?.reservationId ?? "";
+    const sentByMe = msg.sentByMe ?? false;
     return (
       <div>
         <ServiceCompletedCard
-          sentByMe={msg.sentByMe ?? false}
+          sentByMe={sentByMe}
           senderInitial={senderInitial}
           senderProfileImage={senderProfileImage}
           data={msg.serviceCompleteConfirmedData}
+          canWriteReview={sentByMe}
+          onWriteReview={() => onWriteReview?.(confirmedReservationId)}
+          onLeaveChat={onLeaveChat}
         />
         {msg.time && (
           <p
@@ -884,7 +934,10 @@ export function MessageBubble({
                   className="object-cover w-60 h-auto"
                 />
               </button>
-              <ChatImageLightbox url={lightboxUrl} onClose={() => setLightboxUrl(null)} />
+              <ChatImageLightbox
+                url={lightboxUrl}
+                onClose={() => setLightboxUrl(null)}
+              />
             </>
           ) : (
             <div className="max-w-xs px-5 py-4 bg-white rounded-tl-sm rounded-tr-2xl rounded-bl-2xl rounded-br-2xl shadow-sm">
@@ -912,7 +965,10 @@ export function MessageBubble({
               className="object-cover w-60 h-auto"
             />
           </button>
-          <ChatImageLightbox url={lightboxUrl} onClose={() => setLightboxUrl(null)} />
+          <ChatImageLightbox
+            url={lightboxUrl}
+            onClose={() => setLightboxUrl(null)}
+          />
         </>
       ) : (
         <div className="max-w-xs px-5 py-4 bg-orange-500 rounded-tl-2xl rounded-tr-sm rounded-bl-2xl rounded-br-2xl">
@@ -1486,7 +1542,7 @@ export function ReservationRequestCard({
         isCanceled ? "opacity-50" : ""
       }`}
     >
-      {editMode && (
+      {editMode && canLeaveReservationRequest(rr) && (
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -2016,6 +2072,9 @@ type ServiceCompletedCardProps = {
   senderInitial: string;
   senderProfileImage?: string | null;
   data?: ServiceCompleteData;
+  canWriteReview?: boolean;
+  onWriteReview?: () => void;
+  onLeaveChat?: () => void;
 };
 
 export function ServiceCompletedCard({
@@ -2023,6 +2082,9 @@ export function ServiceCompletedCard({
   senderInitial,
   senderProfileImage,
   data,
+  canWriteReview = false,
+  onWriteReview,
+  onLeaveChat,
 }: ServiceCompletedCardProps) {
   const hasInfo =
     data?.serviceTitle ||
@@ -2104,6 +2166,24 @@ export function ServiceCompletedCard({
           ? "펫시터에게 완료 확인 소식이 전달되었어요."
           : "정산 및 리뷰 작성이 가능해요."}
       </p>
+      <div className="flex flex-col gap-2">
+        {canWriteReview && (
+          <button
+            type="button"
+            onClick={onWriteReview}
+            className="w-full h-10 rounded-xl bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-colors"
+          >
+            후기 작성하기
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={onLeaveChat}
+          className="w-full h-10 rounded-xl outline-[1.11px] outline-orange-500 outline-offset-[-1.11px] text-orange-500 text-sm hover:bg-orange-50 transition-colors"
+        >
+          채팅방 나가기
+        </button>
+      </div>
     </div>
   );
 
@@ -2307,8 +2387,8 @@ export function PaymentCompleteCard({
 
       <div className="pt-3 border-t border-orange-200">
         <p className="text-[#9CA3AF] text-[11px] leading-[17.6px]">
-          봐주개가 결제 금액을 안전하게 보관하고 있어요. 예약 완료 후
-          펫시터에게 지급됩니다.
+          봐주개가 결제 금액을 안전하게 보관하고 있어요. 예약 완료 후 펫시터에게
+          지급됩니다.
         </p>
       </div>
     </div>
