@@ -249,6 +249,42 @@ export function useChatRooms(activeRoomId: string | null) {
     }
   }, []);
 
+  const updateRoomPreview = useCallback(
+    (roomId: string, content: string, createdAt: string) => {
+      const time = formatTime(createdAt);
+      setRooms((prev) =>
+        prev.map((r) =>
+          r.id === roomId ? { ...r, lastMessage: content, time } : r,
+        ),
+      );
+      setApplicants((prev) =>
+        prev.map((a) =>
+          a.id === roomId ? { ...a, preview: content, time } : a,
+        ),
+      );
+      setReservationRequests((prev) =>
+        prev.map((rr) =>
+          rr.id === roomId ? { ...rr, preview: content, time } : rr,
+        ),
+      );
+    },
+    [],
+  );
+
+  const incrementUnread = useCallback((roomId: string) => {
+    setRooms((prev) =>
+      prev.map((r) => (r.id === roomId ? { ...r, unread: r.unread + 1 } : r)),
+    );
+    setApplicants((prev) =>
+      prev.map((a) => (a.id === roomId ? { ...a, unread: a.unread + 1 } : a)),
+    );
+    setReservationRequests((prev) =>
+      prev.map((rr) =>
+        rr.id === roomId ? { ...rr, unread: rr.unread + 1 } : rr,
+      ),
+    );
+  }, []);
+
   useEffect(() => {
     fetchRooms();
   }, [fetchRooms]);
@@ -413,43 +449,6 @@ export function useChatRooms(activeRoomId: string | null) {
     };
   }, []);
 
-  function updateRoomPreview(
-    roomId: string,
-    content: string,
-    createdAt: string,
-  ) {
-    const time = formatTime(createdAt);
-    setRooms((prev) =>
-      prev.map((r) =>
-        r.id === roomId ? { ...r, lastMessage: content, time } : r,
-      ),
-    );
-    setApplicants((prev) =>
-      prev.map((a) =>
-        a.id === roomId ? { ...a, preview: content, time } : a,
-      ),
-    );
-    setReservationRequests((prev) =>
-      prev.map((rr) =>
-        rr.id === roomId ? { ...rr, preview: content, time } : rr,
-      ),
-    );
-  }
-
-  function incrementUnread(roomId: string) {
-    setRooms((prev) =>
-      prev.map((r) => (r.id === roomId ? { ...r, unread: r.unread + 1 } : r)),
-    );
-    setApplicants((prev) =>
-      prev.map((a) => (a.id === roomId ? { ...a, unread: a.unread + 1 } : a)),
-    );
-    setReservationRequests((prev) =>
-      prev.map((rr) =>
-        rr.id === roomId ? { ...rr, unread: rr.unread + 1 } : rr,
-      ),
-    );
-  }
-
   const markRoomAsRead = useCallback((roomId: string) => {
     setRooms((prev) =>
       prev.map((r) => (r.id === roomId ? { ...r, unread: 0 } : r)),
@@ -462,64 +461,79 @@ export function useChatRooms(activeRoomId: string | null) {
     );
   }, []);
 
-  async function deleteRoom(id: string): Promise<{ error?: string }> {
-    const res = await fetch(`/api/chat/rooms/${id}`, { method: "DELETE" });
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      return { error: body?.error?.message ?? "채팅방 나가기에 실패했습니다." };
-    }
-    setRooms((prev) => prev.filter((r) => r.id !== id));
-    return {};
-  }
-
-  async function deleteApplicant(id: string): Promise<{ error?: string }> {
-    const applicant = applicants.find((a) => a.id === id);
-    const res = await fetch(`/api/chat/rooms/${id}`, { method: "DELETE" });
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      return { error: body?.error?.message ?? "채팅방 나가기에 실패했습니다." };
-    }
-    setApplicants((prev) => prev.filter((a) => a.id !== id));
-    if (applicant) {
-      const remaining = applicants.filter(
-        (a) => a.id !== id && a.postId === applicant.postId,
-      );
-      if (remaining.length === 0) {
-        setPosts((prev) => prev.filter((p) => p.id !== applicant.postId));
+  const deleteRoom = useCallback(
+    async (id: string): Promise<{ error?: string }> => {
+      const res = await fetch(`/api/chat/rooms/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        return { error: body?.error?.message ?? "채팅방 나가기에 실패했습니다." };
       }
-    }
-    return {};
-  }
+      setRooms((prev) => prev.filter((r) => r.id !== id));
+      return {};
+    },
+    [],
+  );
 
-  function updateApplicantStatus(roomId: string, status: string) {
+  const deleteApplicant = useCallback(
+    async (id: string): Promise<{ error?: string }> => {
+      const applicant = applicants.find((a) => a.id === id);
+      const res = await fetch(`/api/chat/rooms/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        return { error: body?.error?.message ?? "채팅방 나가기에 실패했습니다." };
+      }
+      setApplicants((prev) => prev.filter((a) => a.id !== id));
+      if (applicant) {
+        const remaining = applicants.filter(
+          (a) => a.id !== id && a.postId === applicant.postId,
+        );
+        if (remaining.length === 0) {
+          setPosts((prev) => prev.filter((p) => p.id !== applicant.postId));
+        }
+      }
+      return {};
+    },
+    [applicants],
+  );
+
+  const updateApplicantStatus = useCallback((roomId: string, status: string) => {
     setApplicants((prev) =>
       prev.map((a) =>
         a.id === roomId ? { ...a, applicationStatus: status } : a,
       ),
     );
-  }
+  }, []);
 
-  async function deleteReservationRequest(
-    id: string,
-  ): Promise<{ error?: string }> {
-    const res = await fetch(`/api/chat/rooms/${id}`, { method: "DELETE" });
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      return { error: body?.error?.message ?? "채팅방 나가기에 실패했습니다." };
-    }
-    setReservationRequests((prev) => prev.filter((rr) => rr.id !== id));
-    return {};
-  }
+  const deleteReservationRequest = useCallback(
+    async (id: string): Promise<{ error?: string }> => {
+      const res = await fetch(`/api/chat/rooms/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        return { error: body?.error?.message ?? "채팅방 나가기에 실패했습니다." };
+      }
+      setReservationRequests((prev) => prev.filter((rr) => rr.id !== id));
+      return {};
+    },
+    [],
+  );
 
-  function updateReservationRequestStatus(roomId: string, status: string) {
-    setReservationRequests((prev) =>
-      prev.map((rr) =>
-        rr.id === roomId ? { ...rr, reservationStatus: status } : rr,
-      ),
-    );
-  }
+  const updateReservationRequestStatus = useCallback(
+    (roomId: string, status: string) => {
+      setReservationRequests((prev) =>
+        prev.map((rr) =>
+          rr.id === roomId ? { ...rr, reservationStatus: status } : rr,
+        ),
+      );
+    },
+    [],
+  );
 
   const refresh = useCallback(() => fetchRooms(true), [fetchRooms]);
+
+  const clearAcceptedDirectRoomId = useCallback(
+    () => setAcceptedDirectRoomId(null),
+    [],
+  );
 
   return {
     rooms,
@@ -538,6 +552,6 @@ export function useChatRooms(activeRoomId: string | null) {
     updateReservationRequestStatus,
     refresh,
     acceptedDirectRoomId,
-    clearAcceptedDirectRoomId: () => setAcceptedDirectRoomId(null),
+    clearAcceptedDirectRoomId,
   };
 }

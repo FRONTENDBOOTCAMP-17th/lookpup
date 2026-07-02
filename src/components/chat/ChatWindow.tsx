@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { ChevronLeft, MoreVertical, Plus, Send } from "lucide-react";
 import Avatar from "@/components/ui/Avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -48,7 +48,7 @@ interface MessageListProps {
   onLeaveChat: () => void;
 }
 
-function MessageList({
+function MessageListImpl({
   messages,
   senderInitial,
   senderProfileImage,
@@ -73,6 +73,27 @@ function MessageList({
   onWriteReview,
   onLeaveChat,
 }: MessageListProps) {
+  const paymentPaidByMessageId = useMemo(() => {
+    const hasBasePaymentComplete = messages.some((m) => {
+      if (m.from !== "payment_complete") return false;
+      if (!m.paymentRequestMessageId) return true;
+      const ref = messages.find((r) => r.id === m.paymentRequestMessageId);
+      return ref?.paymentData?.isExtra === false;
+    });
+    const map = new Map<string, boolean>();
+    for (const msg of messages) {
+      if (msg.from !== "payment_request") continue;
+      const isPaid =
+        messages.some(
+          (m) =>
+            m.from === "payment_complete" &&
+            m.paymentRequestMessageId === msg.id,
+        ) || (msg.paymentData?.isExtra === false && hasBasePaymentComplete);
+      map.set(msg.id, isPaid);
+    }
+    return map;
+  }, [messages]);
+
   return (
     <>
       {hasMore && (
@@ -86,26 +107,14 @@ function MessageList({
           </button>
         </div>
       )}
-      {(() => {
-        const hasBasePaymentComplete = messages.some((m) => {
-          if (m.from !== "payment_complete") return false;
-          if (!m.paymentRequestMessageId) return true;
-          const ref = messages.find((r) => r.id === m.paymentRequestMessageId);
-          return ref?.paymentData?.isExtra === false;
-        });
-        return messages.map((msg) => {
+      {messages.map((msg) => {
         const postId =
           msg.applicationData?.postId ||
           msg.paymentData?.postId ||
           selectedApplicantPostId;
         const isThisPaymentPaid =
           msg.from === "payment_request" &&
-          (messages.some(
-            (m) =>
-              m.from === "payment_complete" &&
-              m.paymentRequestMessageId === msg.id,
-          ) ||
-            (msg.paymentData?.isExtra === false && hasBasePaymentComplete));
+          (paymentPaidByMessageId.get(msg.id) ?? false);
         return (
           <MessageBubble
             key={msg.id}
@@ -142,11 +151,12 @@ function MessageList({
             onLeaveChat={onLeaveChat}
           />
         );
-      });
-      })()}
+      })}
     </>
   );
 }
+
+const MessageList = memo(MessageListImpl);
 
 export interface ChatWindowProps {
   isMobile: boolean;
@@ -226,7 +236,7 @@ export interface ChatWindowProps {
   onConfirmApplicant: () => void;
 }
 
-export function ChatWindow({
+function ChatWindowImpl({
   isMobile,
   loading,
   error,
@@ -625,3 +635,5 @@ export function ChatWindow({
     </div>
   );
 }
+
+export const ChatWindow = memo(ChatWindowImpl);

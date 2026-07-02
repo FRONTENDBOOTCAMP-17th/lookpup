@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import Image from "next/image";
 import { Dialog as DialogPrimitive } from "radix-ui";
 import {
@@ -242,7 +242,7 @@ type ChatRoomItemProps = {
   onClick: (id: string) => void;
 };
 
-export function ChatRoomItem({
+function ChatRoomItemImpl({
   room,
   isSelected,
   editMode,
@@ -290,6 +290,8 @@ export function ChatRoomItem({
   );
 }
 
+export const ChatRoomItem = memo(ChatRoomItemImpl);
+
 // 지원 목록 카드
 type ApplicantCardProps = {
   applicant: Applicant;
@@ -307,7 +309,7 @@ type ApplicantCardProps = {
   onAvatarClick?: (id: string) => void;
 };
 
-export function ApplicantCard({
+function ApplicantCardImpl({
   applicant,
   badge,
   isRejected,
@@ -413,6 +415,8 @@ export function ApplicantCard({
   );
 }
 
+export const ApplicantCard = memo(ApplicantCardImpl);
+
 // 채팅창 헤더
 type ChatWindowHeaderProps = {
   initial: string;
@@ -426,7 +430,7 @@ type ChatWindowHeaderProps = {
   onReport?: () => void;
 };
 
-export function ChatWindowHeader({
+function ChatWindowHeaderImpl({
   initial,
   src,
   name,
@@ -508,6 +512,8 @@ export function ChatWindowHeader({
   );
 }
 
+export const ChatWindowHeader = memo(ChatWindowHeaderImpl);
+
 function ChatImageLightbox({
   url,
   onClose,
@@ -587,7 +593,7 @@ type MessageBubbleProps = {
   onLeaveChat?: () => void;
 };
 
-export function MessageBubble({
+function MessageBubbleImpl({
   msg,
   senderInitial,
   senderProfileImage,
@@ -1005,6 +1011,8 @@ export function MessageBubble({
   );
 }
 
+export const MessageBubble = memo(MessageBubbleImpl);
+
 export type ProfilePopupData = {
   sitterId?: string | null;
   name: string;
@@ -1339,7 +1347,7 @@ type ChatPlusPanelProps = {
   onReservationEdit?: () => void;
 };
 
-export function ChatPlusPanel({
+function ChatPlusPanelImpl({
   onPaymentRequest,
   onSendCareRecord,
   onSendPhoto,
@@ -1394,6 +1402,8 @@ export function ChatPlusPanel({
   );
 }
 
+export const ChatPlusPanel = memo(ChatPlusPanelImpl);
+
 // + 버튼
 type ChatInputProps = {
   input: string;
@@ -1405,7 +1415,7 @@ type ChatInputProps = {
   disabled?: boolean;
 };
 
-export function ChatInput({
+function ChatInputImpl({
   input,
   onChange,
   onSend,
@@ -1450,6 +1460,8 @@ export function ChatInput({
   );
 }
 
+export const ChatInput = memo(ChatInputImpl);
+
 // 지원 목록 탭 : 구인글별 지원자 목록 그룹
 type Post = {
   id: string;
@@ -1475,7 +1487,7 @@ type ApplicantPostGroupProps = {
   getApplicantBadge: (id: string) => Badge | null;
 };
 
-export function ApplicantPostGroup({
+function ApplicantPostGroupImpl({
   post,
   applicants,
   isCollapsed,
@@ -1536,6 +1548,8 @@ export function ApplicantPostGroup({
   );
 }
 
+export const ApplicantPostGroup = memo(ApplicantPostGroupImpl);
+
 // 예약 목록 카드 (펫시터 찾기 직접 예약)
 type ReservationRequestCardProps = {
   reservationRequest: ReservationRequest;
@@ -1550,7 +1564,7 @@ type ReservationRequestCardProps = {
   onAvatarClick?: (id: string) => void;
 };
 
-export function ReservationRequestCard({
+function ReservationRequestCardImpl({
   reservationRequest: rr,
   isSelected,
   editMode,
@@ -1667,6 +1681,8 @@ export function ReservationRequestCard({
     </div>
   );
 }
+
+export const ReservationRequestCard = memo(ReservationRequestCardImpl);
 
 // 결제 요청 카드 (보호자용 - 결제하기 버튼 포함)
 type PaymentRequestCardProps = {

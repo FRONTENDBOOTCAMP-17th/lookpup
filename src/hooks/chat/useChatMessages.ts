@@ -8,7 +8,7 @@
  *    메시지 전송 시 채널로 broadcast하고, 상대방은 broadcast 구독으로 수신.
  *    채팅방이 바뀌거나 컴포넌트가 사라지면 해당 구독을 해제함.
  */
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import type {
@@ -420,33 +420,36 @@ export function useChatMessages(
     };
   }, [activeRoomId, userId]);
 
-  function addMessage(m: MessageApiItem) {
-    setMessages((prev) => [...prev, toMessage(m, userId ?? "")]);
-  }
+  const addMessage = useCallback(
+    (m: MessageApiItem) => {
+      setMessages((prev) => [...prev, toMessage(m, userId ?? "")]);
+    },
+    [userId],
+  );
 
-  function broadcastMessage(m: MessageApiItem) {
+  const broadcastMessage = useCallback((m: MessageApiItem) => {
     channelRef.current?.send({
       type: "broadcast",
       event: "new_message",
       payload: m,
     });
-  }
+  }, []);
 
-  function broadcastConfirmation() {
+  const broadcastConfirmation = useCallback(() => {
     channelRef.current?.send({
       type: "broadcast",
       event: "application_confirmed",
       payload: {},
     });
-  }
+  }, []);
 
-  function broadcastReservationAccepted(roomId: string) {
+  const broadcastReservationAccepted = useCallback((roomId: string) => {
     channelRef.current?.send({
       type: "broadcast",
       event: "reservation_accepted",
       payload: { room_id: roomId },
     });
-  }
+  }, []);
 
   const paymentState = useMemo(() => derivePaymentState(messages), [messages]);
 
@@ -463,7 +466,7 @@ export function useChatMessages(
     return ids;
   }, [messages]);
 
-  async function loadMore() {
+  const loadMore = useCallback(async () => {
     if (!nextCursor || !activeRoomId || !userId || loadingMore) return;
     setLoadingMore(true);
     try {
@@ -484,7 +487,7 @@ export function useChatMessages(
     } finally {
       setLoadingMore(false);
     }
-  }
+  }, [nextCursor, activeRoomId, userId, loadingMore]);
 
   return {
     messages,
