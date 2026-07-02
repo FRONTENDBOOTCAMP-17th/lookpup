@@ -169,6 +169,11 @@ export type ReservationEditResponsePayload = {
   sentByMe?: boolean;
 };
 
+export type ReservationEditActionState = {
+  messageId: string;
+  type: "confirm" | "reject";
+} | null;
+
 // 채팅창 메시지
 export type Message = {
   id: string;
@@ -589,6 +594,7 @@ type MessageBubbleProps = {
   ) => void;
   onReservationEditReject?: (messageId: string) => void;
   confirmedEditIds?: Set<string>;
+  reservationEditAction?: ReservationEditActionState;
   onWriteReview?: (reservationId: string) => void;
   onLeaveChat?: () => void;
 };
@@ -609,6 +615,7 @@ function MessageBubbleImpl({
   onReservationEditConfirm,
   onReservationEditReject,
   confirmedEditIds,
+  reservationEditAction,
   onWriteReview,
   onLeaveChat,
 }: MessageBubbleProps) {
@@ -657,6 +664,7 @@ function MessageBubbleImpl({
             messageId={msg.id}
             data={data}
             isProcessed={isProcessed ?? false}
+            reservationEditAction={reservationEditAction ?? null}
             onConfirm={onReservationEditConfirm}
             onReject={onReservationEditReject}
           />
@@ -1039,9 +1047,7 @@ export function ProfilePopup({
   const [fetchedProfile, setFetchedProfile] = useState<SitterProfile | null>(
     null,
   );
-  const [resolvedSitterId, setResolvedSitterId] = useState<string | null>(
-    null,
-  );
+  const [resolvedSitterId, setResolvedSitterId] = useState<string | null>(null);
   const loadingProfile =
     cardVariant === "sitter" &&
     !!data.sitterId &&
@@ -2761,12 +2767,14 @@ function ReservationEditCard({
   messageId,
   data,
   isProcessed,
+  reservationEditAction,
   onConfirm,
   onReject,
 }: {
   messageId: string;
   data: ReservationEditPayload;
   isProcessed: boolean;
+  reservationEditAction?: ReservationEditActionState;
   onConfirm?: (
     messageId: string,
     reservationId: string,
@@ -2778,6 +2786,13 @@ function ReservationEditCard({
   ) => void;
   onReject?: (messageId: string) => void;
 }) {
+  const isConfirming =
+    reservationEditAction?.messageId === messageId &&
+    reservationEditAction.type === "confirm";
+  const isRejecting =
+    reservationEditAction?.messageId === messageId &&
+    reservationEditAction.type === "reject";
+  const actionLocked = !!reservationEditAction;
   return (
     <div
       className={`w-79.5 p-4 rounded-2xl flex flex-col gap-3 ${
@@ -2838,17 +2853,19 @@ function ReservationEditCard({
         <div className="flex gap-2">
           <button
             onClick={() => onReject?.(messageId)}
-            className="flex-1 py-1.5 text-xs text-stone-500 border border-stone-200 rounded-lg hover:bg-stone-50 transition-colors"
+            disabled={actionLocked}
+            className="flex-1 py-1.5 text-xs text-stone-500 border border-stone-200 rounded-lg hover:bg-stone-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            거절
+            {isRejecting ? "처리 중..." : "거절"}
           </button>
           <button
             onClick={() =>
               onConfirm?.(messageId, data.reservationId, data.proposed)
             }
-            className="flex-1 py-1.5 text-xs text-white bg-orange-500 rounded-lg hover:bg-orange-600 transition-colors font-medium"
+            disabled={actionLocked}
+            className="flex-1 py-1.5 text-xs text-white bg-orange-500 rounded-lg hover:bg-orange-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            확인
+            {isConfirming ? "처리 중..." : "확인"}
           </button>
         </div>
       )}

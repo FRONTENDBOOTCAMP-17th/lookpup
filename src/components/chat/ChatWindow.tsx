@@ -11,6 +11,7 @@ import {
   MessageBubble,
   type Message,
   type Badge,
+  type ReservationEditActionState,
 } from "@/components/common/chat/chat_components";
 import type { PaymentStateInfo } from "@/hooks/chat/useChatMessages";
 
@@ -27,6 +28,7 @@ interface MessageListProps {
   confirmedServiceIds: Set<string>;
   isServiceConfirming: boolean;
   confirmedEditIds: Set<string>;
+  reservationEditAction: ReservationEditActionState;
   hasMore: boolean;
   loadingMore: boolean;
   onLoadMore: () => void;
@@ -61,6 +63,7 @@ function MessageListImpl({
   confirmedServiceIds,
   isServiceConfirming,
   confirmedEditIds,
+  reservationEditAction,
   hasMore,
   loadingMore,
   onLoadMore,
@@ -147,6 +150,7 @@ function MessageListImpl({
             onReservationEditConfirm={onReservationEditConfirm}
             onReservationEditReject={onReservationEditReject}
             confirmedEditIds={confirmedEditIds}
+            reservationEditAction={reservationEditAction}
             onWriteReview={onWriteReview}
             onLeaveChat={onLeaveChat}
           />
@@ -182,6 +186,7 @@ export interface ChatWindowProps {
   paymentState: PaymentStateInfo | null;
   lastPaymentReqId: string | null;
   confirmedEditIds: Set<string>;
+  reservationEditAction: ReservationEditActionState;
   confirmedServiceIds: Set<string>;
   payingNow: boolean;
   isPaymentPending: boolean;
@@ -257,6 +262,7 @@ function ChatWindowImpl({
   paymentState,
   lastPaymentReqId,
   confirmedEditIds,
+  reservationEditAction,
   confirmedServiceIds,
   payingNow,
   isPaymentPending,
@@ -366,6 +372,7 @@ function ChatWindowImpl({
       confirmedServiceIds={confirmedServiceIds}
       isServiceConfirming={isServiceConfirming}
       confirmedEditIds={confirmedEditIds}
+      reservationEditAction={reservationEditAction}
       hasMore={hasMore}
       loadingMore={loadingMore}
       onLoadMore={onLoadMore}

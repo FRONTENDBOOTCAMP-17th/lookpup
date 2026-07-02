@@ -13,9 +13,8 @@ import Header from "@/components/layout/Header";
 import {
   ProfilePopup,
   type ProfilePopupData,
-  type Applicant,
   type Message,
-  type ReservationRequest,
+  type ReservationEditActionState,
   canLeaveDirectRoom,
   canLeaveReservationRequest,
 } from "@/components/common/chat/chat_components";
@@ -220,6 +219,8 @@ function ChatPageContent({
   const [serviceStartSending, setServiceStartSending] = useState(false);
 
   const [reservationEditOpen, setReservationEditOpen] = useState(false);
+  const [reservationEditAction, setReservationEditAction] =
+    useState<ReservationEditActionState>(null);
 
   const [pendingDelete, setPendingDelete] = useState<{
     id: string;
@@ -1055,7 +1056,8 @@ function ChatPageContent({
         memo?: string | null;
       },
     ) => {
-      if (!activeRoomId) return;
+      if (!activeRoomId || reservationEditAction) return;
+      setReservationEditAction({ messageId, type: "confirm" });
       try {
         const updateResult = await updateReservationDetails(
           reservationId,
@@ -1084,14 +1086,17 @@ function ChatPageContent({
         }
       } catch {
         setSendError("예약 수정에 실패했습니다. 다시 시도해주세요.");
+      } finally {
+        setReservationEditAction(null);
       }
     },
-    [activeRoomId, deliverMessage, updatePreview, refresh],
+    [activeRoomId, reservationEditAction, deliverMessage, updatePreview, refresh],
   );
 
   const handleReservationEditReject = useCallback(
     async (messageId: string) => {
-      if (!activeRoomId) return;
+      if (!activeRoomId || reservationEditAction) return;
+      setReservationEditAction({ messageId, type: "reject" });
       try {
         const result = await sendReservationEditResponseMessage(activeRoomId, {
           originalMessageId: messageId,
@@ -1111,9 +1116,11 @@ function ChatPageContent({
         }
       } catch {
         setSendError("예약 수정 거절 전송에 실패했습니다. 다시 시도해주세요.");
+      } finally {
+        setReservationEditAction(null);
       }
     },
-    [activeRoomId, deliverMessage, updatePreview],
+    [activeRoomId, reservationEditAction, deliverMessage, updatePreview],
   );
 
   async function handleServiceComplete() {
@@ -1740,6 +1747,7 @@ function ChatPageContent({
     paymentState,
     lastPaymentReqId,
     confirmedEditIds,
+    reservationEditAction,
     confirmedServiceIds,
     payingNow,
     isPaymentPending,
