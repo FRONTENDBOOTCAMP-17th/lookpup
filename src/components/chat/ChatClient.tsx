@@ -9,6 +9,7 @@ import {
   useCallback,
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import dynamic from "next/dynamic";
 import Header from "@/components/layout/Header";
 import {
   ProfilePopup,
@@ -21,10 +22,7 @@ import {
 import { ChatSidebar } from "@/components/chat/ChatSidebar";
 import { ChatWindow } from "@/components/chat/ChatWindow";
 import { CustomModal } from "@/components/common/CustomModal";
-import { CustomModalPayment } from "@/components/common/CustomModalPayment";
-import CareRecordModal, {
-  type CareRecordPayload,
-} from "@/components/common/chat/CareRecordModal";
+import type { CareRecordPayload } from "@/components/common/chat/CareRecordModal";
 import {
   createCareRecord,
   getInProgressReservationByOwnerAndSitter,
@@ -55,10 +53,7 @@ import {
   getReservationRequestDetails,
   updateReservationDetails,
 } from "@/app/actions/reservations";
-import {
-  ServiceCompleteModal,
-  type ActiveReservation,
-} from "@/components/common/chat/ServiceCompleteModal";
+import type { ActiveReservation } from "@/components/common/chat/ServiceCompleteModal";
 import { usePortOne } from "@/hooks/usePortOne";
 import { uploadToCloudinary } from "@/utils/cloudinary";
 import {
@@ -72,15 +67,41 @@ import {
   getActiveReservationBySitter,
   verifyAndConfirmPayment,
 } from "@/app/actions/payments";
-import {
-  ReservationConfirmModal,
-  type ReservationDetails,
-} from "@/components/common/chat/ReservationConfirmModal";
-import ReservationEditModal from "@/components/common/chat/ReservationEditModal";
+import type { ReservationDetails } from "@/components/common/chat/ReservationConfirmModal";
 import { useChatRooms } from "@/hooks/chat/useChatRooms";
 import { useRequest } from "@/hooks/chat/useRequest";
 import { useChatMessages } from "@/hooks/chat/useChatMessages";
 import { useUserStore } from "@/store/userStore";
+
+const CustomModalPayment = dynamic(
+  () =>
+    import("@/components/common/CustomModalPayment").then(
+      (m) => m.CustomModalPayment,
+    ),
+  { ssr: false },
+);
+const CareRecordModal = dynamic(
+  () => import("@/components/common/chat/CareRecordModal"),
+  { ssr: false },
+);
+const ServiceCompleteModal = dynamic(
+  () =>
+    import("@/components/common/chat/ServiceCompleteModal").then(
+      (m) => m.ServiceCompleteModal,
+    ),
+  { ssr: false },
+);
+const ReservationConfirmModal = dynamic(
+  () =>
+    import("@/components/common/chat/ReservationConfirmModal").then(
+      (m) => m.ReservationConfirmModal,
+    ),
+  { ssr: false },
+);
+const ReservationEditModal = dynamic(
+  () => import("@/components/common/chat/ReservationEditModal"),
+  { ssr: false },
+);
 
 function noop() {}
 
@@ -1090,7 +1111,13 @@ function ChatPageContent({
         setReservationEditAction(null);
       }
     },
-    [activeRoomId, reservationEditAction, deliverMessage, updatePreview, refresh],
+    [
+      activeRoomId,
+      reservationEditAction,
+      deliverMessage,
+      updatePreview,
+      refresh,
+    ],
   );
 
   const handleReservationEditReject = useCallback(
