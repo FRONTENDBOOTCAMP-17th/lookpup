@@ -329,6 +329,7 @@ function ChatPageContent({
     markRoomAsRead(activeRoomId);
     markRoomRead(activeRoomId);
     setSendError(null);
+    setInput("");
     setConfirmedServiceIds(new Set());
     checkedReservationIdsRef.current = new Set();
   }, [activeRoomId, markRoomAsRead]);
