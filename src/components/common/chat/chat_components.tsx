@@ -68,6 +68,7 @@ export type ReservationRequest = {
   initial: string;
   profileImage?: string | null;
   rating: number;
+  sub: string;
   preview: string;
   time: string;
   unread: number;
@@ -225,8 +226,8 @@ function UnreadBadge({ count }: { count: number }) {
 // 별점 표시 (지원 목록 / 예약 목록 공통)
 function RatingDisplay({ rating }: { rating: number }) {
   return (
-    <span className="flex items-center gap-1 text-xs text-gray-400">
-      <Star size={10} className="text-yellow-400 fill-yellow-400" />
+    <span className="flex items-center gap-1 text-sm text-gray-400">
+      <Star size={12} className="text-yellow-400 fill-yellow-400" />
       {rating.toFixed(1)}
     </span>
   );
@@ -355,10 +356,10 @@ export function ApplicantCard({
             <Avatar
               initial={applicant.initial}
               src={applicant.profileImage}
-              size="sm"
+              size="md"
             />
           </button>
-          <span className="text-sm font-semibold text-stone-900 flex-1 truncate">
+          <span className="text-base font-semibold text-stone-900 flex-1 truncate">
             {applicant.name}
           </span>
           {badge && (
@@ -370,7 +371,7 @@ export function ApplicantCard({
           )}
           <UnreadBadge count={applicant.unread} />
         </div>
-        <p className="text-xs text-gray-400 truncate mb-1.5">
+        <p className="text-sm text-gray-400 truncate mb-1.5">
           &ldquo;{applicant.preview}&rdquo;
         </p>
         <div className="flex items-center justify-between mb-3">
@@ -1599,9 +1600,9 @@ export function ReservationRequestCard({
             }}
             className="shrink-0"
           >
-            <Avatar initial={rr.initial} src={rr.profileImage} size="sm" />
+            <Avatar initial={rr.initial} src={rr.profileImage} size="md" />
           </button>
-          <span className="text-sm font-semibold text-stone-900 flex-1 truncate">
+          <span className="text-base font-semibold text-stone-900 flex-1 truncate">
             {rr.name}
           </span>
           {isPending && !isSitter && (
@@ -1626,7 +1627,12 @@ export function ReservationRequestCard({
           )}
           <UnreadBadge count={rr.unread} />
         </div>
-        <p className="text-xs text-gray-400 truncate mb-1.5">
+        {rr.sub && (
+          <span className="inline-block max-w-full truncate text-xs font-medium px-2 py-0.5 mb-1.5 rounded-full bg-orange-100 text-orange-600">
+            {rr.sub}
+          </span>
+        )}
+        <p className="text-sm text-gray-400 truncate mb-1.5">
           &quot;{rr.preview}&quot;
         </p>
         <div className="flex items-center justify-between mb-3">

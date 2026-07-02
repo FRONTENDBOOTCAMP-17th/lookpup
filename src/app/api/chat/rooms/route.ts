@@ -166,15 +166,21 @@ export async function GET() {
           ? (reservationStatusMap.get(room.reservation_id) ?? null)
           : null,
       reservation_service_title:
-        room.room_type === "direct" && room.reservation_id
+        (room.room_type === "direct" ||
+          room.room_type === "reservation_request") &&
+        room.reservation_id
           ? (reservationLabelMap.get(room.reservation_id)?.serviceTitle ?? null)
           : null,
       reservation_pet_names:
-        room.room_type === "direct" && room.reservation_id
+        (room.room_type === "direct" ||
+          room.room_type === "reservation_request") &&
+        room.reservation_id
           ? (reservationLabelMap.get(room.reservation_id)?.petNames ?? [])
           : [],
       reservation_start_datetime:
-        room.room_type === "direct" && room.reservation_id
+        (room.room_type === "direct" ||
+          room.room_type === "reservation_request") &&
+        room.reservation_id
           ? (reservationLabelMap.get(room.reservation_id)?.startDatetime ??
             null)
           : null,
