@@ -1,28 +1,8 @@
-import Link from "next/link";
 import LegalPage, { type LegalArticle } from "@/components/legal/LegalPage";
 
 const PRIVACY_LINKS: Record<string, string> = {
   개인정보처리방침: "/privacy",
 };
-
-function renderItemText(text: string) {
-  const match = text.match(/^([\s\S]*?)\[([^\]]+)\]([\s\S]*)$/);
-  if (match && PRIVACY_LINKS[match[2]]) {
-    return (
-      <>
-        {match[1]}
-        <Link
-          href={PRIVACY_LINKS[match[2]]}
-          className="text-[var(--color-orange-500)] underline underline-offset-2 hover:opacity-70 transition-opacity"
-        >
-          {match[2]}
-        </Link>
-        {match[3]}
-      </>
-    );
-  }
-  return text;
-}
 
 const ARTICLES: LegalArticle[] = [
   {
@@ -119,7 +99,7 @@ export default function TermsPage() {
       }
       articles={ARTICLES}
       effectiveDate="본 약관은 2026년 7월 1일부터 적용됩니다."
-      renderItemText={renderItemText}
+      itemLinks={PRIVACY_LINKS}
     />
   );
 }
