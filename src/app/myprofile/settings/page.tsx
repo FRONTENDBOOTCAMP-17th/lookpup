@@ -18,12 +18,11 @@ export default async function SettingsPage() {
       )
       .eq("id", authUser.id)
       .single(),
-    // bank_accounts가 generated types에 없어서 타입 우회
-    (db as any)
+    db
       .from("bank_accounts")
       .select("id, bank_name, account_number, account_holder")
       .eq("user_id", authUser.id)
-      .maybeSingle() as Promise<{ data: { id: string; bank_name: string; account_number: string; account_holder: string } | null }>,
+      .maybeSingle(),
   ]);
 
   if (!row) return <SettingsClient />;
