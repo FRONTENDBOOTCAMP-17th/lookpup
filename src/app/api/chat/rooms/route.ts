@@ -37,7 +37,7 @@ export async function GET() {
          rating,
          sitter_user:users(full_name, profile_image)
        ),
-       request:requests!request_id(title, status)`,
+       request:requests!request_id(title, status, created_at)`,
     )
     .order("last_message_at", { ascending: false, nullsFirst: false });
 
@@ -154,6 +154,7 @@ export async function GET() {
       request_id: room.request_id ?? null,
       request_title: request?.title ?? null,
       request_status: request?.status ?? null,
+      request_created_at: request?.created_at ?? null,
       application_status:
         room.room_type === "request" && room.request_id && room.sitter_id
           ? (applicationStatusMap.get(`${room.request_id}-${room.sitter_id}`) ??

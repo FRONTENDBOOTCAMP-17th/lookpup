@@ -50,6 +50,7 @@ export interface Post {
   id: string;
   title: string;
   status: string;
+  createdAt: string | null;
 }
 
 interface RoomApiItem {
@@ -67,6 +68,7 @@ interface RoomApiItem {
   request_id: string | null;
   request_title: string | null;
   request_status: string | null;
+  request_created_at: string | null;
   application_status: string | null;
   reservation_status: string | null;
   reservation_service_title: string | null;
@@ -238,9 +240,15 @@ export function useChatRooms(activeRoomId: string | null) {
             id: r.request_id,
             title: r.request_title ?? "구인글",
             status: r.request_status ?? "open",
+            createdAt: r.request_created_at ?? null,
           });
         }
       }
+      derivedPosts.sort((a, b) => {
+        if (!a.createdAt) return 1;
+        if (!b.createdAt) return -1;
+        return b.createdAt.localeCompare(a.createdAt);
+      });
       setPosts(derivedPosts);
     } catch (err) {
       if (!silent) setError((err as Error).message);
