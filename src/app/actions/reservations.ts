@@ -670,7 +670,7 @@ export async function getReservationById(id: string) {
       id, status, start_datetime, end_datetime, total_price, created_at, sitter_id,
       services(title),
       sitters(available_area, rating, users(full_name, is_verified)),
-      reservation_items(pets(name, breed, animal_type, age, weight)),
+      reservation_items(pets(name, breed, animal_type, age, weight, image_url)),
       reviews(id)
     `,
     )
@@ -700,6 +700,7 @@ export async function getReservationById(id: string) {
     animal_type: string;
     age: number | null;
     weight: number | null;
+    image_url: string | null;
   } | null;
 
   const sitter = r.sitters as SitterRow;
@@ -738,6 +739,7 @@ export async function getReservationById(id: string) {
         weight: Number(firstPet?.weight ?? 0),
         emoji: PET_EMOJI[firstPet?.animal_type ?? ""] ?? "🐾",
         gradient: PET_GRADIENT[firstPet?.animal_type ?? ""] ?? DEFAULT_GRADIENT,
+        imageUrl: firstPet?.image_url ?? null,
       },
       price: r.total_price,
       reviewWritten,

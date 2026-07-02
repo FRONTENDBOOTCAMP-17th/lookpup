@@ -57,6 +57,7 @@ export interface Booking {
     weight: number;
     emoji: string;
     gradient: string;
+    imageUrl: string | null;
   };
   price: number;
   reviewWritten?: boolean;
@@ -322,10 +323,19 @@ export default function BookingDetailClient({
             <h3 className="text-sm font-semibold text-gray-500 mb-4">반려동물 정보</h3>
             <div className="flex items-center gap-4">
               <div
-                className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shrink-0"
+                className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shrink-0 overflow-hidden"
                 style={{ background: booking.pet.gradient }}
               >
-                {booking.pet.emoji}
+                {booking.pet.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={booking.pet.imageUrl}
+                    alt={booking.pet.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  booking.pet.emoji
+                )}
               </div>
               <div className="grid grid-cols-2 gap-x-8 gap-y-2 flex-1">
                 <div>
