@@ -30,6 +30,7 @@ import {
   APPLICATION_REJECTED_PREFIX,
   RESERVATION_CANCELED_PREFIX,
   SERVICE_COMPLETE_PREFIX,
+  SERVICE_COMPLETE_CONFIRMED_PREFIX,
   SERVICE_START_PREFIX,
   RESERVATION_REQUEST_PREFIX,
   RESERVATION_ACCEPTED_PREFIX,
@@ -166,6 +167,24 @@ function toMessage(m: MessageApiItem, userId: string): Message {
       text: "",
       sentByMe: m.sender_id === userId,
       serviceCompleteData,
+      time: m.created_at ? formatTime(m.created_at) : undefined,
+      rawDate: m.created_at ?? undefined,
+    };
+  }
+  if (m.content.startsWith(SERVICE_COMPLETE_CONFIRMED_PREFIX)) {
+    let serviceCompleteConfirmedData: ServiceCompleteData | undefined;
+    const jsonPart = m.content.slice(SERVICE_COMPLETE_CONFIRMED_PREFIX.length);
+    if (jsonPart) {
+      try {
+        serviceCompleteConfirmedData = JSON.parse(jsonPart) as ServiceCompleteData;
+      } catch {}
+    }
+    return {
+      id: m.id,
+      from: "service_complete_confirmed" as const,
+      text: "",
+      sentByMe: m.sender_id === userId,
+      serviceCompleteConfirmedData,
       time: m.created_at ? formatTime(m.created_at) : undefined,
       rawDate: m.created_at ?? undefined,
     };

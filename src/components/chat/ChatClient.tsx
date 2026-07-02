@@ -424,6 +424,16 @@ function ChatPageContent({
     return null;
   }, [messages]);
 
+  const isPaymentComplete = paymentState?.paid === true;
+  const hasServiceStarted = useMemo(
+    () => messages.some((m) => m.from === "service_start"),
+    [messages],
+  );
+  const hasServiceCompleted = useMemo(
+    () => messages.some((m) => m.from === "service_complete"),
+    [messages],
+  );
+
   useEffect(() => {
     if (!activeRoomId) return;
     markRoomAsRead(activeRoomId);
@@ -1001,6 +1011,15 @@ function ChatPageContent({
         return;
       }
       setConfirmedServiceIds((prev) => new Set([...prev, reservationId]));
+      if (activeRoomId && result.completionMessage) {
+        addMessage(result.completionMessage);
+        broadcastMessage(result.completionMessage);
+        updatePreview(
+          activeRoomId,
+          "서비스 완료 확정",
+          result.completionMessage.created_at ?? "",
+        );
+      }
     } catch {
       setSendError("서비스 완료 확인에 실패했습니다. 다시 시도해주세요.");
     } finally {
@@ -1491,6 +1510,9 @@ function ChatPageContent({
     isPaymentPending,
     isServiceConfirming,
     isCurrentUserSitter,
+    isPaymentComplete,
+    hasServiceStarted,
+    hasServiceCompleted,
     input,
     sending,
     sendError,
