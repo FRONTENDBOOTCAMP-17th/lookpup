@@ -499,7 +499,7 @@ export async function getMyReservations() {
       `
       id, status, start_datetime, end_datetime, total_price, created_at, sitter_id,
       services(title),
-      sitters(available_area, rating, users(full_name)),
+      sitters(available_area, rating, users(full_name, profile_image)),
       reservation_items(pets(name, breed, animal_type)),
       reviews(id)
     `,
@@ -524,7 +524,7 @@ export async function getMyReservations() {
     type SitterRow = {
       available_area: string;
       rating: number;
-      users: { full_name: string } | null;
+      users: { full_name: string; profile_image: string | null } | null;
     } | null;
     type PetRow = {
       name: string;
@@ -548,6 +548,7 @@ export async function getMyReservations() {
       serviceType: service?.title ?? "-",
       status: STATUS_MAP[r.status] ?? "pending",
       sitterName: sitter?.users?.full_name ?? "-",
+      sitterImage: sitter?.users?.profile_image ?? null,
       sitterRating: sitter?.rating ?? 0,
       sitterId: (r as { sitter_id: string }).sitter_id,
       date: `${start.getFullYear()}년 ${start.getMonth() + 1}월 ${start.getDate()}일 (${DAYS[start.getDay()]})`,
@@ -592,7 +593,7 @@ export async function getMySitterReservations() {
       id, status, start_datetime, end_datetime, total_price, created_at, sitter_id, owner_id,
       services(title),
       sitters!inner(available_area),
-      users!reservations_owner_id_fkey(full_name),
+      users!reservations_owner_id_fkey(full_name, profile_image),
       reservation_items(pets(name, breed, animal_type))
     `,
     )
@@ -613,7 +614,7 @@ export async function getMySitterReservations() {
     const created = new Date(r.created_at ?? "");
     const dateStr = `${created.getFullYear()}${pad(created.getMonth() + 1)}${pad(created.getDate())}`;
 
-    type OwnerRow = { full_name: string } | null;
+    type OwnerRow = { full_name: string; profile_image: string | null } | null;
     type SitterRow = { available_area: string } | null;
     type PetRow = { name: string; breed: string | null; animal_type: string } | null;
     type ItemRow = { pets: PetRow };
@@ -630,6 +631,7 @@ export async function getMySitterReservations() {
       serviceType: service?.title ?? "-",
       status: STATUS_MAP[r.status] ?? "pending",
       sitterName: owner?.full_name ?? "-",
+      sitterImage: owner?.profile_image ?? null,
       sitterRating: 0,
       sitterId: (r as { sitter_id: string }).sitter_id,
       ownerId: (r as { owner_id: string }).owner_id,
@@ -663,22 +665,34 @@ export async function getReservationById(id: string) {
 
   const db = createServiceClient();
 
+  const { data: sitterProfile } = await db
+    .from("sitters")
+    .select("id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
   const { data: r, error } = await db
     .from("reservations")
     .select(
       `
-      id, status, start_datetime, end_datetime, total_price, created_at, sitter_id,
+      id, status, start_datetime, end_datetime, total_price, created_at, sitter_id, owner_id,
       services(title),
-      sitters(available_area, rating, users(full_name, is_verified)),
+      sitters(available_area, rating, users(full_name, is_verified, profile_image)),
       reservation_items(pets(name, breed, animal_type, age, weight, image_url)),
       reviews(id)
     `,
     )
     .eq("id", id)
-    .eq("owner_id", user.id)
     .single();
 
   if (error || !r)
+    return {
+      error: { code: "NOT_FOUND", message: "예약 정보를 찾을 수 없습니다." },
+    };
+
+  const isOwner = r.owner_id === user.id;
+  const isSitter = sitterProfile != null && r.sitter_id === sitterProfile.id;
+  if (!isOwner && !isSitter)
     return {
       error: { code: "NOT_FOUND", message: "예약 정보를 찾을 수 없습니다." },
     };
@@ -692,7 +706,7 @@ export async function getReservationById(id: string) {
   type SitterRow = {
     available_area: string;
     rating: number;
-    users: { full_name: string; is_verified: boolean } | null;
+    users: { full_name: string; is_verified: boolean; profile_image: string | null } | null;
   } | null;
   type PetRow = {
     name: string;
@@ -725,6 +739,7 @@ export async function getReservationById(id: string) {
       status: STATUS_MAP[r.status] ?? "pending",
       sitter: {
         name: sitter?.users?.full_name ?? "-",
+        image: sitter?.users?.profile_image ?? null,
         rating: sitter?.rating ?? 0,
         reviewCount: reviewCount ?? 0,
         certified: sitter?.users?.is_verified ?? false,

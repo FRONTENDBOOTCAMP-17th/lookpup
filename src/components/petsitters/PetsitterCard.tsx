@@ -9,6 +9,7 @@ interface Sitter {
   id: string;
   name: string;
   initial: string;
+  profileImage: string | null;
   district: string;
   neighborhood: string;
   rating: number;
@@ -42,7 +43,7 @@ export default function PetsitterCard({
         }`}
       >
         <div className="flex items-start gap-4">
-          <Avatar initial={sitter.initial} size="lg" variant="orange" />
+          <Avatar initial={sitter.initial} src={sitter.profileImage} size="lg" variant="orange" />
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between">
               <span className="text-stone-900 text-base font-semibold">{sitter.name}</span>
