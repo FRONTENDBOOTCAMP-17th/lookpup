@@ -1,6 +1,6 @@
 import LegalPage, { type LegalArticle } from "@/components/legal/LegalPage";
 
-const PRIVACY_LINKS: Record<string, string> = {
+const LINK_MAP: Record<string, string> = {
   개인정보처리방침: "/privacy",
 };
 
@@ -99,7 +99,7 @@ export default function TermsPage() {
       }
       articles={ARTICLES}
       effectiveDate="본 약관은 2026년 7월 1일부터 적용됩니다."
-      itemLinks={PRIVACY_LINKS}
+      linkMap={LINK_MAP}
     />
   );
 }
