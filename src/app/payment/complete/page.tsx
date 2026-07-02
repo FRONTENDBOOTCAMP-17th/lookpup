@@ -1,11 +1,12 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 
 type PaymentStatus = "loading" | "success" | "fail";
 
-export default function PayCompletePage() {
+function PayCompleteContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -70,5 +71,19 @@ export default function PayCompletePage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function PayCompletePage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-orange-50 flex items-center justify-center p-5">
+          <Loader2 size={48} className="text-orange-500 animate-spin" />
+        </main>
+      }
+    >
+      <PayCompleteContent />
+    </Suspense>
   );
 }
