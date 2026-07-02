@@ -29,6 +29,7 @@ import {
   TimelineDescription,
   TimelineTime,
 } from "@/components/ui/timeline";
+import { ImageGallery } from "@/components/common/ImageGallery";
 
 type BookingStatus =
   | "pending"
@@ -172,16 +173,8 @@ function CareRecordTimeline({ records }: { records: CareRecord[] }) {
                     </TimelineDescription>
                   )}
                   {record.image_urls.length > 0 && (
-                    <div className="flex gap-2 mt-2 flex-wrap">
-                      {record.image_urls.map((url, i) => (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          key={i}
-                          src={url}
-                          alt={`돌봄 사진 ${i + 1}`}
-                          className="w-20 h-20 object-cover rounded-xl border border-orange-100"
-                        />
-                      ))}
+                    <div className="mt-2">
+                      <ImageGallery urls={record.image_urls} />
                     </div>
                   )}
                 </TimelineContent>
