@@ -56,7 +56,7 @@ export default function PetsitterSearchClient() {
       district,
       neighborhood,
       rating: parseFloat(String(row.rating ?? 0)),
-      reviewCount: 0,
+      reviewCount: row.review_count,
       price: row.base_price ?? 0,
       services: [...new Set(serviceTypes)],
       lat: parseFloat(String(row.latitude)),
