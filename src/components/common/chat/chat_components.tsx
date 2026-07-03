@@ -245,6 +245,7 @@ type ChatRoomItemProps = {
   editMode: boolean;
   onDelete: (id: string) => void;
   onClick: (id: string) => void;
+  priority?: boolean;
 };
 
 function ChatRoomItemImpl({
@@ -253,6 +254,7 @@ function ChatRoomItemImpl({
   editMode,
   onDelete,
   onClick,
+  priority = false,
 }: ChatRoomItemProps) {
   return (
     <div
@@ -272,7 +274,12 @@ function ChatRoomItemImpl({
         </button>
       )}
       <div className="relative shrink-0">
-        <Avatar initial={room.initial} src={room.profileImage} size="lg" />
+        <Avatar
+          initial={room.initial}
+          src={room.profileImage}
+          size="lg"
+          priority={priority}
+        />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between">

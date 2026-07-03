@@ -1842,66 +1842,68 @@ function ChatPageContent({
     <div className="h-screen overflow-hidden flex flex-col">
       <Header />
 
-      {/* 모바일 */}
-      <div className="md:hidden flex flex-col flex-1 overflow-hidden">
-        {mobileChatView === "list" ? (
+      <main className="flex flex-col flex-1 overflow-hidden">
+        {/* 모바일 */}
+        <div className="md:hidden flex flex-col flex-1 overflow-hidden">
+          {mobileChatView === "list" ? (
+            <ChatSidebar
+              {...sharedSidebarProps}
+              className="flex flex-col h-full"
+              isMobile
+              onTabChange={handleMobileTabChange}
+              onRoomSelect={handleMobileRoomSelect}
+              onApplicantSelect={handleMobileApplicantSelect}
+              onReservationSelect={handleMobileReservationSelect}
+            />
+          ) : (
+            <ChatWindow
+              {...sharedChatWindowProps}
+              isMobile
+              loading={false}
+              error={null}
+              isEmpty={false}
+              hasSelection={true}
+              onBack={handleBackToList}
+              onGoToProfile={handleGoToProfileMobile}
+              onGoToChat={handleGoToChatMobile}
+            />
+          )}
+        </div>
+
+        {/* 데스크톱 */}
+        <div className="hidden md:flex flex-1 bg-orange-50 overflow-hidden">
           <ChatSidebar
             {...sharedSidebarProps}
-            className="flex flex-col h-full"
-            isMobile
-            onTabChange={handleMobileTabChange}
-            onRoomSelect={handleMobileRoomSelect}
-            onApplicantSelect={handleMobileApplicantSelect}
-            onReservationSelect={handleMobileReservationSelect}
+            className="w-96 bg-white border-r border-orange-100 flex flex-col shrink-0"
+            onTabChange={setActiveTab}
+            onRoomSelect={setSelectedRoomId}
+            onApplicantSelect={setSelectedApplicantId}
+            onReservationSelect={setSelectedReservationRequestId}
           />
-        ) : (
           <ChatWindow
             {...sharedChatWindowProps}
-            isMobile
-            loading={false}
-            error={null}
-            isEmpty={false}
-            hasSelection={true}
-            onBack={handleBackToList}
-            onGoToProfile={handleGoToProfileMobile}
-            onGoToChat={handleGoToChatMobile}
+            isMobile={false}
+            loading={loading}
+            error={error}
+            isEmpty={
+              (activeTab === "one_on_one" && rooms.length === 0) ||
+              (activeTab === "applicants" && applicants.length === 0) ||
+              (activeTab === "reservations" && reservationRequests.length === 0)
+            }
+            hasSelection={
+              !(
+                (activeTab === "one_on_one" && selectedRoomId === null) ||
+                (activeTab === "applicants" && selectedApplicantId === null) ||
+                (activeTab === "reservations" &&
+                  selectedReservationRequestId === null)
+              )
+            }
+            onBack={noop}
+            onGoToProfile={handleGoToProfileDesktop}
+            onGoToChat={handleGoToChatDesktop}
           />
-        )}
-      </div>
-
-      {/* 데스크톱 */}
-      <div className="hidden md:flex flex-1 bg-orange-50 overflow-hidden">
-        <ChatSidebar
-          {...sharedSidebarProps}
-          className="w-96 bg-white border-r border-orange-100 flex flex-col shrink-0"
-          onTabChange={setActiveTab}
-          onRoomSelect={setSelectedRoomId}
-          onApplicantSelect={setSelectedApplicantId}
-          onReservationSelect={setSelectedReservationRequestId}
-        />
-        <ChatWindow
-          {...sharedChatWindowProps}
-          isMobile={false}
-          loading={loading}
-          error={error}
-          isEmpty={
-            (activeTab === "one_on_one" && rooms.length === 0) ||
-            (activeTab === "applicants" && applicants.length === 0) ||
-            (activeTab === "reservations" && reservationRequests.length === 0)
-          }
-          hasSelection={
-            !(
-              (activeTab === "one_on_one" && selectedRoomId === null) ||
-              (activeTab === "applicants" && selectedApplicantId === null) ||
-              (activeTab === "reservations" &&
-                selectedReservationRequestId === null)
-            )
-          }
-          onBack={noop}
-          onGoToProfile={handleGoToProfileDesktop}
-          onGoToChat={handleGoToChatDesktop}
-        />
-      </div>
+        </div>
+      </main>
 
       <input
         ref={photoInputRef}

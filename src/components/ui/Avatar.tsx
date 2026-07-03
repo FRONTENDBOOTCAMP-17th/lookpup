@@ -7,6 +7,7 @@ interface AvatarProps {
   size?: "sm" | "md" | "lg" | "xl" | "2xl";
   variant?: "default" | "dark" | "orange" | "blue";
   className?: string;
+  priority?: boolean;
 }
 
 const SIZE: Record<NonNullable<AvatarProps["size"]>, string> = {
@@ -15,6 +16,14 @@ const SIZE: Record<NonNullable<AvatarProps["size"]>, string> = {
   lg: "w-14 h-14 text-xl",
   xl: "w-16 h-16 text-2xl",
   "2xl": "w-24 h-24 text-xl",
+};
+
+const SIZE_PX: Record<NonNullable<AvatarProps["size"]>, number> = {
+  sm: 32,
+  md: 40,
+  lg: 56,
+  xl: 64,
+  "2xl": 96,
 };
 
 const VARIANT: Record<NonNullable<AvatarProps["variant"]>, { container: string; text: string }> = {
@@ -95,13 +104,21 @@ export default function Avatar({
   size = "md",
   variant = "default",
   className = "",
+  priority = false,
 }: AvatarProps) {
   return (
     <div
       className={`relative ${SIZE[size]} ${VARIANT[variant].container} rounded-full flex items-center justify-center shrink-0 overflow-hidden ${className}`}
     >
       {src ? (
-        <Image src={src} alt={initial || "사용자 프로필"} fill className="object-cover" sizes="128px" />
+        <Image
+          src={src}
+          alt={initial || "사용자 프로필"}
+          fill
+          className="object-cover"
+          sizes={`${SIZE_PX[size]}px`}
+          priority={priority}
+        />
       ) : (
         <span className={`${VARIANT[variant].text} font-semibold`}>{initial}</span>
       )}

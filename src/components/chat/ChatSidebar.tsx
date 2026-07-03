@@ -259,7 +259,7 @@ function ChatSidebarImpl({
               </p>
             ) : null)}
           {activeTab === "one_on_one" &&
-            filteredRooms.map((room) => (
+            filteredRooms.map((room, i) => (
               <ChatRoomItem
                 key={room.id}
                 room={room}
@@ -267,6 +267,7 @@ function ChatSidebarImpl({
                 editMode={editMode}
                 onDelete={onDeleteRoom}
                 onClick={onRoomSelect}
+                priority={i === 0}
               />
             ))}
           {activeTab === "reservations" &&
@@ -300,7 +301,7 @@ function ChatSidebarImpl({
                   검색 결과가 없습니다.
                 </p>
               ) : (
-                filteredRooms.map((room) => (
+                filteredRooms.map((room, i) => (
                   <ChatRoomItem
                     key={room.id}
                     room={room}
@@ -308,6 +309,7 @@ function ChatSidebarImpl({
                     editMode={editMode}
                     onDelete={onDeleteRoom}
                     onClick={onRoomSelect}
+                    priority={i === 0}
                   />
                 ))
               )}
