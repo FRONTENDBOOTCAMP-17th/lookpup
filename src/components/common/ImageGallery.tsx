@@ -67,6 +67,7 @@ export function ImageLightbox({ urls, index, onClose, onIndexChange }: ImageLigh
               {hasManyImages && index !== null && index > 0 && (
                 <button
                   onClick={prev}
+                  aria-label="이전 이미지"
                   className="flex items-center justify-center w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors cursor-pointer"
                 >
                   <ChevronLeft size={22} />
@@ -84,6 +85,7 @@ export function ImageLightbox({ urls, index, onClose, onIndexChange }: ImageLigh
               {hasManyImages && index !== null && index < urls.length - 1 && (
                 <button
                   onClick={next}
+                  aria-label="다음 이미지"
                   className="flex items-center justify-center w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors cursor-pointer"
                 >
                   <ChevronRight size={22} />
@@ -101,6 +103,8 @@ export function ImageLightbox({ urls, index, onClose, onIndexChange }: ImageLigh
                 <button
                   key={i}
                   onClick={() => onIndexChange(i)}
+                  aria-label={`${i + 1}번째 이미지로 이동`}
+                  aria-current={i === index}
                   className={`h-1.5 rounded-full transition-all duration-200 cursor-pointer ${
                     i === index ? "w-5 bg-white" : "w-1.5 bg-white/35 hover:bg-white/55"
                   }`}
@@ -127,6 +131,7 @@ export function ImageGallery({ urls }: ImageGalleryProps) {
             <button
               key={i}
               onClick={() => setLightboxIndex(i)}
+              aria-label={`${i + 1}번째 후기 사진 크게 보기`}
               className="shrink-0 focus:outline-none"
             >
               <img

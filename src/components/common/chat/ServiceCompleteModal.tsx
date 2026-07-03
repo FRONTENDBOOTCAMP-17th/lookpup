@@ -130,12 +130,22 @@ export function ServiceCompleteModal({
                 : "서비스 완료 전송"}
             </p>
           </div>
-          <p className="text-sm text-gray-400 mt-1.5 ml-10">
+          <p className="text-gray-500 text-xs mt-0.5 ml-10">
             {variant === "start"
               ? "시작할 예약을 선택해주세요."
               : "완료할 예약을 선택해주세요."}
           </p>
         </div>
+
+        {/* 안내 */}
+        {variant === "start" && (
+          <div className="mx-6 mt-4 bg-amber-50 rounded-xl px-4 py-3 text-amber-700 text-xs leading-relaxed shrink-0">
+            서비스를 시작해야 돌봄기록을 전송할 수 있습니다.
+            <br />
+            서비스가 완료되면 반드시{" "}
+            <span className="font-semibold">서비스 완료</span>를 꼭 눌러주세요.
+          </div>
+        )}
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-6 py-4">

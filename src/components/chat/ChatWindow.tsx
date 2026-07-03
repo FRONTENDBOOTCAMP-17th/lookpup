@@ -196,6 +196,7 @@ export interface ChatWindowProps {
   hasServiceStarted: boolean;
   hasServiceCompleted: boolean;
   canLeaveChat: boolean;
+  canViewProfile: boolean;
   canStartService: boolean;
 
   input: string;
@@ -272,6 +273,7 @@ function ChatWindowImpl({
   hasServiceStarted,
   hasServiceCompleted,
   canLeaveChat,
+  canViewProfile,
   canStartService,
   input,
   sending,
@@ -420,23 +422,25 @@ function ChatWindowImpl({
                   className="fixed inset-0 z-10"
                   onClick={() => setMobileMenuOpen(false)}
                 />
-                <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-lg border border-orange-100 z-20 overflow-hidden">
-                  <button
-                    onClick={() => {
-                      onGoToProfile();
-                      setMobileMenuOpen(false);
-                    }}
-                    className="w-full px-4 py-3 text-left text-sm text-stone-700 hover:bg-orange-50 transition-colors"
-                  >
-                    프로필로 이동하기
-                  </button>
+                <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-lg border border-orange-100 z-20 overflow-hidden divide-y divide-orange-50">
+                  {canViewProfile && (
+                    <button
+                      onClick={() => {
+                        onGoToProfile();
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full px-4 py-3 text-left text-sm text-stone-700 hover:bg-orange-50 transition-colors"
+                    >
+                      프로필로 이동하기
+                    </button>
+                  )}
                   {canLeaveChat && (
                     <button
                       onClick={() => {
                         onLeaveChat();
                         setMobileMenuOpen(false);
                       }}
-                      className="w-full px-4 py-3 text-left text-sm text-stone-700 hover:bg-orange-50 transition-colors border-t border-orange-50"
+                      className="w-full px-4 py-3 text-left text-sm text-stone-700 hover:bg-orange-50 transition-colors"
                     >
                       채팅 나가기
                     </button>
@@ -446,7 +450,7 @@ function ChatWindowImpl({
                       onReport();
                       setMobileMenuOpen(false);
                     }}
-                    className="w-full px-4 py-3 text-left text-sm text-red-500 hover:bg-red-50 transition-colors border-t border-orange-50"
+                    className="w-full px-4 py-3 text-left text-sm text-red-500 hover:bg-red-50 transition-colors"
                   >
                     신고하기
                   </button>
@@ -594,6 +598,7 @@ function ChatWindowImpl({
         onGoToProfile={onGoToProfile}
         onLeaveChat={onLeaveChat}
         canLeaveChat={canLeaveChat}
+        canViewProfile={canViewProfile}
         onReport={onReport}
       />
 

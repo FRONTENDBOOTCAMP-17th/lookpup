@@ -245,6 +245,7 @@ type ChatRoomItemProps = {
   editMode: boolean;
   onDelete: (id: string) => void;
   onClick: (id: string) => void;
+  priority?: boolean;
 };
 
 function ChatRoomItemImpl({
@@ -253,6 +254,7 @@ function ChatRoomItemImpl({
   editMode,
   onDelete,
   onClick,
+  priority = false,
 }: ChatRoomItemProps) {
   return (
     <div
@@ -272,7 +274,12 @@ function ChatRoomItemImpl({
         </button>
       )}
       <div className="relative shrink-0">
-        <Avatar initial={room.initial} src={room.profileImage} size="lg" />
+        <Avatar
+          initial={room.initial}
+          src={room.profileImage}
+          size="lg"
+          priority={priority}
+        />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between">
@@ -432,6 +439,7 @@ type ChatWindowHeaderProps = {
   onGoToProfile?: () => void;
   onLeaveChat?: () => void;
   canLeaveChat?: boolean;
+  canViewProfile?: boolean;
   onReport?: () => void;
 };
 
@@ -444,6 +452,7 @@ function ChatWindowHeaderImpl({
   onGoToProfile,
   onLeaveChat,
   canLeaveChat = true,
+  canViewProfile = true,
   onReport,
 }: ChatWindowHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -478,23 +487,25 @@ function ChatWindowHeaderImpl({
                 className="fixed inset-0 z-10"
                 onClick={() => setMenuOpen(false)}
               />
-              <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-lg border border-orange-100 z-20 overflow-hidden">
-                <button
-                  onClick={() => {
-                    onGoToProfile?.();
-                    setMenuOpen(false);
-                  }}
-                  className="w-full px-4 py-3 text-left text-sm text-stone-700 hover:bg-orange-50 transition-colors"
-                >
-                  프로필 보기
-                </button>
+              <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-lg border border-orange-100 z-20 overflow-hidden divide-y divide-orange-50">
+                {canViewProfile && (
+                  <button
+                    onClick={() => {
+                      onGoToProfile?.();
+                      setMenuOpen(false);
+                    }}
+                    className="w-full px-4 py-3 text-left text-sm text-stone-700 hover:bg-orange-50 transition-colors"
+                  >
+                    프로필 보기
+                  </button>
+                )}
                 {canLeaveChat && (
                   <button
                     onClick={() => {
                       onLeaveChat?.();
                       setMenuOpen(false);
                     }}
-                    className="w-full px-4 py-3 text-left text-sm text-stone-700 hover:bg-orange-50 transition-colors border-t border-orange-50"
+                    className="w-full px-4 py-3 text-left text-sm text-stone-700 hover:bg-orange-50 transition-colors"
                   >
                     채팅 나가기
                   </button>
@@ -504,7 +515,7 @@ function ChatWindowHeaderImpl({
                     onReport?.();
                     setMenuOpen(false);
                   }}
-                  className="w-full px-4 py-3 text-left text-sm text-red-500 hover:bg-red-50 transition-colors border-t border-orange-50"
+                  className="w-full px-4 py-3 text-left text-sm text-red-500 hover:bg-red-50 transition-colors"
                 >
                   신고하기
                 </button>
