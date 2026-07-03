@@ -1,11 +1,12 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 
-export default function LoginPage() {
+function LoginPageContent() {
   const supabase = createClient();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") ?? "/";
@@ -115,5 +116,17 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gradient-to-b from-orange-50 via-stone-50/50 to-white flex items-center justify-center p-5" />
+      }
+    >
+      <LoginPageContent />
+    </Suspense>
   );
 }

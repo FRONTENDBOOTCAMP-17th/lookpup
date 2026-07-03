@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import Image from "next/image";
 import { Dialog as DialogPrimitive } from "radix-ui";
 import {
@@ -49,6 +49,7 @@ export type Applicant = {
   profileImage?: string | null;
   rating: number;
   preview: string;
+  time: string;
   unread: number;
   applicationStatus?: string | null;
   location?: string;
@@ -66,6 +67,8 @@ export type ReservationRequest = {
   name: string;
   initial: string;
   profileImage?: string | null;
+  rating: number;
+  sub: string;
   preview: string;
   time: string;
   unread: number;
@@ -166,6 +169,11 @@ export type ReservationEditResponsePayload = {
   sentByMe?: boolean;
 };
 
+export type ReservationEditActionState = {
+  messageId: string;
+  type: "confirm" | "reject";
+} | null;
+
 // 채팅창 메시지
 export type Message = {
   id: string;
@@ -210,6 +218,26 @@ export type Badge = {
   className: string;
 };
 
+// 새 메시지 알림 뱃지 (1:1 채팅 / 지원 목록 / 예약 목록 공통)
+function UnreadBadge({ count }: { count: number }) {
+  if (count <= 0) return null;
+  return (
+    <span className="w-6 h-5 px-1.5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-medium shrink-0">
+      {count}
+    </span>
+  );
+}
+
+// 별점 표시 (지원 목록 / 예약 목록 공통)
+function RatingDisplay({ rating }: { rating: number }) {
+  return (
+    <span className="flex items-center gap-1 text-sm text-gray-400">
+      <Star size={12} className="text-yellow-400 fill-yellow-400" />
+      {rating.toFixed(1)}
+    </span>
+  );
+}
+
 // 편집 관련
 type ChatRoomItemProps = {
   room: ChatRoom;
@@ -219,7 +247,7 @@ type ChatRoomItemProps = {
   onClick: (id: string) => void;
 };
 
-export function ChatRoomItem({
+function ChatRoomItemImpl({
   room,
   isSelected,
   editMode,
@@ -251,12 +279,13 @@ export function ChatRoomItem({
           <span className="text-stone-900 text-base font-semibold">
             {room.name}
           </span>
-          {room.unread > 0 && !editMode && (
-            <span className="w-6 h-5 px-1.5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-medium">
-              {room.unread}
-            </span>
-          )}
+          {!editMode && <UnreadBadge count={room.unread} />}
         </div>
+        {room.sub && (
+          <span className="inline-block max-w-full truncate text-xs font-medium px-2 py-0.5 my-1 rounded-full bg-orange-100 text-orange-600">
+            {room.sub}
+          </span>
+        )}
         <p className="text-gray-500 text-sm leading-5 py-1 truncate">
           {room.lastMessage}
         </p>
@@ -266,10 +295,12 @@ export function ChatRoomItem({
   );
 }
 
+export const ChatRoomItem = memo(ChatRoomItemImpl);
+
 // 지원 목록 카드
 type ApplicantCardProps = {
   applicant: Applicant;
-  badge: Badge;
+  badge: Badge | null;
   isRejected: boolean;
   isConfirmed: boolean;
   isSelected: boolean;
@@ -283,7 +314,7 @@ type ApplicantCardProps = {
   onAvatarClick?: (id: string) => void;
 };
 
-export function ApplicantCard({
+function ApplicantCardImpl({
   applicant,
   badge,
   isRejected,
@@ -332,27 +363,28 @@ export function ApplicantCard({
             <Avatar
               initial={applicant.initial}
               src={applicant.profileImage}
-              size="sm"
+              size="md"
             />
           </button>
-          <span className="text-sm font-semibold text-stone-900 flex-1">
+          <span className="text-base font-semibold text-stone-900 flex-1 truncate">
             {applicant.name}
           </span>
-          <span
-            className={`text-xs px-2 py-0.5 rounded-full font-medium ${badge.className}`}
-          >
-            {badge.label}
-          </span>
+          {badge && (
+            <span
+              className={`text-xs px-2 py-0.5 rounded-full font-medium ${badge.className}`}
+            >
+              {badge.label}
+            </span>
+          )}
+          <UnreadBadge count={applicant.unread} />
         </div>
-        <div className="flex items-center justify-end mb-1.5">
-          <span className="flex items-center gap-1 text-xs text-gray-400">
-            <Star size={10} className="text-yellow-400 fill-yellow-400" />
-            {applicant.rating}
-          </span>
-        </div>
-        <p className="text-xs text-gray-400 truncate mb-3">
-          "{applicant.preview}"
+        <p className="text-sm text-gray-400 truncate mb-1.5">
+          &ldquo;{applicant.preview}&rdquo;
         </p>
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-xs text-gray-400">{applicant.time}</span>
+          <RatingDisplay rating={applicant.rating} />
+        </div>
         {isRejected ? (
           <p className="text-xs text-gray-400">거절한 지원자</p>
         ) : isConfirmed ? (
@@ -388,6 +420,8 @@ export function ApplicantCard({
   );
 }
 
+export const ApplicantCard = memo(ApplicantCardImpl);
+
 // 채팅창 헤더
 type ChatWindowHeaderProps = {
   initial: string;
@@ -401,7 +435,7 @@ type ChatWindowHeaderProps = {
   onReport?: () => void;
 };
 
-export function ChatWindowHeader({
+function ChatWindowHeaderImpl({
   initial,
   src,
   name,
@@ -483,6 +517,8 @@ export function ChatWindowHeader({
   );
 }
 
+export const ChatWindowHeader = memo(ChatWindowHeaderImpl);
+
 function ChatImageLightbox({
   url,
   onClose,
@@ -558,11 +594,12 @@ type MessageBubbleProps = {
   ) => void;
   onReservationEditReject?: (messageId: string) => void;
   confirmedEditIds?: Set<string>;
+  reservationEditAction?: ReservationEditActionState;
   onWriteReview?: (reservationId: string) => void;
   onLeaveChat?: () => void;
 };
 
-export function MessageBubble({
+function MessageBubbleImpl({
   msg,
   senderInitial,
   senderProfileImage,
@@ -578,6 +615,7 @@ export function MessageBubble({
   onReservationEditConfirm,
   onReservationEditReject,
   confirmedEditIds,
+  reservationEditAction,
   onWriteReview,
   onLeaveChat,
 }: MessageBubbleProps) {
@@ -626,6 +664,7 @@ export function MessageBubble({
             messageId={msg.id}
             data={data}
             isProcessed={isProcessed ?? false}
+            reservationEditAction={reservationEditAction ?? null}
             onConfirm={onReservationEditConfirm}
             onReject={onReservationEditReject}
           />
@@ -980,6 +1019,8 @@ export function MessageBubble({
   );
 }
 
+export const MessageBubble = memo(MessageBubbleImpl);
+
 export type ProfilePopupData = {
   sitterId?: string | null;
   name: string;
@@ -1006,15 +1047,19 @@ export function ProfilePopup({
   const [fetchedProfile, setFetchedProfile] = useState<SitterProfile | null>(
     null,
   );
-  const [loadingProfile, setLoadingProfile] = useState(false);
+  const [resolvedSitterId, setResolvedSitterId] = useState<string | null>(null);
+  const loadingProfile =
+    cardVariant === "sitter" &&
+    !!data.sitterId &&
+    resolvedSitterId !== data.sitterId;
 
   useEffect(() => {
     if (cardVariant !== "sitter" || !data.sitterId) return;
-    setLoadingProfile(true);
+    let cancelled = false;
     fetch(`/api/sitters/${data.sitterId}`)
       .then((res) => res.json())
       .then(({ data: d }) => {
-        if (!d) return;
+        if (cancelled || !d) return;
         setFetchedProfile({
           name: d.full_name,
           initial: d.full_name?.charAt(0) ?? "",
@@ -1030,7 +1075,12 @@ export function ProfilePopup({
         });
       })
       .catch(() => {})
-      .finally(() => setLoadingProfile(false));
+      .finally(() => {
+        if (!cancelled) setResolvedSitterId(data.sitterId ?? null);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [data.sitterId, cardVariant]);
 
   const profile: SitterProfile = fetchedProfile ?? {
@@ -1303,7 +1353,7 @@ type ChatPlusPanelProps = {
   onReservationEdit?: () => void;
 };
 
-export function ChatPlusPanel({
+function ChatPlusPanelImpl({
   onPaymentRequest,
   onSendCareRecord,
   onSendPhoto,
@@ -1358,6 +1408,8 @@ export function ChatPlusPanel({
   );
 }
 
+export const ChatPlusPanel = memo(ChatPlusPanelImpl);
+
 // + 버튼
 type ChatInputProps = {
   input: string;
@@ -1369,7 +1421,7 @@ type ChatInputProps = {
   disabled?: boolean;
 };
 
-export function ChatInput({
+function ChatInputImpl({
   input,
   onChange,
   onSend,
@@ -1414,6 +1466,8 @@ export function ChatInput({
   );
 }
 
+export const ChatInput = memo(ChatInputImpl);
+
 // 지원 목록 탭 : 구인글별 지원자 목록 그룹
 type Post = {
   id: string;
@@ -1436,10 +1490,10 @@ type ApplicantPostGroupProps = {
   onConfirm: (id: string) => void;
   onSelect: (id: string) => void;
   onAvatarClick?: (id: string) => void;
-  getApplicantBadge: (id: string) => Badge;
+  getApplicantBadge: (id: string) => Badge | null;
 };
 
-export function ApplicantPostGroup({
+function ApplicantPostGroupImpl({
   post,
   applicants,
   isCollapsed,
@@ -1500,6 +1554,8 @@ export function ApplicantPostGroup({
   );
 }
 
+export const ApplicantPostGroup = memo(ApplicantPostGroupImpl);
+
 // 예약 목록 카드 (펫시터 찾기 직접 예약)
 type ReservationRequestCardProps = {
   reservationRequest: ReservationRequest;
@@ -1514,7 +1570,7 @@ type ReservationRequestCardProps = {
   onAvatarClick?: (id: string) => void;
 };
 
-export function ReservationRequestCard({
+function ReservationRequestCardImpl({
   reservationRequest: rr,
   isSelected,
   editMode,
@@ -1554,7 +1610,7 @@ export function ReservationRequestCard({
         </button>
       )}
       <div className="px-5 py-4 flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
+        <div className="flex items-center gap-2 mb-2">
           <button
             onClick={(e) => {
               if (!editMode && onAvatarClick) {
@@ -1564,9 +1620,9 @@ export function ReservationRequestCard({
             }}
             className="shrink-0"
           >
-            <Avatar initial={rr.initial} src={rr.profileImage} size="sm" />
+            <Avatar initial={rr.initial} src={rr.profileImage} size="md" />
           </button>
-          <span className="text-sm font-semibold text-stone-900 flex-1 truncate">
+          <span className="text-base font-semibold text-stone-900 flex-1 truncate">
             {rr.name}
           </span>
           {isPending && !isSitter && (
@@ -1589,20 +1645,20 @@ export function ReservationRequestCard({
               거절됨
             </span>
           )}
+          <UnreadBadge count={rr.unread} />
         </div>
-        <div className="flex items-center gap-1.5 mb-2.5">
-          {rr.unread > 0 && (
-            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-green-50 text-green-700 shrink-0">
-              {rr.unread}
-            </span>
-          )}
-          <span className="text-xs text-gray-400 ml-auto shrink-0">
-            {rr.time}
+        {rr.sub && (
+          <span className="inline-block max-w-full truncate text-xs font-medium px-2 py-0.5 mb-1.5 rounded-full bg-orange-100 text-orange-600">
+            {rr.sub}
           </span>
-        </div>
-        <p className="text-xs text-gray-400 truncate mb-3">
+        )}
+        <p className="text-sm text-gray-400 truncate mb-1.5">
           &quot;{rr.preview}&quot;
         </p>
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-xs text-gray-400">{rr.time}</span>
+          <RatingDisplay rating={rr.rating} />
+        </div>
         {isPending && isSitter && !editMode && (
           <div className="flex gap-2">
             <button
@@ -1631,6 +1687,8 @@ export function ReservationRequestCard({
     </div>
   );
 }
+
+export const ReservationRequestCard = memo(ReservationRequestCardImpl);
 
 // 결제 요청 카드 (보호자용 - 결제하기 버튼 포함)
 type PaymentRequestCardProps = {
@@ -1764,6 +1822,13 @@ export function PaymentRequestCard({
             className="w-full h-10 rounded-xl outline-[1.11px] outline-orange-500 outline-offset-[-1.11px] text-orange-500 text-sm hover:bg-orange-50 transition-colors disabled:opacity-50"
           >
             {isPaying ? "결제 중..." : "결제하기"}
+          </button>
+        ) : amount <= 0 ? (
+          <button
+            disabled
+            className="w-full h-10 rounded-xl bg-stone-50 outline-[1.11px] outline-stone-200 outline-offset-[-1.11px] text-stone-400 text-sm cursor-default"
+          >
+            결제할 수 없어요
           </button>
         ) : (
           <button
@@ -2702,12 +2767,14 @@ function ReservationEditCard({
   messageId,
   data,
   isProcessed,
+  reservationEditAction,
   onConfirm,
   onReject,
 }: {
   messageId: string;
   data: ReservationEditPayload;
   isProcessed: boolean;
+  reservationEditAction?: ReservationEditActionState;
   onConfirm?: (
     messageId: string,
     reservationId: string,
@@ -2719,6 +2786,13 @@ function ReservationEditCard({
   ) => void;
   onReject?: (messageId: string) => void;
 }) {
+  const isConfirming =
+    reservationEditAction?.messageId === messageId &&
+    reservationEditAction.type === "confirm";
+  const isRejecting =
+    reservationEditAction?.messageId === messageId &&
+    reservationEditAction.type === "reject";
+  const actionLocked = !!reservationEditAction;
   return (
     <div
       className={`w-79.5 p-4 rounded-2xl flex flex-col gap-3 ${
@@ -2779,17 +2853,19 @@ function ReservationEditCard({
         <div className="flex gap-2">
           <button
             onClick={() => onReject?.(messageId)}
-            className="flex-1 py-1.5 text-xs text-stone-500 border border-stone-200 rounded-lg hover:bg-stone-50 transition-colors"
+            disabled={actionLocked}
+            className="flex-1 py-1.5 text-xs text-stone-500 border border-stone-200 rounded-lg hover:bg-stone-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            거절
+            {isRejecting ? "처리 중..." : "거절"}
           </button>
           <button
             onClick={() =>
               onConfirm?.(messageId, data.reservationId, data.proposed)
             }
-            className="flex-1 py-1.5 text-xs text-white bg-orange-500 rounded-lg hover:bg-orange-600 transition-colors font-medium"
+            disabled={actionLocked}
+            className="flex-1 py-1.5 text-xs text-white bg-orange-500 rounded-lg hover:bg-orange-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            확인
+            {isConfirming ? "처리 중..." : "확인"}
           </button>
         </div>
       )}

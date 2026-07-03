@@ -1,24 +1,28 @@
 "use client";
 
-import { useState, useEffect, useLayoutEffect, useRef, useMemo } from "react";
+import {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useMemo,
+  useCallback,
+} from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import dynamic from "next/dynamic";
 import Header from "@/components/layout/Header";
 import {
   ProfilePopup,
   type ProfilePopupData,
-  type Applicant,
   type Message,
-  type ReservationRequest,
+  type ReservationEditActionState,
   canLeaveDirectRoom,
   canLeaveReservationRequest,
 } from "@/components/common/chat/chat_components";
 import { ChatSidebar } from "@/components/chat/ChatSidebar";
 import { ChatWindow } from "@/components/chat/ChatWindow";
 import { CustomModal } from "@/components/common/CustomModal";
-import { CustomModalPayment } from "@/components/common/CustomModalPayment";
-import CareRecordModal, {
-  type CareRecordPayload,
-} from "@/components/common/chat/CareRecordModal";
+import type { CareRecordPayload } from "@/components/common/chat/CareRecordModal";
 import {
   createCareRecord,
   getInProgressReservationByOwnerAndSitter,
@@ -49,10 +53,7 @@ import {
   getReservationRequestDetails,
   updateReservationDetails,
 } from "@/app/actions/reservations";
-import {
-  ServiceCompleteModal,
-  type ActiveReservation,
-} from "@/components/common/chat/ServiceCompleteModal";
+import type { ActiveReservation } from "@/components/common/chat/ServiceCompleteModal";
 import { usePortOne } from "@/hooks/usePortOne";
 import { uploadToCloudinary } from "@/utils/cloudinary";
 import {
@@ -66,15 +67,44 @@ import {
   getActiveReservationBySitter,
   verifyAndConfirmPayment,
 } from "@/app/actions/payments";
-import {
-  ReservationConfirmModal,
-  type ReservationDetails,
-} from "@/components/common/chat/ReservationConfirmModal";
-import ReservationEditModal from "@/components/common/chat/ReservationEditModal";
+import type { ReservationDetails } from "@/components/common/chat/ReservationConfirmModal";
 import { useChatRooms } from "@/hooks/chat/useChatRooms";
+import type { RoomApiItem } from "@/app/actions/chat";
 import { useRequest } from "@/hooks/chat/useRequest";
 import { useChatMessages } from "@/hooks/chat/useChatMessages";
 import { useUserStore } from "@/store/userStore";
+
+const CustomModalPayment = dynamic(
+  () =>
+    import("@/components/common/CustomModalPayment").then(
+      (m) => m.CustomModalPayment,
+    ),
+  { ssr: false },
+);
+const CareRecordModal = dynamic(
+  () => import("@/components/common/chat/CareRecordModal"),
+  { ssr: false },
+);
+const ServiceCompleteModal = dynamic(
+  () =>
+    import("@/components/common/chat/ServiceCompleteModal").then(
+      (m) => m.ServiceCompleteModal,
+    ),
+  { ssr: false },
+);
+const ReservationConfirmModal = dynamic(
+  () =>
+    import("@/components/common/chat/ReservationConfirmModal").then(
+      (m) => m.ReservationConfirmModal,
+    ),
+  { ssr: false },
+);
+const ReservationEditModal = dynamic(
+  () => import("@/components/common/chat/ReservationEditModal"),
+  { ssr: false },
+);
+
+function noop() {}
 
 function getPaymentDeadline() {
   const d = new Date(Date.now() + 24 * 60 * 60 * 1000);
@@ -112,9 +142,11 @@ function withDateSeparators(msgs: Message[]): Message[] {
 function ChatPageContent({
   initialTab,
   initialRoomId,
+  initialRoomsData,
 }: {
   initialTab: "one_on_one" | "reservations" | "applicants";
   initialRoomId?: string | null;
+  initialRoomsData?: RoomApiItem[];
 }) {
   const router = useRouter();
   const { user, isLoading } = useUserStore();
@@ -128,7 +160,6 @@ function ChatPageContent({
   const [activeTab, setActiveTab] = useState<
     "one_on_one" | "reservations" | "applicants"
   >(initialTab);
-
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [selectedApplicantId, setSelectedApplicantId] = useState<string | null>(
     null,
@@ -138,6 +169,9 @@ function ChatPageContent({
   const [input, setInput] = useState("");
   const [sendError, setSendError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const [sendingPhoto, setSendingPhoto] = useState(false);
+  const [isPaymentAlreadyPaid, setIsPaymentAlreadyPaid] = useState(false);
+  const [payingNow, setPayingNow] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const mobileScrollRef = useRef<HTMLDivElement>(null);
   const isLoadMoreRef = useRef(false);
@@ -167,6 +201,63 @@ function ChatPageContent({
 
   const [messagesRefreshKey, setMessagesRefreshKey] = useState(0);
 
+  const [mobileChatView, setMobileChatView] = useState<"list" | "room">("list");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const hasAutoSelected = useRef(false);
+  const hasRetried = useRef(false);
+  const prevInitialRoomId = useRef<string | null | undefined>(null);
+
+  const [profilePopup, setProfilePopup] = useState<{
+    data: ProfilePopupData;
+    cardVariant: "sitter" | "owner";
+  } | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [paymentReservationAmount, setPaymentReservationAmount] = useState<
+    number | undefined
+  >(undefined);
+  const [careRecordOpen, setCareRecordOpen] = useState(false);
+  const [confirmedServiceIds, setConfirmedServiceIds] = useState<Set<string>>(
+    new Set(),
+  );
+  const checkedReservationIdsRef = useRef(new Set<string>());
+  const [isServiceConfirming, setIsServiceConfirming] = useState(false);
+  const [pendingServiceConfirmId, setPendingServiceConfirmId] = useState<
+    string | null
+  >(null);
+  const [serviceCompleteModalOpen, setServiceCompleteModalOpen] =
+    useState(false);
+  const [activeReservations, setActiveReservations] = useState<
+    ActiveReservation[]
+  >([]);
+  const [serviceCompleteModalLoading, setServiceCompleteModalLoading] =
+    useState(false);
+  const [serviceCompleteSending, setServiceCompleteSending] = useState(false);
+  const [serviceStartModalOpen, setServiceStartModalOpen] = useState(false);
+  const [readyReservations, setReadyReservations] = useState<
+    ActiveReservation[]
+  >([]);
+  const [serviceStartModalLoading, setServiceStartModalLoading] =
+    useState(false);
+  const [serviceStartSending, setServiceStartSending] = useState(false);
+
+  const [reservationEditOpen, setReservationEditOpen] = useState(false);
+  const [reservationEditAction, setReservationEditAction] =
+    useState<ReservationEditActionState>(null);
+
+  const [pendingDelete, setPendingDelete] = useState<{
+    id: string;
+    type: "room" | "applicant" | "reservation";
+  } | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const [syntheticCard, setSyntheticCard] = useState<{
+    roomId: string | null;
+    insertAt: number;
+  }>({ roomId: null, insertAt: 0 });
+
   const activeRoomId =
     activeTab === "one_on_one"
       ? selectedRoomId
@@ -192,7 +283,7 @@ function ChatPageContent({
     refresh,
     acceptedDirectRoomId,
     clearAcceptedDirectRoomId,
-  } = useChatRooms(activeRoomId);
+  } = useChatRooms(activeRoomId, initialRoomsData);
 
   const {
     rejectedIds,
@@ -201,210 +292,6 @@ function ChatPageContent({
     confirmApplicant,
     getApplicantBadge,
   } = useRequest(applicants);
-
-  async function handleAcceptReservation(roomId: string) {
-    const rr = reservationRequests.find((r) => r.id === roomId);
-    if (!rr?.reservationId || actioningId) return;
-    setPendingAcceptRoomId(roomId);
-    setAcceptDetails(null);
-    setAcceptModalOpen(true);
-    setAcceptModalLoading(true);
-    try {
-      const result = await getReservationRequestDetails(rr.reservationId);
-      if ("data" in result) {
-        setAcceptDetails(result.data ?? null);
-      }
-    } catch {
-    } finally {
-      setAcceptModalLoading(false);
-    }
-  }
-
-  async function handleAcceptConfirm() {
-    const roomId = pendingAcceptRoomId;
-    const rr = roomId ? reservationRequests.find((r) => r.id === roomId) : null;
-    if (!rr?.reservationId || actioningId) return;
-    setAcceptModalOpen(false);
-    setActioningId(roomId);
-    setApplicationActionError(null);
-    try {
-      const result = await acceptReservationRequest(rr.reservationId);
-      if (result.error) {
-        setApplicationActionError(result.error.message);
-        return;
-      }
-      if (result.data) {
-        broadcastReservationAccepted(result.data.room_id);
-        refresh();
-        setActiveTab("one_on_one");
-        setSelectedRoomId(result.data.room_id);
-        setSelectedReservationRequestId(null);
-        setMobileChatView("room");
-        setMessagesRefreshKey((k) => k + 1);
-      }
-    } catch {
-      setApplicationActionError("오류가 발생했습니다. 다시 시도해주세요.");
-    } finally {
-      setActioningId(null);
-      setPendingAcceptRoomId(null);
-    }
-  }
-
-  async function handleRejectReservation(roomId: string) {
-    const rr = reservationRequests.find((r) => r.id === roomId);
-    if (!rr?.reservationId || actioningId) return;
-    setActioningId(roomId);
-    setApplicationActionError(null);
-    try {
-      const result = await rejectReservationRequest(rr.reservationId);
-      if (result.error) {
-        setApplicationActionError(result.error.message);
-        return;
-      }
-      updateReservationRequestStatus(roomId, "canceled");
-      if (result.data?.message) {
-        addMessage(result.data.message);
-      }
-    } catch {
-      setApplicationActionError("오류가 발생했습니다. 다시 시도해주세요.");
-    } finally {
-      setActioningId(null);
-    }
-  }
-
-  function handleDeleteReservationRequest(id: string) {
-    const rr = reservationRequests.find((r) => r.id === id);
-    if (rr && !canLeaveReservationRequest(rr)) return;
-    setPendingDelete({ id, type: "reservation" });
-    setDeleteError(null);
-  }
-
-  async function handleRejectApplicant(id: string) {
-    if (actioningId) return;
-    setActioningId(id);
-    setApplicationActionError(null);
-    try {
-      const result = await updateApplicationByRoom(id, "rejected");
-      if (result.error) {
-        setApplicationActionError(result.error.message);
-        return;
-      }
-      rejectApplicant(id);
-      const msgResult = await sendApplicationRejectedMessage(id);
-      if (msgResult.data) {
-        addMessage(msgResult.data);
-        broadcastMessage(msgResult.data);
-        updatePreview(id, "지원 거절", msgResult.data.created_at ?? "");
-      }
-    } catch {
-      setApplicationActionError("오류가 발생했습니다. 다시 시도해주세요.");
-    } finally {
-      setActioningId(null);
-    }
-  }
-
-  async function handleConfirmClick(id: string) {
-    if (actioningId) return;
-    setPendingConfirmId(id);
-    setReservationDetails(null);
-    setReservationModalOpen(true);
-    setReservationModalLoading(true);
-    try {
-      const result = await getRequestDetailsForReservation(id);
-      if ("error" in result && result.error) {
-        setApplicationActionError(result.error.message);
-        setReservationModalOpen(false);
-        return;
-      }
-      if ("data" in result) {
-        setReservationDetails(result.data);
-      }
-    } catch {
-      setApplicationActionError("오류가 발생했습니다. 다시 시도해주세요.");
-      setReservationModalOpen(false);
-    } finally {
-      setReservationModalLoading(false);
-    }
-  }
-
-  async function handleConfirmApplicant(overrides: {
-    startDatetime: string | null;
-    endDatetime: string | null;
-    totalPrice: number | null;
-    location: string | null;
-  }) {
-    const id = pendingConfirmId;
-    if (!id || actioningId) return;
-    setReservationModalOpen(false);
-    setActioningId(id);
-    setApplicationActionError(null);
-    try {
-      const result = await updateApplicationByRoom(id, "selected", overrides);
-      if (result.error) {
-        setApplicationActionError(result.error.message);
-        return;
-      }
-      const reservationId =
-        "reservationId" in result ? result.reservationId : null;
-      confirmApplicant(id);
-      updateApplicantStatus(id, "selected");
-      broadcastConfirmation();
-      const confirmingApplicant = applicants.find((a) => a.id === id);
-      const postTitle = confirmingApplicant
-        ? (posts.find((p) => p.id === confirmingApplicant.postId)?.title ?? "")
-        : "";
-      const appData = {
-        postTitle,
-        postId: confirmingApplicant?.postId ?? "",
-        sitterId: confirmingApplicant?.sitterId ?? "",
-      };
-      const msgResult = await sendApplicationSelectedMessage(id, appData);
-      if (msgResult.data) {
-        addMessage(msgResult.data);
-        broadcastMessage(msgResult.data);
-        updatePreview(id, "선택 확정", msgResult.data.created_at ?? "");
-      }
-
-      if (confirmingApplicant?.sitterId) {
-        const roomResult = await findOrCreateRoom({
-          sitter_id: confirmingApplicant.sitterId,
-          room_type: "direct",
-          reservation_id: reservationId ?? undefined,
-        });
-        if ("data" in roomResult && roomResult.data) {
-          const newRoomId = roomResult.data.room_id;
-          broadcastReservationAccepted(newRoomId);
-
-          if (overrides.totalPrice && overrides.totalPrice > 0) {
-            const deadline = getPaymentDeadline();
-            const payResult = await sendAutoPaymentRequestMessage(newRoomId, {
-              amount: overrides.totalPrice,
-              reason: postTitle || "반려동물 정보",
-              deadline,
-              postId: confirmingApplicant?.postId,
-            });
-            if (payResult.data) {
-              updatePreview(
-                newRoomId,
-                "결제 요청",
-                payResult.data.created_at ?? "",
-              );
-            }
-          }
-
-          setActiveTab("one_on_one");
-          setSelectedRoomId(newRoomId);
-          setSelectedApplicantId(null);
-          setMobileChatView("room");
-        }
-      }
-    } catch {
-      setApplicationActionError("오류가 발생했습니다. 다시 시도해주세요.");
-    } finally {
-      setActioningId(null);
-      setPendingConfirmId(null);
-    }
-  }
 
   const {
     messages,
@@ -420,7 +307,30 @@ function ChatPageContent({
   } = useChatMessages(activeRoomId, userId, messagesRefreshKey);
 
   const { requestPayment, isPending: isPaymentPending } = usePortOne();
-  const [payingNow, setPayingNow] = useState(false);
+
+  const activeRoomIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    activeRoomIdRef.current = activeRoomId;
+  }, [activeRoomId]);
+
+  const deliverMessage = useCallback(
+    (roomId: string, message: Parameters<typeof addMessage>[0]) => {
+      if (activeRoomIdRef.current === roomId) addMessage(message);
+      broadcastMessage(roomId, message);
+    },
+    [addMessage, broadcastMessage],
+  );
+
+  const selectedRoom =
+    selectedRoomId !== null
+      ? rooms.find((r) => r.id === selectedRoomId)
+      : undefined;
+  const selectedApplicant = applicants.find(
+    (a) => a.id === selectedApplicantId,
+  );
+  const selectedReservationRequest = selectedReservationRequestId
+    ? reservationRequests.find((rr) => rr.id === selectedReservationRequestId)
+    : undefined;
 
   const lastPaymentReqId = useMemo(() => {
     for (let i = messages.length - 1; i >= 0; i--) {
@@ -444,6 +354,7 @@ function ChatPageContent({
     markRoomAsRead(activeRoomId);
     markRoomRead(activeRoomId);
     setSendError(null);
+    setInput("");
     setConfirmedServiceIds(new Set());
     checkedReservationIdsRef.current = new Set();
   }, [activeRoomId, markRoomAsRead]);
@@ -480,230 +391,6 @@ function ChatPageContent({
     }
   }, [messages]);
 
-  function handleLoadMore() {
-    const mobileEl = mobileScrollRef.current;
-    if (mobileEl && mobileEl.offsetParent !== null) {
-      scrollAnchorRef.current = mobileEl.scrollHeight;
-    } else {
-      const viewport = messagesEndRef.current?.closest(
-        "[data-radix-scroll-area-viewport]",
-      ) as HTMLElement | null;
-      if (viewport) desktopScrollAnchorRef.current = viewport.scrollHeight;
-    }
-    isLoadMoreRef.current = true;
-    loadMore();
-  }
-
-  async function handlePaymentSubmit(data: {
-    type: string;
-    amount: number;
-    reason: string;
-  }) {
-    if (!activeRoomId) return;
-    const isBasePaid = paymentState?.paid === true || isPaymentAlreadyPaid;
-    if (data.type !== "extra" && isBasePaid) {
-      setSendError("이미 결제된 예약입니다. 추가금 요청을 이용해주세요.");
-      return;
-    }
-    if (data.type === "extra" && !isBasePaid) {
-      setSendError("기본 결제가 완료된 후 추가금 요청을 보낼 수 있습니다.");
-      return;
-    }
-    try {
-      const deadline = getPaymentDeadline();
-      const isExtra = data.type === "extra";
-      const reservationId = isExtra
-        ? (selectedRoom?.reservationId ??
-          (selectedRoom?.sitterId
-            ? await getActiveReservationBySitter(selectedRoom.sitterId)
-            : null))
-        : undefined;
-      const result = await sendPaymentRequestMessage(
-        activeRoomId,
-        {
-          amount: data.amount,
-          reason: data.reason,
-          deadline,
-          isExtra,
-        },
-        reservationId ?? undefined,
-      );
-      if (result.error) {
-        setSendError(result.error.message);
-        return;
-      }
-      if (result.data) {
-        addMessage(result.data);
-        broadcastMessage(result.data);
-        updatePreview(activeRoomId, "결제 요청", result.data.created_at ?? "");
-      }
-    } catch {
-      setSendError("결제 요청 전송에 실패했습니다. 다시 시도해주세요.");
-    }
-  }
-
-  async function handlePayNow(data: {
-    amount: number;
-    reason: string;
-    messageId: string;
-  }) {
-    if (payingNow || isPaymentPending || !activeRoomId) return;
-    setPayingNow(true);
-
-    let portonePaymentId = `pay_${Date.now()}`;
-    let totalAmount = Number(data.amount);
-    let orderName = data.reason || "서비스 결제";
-
-    const reservationId =
-      selectedRoom?.reservationId ??
-      (selectedRoom?.sitterId
-        ? await getActiveReservationBySitter(selectedRoom.sitterId)
-        : null);
-
-    if (!reservationId) {
-      setSendError("예약 정보를 찾을 수 없습니다.");
-      setPayingNow(false);
-      return;
-    }
-
-    if (!totalAmount || totalAmount <= 0) {
-      setSendError("결제 금액이 올바르지 않습니다.");
-      setPayingNow(false);
-      return;
-    }
-
-    const payResult = await createPayment(reservationId, "CARD", totalAmount);
-    if (payResult.error?.code === "FORBIDDEN") {
-      const extraResult = await createExtraPayment(
-        reservationId,
-        totalAmount,
-        data.reason ?? "추가 서비스",
-      );
-      if (extraResult.error) {
-        setSendError(extraResult.error.message);
-        setPayingNow(false);
-        return;
-      }
-      portonePaymentId = extraResult.data!.payment_id;
-      orderName = extraResult.data!.order_name;
-    } else if (payResult.error) {
-      setSendError(payResult.error.message);
-      setPayingNow(false);
-      return;
-    } else {
-      portonePaymentId = payResult.data!.payment_id;
-      orderName = payResult.data!.order_name;
-    }
-
-    requestPayment(
-      {
-        paymentId: portonePaymentId,
-        orderName,
-        totalAmount,
-        currency: "KRW",
-        payMethod: "CARD",
-        redirectUrl: `${window.location.origin}/payment/complete`,
-      },
-      {
-        onSuccess: async () => {
-          try {
-            const verifyResult =
-              await verifyAndConfirmPayment(portonePaymentId);
-            if (verifyResult.error) {
-              setSendError(verifyResult.error.message);
-              return;
-            }
-            const result = await sendPaymentCompleteMessage(activeRoomId, {
-              amount: totalAmount,
-              paymentRequestMessageId: data.messageId,
-            });
-            if (result.data) {
-              addMessage(result.data);
-              broadcastMessage(result.data);
-              updatePreview(
-                activeRoomId,
-                "결제 완료",
-                result.data.created_at ?? "",
-              );
-            }
-          } finally {
-            setPayingNow(false);
-          }
-        },
-        onFail: () => {
-          setPayingNow(false);
-        },
-      },
-    );
-  }
-
-  async function handleSend() {
-    if (!input.trim() || !activeRoomId || sending) return;
-    setSendError(null);
-    setSending(true);
-    try {
-      const result = await sendMessage(activeRoomId, input.trim());
-      if (result.error) {
-        setSendError(result.error.message);
-        return;
-      }
-      if (result.data) {
-        addMessage(result.data);
-        broadcastMessage(result.data);
-
-        updatePreview(
-          activeRoomId,
-          result.data.content,
-          result.data.created_at ?? "",
-        );
-      }
-      setInput("");
-    } catch {
-      setSendError("메시지 전송에 실패했습니다. 다시 시도해주세요.");
-    } finally {
-      setSending(false);
-    }
-  }
-
-  async function handlePhotoSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file || !activeRoomId || sendingPhoto) return;
-    if (file.size > 10 * 1024 * 1024) {
-      setSendError("10MB 이하의 이미지만 전송할 수 있습니다.");
-      return;
-    }
-    if (!file.type.startsWith("image/")) {
-      setSendError("이미지 파일만 전송할 수 있습니다.");
-      return;
-    }
-    setSendError(null);
-    setSendingPhoto(true);
-    try {
-      const imageUrl = await uploadToCloudinary(file, "chats/photos");
-      const result = await sendImageMessage(activeRoomId, imageUrl);
-      if (result.error) {
-        setSendError(result.error.message);
-        return;
-      }
-      if (result.data) {
-        addMessage(result.data);
-        broadcastMessage(result.data);
-        updatePreview(activeRoomId, "사진", result.data.created_at ?? "");
-      }
-    } catch {
-      setSendError("사진 전송에 실패했습니다. 다시 시도해주세요.");
-    } finally {
-      setSendingPhoto(false);
-    }
-  }
-
-  const [mobileChatView, setMobileChatView] = useState<"list" | "room">("list");
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const hasAutoSelected = useRef(false);
-  const hasRetried = useRef(false);
-  const prevInitialRoomId = useRef<string | null | undefined>(null);
   useEffect(() => {
     if (prevInitialRoomId.current !== initialRoomId) {
       prevInitialRoomId.current = initialRoomId;
@@ -741,43 +428,530 @@ function ChatPageContent({
     }
   }, [initialRoomId, rooms, applicants, reservationRequests, loading, refresh]);
 
-  const [profilePopup, setProfilePopup] = useState<{
-    data: ProfilePopupData;
-    cardVariant: "sitter" | "owner";
-  } | null>(null);
-  const photoInputRef = useRef<HTMLInputElement>(null);
-  const [sendingPhoto, setSendingPhoto] = useState(false);
-  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-  const [paymentReservationAmount, setPaymentReservationAmount] = useState<
-    number | undefined
-  >(undefined);
-  const [isPaymentAlreadyPaid, setIsPaymentAlreadyPaid] = useState(false);
-  const [careRecordOpen, setCareRecordOpen] = useState(false);
-  const [confirmedServiceIds, setConfirmedServiceIds] = useState<Set<string>>(
-    new Set(),
-  );
-  const checkedReservationIdsRef = useRef(new Set<string>());
-  const [isServiceConfirming, setIsServiceConfirming] = useState(false);
-  const [pendingServiceConfirmId, setPendingServiceConfirmId] = useState<
-    string | null
-  >(null);
-  const [serviceCompleteModalOpen, setServiceCompleteModalOpen] =
-    useState(false);
-  const [activeReservations, setActiveReservations] = useState<
-    ActiveReservation[]
-  >([]);
-  const [serviceCompleteModalLoading, setServiceCompleteModalLoading] =
-    useState(false);
-  const [serviceCompleteSending, setServiceCompleteSending] = useState(false);
-  const [serviceStartModalOpen, setServiceStartModalOpen] = useState(false);
-  const [readyReservations, setReadyReservations] = useState<
-    ActiveReservation[]
-  >([]);
-  const [serviceStartModalLoading, setServiceStartModalLoading] =
-    useState(false);
-  const [serviceStartSending, setServiceStartSending] = useState(false);
+  useEffect(() => {
+    if (!acceptedDirectRoomId) return;
+    clearAcceptedDirectRoomId();
+    setActiveTab("one_on_one");
+    setSelectedRoomId(acceptedDirectRoomId);
+    setSelectedReservationRequestId(null);
+    setMobileChatView("room");
+  }, [acceptedDirectRoomId, clearAcceptedDirectRoomId]);
 
-  const [reservationEditOpen, setReservationEditOpen] = useState(false);
+  useEffect(() => {
+    const currentStatus = selectedApplicant?.applicationStatus;
+    const prevStatus = prevApplicantStatusRef.current;
+    prevApplicantStatusRef.current = currentStatus;
+
+    if (
+      prevStatus !== "selected" &&
+      currentStatus === "selected" &&
+      selectedApplicantId
+    ) {
+      setMessagesRefreshKey((k) => k + 1);
+    }
+  }, [selectedApplicant?.applicationStatus, selectedApplicantId]);
+
+  useEffect(() => {
+    const uncheckedIds = messages
+      .filter(
+        (m) =>
+          m.from === "service_complete" &&
+          !m.sentByMe &&
+          m.serviceCompleteData?.reservationId &&
+          !checkedReservationIdsRef.current.has(
+            m.serviceCompleteData.reservationId,
+          ),
+      )
+      .map((m) => m.serviceCompleteData!.reservationId);
+
+    if (uncheckedIds.length === 0) return;
+    uncheckedIds.forEach((id) => checkedReservationIdsRef.current.add(id));
+
+    getReservationStatuses(uncheckedIds).then(({ data }) => {
+      if (!data) return;
+      const completed = Object.entries(data)
+        .filter(([, status]) => status === "completed")
+        .map(([id]) => id);
+      if (completed.length > 0) {
+        setConfirmedServiceIds((prev) => new Set([...prev, ...completed]));
+      }
+    });
+  }, [messages]);
+
+  const handleAcceptReservation = useCallback(
+    async (roomId: string) => {
+      const rr = reservationRequests.find((r) => r.id === roomId);
+      if (!rr?.reservationId || actioningId) return;
+      setPendingAcceptRoomId(roomId);
+      setAcceptDetails(null);
+      setAcceptModalOpen(true);
+      setAcceptModalLoading(true);
+      try {
+        const result = await getReservationRequestDetails(rr.reservationId);
+        if ("data" in result) {
+          setAcceptDetails(result.data ?? null);
+        }
+      } catch {
+      } finally {
+        setAcceptModalLoading(false);
+      }
+    },
+    [reservationRequests, actioningId],
+  );
+
+  const handleAcceptConfirm = useCallback(async () => {
+    const roomId = pendingAcceptRoomId;
+    const rr = roomId ? reservationRequests.find((r) => r.id === roomId) : null;
+    if (!rr?.reservationId || actioningId) return;
+    setAcceptModalOpen(false);
+    setActioningId(roomId);
+    setApplicationActionError(null);
+    try {
+      const result = await acceptReservationRequest(rr.reservationId);
+      if (result.error) {
+        setApplicationActionError(result.error.message);
+        return;
+      }
+      if (result.data) {
+        broadcastReservationAccepted(result.data.room_id);
+        refresh();
+        setActiveTab("one_on_one");
+        setSelectedRoomId(result.data.room_id);
+        setSelectedReservationRequestId(null);
+        setMobileChatView("room");
+        setMessagesRefreshKey((k) => k + 1);
+      }
+    } catch {
+      setApplicationActionError("오류가 발생했습니다. 다시 시도해주세요.");
+    } finally {
+      setActioningId(null);
+      setPendingAcceptRoomId(null);
+    }
+  }, [
+    pendingAcceptRoomId,
+    reservationRequests,
+    actioningId,
+    broadcastReservationAccepted,
+    refresh,
+  ]);
+
+  const handleRejectReservation = useCallback(
+    async (roomId: string) => {
+      const rr = reservationRequests.find((r) => r.id === roomId);
+      if (!rr?.reservationId || actioningId) return;
+      setActioningId(roomId);
+      setApplicationActionError(null);
+      try {
+        const result = await rejectReservationRequest(rr.reservationId);
+        if (result.error) {
+          setApplicationActionError(result.error.message);
+          return;
+        }
+        updateReservationRequestStatus(roomId, "canceled");
+        if (result.data?.message) {
+          if (activeRoomIdRef.current === roomId)
+            addMessage(result.data.message);
+        }
+      } catch {
+        setApplicationActionError("오류가 발생했습니다. 다시 시도해주세요.");
+      } finally {
+        setActioningId(null);
+      }
+    },
+    [
+      reservationRequests,
+      actioningId,
+      updateReservationRequestStatus,
+      addMessage,
+    ],
+  );
+
+  const handleDeleteReservationRequest = useCallback(
+    (id: string) => {
+      const rr = reservationRequests.find((r) => r.id === id);
+      if (rr && !canLeaveReservationRequest(rr)) return;
+      setPendingDelete({ id, type: "reservation" });
+      setDeleteError(null);
+    },
+    [reservationRequests],
+  );
+
+  const handleRejectApplicant = useCallback(
+    async (id: string) => {
+      if (actioningId) return;
+      setActioningId(id);
+      setApplicationActionError(null);
+      try {
+        const result = await updateApplicationByRoom(id, "rejected");
+        if (result.error) {
+          setApplicationActionError(result.error.message);
+          return;
+        }
+        rejectApplicant(id);
+        const msgResult = await sendApplicationRejectedMessage(id);
+        if (msgResult.data) {
+          deliverMessage(id, msgResult.data);
+          updatePreview(id, "지원 거절", msgResult.data.created_at ?? "");
+        }
+      } catch {
+        setApplicationActionError("오류가 발생했습니다. 다시 시도해주세요.");
+      } finally {
+        setActioningId(null);
+      }
+    },
+    [actioningId, rejectApplicant, deliverMessage, updatePreview],
+  );
+
+  const handleConfirmClick = useCallback(
+    async (id: string) => {
+      if (actioningId) return;
+      setPendingConfirmId(id);
+      setReservationDetails(null);
+      setReservationModalOpen(true);
+      setReservationModalLoading(true);
+      try {
+        const result = await getRequestDetailsForReservation(id);
+        if ("error" in result && result.error) {
+          setApplicationActionError(result.error.message);
+          setReservationModalOpen(false);
+          return;
+        }
+        if ("data" in result) {
+          setReservationDetails(result.data);
+        }
+      } catch {
+        setApplicationActionError("오류가 발생했습니다. 다시 시도해주세요.");
+        setReservationModalOpen(false);
+      } finally {
+        setReservationModalLoading(false);
+      }
+    },
+    [actioningId],
+  );
+
+  const handleConfirmApplicant = useCallback(
+    async (overrides: {
+      startDatetime: string | null;
+      endDatetime: string | null;
+      totalPrice: number | null;
+      location: string | null;
+    }) => {
+      const id = pendingConfirmId;
+      if (!id || actioningId) return;
+      setReservationModalOpen(false);
+      setActioningId(id);
+      setApplicationActionError(null);
+      try {
+        const result = await updateApplicationByRoom(id, "selected", overrides);
+        if (result.error) {
+          setApplicationActionError(result.error.message);
+          return;
+        }
+        const reservationId =
+          "reservationId" in result ? result.reservationId : null;
+        confirmApplicant(id);
+        updateApplicantStatus(id, "selected");
+        broadcastConfirmation();
+        const confirmingApplicant = applicants.find((a) => a.id === id);
+        const postTitle = confirmingApplicant
+          ? (posts.find((p) => p.id === confirmingApplicant.postId)?.title ??
+            "")
+          : "";
+        const appData = {
+          postTitle,
+          postId: confirmingApplicant?.postId ?? "",
+          sitterId: confirmingApplicant?.sitterId ?? "",
+        };
+        const msgResult = await sendApplicationSelectedMessage(id, appData);
+        if (msgResult.data) {
+          deliverMessage(id, msgResult.data);
+          updatePreview(id, "선택 확정", msgResult.data.created_at ?? "");
+        }
+
+        if (confirmingApplicant?.sitterId) {
+          const roomResult = await findOrCreateRoom({
+            sitter_id: confirmingApplicant.sitterId,
+            room_type: "direct",
+            reservation_id: reservationId ?? undefined,
+          });
+          if ("data" in roomResult && roomResult.data) {
+            const newRoomId = roomResult.data.room_id;
+            broadcastReservationAccepted(newRoomId);
+
+            if (overrides.totalPrice && overrides.totalPrice > 0) {
+              const deadline = getPaymentDeadline();
+              const payResult = await sendAutoPaymentRequestMessage(newRoomId, {
+                amount: overrides.totalPrice,
+                reason: postTitle || "반려동물 정보",
+                deadline,
+                postId: confirmingApplicant?.postId,
+              });
+              if (payResult.data) {
+                updatePreview(
+                  newRoomId,
+                  "결제 요청",
+                  payResult.data.created_at ?? "",
+                );
+              }
+            }
+
+            setActiveTab("one_on_one");
+            setSelectedRoomId(newRoomId);
+            setSelectedApplicantId(null);
+            setMobileChatView("room");
+          }
+        }
+      } catch {
+        setApplicationActionError("오류가 발생했습니다. 다시 시도해주세요.");
+      } finally {
+        setActioningId(null);
+        setPendingConfirmId(null);
+      }
+    },
+    [
+      pendingConfirmId,
+      actioningId,
+      confirmApplicant,
+      updateApplicantStatus,
+      broadcastConfirmation,
+      applicants,
+      posts,
+      deliverMessage,
+      updatePreview,
+      broadcastReservationAccepted,
+    ],
+  );
+
+  const handleLoadMore = useCallback(() => {
+    const mobileEl = mobileScrollRef.current;
+    if (mobileEl && mobileEl.offsetParent !== null) {
+      scrollAnchorRef.current = mobileEl.scrollHeight;
+    } else {
+      const viewport = messagesEndRef.current?.closest(
+        "[data-radix-scroll-area-viewport]",
+      ) as HTMLElement | null;
+      if (viewport) desktopScrollAnchorRef.current = viewport.scrollHeight;
+    }
+    isLoadMoreRef.current = true;
+    loadMore();
+  }, [loadMore]);
+
+  const handlePaymentSubmit = useCallback(
+    async (data: { type: string; amount: number; reason: string }) => {
+      if (!activeRoomId) return;
+      const isBasePaid = paymentState?.paid === true || isPaymentAlreadyPaid;
+      if (data.type !== "extra" && isBasePaid) {
+        setSendError("이미 결제된 예약입니다. 추가금 요청을 이용해주세요.");
+        return;
+      }
+      if (data.type === "extra" && !isBasePaid) {
+        setSendError("기본 결제가 완료된 후 추가금 요청을 보낼 수 있습니다.");
+        return;
+      }
+      try {
+        const deadline = getPaymentDeadline();
+        const isExtra = data.type === "extra";
+        const reservationId = isExtra
+          ? (selectedRoom?.reservationId ??
+            (selectedRoom?.sitterId
+              ? await getActiveReservationBySitter(selectedRoom.sitterId)
+              : null))
+          : undefined;
+        const result = await sendPaymentRequestMessage(
+          activeRoomId,
+          {
+            amount: data.amount,
+            reason: data.reason,
+            deadline,
+            isExtra,
+          },
+          reservationId ?? undefined,
+        );
+        if (result.error) {
+          setSendError(result.error.message);
+          return;
+        }
+        if (result.data) {
+          deliverMessage(activeRoomId, result.data);
+          updatePreview(
+            activeRoomId,
+            "결제 요청",
+            result.data.created_at ?? "",
+          );
+        }
+      } catch {
+        setSendError("결제 요청 전송에 실패했습니다. 다시 시도해주세요.");
+      }
+    },
+    [
+      activeRoomId,
+      paymentState,
+      isPaymentAlreadyPaid,
+      selectedRoom,
+      deliverMessage,
+      updatePreview,
+    ],
+  );
+
+  const handlePayNow = useCallback(
+    async (data: { amount: number; reason: string; messageId: string }) => {
+      if (payingNow || isPaymentPending || !activeRoomId) return;
+
+      const totalAmount = Number(data.amount);
+      if (!totalAmount || totalAmount <= 0) return;
+
+      setPayingNow(true);
+
+      let portonePaymentId = `pay_${Date.now()}`;
+      let orderName = data.reason || "서비스 결제";
+
+      const reservationId =
+        selectedRoom?.reservationId ??
+        (selectedRoom?.sitterId
+          ? await getActiveReservationBySitter(selectedRoom.sitterId)
+          : null);
+
+      if (!reservationId) {
+        setSendError("예약 정보를 찾을 수 없습니다.");
+        setPayingNow(false);
+        return;
+      }
+
+      const payResult = await createPayment(reservationId, "CARD", totalAmount);
+      if (payResult.error?.code === "FORBIDDEN") {
+        const extraResult = await createExtraPayment(
+          reservationId,
+          totalAmount,
+          data.reason ?? "추가 서비스",
+        );
+        if (extraResult.error) {
+          setSendError(extraResult.error.message);
+          setPayingNow(false);
+          return;
+        }
+        portonePaymentId = extraResult.data!.payment_id;
+        orderName = extraResult.data!.order_name;
+      } else if (payResult.error) {
+        setSendError(payResult.error.message);
+        setPayingNow(false);
+        return;
+      } else {
+        portonePaymentId = payResult.data!.payment_id;
+        orderName = payResult.data!.order_name;
+      }
+
+      requestPayment(
+        {
+          paymentId: portonePaymentId,
+          orderName,
+          totalAmount,
+          currency: "KRW",
+          payMethod: "CARD",
+          redirectUrl: `${window.location.origin}/payment/complete`,
+        },
+        {
+          onSuccess: async () => {
+            try {
+              const verifyResult =
+                await verifyAndConfirmPayment(portonePaymentId);
+              if (verifyResult.error) {
+                setSendError(verifyResult.error.message);
+                return;
+              }
+              const result = await sendPaymentCompleteMessage(activeRoomId, {
+                amount: totalAmount,
+                paymentRequestMessageId: data.messageId,
+              });
+              if (result.data) {
+                deliverMessage(activeRoomId, result.data);
+                updatePreview(
+                  activeRoomId,
+                  "결제 완료",
+                  result.data.created_at ?? "",
+                );
+              }
+            } finally {
+              setPayingNow(false);
+            }
+          },
+          onFail: () => {
+            setPayingNow(false);
+          },
+        },
+      );
+    },
+    [
+      payingNow,
+      isPaymentPending,
+      activeRoomId,
+      selectedRoom,
+      requestPayment,
+      deliverMessage,
+      updatePreview,
+    ],
+  );
+
+  const handleSend = useCallback(async () => {
+    if (!input.trim() || !activeRoomId || sending) return;
+    setSendError(null);
+    setSending(true);
+    try {
+      const result = await sendMessage(activeRoomId, input.trim());
+      if (result.error) {
+        setSendError(result.error.message);
+        return;
+      }
+      if (result.data) {
+        deliverMessage(activeRoomId, result.data);
+
+        updatePreview(
+          activeRoomId,
+          result.data.content,
+          result.data.created_at ?? "",
+        );
+      }
+      setInput("");
+    } catch {
+      setSendError("메시지 전송에 실패했습니다. 다시 시도해주세요.");
+    } finally {
+      setSending(false);
+    }
+  }, [input, activeRoomId, sending, deliverMessage, updatePreview]);
+
+  const handlePhotoSelect = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      e.target.value = "";
+      if (!file || !activeRoomId || sendingPhoto) return;
+      if (file.size > 10 * 1024 * 1024) {
+        setSendError("10MB 이하의 이미지만 전송할 수 있습니다.");
+        return;
+      }
+      if (!file.type.startsWith("image/")) {
+        setSendError("이미지 파일만 전송할 수 있습니다.");
+        return;
+      }
+      setSendError(null);
+      setSendingPhoto(true);
+      try {
+        const imageUrl = await uploadToCloudinary(file, "chats/photos");
+        const result = await sendImageMessage(activeRoomId, imageUrl);
+        if (result.error) {
+          setSendError(result.error.message);
+          return;
+        }
+        if (result.data) {
+          deliverMessage(activeRoomId, result.data);
+          updatePreview(activeRoomId, "사진", result.data.created_at ?? "");
+        }
+      } catch {
+        setSendError("사진 전송에 실패했습니다. 다시 시도해주세요.");
+      } finally {
+        setSendingPhoto(false);
+      }
+    },
+    [activeRoomId, sendingPhoto, deliverMessage, updatePreview],
+  );
 
   const handleCareRecordSubmit = async (record: CareRecordPayload) => {
     if (!activeRoomId) return;
@@ -799,14 +973,14 @@ function ChatPageContent({
       const content = `[돌봄기록] ${record.title}`;
       const result = await sendSystemMessage(activeRoomId, content);
       if (result.data) {
-        addMessage(result.data);
-        broadcastMessage(result.data);
+        deliverMessage(activeRoomId, result.data);
         updatePreview(activeRoomId, content, result.data.created_at ?? "");
       }
     } catch {
       setSendError("돌봄기록 전송에 실패했습니다. 다시 시도해주세요.");
     }
   };
+
   async function handleServiceStart() {
     if (!activeRoomId) return;
     setServiceStartModalLoading(true);
@@ -843,8 +1017,7 @@ function ChatPageContent({
         return;
       }
       if (result.data) {
-        addMessage(result.data);
-        broadcastMessage(result.data);
+        deliverMessage(activeRoomId, result.data);
         updatePreview(
           activeRoomId,
           "서비스 시작",
@@ -885,8 +1058,7 @@ function ChatPageContent({
         return;
       }
       if (result.data) {
-        addMessage(result.data);
-        broadcastMessage(result.data);
+        deliverMessage(activeRoomId, result.data);
         updatePreview(
           activeRoomId,
           "예약 수정 요청",
@@ -898,71 +1070,88 @@ function ChatPageContent({
     }
   }
 
-  async function handleReservationEditConfirm(
-    messageId: string,
-    reservationId: string,
-    proposed: {
-      start_datetime: string;
-      end_datetime: string;
-      memo?: string | null;
+  const handleReservationEditConfirm = useCallback(
+    async (
+      messageId: string,
+      reservationId: string,
+      proposed: {
+        start_datetime: string;
+        end_datetime: string;
+        memo?: string | null;
+      },
+    ) => {
+      if (!activeRoomId || reservationEditAction) return;
+      setReservationEditAction({ messageId, type: "confirm" });
+      try {
+        const updateResult = await updateReservationDetails(
+          reservationId,
+          proposed,
+        );
+        if (updateResult.error) {
+          setSendError(updateResult.error.message);
+          return;
+        }
+        const result = await sendReservationEditResponseMessage(activeRoomId, {
+          originalMessageId: messageId,
+          accepted: true,
+        });
+        if (result.error) {
+          setSendError(result.error.message);
+          return;
+        }
+        if (result.data) {
+          deliverMessage(activeRoomId, result.data);
+          updatePreview(
+            activeRoomId,
+            "예약 수정 승인",
+            result.data.created_at ?? "",
+          );
+          refresh();
+        }
+      } catch {
+        setSendError("예약 수정에 실패했습니다. 다시 시도해주세요.");
+      } finally {
+        setReservationEditAction(null);
+      }
     },
-  ) {
-    if (!activeRoomId) return;
-    try {
-      const updateResult = await updateReservationDetails(
-        reservationId,
-        proposed,
-      );
-      if (updateResult.error) {
-        setSendError(updateResult.error.message);
-        return;
-      }
-      const result = await sendReservationEditResponseMessage(activeRoomId, {
-        originalMessageId: messageId,
-        accepted: true,
-      });
-      if (result.error) {
-        setSendError(result.error.message);
-        return;
-      }
-      if (result.data) {
-        addMessage(result.data);
-        broadcastMessage(result.data);
-        updatePreview(
-          activeRoomId,
-          "예약 수정 승인",
-          result.data.created_at ?? "",
-        );
-      }
-    } catch {
-      setSendError("예약 수정에 실패했습니다. 다시 시도해주세요.");
-    }
-  }
+    [
+      activeRoomId,
+      reservationEditAction,
+      deliverMessage,
+      updatePreview,
+      refresh,
+    ],
+  );
 
-  async function handleReservationEditReject(messageId: string) {
-    if (!activeRoomId) return;
-    try {
-      const result = await sendReservationEditResponseMessage(activeRoomId, {
-        originalMessageId: messageId,
-        accepted: false,
-      });
-      if (result.error) {
-        setSendError(result.error.message);
-        return;
+  const handleReservationEditReject = useCallback(
+    async (messageId: string) => {
+      if (!activeRoomId || reservationEditAction) return;
+      setReservationEditAction({ messageId, type: "reject" });
+      try {
+        const result = await sendReservationEditResponseMessage(activeRoomId, {
+          originalMessageId: messageId,
+          accepted: false,
+        });
+        if (result.error) {
+          setSendError(result.error.message);
+          return;
+        }
+        if (result.data) {
+          deliverMessage(activeRoomId, result.data);
+          updatePreview(
+            activeRoomId,
+            "예약 수정 거절",
+            result.data.created_at ?? "",
+          );
+        }
+      } catch {
+        setSendError("예약 수정 거절 전송에 실패했습니다. 다시 시도해주세요.");
+      } finally {
+        setReservationEditAction(null);
       }
-      if (result.data) {
-        addMessage(result.data);
-        broadcastMessage(result.data);
-        updatePreview(
-          activeRoomId,
-          "예약 수정 거절",
-          result.data.created_at ?? "",
-        );
-      }
-    } catch {
-      setSendError("예약 수정 거절 전송에 실패했습니다. 다시 시도해주세요.");
-    }
-  }
+    },
+    [activeRoomId, reservationEditAction, deliverMessage, updatePreview],
+  );
 
   async function handleServiceComplete() {
     if (!activeRoomId) return;
@@ -998,8 +1187,7 @@ function ChatPageContent({
         return;
       }
       if (result.data) {
-        addMessage(result.data);
-        broadcastMessage(result.data);
+        deliverMessage(activeRoomId, result.data);
         updatePreview(
           activeRoomId,
           "서비스 완료",
@@ -1025,8 +1213,7 @@ function ChatPageContent({
       }
       setConfirmedServiceIds((prev) => new Set([...prev, reservationId]));
       if (activeRoomId && result.completionMessage) {
-        addMessage(result.completionMessage);
-        broadcastMessage(result.completionMessage);
+        deliverMessage(activeRoomId, result.completionMessage);
         updatePreview(
           activeRoomId,
           "서비스 완료 확정",
@@ -1041,139 +1228,66 @@ function ChatPageContent({
     }
   }
 
-  function handleWriteReview(reservationId: string) {
-    router.push(`/myprofile/reviews/write?bookingId=${reservationId}`);
-  }
-
-  useEffect(() => {
-    const uncheckedIds = messages
-      .filter(
-        (m) =>
-          m.from === "service_complete" &&
-          !m.sentByMe &&
-          m.serviceCompleteData?.reservationId &&
-          !checkedReservationIdsRef.current.has(
-            m.serviceCompleteData.reservationId,
-          ),
-      )
-      .map((m) => m.serviceCompleteData!.reservationId);
-
-    if (uncheckedIds.length === 0) return;
-    uncheckedIds.forEach((id) => checkedReservationIdsRef.current.add(id));
-
-    getReservationStatuses(uncheckedIds).then(({ data }) => {
-      if (!data) return;
-      const completed = Object.entries(data)
-        .filter(([, status]) => status === "completed")
-        .map(([id]) => id);
-      if (completed.length > 0) {
-        setConfirmedServiceIds((prev) => new Set([...prev, ...completed]));
-      }
-    });
-  }, [messages]);
-
-  const [pendingDelete, setPendingDelete] = useState<{
-    id: string;
-    type: "room" | "applicant" | "reservation";
-  } | null>(null);
-  const [deleting, setDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
-
-  function openApplicantProfile(id: string) {
-    const a = applicants.find((a) => a.id === id);
-    if (!a) return;
-    setProfilePopup({
-      data: {
-        sitterId: a.sitterId,
-        name: a.name,
-        initial: a.initial,
-        profileImage: a.profileImage,
-        location: a.location,
-        rating: a.rating,
-        reviewCount: a.reviewCount,
-        services: a.services,
-        career: a.experience,
-      },
-      cardVariant: a.ownerId === userId ? "sitter" : "owner",
-    });
-  }
-
-  function openReservationProfile(id: string) {
-    const r = reservationRequests.find((r) => r.id === id);
-    if (!r) return;
-    setProfilePopup({
-      data: {
-        sitterId: r.sitterId,
-        name: r.name,
-        initial: r.initial,
-        profileImage: r.profileImage,
-      },
-      cardVariant: r.ownerId === userId ? "sitter" : "owner",
-    });
-  }
-
-  const selectedRoom =
-    selectedRoomId !== null
-      ? rooms.find((r) => r.id === selectedRoomId)
-      : undefined;
-  const selectedApplicant = applicants.find(
-    (a) => a.id === selectedApplicantId,
+  const handleWriteReview = useCallback(
+    (reservationId: string) => {
+      router.push(`/myprofile/reviews/write?bookingId=${reservationId}`);
+    },
+    [router],
   );
 
-  useEffect(() => {
-    if (!acceptedDirectRoomId) return;
-    clearAcceptedDirectRoomId();
-    setActiveTab("one_on_one");
-    setSelectedRoomId(acceptedDirectRoomId);
-    setSelectedReservationRequestId(null);
-    setMobileChatView("room");
-  }, [acceptedDirectRoomId, clearAcceptedDirectRoomId]);
-
-  useEffect(() => {
-    const currentStatus = selectedApplicant?.applicationStatus;
-    const prevStatus = prevApplicantStatusRef.current;
-    prevApplicantStatusRef.current = currentStatus;
-
-    if (
-      prevStatus !== "selected" &&
-      currentStatus === "selected" &&
-      selectedApplicantId
-    ) {
-      setMessagesRefreshKey((k) => k + 1);
-    }
-  }, [selectedApplicant?.applicationStatus, selectedApplicantId]);
-
-  const filteredRooms = rooms.filter(
-    (r) =>
-      !searchQuery || r.name.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
-  const filteredApplicants = applicants.filter(
-    (a) =>
-      !searchQuery || a.name.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
-  const filteredPosts = posts.filter((p) =>
-    filteredApplicants.some((a) => a.postId === p.id),
-  );
-  const filteredReservationRequests = reservationRequests.filter(
-    (rr) =>
-      !searchQuery || rr.name.toLowerCase().includes(searchQuery.toLowerCase()),
+  const openApplicantProfile = useCallback(
+    (id: string) => {
+      const a = applicants.find((a) => a.id === id);
+      if (!a) return;
+      setProfilePopup({
+        data: {
+          sitterId: a.sitterId,
+          name: a.name,
+          initial: a.initial,
+          profileImage: a.profileImage,
+          location: a.location,
+          rating: a.rating,
+          reviewCount: a.reviewCount,
+          services: a.services,
+          career: a.experience,
+        },
+        cardVariant: a.ownerId === userId ? "sitter" : "owner",
+      });
+    },
+    [applicants, userId],
   );
 
-  const selectedReservationRequest = selectedReservationRequestId
-    ? reservationRequests.find((rr) => rr.id === selectedReservationRequestId)
-    : undefined;
+  const openReservationProfile = useCallback(
+    (id: string) => {
+      const r = reservationRequests.find((r) => r.id === id);
+      if (!r) return;
+      setProfilePopup({
+        data: {
+          sitterId: r.sitterId,
+          name: r.name,
+          initial: r.initial,
+          profileImage: r.profileImage,
+        },
+        cardVariant: r.ownerId === userId ? "sitter" : "owner",
+      });
+    },
+    [reservationRequests, userId],
+  );
 
-  function handleDeleteRoom(id: string) {
-    const room = rooms.find((r) => r.id === id);
-    if (room && !canLeaveDirectRoom(room)) return;
-    setPendingDelete({ id, type: "room" });
-    setDeleteError(null);
-  }
+  const handleDeleteRoom = useCallback(
+    (id: string) => {
+      const room = rooms.find((r) => r.id === id);
+      if (room && !canLeaveDirectRoom(room)) return;
+      setPendingDelete({ id, type: "room" });
+      setDeleteError(null);
+    },
+    [rooms],
+  );
 
-  function handleDeleteApplicant(id: string) {
+  const handleDeleteApplicant = useCallback((id: string) => {
     setPendingDelete({ id, type: "applicant" });
     setDeleteError(null);
-  }
+  }, []);
 
   async function handleConfirmDelete() {
     if (!pendingDelete || deleting) return;
@@ -1219,6 +1333,110 @@ function ChatPageContent({
     }
   }
 
+  const handleGoToChat = useCallback(
+    (isMobile: boolean) => {
+      const room = rooms.find(
+        (r) =>
+          r.ownerId === selectedApplicant?.ownerId &&
+          r.sitterId === selectedApplicant?.sitterId,
+      );
+      setActiveTab("one_on_one");
+      setSelectedApplicantId(null);
+      if (room) setSelectedRoomId(room.id);
+      if (isMobile) setMobileChatView(room ? "room" : "list");
+    },
+    [rooms, selectedApplicant],
+  );
+
+  const handleGoToChatMobile = useCallback(
+    () => handleGoToChat(true),
+    [handleGoToChat],
+  );
+  const handleGoToChatDesktop = useCallback(
+    () => handleGoToChat(false),
+    [handleGoToChat],
+  );
+
+  const leaveChat = useCallback(() => {
+    if (activeTab === "one_on_one" && selectedRoomId !== null)
+      handleDeleteRoom(selectedRoomId);
+    else if (
+      activeTab === "reservations" &&
+      selectedReservationRequestId !== null
+    )
+      handleDeleteReservationRequest(selectedReservationRequestId);
+    else if (activeTab === "applicants" && selectedApplicantId !== null)
+      handleDeleteApplicant(selectedApplicantId);
+  }, [
+    activeTab,
+    selectedRoomId,
+    selectedReservationRequestId,
+    selectedApplicantId,
+    handleDeleteRoom,
+    handleDeleteReservationRequest,
+    handleDeleteApplicant,
+  ]);
+
+  const handleNavigateToPost = useCallback(
+    (postId: string) => router.push(`/board/${postId}`),
+    [router],
+  );
+
+  const handleRejectSelectedApplicant = useCallback(
+    () => handleRejectApplicant(selectedApplicantId!),
+    [handleRejectApplicant, selectedApplicantId],
+  );
+  const handleConfirmSelectedApplicant = useCallback(
+    () => handleConfirmClick(selectedApplicantId!),
+    [handleConfirmClick, selectedApplicantId],
+  );
+
+  const handleMobileTabChange = useCallback(
+    (tab: "one_on_one" | "reservations" | "applicants") => {
+      setActiveTab(tab);
+      setMobileChatView("list");
+    },
+    [],
+  );
+  const handleMobileRoomSelect = useCallback((id: string) => {
+    setSelectedRoomId(id);
+    setMobileChatView("room");
+  }, []);
+  const handleMobileApplicantSelect = useCallback((id: string) => {
+    setSelectedApplicantId(id);
+    setMobileChatView("room");
+  }, []);
+  const handleMobileReservationSelect = useCallback((id: string) => {
+    setSelectedReservationRequestId(id);
+    setMobileChatView("room");
+  }, []);
+  const handleBackToList = useCallback(() => setMobileChatView("list"), []);
+
+  const handleGoToProfileMobile = useCallback(() => {
+    const sitterId =
+      activeTab === "one_on_one"
+        ? selectedRoom?.sitterId
+        : selectedApplicant?.sitterId;
+    if (sitterId) router.push(`/petsitters/${sitterId}`);
+  }, [activeTab, selectedRoom, selectedApplicant, router]);
+
+  const handleGoToProfileDesktop = useCallback(() => {
+    const sitterId =
+      activeTab === "one_on_one"
+        ? selectedRoom?.sitterId
+        : activeTab === "reservations"
+          ? selectedReservationRequest?.sitterId
+          : selectedApplicant?.sitterId;
+    if (sitterId) router.push(`/petsitters/${sitterId}`);
+  }, [
+    activeTab,
+    selectedRoom,
+    selectedReservationRequest,
+    selectedApplicant,
+    router,
+  ]);
+
+  // ---- header helpers (called during render) ----
   function getHeaderBadge() {
     if (activeTab === "one_on_one")
       return { label: "진행중", className: "bg-orange-50 text-orange-500" };
@@ -1300,6 +1518,21 @@ function ChatPageContent({
     return `/myprofile/report?${params.toString()}`;
   }
 
+  const handleReport = useCallback(
+    () => router.push(getReportUrl()),
+    [
+      activeTab,
+      selectedRoom,
+      selectedReservationRequest,
+      selectedApplicant,
+      userId,
+      confirmedIds,
+      rejectedIds,
+      selectedApplicantId,
+      router,
+    ],
+  );
+
   const roomName =
     activeTab === "one_on_one"
       ? (selectedRoom?.name ?? "")
@@ -1357,12 +1590,48 @@ function ChatPageContent({
     ? (posts.find((p) => p.id === selectedApplicant.postId)?.title ?? "")
     : "";
 
-  const syntheticCardRef = useRef<{ roomId: string | null; insertAt: number }>({
-    roomId: null,
-    insertAt: 0,
-  });
+  const canLeaveActiveRoom =
+    activeTab === "one_on_one"
+      ? !selectedRoom || canLeaveDirectRoom(selectedRoom)
+      : activeTab === "reservations"
+        ? !selectedReservationRequest ||
+          canLeaveReservationRequest(selectedReservationRequest)
+        : true;
 
-  const processedMessages = useMemo(() => {
+  const filteredRooms = useMemo(
+    () =>
+      rooms.filter(
+        (r) =>
+          !searchQuery ||
+          r.name.toLowerCase().includes(searchQuery.toLowerCase()),
+      ),
+    [rooms, searchQuery],
+  );
+  const filteredApplicants = useMemo(
+    () =>
+      applicants.filter(
+        (a) =>
+          !searchQuery ||
+          a.name.toLowerCase().includes(searchQuery.toLowerCase()),
+      ),
+    [applicants, searchQuery],
+  );
+  const filteredPosts = useMemo(
+    () =>
+      posts.filter((p) => filteredApplicants.some((a) => a.postId === p.id)),
+    [posts, filteredApplicants],
+  );
+  const filteredReservationRequests = useMemo(
+    () =>
+      reservationRequests.filter(
+        (rr) =>
+          !searchQuery ||
+          rr.name.toLowerCase().includes(searchQuery.toLowerCase()),
+      ),
+    [reservationRequests, searchQuery],
+  );
+
+  const { card: nextSyntheticCard, messages: processedMessages } = useMemo(() => {
     const fillPostTitles = (msgs: typeof messages) =>
       msgs.map((msg) => {
         if (
@@ -1385,39 +1654,39 @@ function ChatPageContent({
         return msg;
       });
 
+    const prevCard = syntheticCard;
+
     if (activeTab !== "applicants" || !selectedApplicant)
-      return withDateSeparators(messages);
+      return { card: prevCard, messages: withDateSeparators(messages) };
     const hasCard = messages.some(
       (m) =>
         m.from === "application_selected" || m.from === "application_rejected",
     );
-    if (hasCard) return withDateSeparators(fillPostTitles(messages));
+    if (hasCard)
+      return {
+        card: prevCard,
+        messages: withDateSeparators(fillPostTitles(messages)),
+      };
 
     const status = selectedApplicant.applicationStatus;
     if (status !== "selected" && status !== "rejected")
-      return withDateSeparators(messages);
+      return { card: prevCard, messages: withDateSeparators(messages) };
 
-    if (hasMore) return withDateSeparators(messages);
+    if (hasMore)
+      return { card: prevCard, messages: withDateSeparators(messages) };
 
-    if (
-      syntheticCardRef.current.roomId !== selectedApplicant.id ||
-      messages.length === 0
-    ) {
+    let card = prevCard;
+    if (card.roomId !== selectedApplicant.id || messages.length === 0) {
       if (messages.length === 0) {
-        syntheticCardRef.current = { roomId: null, insertAt: 0 };
-        return withDateSeparators(messages);
+        const isAlreadyEmpty = card.roomId === null && card.insertAt === 0;
+        card = isAlreadyEmpty ? card : { roomId: null, insertAt: 0 };
+        return { card, messages: withDateSeparators(messages) };
       }
-      syntheticCardRef.current = {
-        roomId: selectedApplicant.id,
-        insertAt: messages.length,
-      };
+      card = { roomId: selectedApplicant.id, insertAt: messages.length };
     }
 
-    const insertAt = Math.min(
-      syntheticCardRef.current.insertAt,
-      messages.length,
-    );
-    const card =
+    const insertAt = Math.min(card.insertAt, messages.length);
+    const syntheticMsg =
       status === "selected"
         ? {
             id: "__synthetic_selected__",
@@ -1442,13 +1711,16 @@ function ChatPageContent({
             },
           };
 
-    return withDateSeparators(
-      fillPostTitles([
-        ...messages.slice(0, insertAt),
-        card,
-        ...messages.slice(insertAt),
-      ]),
-    );
+    return {
+      card,
+      messages: withDateSeparators(
+        fillPostTitles([
+          ...messages.slice(0, insertAt),
+          syntheticMsg,
+          ...messages.slice(insertAt),
+        ]),
+      ),
+    };
   }, [
     messages,
     hasMore,
@@ -1457,39 +1729,12 @@ function ChatPageContent({
     confirmedPostTitle,
     isOwnerOfSelectedRoom,
     posts,
+    syntheticCard,
   ]);
 
-  function handleGoToChat(isMobile: boolean) {
-    const room = rooms.find(
-      (r) =>
-        r.ownerId === selectedApplicant?.ownerId &&
-        r.sitterId === selectedApplicant?.sitterId,
-    );
-    setActiveTab("one_on_one");
-    setSelectedApplicantId(null);
-    if (room) setSelectedRoomId(room.id);
-    if (isMobile) setMobileChatView(room ? "room" : "list");
+  if (nextSyntheticCard !== syntheticCard) {
+    setSyntheticCard(nextSyntheticCard);
   }
-
-  const leaveChat = () => {
-    if (activeTab === "one_on_one" && selectedRoomId !== null)
-      handleDeleteRoom(selectedRoomId);
-    else if (
-      activeTab === "reservations" &&
-      selectedReservationRequestId !== null
-    )
-      handleDeleteReservationRequest(selectedReservationRequestId);
-    else if (activeTab === "applicants" && selectedApplicantId !== null)
-      handleDeleteApplicant(selectedApplicantId);
-  };
-
-  const canLeaveActiveRoom =
-    activeTab === "one_on_one"
-      ? !selectedRoom || canLeaveDirectRoom(selectedRoom)
-      : activeTab === "reservations"
-        ? !selectedReservationRequest ||
-          canLeaveReservationRequest(selectedReservationRequest)
-        : true;
 
   const sharedSidebarProps = {
     activeTab,
@@ -1540,6 +1785,7 @@ function ChatPageContent({
     paymentState,
     lastPaymentReqId,
     confirmedEditIds,
+    reservationEditAction,
     confirmedServiceIds,
     payingNow,
     isPaymentPending,
@@ -1559,8 +1805,8 @@ function ChatPageContent({
     actioningId,
     onLeaveChat: leaveChat,
     onWriteReview: handleWriteReview,
-    onReport: () => router.push(getReportUrl()),
-    onNavigateToPost: (postId: string) => router.push(`/board/${postId}`),
+    onReport: handleReport,
+    onNavigateToPost: handleNavigateToPost,
     onSetInput: setInput,
     onSend: handleSend,
     onLoadMore: handleLoadMore,
@@ -1585,11 +1831,11 @@ function ChatPageContent({
     onServiceComplete: handleServiceComplete,
     onOpenReservationEdit: () => setReservationEditOpen(true),
     onPhotoClick: () => photoInputRef.current?.click(),
-    onServiceConfirm: (id: string) => setPendingServiceConfirmId(id),
+    onServiceConfirm: setPendingServiceConfirmId,
     onReservationEditConfirm: handleReservationEditConfirm,
     onReservationEditReject: handleReservationEditReject,
-    onRejectApplicant: () => handleRejectApplicant(selectedApplicantId!),
-    onConfirmApplicant: () => handleConfirmClick(selectedApplicantId!),
+    onRejectApplicant: handleRejectSelectedApplicant,
+    onConfirmApplicant: handleConfirmSelectedApplicant,
   };
 
   return (
@@ -1603,22 +1849,10 @@ function ChatPageContent({
             {...sharedSidebarProps}
             className="flex flex-col h-full"
             isMobile
-            onTabChange={(tab) => {
-              setActiveTab(tab);
-              setMobileChatView("list");
-            }}
-            onRoomSelect={(id) => {
-              setSelectedRoomId(id);
-              setMobileChatView("room");
-            }}
-            onApplicantSelect={(id) => {
-              setSelectedApplicantId(id);
-              setMobileChatView("room");
-            }}
-            onReservationSelect={(id) => {
-              setSelectedReservationRequestId(id);
-              setMobileChatView("room");
-            }}
+            onTabChange={handleMobileTabChange}
+            onRoomSelect={handleMobileRoomSelect}
+            onApplicantSelect={handleMobileApplicantSelect}
+            onReservationSelect={handleMobileReservationSelect}
           />
         ) : (
           <ChatWindow
@@ -1628,15 +1862,9 @@ function ChatPageContent({
             error={null}
             isEmpty={false}
             hasSelection={true}
-            onBack={() => setMobileChatView("list")}
-            onGoToProfile={() => {
-              const sitterId =
-                activeTab === "one_on_one"
-                  ? selectedRoom?.sitterId
-                  : selectedApplicant?.sitterId;
-              if (sitterId) router.push(`/petsitters/${sitterId}`);
-            }}
-            onGoToChat={() => handleGoToChat(true)}
+            onBack={handleBackToList}
+            onGoToProfile={handleGoToProfileMobile}
+            onGoToChat={handleGoToChatMobile}
           />
         )}
       </div>
@@ -1669,17 +1897,9 @@ function ChatPageContent({
                 selectedReservationRequestId === null)
             )
           }
-          onBack={() => {}}
-          onGoToProfile={() => {
-            const sitterId =
-              activeTab === "one_on_one"
-                ? selectedRoom?.sitterId
-                : activeTab === "reservations"
-                  ? selectedReservationRequest?.sitterId
-                  : selectedApplicant?.sitterId;
-            if (sitterId) router.push(`/petsitters/${sitterId}`);
-          }}
-          onGoToChat={() => handleGoToChat(false)}
+          onBack={noop}
+          onGoToProfile={handleGoToProfileDesktop}
+          onGoToChat={handleGoToChatDesktop}
         />
       </div>
 
@@ -1818,7 +2038,11 @@ function ChatPageContent({
   );
 }
 
-export default function ChatClient() {
+export default function ChatClient({
+  initialRoomsData,
+}: {
+  initialRoomsData?: RoomApiItem[];
+}) {
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
   const initialTab =
@@ -1829,6 +2053,10 @@ export default function ChatClient() {
         : "one_on_one";
   const initialRoomId = searchParams.get("roomId");
   return (
-    <ChatPageContent initialTab={initialTab} initialRoomId={initialRoomId} />
+    <ChatPageContent
+      initialTab={initialTab}
+      initialRoomId={initialRoomId}
+      initialRoomsData={initialRoomsData}
+    />
   );
 }

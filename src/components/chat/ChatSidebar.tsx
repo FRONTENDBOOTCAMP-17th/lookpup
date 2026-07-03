@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -36,7 +36,7 @@ interface ChatSidebarProps {
   rejectedIds: Set<string>;
   confirmedIds: Map<string, string>;
   actioningId: string | null;
-  getApplicantBadge: (id: string) => Badge;
+  getApplicantBadge: (id: string) => Badge | null;
   onTabChange: (tab: "one_on_one" | "reservations" | "applicants") => void;
   onSearchChange: (q: string) => void;
   onRoomSelect: (id: string) => void;
@@ -53,7 +53,7 @@ interface ChatSidebarProps {
   onReservationAvatarClick: (id: string) => void;
 }
 
-export function ChatSidebar({
+function ChatSidebarImpl({
   className,
   isMobile = false,
   activeTab,
@@ -130,17 +130,33 @@ export function ChatSidebar({
     ),
   );
 
+  const filteredApplicantsByPostId = useMemo(() => {
+    const map = new Map<string, Applicant[]>();
+    for (const a of filteredApplicants) {
+      const group = map.get(a.postId);
+      if (group) group.push(a);
+      else map.set(a.postId, [a]);
+    }
+    return map;
+  }, [filteredApplicants]);
+
+  const ownerIdByPostId = useMemo(() => {
+    const map = new Map<string, string | null>();
+    for (const a of applicants) {
+      if (!map.has(a.postId)) map.set(a.postId, a.ownerId);
+    }
+    return map;
+  }, [applicants]);
+
   const applicantList = (
     <>
       {filteredPosts.map((post) => (
         <ApplicantPostGroup
           key={post.id}
           post={post}
-          applicants={filteredApplicants.filter((a) => a.postId === post.id)}
+          applicants={filteredApplicantsByPostId.get(post.id) ?? []}
           isCollapsed={collapsedPosts.has(post.id)}
-          isOwner={
-            applicants.find((a) => a.postId === post.id)?.ownerId === userId
-          }
+          isOwner={ownerIdByPostId.get(post.id) === userId}
           selectedApplicantId={selectedApplicantId}
           rejectedIds={rejectedIds}
           confirmedId={confirmedIds.get(post.id) ?? null}
@@ -346,3 +362,5 @@ export function ChatSidebar({
     </div>
   );
 }
+
+export const ChatSidebar = memo(ChatSidebarImpl);

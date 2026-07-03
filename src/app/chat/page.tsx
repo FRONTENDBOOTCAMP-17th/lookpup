@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import { getChatRoomsData } from "@/app/actions/chat";
 import ChatClient from "@/components/chat/ChatClient";
 
 export default async function ChatPage() {
@@ -11,6 +12,8 @@ export default async function ChatPage() {
 
   if (!user) redirect("/auth/login");
 
+  const roomsResult = await getChatRoomsData();
+
   return (
     <Suspense
       fallback={
@@ -19,7 +22,7 @@ export default async function ChatPage() {
         </div>
       }
     >
-      <ChatClient />
+      <ChatClient initialRoomsData={roomsResult.data} />
     </Suspense>
   );
 }
