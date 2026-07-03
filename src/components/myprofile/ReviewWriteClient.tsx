@@ -464,7 +464,7 @@ function DesktopReviewView({
         </h3>
         <div className="mb-5">
           <p className="text-sm font-medium text-stone-900 mb-3">
-            이런 점이 좋았어요
+            좋았던 점을 선택해주세요
           </p>
           <div className="flex flex-wrap gap-2">
             {QUICK_TAGS.map((tag) => (
@@ -620,6 +620,14 @@ function MobileScreen1({
               )}
             </div>
             <span className="text-xs text-gray-500">{booking.dateRange}</span>
+            {booking.petNames.length > 0 && (
+              <div className="flex items-center gap-1 mt-0.5">
+                <PawPrint size={11} className="text-orange-500" />
+                <span className="text-xs text-stone-900 font-medium">
+                  {booking.petNames.join(", ")}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       ) : null}
