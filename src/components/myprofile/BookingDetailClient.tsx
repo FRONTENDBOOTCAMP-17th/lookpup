@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   Calendar,
   Clock,
@@ -319,15 +320,18 @@ export default function BookingDetailClient({
             <h3 className="text-sm font-semibold text-gray-500 mb-4">반려동물 정보</h3>
             <div className="flex items-center gap-4">
               <div
-                className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shrink-0 overflow-hidden"
+                className="relative w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shrink-0 overflow-hidden"
                 style={{ background: booking.pet.gradient }}
               >
                 {booking.pet.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
+                  <Image
                     src={booking.pet.imageUrl}
                     alt={booking.pet.name}
-                    className="w-full h-full object-cover"
+                    fill
+                    sizes="56px"
+                    preload
+                    fetchPriority="high"
+                    className="object-cover"
                   />
                 ) : (
                   booking.pet.emoji
