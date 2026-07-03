@@ -685,7 +685,7 @@ function MobileScreen1({
         </div>
       </div>
 
-      <div className="fixed bottom-18 left-0 right-0 bg-white border-t border-orange-100 px-5 py-4 z-40">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-orange-100 px-5 py-4 z-40">
         <button
           suppressHydrationWarning
           type="button"
@@ -779,7 +779,7 @@ function MobileScreen2({
         </div>
       </div>
 
-      <div className="fixed bottom-18 left-0 right-0 bg-white border-t border-orange-100 px-5 py-4 z-40">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-orange-100 px-5 py-4 z-40">
         <button
           type="button"
           disabled={!canSubmit || isSubmitting}
