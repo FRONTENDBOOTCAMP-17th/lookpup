@@ -15,6 +15,7 @@ import StatGrid from "@/components/ui/StatGrid";
 import { useUserStore, type SitterData } from "@/store/userStore";
 import { getSitterServices } from "@/app/actions/sitters";
 import { useSitterReviews } from "@/hooks/queries/useSitterReviews";
+import { ImageGallery, ImageLightbox } from "@/components/common/ImageGallery";
 
 const TABS = ["소개", "서비스", "후기", "위치"] as const;
 type Tab = (typeof TABS)[number];
@@ -40,6 +41,7 @@ export default function SitterProfilePreviewClient({
   const [serviceDetails, setServiceDetails] = useState<ServiceDetail[]>(
     initialServiceDetails ?? [],
   );
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const { data: reviews = [] } = useSitterReviews(sitter?.id ?? "");
 
   useEffect(() => {
@@ -88,15 +90,32 @@ export default function SitterProfilePreviewClient({
             {sitter.activityPhotoUrls.length > 0 ? (
               <div className="grid grid-cols-3 gap-3">
                 {sitter.activityPhotoUrls.map((url, idx) => (
-                  <div key={idx} className="relative aspect-square rounded-lg overflow-hidden">
-                    <Image src={url} alt={`사진 ${idx + 1}`} fill className="object-cover" sizes="200px" />
-                  </div>
+                  <button
+                    key={idx}
+                    onClick={() => setLightboxIndex(idx)}
+                    className="relative aspect-square rounded-lg overflow-hidden focus:outline-none"
+                  >
+                    <Image
+                      src={url}
+                      alt={`사진 ${idx + 1}`}
+                      fill
+                      className="object-cover hover:opacity-90 transition-opacity"
+                      sizes="200px"
+                    />
+                  </button>
                 ))}
               </div>
             ) : (
               <p className="text-gray-400 text-sm">등록된 사진이 없습니다.</p>
             )}
           </div>
+
+          <ImageLightbox
+            urls={sitter.activityPhotoUrls}
+            index={lightboxIndex}
+            onClose={() => setLightboxIndex(null)}
+            onIndexChange={setLightboxIndex}
+          />
         </div>
       )}
 
@@ -198,15 +217,8 @@ export default function SitterProfilePreviewClient({
                     {rv.content}
                   </p>
                   {rv.image_urls && rv.image_urls.length > 0 && (
-                    <div className="flex gap-2 mt-3 overflow-x-auto">
-                      {rv.image_urls.map((url, idx) => (
-                        <img
-                          key={idx}
-                          src={url}
-                          alt={`후기 사진 ${idx + 1}`}
-                          className="w-20 h-20 rounded-lg object-cover shrink-0"
-                        />
-                      ))}
+                    <div className="mt-3">
+                      <ImageGallery urls={rv.image_urls} />
                     </div>
                   )}
                   {rv.tags.length > 0 && (

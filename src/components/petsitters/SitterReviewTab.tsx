@@ -1,6 +1,7 @@
 "use client";
 
 import StarRow from "@/components/ui/StarRow";
+import { ImageGallery } from "@/components/common/ImageGallery";
 import type { ReviewRow } from "@/hooks/queries/useSitterReviews";
 
 export default function SitterReviewTab({
@@ -91,15 +92,8 @@ export default function SitterReviewTab({
                 {rv.content}
               </p>
               {rv.image_urls && rv.image_urls.length > 0 && (
-                <div className="flex gap-2 mt-3 overflow-x-auto">
-                  {rv.image_urls.map((url, idx) => (
-                    <img
-                      key={idx}
-                      src={url}
-                      alt={`후기 사진 ${idx + 1}`}
-                      className="w-20 h-20 rounded-lg object-cover shrink-0"
-                    />
-                  ))}
+                <div className="mt-3">
+                  <ImageGallery urls={rv.image_urls} />
                 </div>
               )}
               {rv.tags.length > 0 && (
