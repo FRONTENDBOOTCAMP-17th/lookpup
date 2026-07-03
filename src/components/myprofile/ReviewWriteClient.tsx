@@ -104,7 +104,7 @@ function StarRating({
           onMouseEnter={() => !readOnly && setHovered(i)}
           onMouseLeave={() => !readOnly && setHovered(0)}
           onClick={() => !readOnly && onChange?.(i)}
-          className={`transition-transform ${!readOnly ? "hover:scale-110 active:scale-95 cursor-pointer" : "cursor-default"}`}
+          className={`rounded-full transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-1 ${!readOnly ? "hover:scale-110 active:scale-95 cursor-pointer" : "cursor-default"}`}
           style={{ padding: 0, background: "none", border: "none" }}
         >
           <Star
@@ -183,7 +183,7 @@ function PhotoUploadSlots({
         disabled={!canAdd}
         onClick={() => canAdd && fileRef.current?.click()}
         style={{ width: slotWidth, height: slotHeight }}
-        className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed transition-all ${
+        className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 ${
           canAdd
             ? "border-orange-100 hover:border-orange-500/60 hover:bg-orange-50 cursor-pointer"
             : "border-orange-100 opacity-40 cursor-not-allowed"
@@ -212,7 +212,7 @@ function PhotoUploadSlots({
             type="button"
             onClick={() => onRemove(idx)}
             aria-label="사진 삭제"
-            className="absolute top-1.5 right-1.5 w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-red-50 transition-colors"
+            className="absolute top-1.5 right-1.5 w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-red-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-1"
           >
             <X size={11} className="text-stone-900" aria-hidden="true" />
           </button>
@@ -267,7 +267,7 @@ function PhotoUploadHScroll({
         type="button"
         disabled={!canAdd}
         onClick={() => canAdd && fileRef.current?.click()}
-        className="relative w-[calc((100%-24px)/3)] rounded-xl border-2 border-dashed border-orange-100 bg-white hover:border-orange-500/60 hover:bg-orange-50 transition-all overflow-hidden"
+        className="relative w-[calc((100%-24px)/3)] rounded-xl border-2 border-dashed border-orange-100 bg-white hover:border-orange-500/60 hover:bg-orange-50 transition-all overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2"
       >
         <div className="pb-[100%]" />
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
@@ -291,7 +291,7 @@ function PhotoUploadHScroll({
             type="button"
             onClick={() => onRemove(idx)}
             aria-label="사진 삭제"
-            className="absolute top-1.5 right-1.5 w-5 h-5 bg-white rounded-full flex items-center justify-center shadow z-10"
+            className="absolute top-1.5 right-1.5 w-5 h-5 bg-white rounded-full flex items-center justify-center shadow z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-1"
           >
             <X size={10} className="text-stone-900" aria-hidden="true" />
           </button>
@@ -472,7 +472,7 @@ function DesktopReviewView({
                 key={tag}
                 type="button"
                 onClick={() => toggleTag(tag)}
-                className={`px-4 py-2 rounded-full text-sm border transition-all ${
+                className={`px-4 py-2 rounded-full text-sm border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 ${
                   reviewData.tags.includes(tag)
                     ? "bg-orange-500 text-white border-orange-500"
                     : "bg-orange-50 text-gray-500 border-orange-100 hover:border-orange-500/40"
@@ -545,14 +545,14 @@ function DesktopReviewView({
           type="button"
           disabled={!canSubmit}
           onClick={onSubmit}
-          className="w-full h-14 rounded-xl bg-orange-500 text-white font-semibold text-base hover:bg-orange-600 transition-colors shadow-sm disabled:bg-orange-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+          className="w-full h-14 rounded-xl bg-orange-500 text-white font-semibold text-base hover:bg-orange-600 transition-colors shadow-sm disabled:bg-orange-100 disabled:text-gray-400 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2"
         >
           {isSubmitting ? "등록 중..." : "후기 등록하기"}
         </button>
         <button
           type="button"
           onClick={onLater}
-          className="w-full h-12 rounded-xl border border-orange-100 text-gray-500 font-medium hover:border-orange-500/50 hover:text-orange-500 transition-colors"
+          className="w-full h-12 rounded-xl border border-orange-100 text-gray-500 font-medium hover:border-orange-500/50 hover:text-orange-500 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2"
         >
           나중에 작성하기
         </button>
@@ -661,7 +661,7 @@ function MobileScreen1({
               key={tag}
               type="button"
               onClick={() => toggleTag(tag)}
-              className={`px-3.5 py-2 rounded-full text-sm border transition-all ${
+              className={`px-3.5 py-2 rounded-full text-sm border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 ${
                 reviewData.tags.includes(tag)
                   ? "bg-orange-500 text-white border-orange-500"
                   : "bg-orange-50 text-gray-500 border-orange-100"
@@ -693,13 +693,13 @@ function MobileScreen1({
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-orange-100 px-5 py-4 z-40">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-orange-100 px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] z-40">
         <button
           suppressHydrationWarning
           type="button"
           disabled={!canProceed}
           onClick={onNext}
-          className="w-full h-13 rounded-xl bg-orange-500 text-white font-semibold text-base disabled:bg-orange-100 disabled:text-gray-400 transition-colors"
+          className="w-full h-13 rounded-xl bg-orange-500 text-white font-semibold text-base disabled:bg-orange-100 disabled:text-gray-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2"
         >
           다음
         </button>
@@ -787,19 +787,19 @@ function MobileScreen2({
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-orange-100 px-5 py-4 z-40">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-orange-100 px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] z-40">
         <button
           type="button"
           disabled={!canSubmit || isSubmitting}
           onClick={onSubmit}
-          className="w-full h-13 rounded-xl bg-orange-500 text-white font-semibold text-base mb-3 hover:bg-orange-600 transition-colors disabled:bg-orange-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+          className="w-full h-13 rounded-xl bg-orange-500 text-white font-semibold text-base mb-3 hover:bg-orange-600 transition-colors disabled:bg-orange-100 disabled:text-gray-400 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2"
         >
           {isSubmitting ? "등록 중..." : "후기 등록하기"}
         </button>
         <button
           type="button"
           onClick={onLater}
-          className="w-full text-sm text-gray-500 font-medium text-center hover:text-orange-500 transition-colors py-1"
+          className="w-full text-sm text-gray-500 font-medium text-center hover:text-orange-500 transition-colors py-1 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2"
         >
           나중에 작성하기
         </button>
@@ -954,7 +954,7 @@ function ReviewWriteContent() {
                 mobileScreen === 2 ? setMobileScreen(1) : router.back()
               }
               aria-label="뒤로가기"
-              className="p-1 -ml-1 mr-3"
+              className="p-1 -ml-1 mr-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-1"
             >
               <ChevronLeft
                 size={24}
@@ -987,7 +987,7 @@ function ReviewWriteContent() {
             <button
               onClick={() => router.back()}
               aria-label="뒤로가기"
-              className="w-10 h-10 rounded-xl border border-orange-100 flex items-center justify-center hover:bg-orange-50 transition-colors shrink-0"
+              className="w-10 h-10 rounded-xl border border-orange-100 flex items-center justify-center hover:bg-orange-50 transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2"
             >
               <ChevronLeft
                 size={20}
