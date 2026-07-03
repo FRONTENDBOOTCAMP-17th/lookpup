@@ -298,7 +298,10 @@ export default function BookingDetailClient({
                   {status.label}
                 </span>
               </div>
-              <span className="font-bold text-orange-500">{booking.price.toLocaleString()}원</span>
+              <div className="flex flex-col items-end">
+                <span className="text-[11px] text-gray-500">총 결제 금액</span>
+                <span className="font-bold text-orange-500">{booking.price.toLocaleString()}원</span>
+              </div>
             </div>
             <div className="space-y-2">
               <div className="flex items-center gap-3 text-sm text-gray-500">
@@ -394,14 +397,6 @@ export default function BookingDetailClient({
                   채팅
                 </button>
               )}
-            </div>
-          </div>
-
-          <div className="bg-white border border-orange-100 rounded-2xl px-6 py-5 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)]">
-            <h3 className="text-sm font-semibold text-gray-500 mb-4">결제 정보</h3>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-stone-900">서비스 금액</span>
-              <span className="font-bold text-orange-500">{booking.price.toLocaleString()}원</span>
             </div>
           </div>
 

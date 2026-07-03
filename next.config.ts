@@ -10,6 +10,11 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "k.kakaocdn.net" },
       { protocol: "http", hostname: "img1.kakaocdn.net" },
       { protocol: "https", hostname: "img1.kakaocdn.net" },
+      {
+        protocol: "https",
+        hostname: "qlhgcqpxuckaeazebgqa.supabase.co",
+        pathname: "/storage/v1/object/public/**",
+      },
     ],
   },
   experimental: {
