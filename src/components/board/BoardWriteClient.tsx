@@ -284,7 +284,7 @@ export default function BoardWriteClient() {
     return (
       <>
         <Header />
-        <main className="flex-1 bg-[#fff8f3] min-h-screen flex items-center justify-center">
+        <main className="flex-1 bg-orange-50 min-h-screen flex items-center justify-center">
           <p className="text-gray-400 text-sm">로그인이 필요합니다.</p>
         </main>
       </>
@@ -295,17 +295,17 @@ export default function BoardWriteClient() {
     <>
       <Header />
 
-      <main className="flex-1 bg-[#fff8f3] min-h-screen pb-28">
+      <main className="flex-1 bg-orange-50 min-h-screen pb-28">
         <div className="max-w-205 mx-auto px-4 sm:px-6 pt-10">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => router.back()}
-                className="w-10 h-10 rounded-xl border border-[#ffe9d6] flex items-center justify-center text-[#281a0e] hover:bg-[#fff8f3] transition-colors"
+                className="w-10 h-10 rounded-xl border border-orange-100 flex items-center justify-center text-stone-900 hover:bg-orange-50 transition-colors"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
-              <h1 className="text-2xl font-bold text-[#281a0e]">
+              <h1 className="text-2xl font-bold text-stone-900">
                 돌봄 요청 게시글 작성
               </h1>
             </div>
@@ -313,7 +313,7 @@ export default function BoardWriteClient() {
               {hasDraft && !draftHidden && (
                 <button
                   onClick={handleLoadDraft}
-                  className="h-10 px-5 rounded-xl border border-[var(--color-orange-500)]/40 text-[var(--color-orange-500)] text-[15px] font-medium flex items-center gap-1.5 hover:bg-[#fff8f3] active:scale-95 transition-all"
+                  className="h-10 px-5 rounded-xl border border-[var(--color-orange-500)]/40 text-[var(--color-orange-500)] text-[15px] font-medium flex items-center gap-1.5 hover:bg-orange-50 active:scale-95 transition-all"
                 >
                   <Download className="w-3.75 h-3.75" />
                   불러오기
@@ -321,7 +321,7 @@ export default function BoardWriteClient() {
               )}
               <button
                 onClick={handleSaveDraft}
-                className="h-10 px-5 rounded-xl border border-[var(--color-orange-500)]/40 text-[#281a0e] text-[15px] font-medium flex items-center gap-1.5 hover:bg-[#fff8f3] active:scale-95 transition-all"
+                className="h-10 px-5 rounded-xl border border-[var(--color-orange-500)]/40 text-stone-900 text-[15px] font-medium flex items-center gap-1.5 hover:bg-orange-50 active:scale-95 transition-all"
               >
                 <Save className="w-3.75 h-3.75" />
                 임시저장
@@ -341,13 +341,10 @@ export default function BoardWriteClient() {
 
           <div className="flex flex-col gap-6 pt-8">
             {/* 서비스 선택 */}
-            <div className="bg-white rounded-2xl border border-[#ffe9d6] p-7">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-[#281a0e]">
-                  어떤 돌봄이 필요하신가요?
-                </h2>
-                <span className="text-xs text-gray-500">중복 선택 가능</span>
-              </div>
+            <div className="bg-white rounded-2xl border border-orange-100 p-7">
+              <h2 className="text-lg font-semibold text-stone-900">
+                어떤 돌봄이 필요하신가요?
+              </h2>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
                 {SERVICE_TYPES.map(({ label, icon: Icon, value }) => {
@@ -361,15 +358,15 @@ export default function BoardWriteClient() {
                       }
                       className={`flex flex-col items-center justify-center gap-2 h-25 rounded-xl border transition-all ${
                         selected
-                          ? "border-[var(--color-orange-500)] bg-[#fff8f3]"
-                          : "border-[#ffe9d6] bg-white hover:border-[var(--color-orange-500)]/50"
+                          ? "border-[var(--color-orange-500)] bg-orange-50"
+                          : "border-orange-100 bg-white hover:border-[var(--color-orange-500)]/50"
                       }`}
                     >
                       <Icon
-                        className={`w-5.5 h-5.5 ${selected ? "text-[var(--color-orange-500)]" : "text-[#281a0e]"}`}
+                        className={`w-5.5 h-5.5 ${selected ? "text-[var(--color-orange-500)]" : "text-stone-900"}`}
                       />
                       <span
-                        className={`text-sm font-medium ${selected ? "text-[var(--color-orange-500)]" : "text-[#281a0e]"}`}
+                        className={`text-sm font-medium ${selected ? "text-[var(--color-orange-500)]" : "text-stone-900"}`}
                       >
                         {label}
                       </span>
@@ -378,12 +375,12 @@ export default function BoardWriteClient() {
                 })}
               </div>
 
-              <div className="border-t border-[#ffe9d6] mt-6 pt-6">
-                <h3 className="text-lg font-semibold text-[#281a0e]">
+              <div className="border-t border-orange-100 mt-6 pt-6">
+                <h3 className="text-lg font-semibold text-stone-900">
                   예산을 입력해주세요
                 </h3>
                 <div className="flex items-center gap-3 mt-4">
-                  <div className="w-full sm:w-80 h-12 flex items-center px-4 border border-[#ffe9d6] rounded-xl overflow-hidden">
+                  <div className="w-full sm:w-80 h-12 flex items-center px-4 border border-orange-100 rounded-xl overflow-hidden">
                     <input
                       type="number"
                       value={form.budget}
@@ -398,7 +395,7 @@ export default function BoardWriteClient() {
                       className="w-full text-lg text-gray-500 placeholder:text-gray-500 outline-none bg-transparent"
                     />
                   </div>
-                  <span className="text-[15px] font-medium text-[#281a0e]">
+                  <span className="text-[15px] font-medium text-stone-900">
                     원
                   </span>
                 </div>
@@ -416,7 +413,7 @@ export default function BoardWriteClient() {
                       className={`h-8.5 px-4 rounded-full border text-sm transition-colors ${
                         form.budget === String(amount)
                           ? "bg-[var(--color-orange-500)] text-white border-[var(--color-orange-500)]"
-                          : "bg-[#fff8f3] text-[#281a0e] border-[#ffe9d6] hover:border-[var(--color-orange-500)]/50"
+                          : "bg-orange-50 text-stone-900 border-orange-100 hover:border-[var(--color-orange-500)]/50"
                       }`}
                     >
                       {amount.toLocaleString()}원
@@ -428,7 +425,7 @@ export default function BoardWriteClient() {
                     className={`h-8.5 px-4 rounded-full border text-sm transition-colors ${
                       form.budget === ""
                         ? "bg-[var(--color-orange-500)] text-white border-[var(--color-orange-500)]"
-                        : "bg-[#fff8f3] text-[#281a0e] border-[#ffe9d6] hover:border-[var(--color-orange-500)]/50"
+                        : "bg-orange-50 text-stone-900 border-orange-100 hover:border-[var(--color-orange-500)]/50"
                     }`}
                   >
                     협의 가능
@@ -438,12 +435,12 @@ export default function BoardWriteClient() {
             </div>
 
             {/* 날짜·시간 */}
-            <div className="bg-white rounded-2xl border border-[#ffe9d6] p-4 sm:p-7">
-              <h2 className="text-lg font-semibold text-[#281a0e]">
+            <div className="bg-white rounded-2xl border border-orange-100 p-4 sm:p-7">
+              <h2 className="text-lg font-semibold text-stone-900">
                 날짜 · 시간
               </h2>
 
-              <div className="mt-5 p-3 sm:p-5 bg-[#fff8f3] rounded-2xl border border-[#ffe9d6]">
+              <div className="mt-5 p-3 sm:p-5 bg-orange-50 rounded-2xl border border-orange-100">
                 <RangePicker
                   value={
                     { from: form.startDate, to: form.endDate } as DateRange
@@ -460,7 +457,7 @@ export default function BoardWriteClient() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-5">
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-sm font-medium text-[#281a0e]">
+                  <span className="text-sm font-medium text-stone-900">
                     시작 시간
                   </span>
                   <SimpleTimePicker
@@ -472,7 +469,7 @@ export default function BoardWriteClient() {
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-sm font-medium text-[#281a0e]">
+                  <span className="text-sm font-medium text-stone-900">
                     종료 시간
                   </span>
                   <SimpleTimePicker
@@ -487,8 +484,8 @@ export default function BoardWriteClient() {
             </div>
 
             {/* 돌봄 장소 */}
-            <div className="bg-white rounded-2xl border border-[#ffe9d6] p-7">
-              <h2 className="text-lg font-semibold text-[#281a0e]">
+            <div className="bg-white rounded-2xl border border-orange-100 p-7">
+              <h2 className="text-lg font-semibold text-stone-900">
                 돌봄 장소
               </h2>
 
@@ -503,7 +500,7 @@ export default function BoardWriteClient() {
                     className={`flex-1 h-10 rounded-xl text-sm font-medium transition-colors ${
                       form.location_type === tab
                         ? "bg-[var(--color-orange-500)] text-white"
-                        : "border border-[#ffe9d6] text-gray-500 bg-white hover:bg-[#fff8f3]"
+                        : "border border-orange-100 text-gray-500 bg-white hover:bg-orange-50"
                     }`}
                   >
                     {tab}
@@ -533,7 +530,7 @@ export default function BoardWriteClient() {
                     }
                   }}
                   placeholder="도로명 주소를 입력하면 추천이 떠요"
-                  className="w-full h-12 pl-9 pr-20 bg-white border border-[#ffe9d6] rounded-xl text-[#281a0e] placeholder:text-gray-400 outline-none focus:border-[var(--color-orange-500)] transition"
+                  className="w-full h-12 pl-9 pr-20 bg-white border border-orange-100 rounded-xl text-stone-900 placeholder:text-gray-400 outline-none focus:border-[var(--color-orange-500)] transition"
                 />
                 <button
                   type="button"
@@ -545,7 +542,7 @@ export default function BoardWriteClient() {
                 </button>
 
                 {showSuggestions && suggestions.length > 0 && (
-                  <ul className="absolute left-0 right-0 top-[calc(100%+4px)] z-20 max-h-60 overflow-y-auto bg-white border border-[#ffe9d6] rounded-xl shadow-lg py-1">
+                  <ul className="absolute left-0 right-0 top-[calc(100%+4px)] z-20 max-h-60 overflow-y-auto bg-white border border-orange-100 rounded-xl shadow-lg py-1">
                     {suggestions.map((s, i) => (
                       <li key={`${s.addressName}-${i}`}>
                         <button
@@ -554,9 +551,9 @@ export default function BoardWriteClient() {
                             e.preventDefault();
                             handleSelectSuggestion(s);
                           }}
-                          className="w-full text-left px-4 py-2.5 hover:bg-[#fff8f3] transition-colors"
+                          className="w-full text-left px-4 py-2.5 hover:bg-orange-50 transition-colors"
                         >
-                          <div className="text-sm text-[#281a0e]">
+                          <div className="text-sm text-stone-900">
                             {s.roadAddress ?? s.addressName}
                           </div>
                           {s.jibunAddress &&
@@ -577,7 +574,7 @@ export default function BoardWriteClient() {
                 지정하세요.
               </p>
 
-              <div className="relative w-full h-56 rounded-xl overflow-hidden border border-[#ffe9d6] mt-3">
+              <div className="relative w-full h-56 rounded-xl overflow-hidden border border-orange-100 mt-3">
                 <KakaoMap
                   markers={
                     form.latitude !== null && form.longitude !== null
@@ -608,7 +605,7 @@ export default function BoardWriteClient() {
                       <div className="w-9 h-9 bg-[var(--color-orange-500)] rounded-full flex items-center justify-center shadow-md">
                         <MapPin className="w-5 h-5 text-white" />
                       </div>
-                      <span className="px-3 py-1 bg-white rounded-full text-xs text-[#281a0e] shadow-sm">
+                      <span className="px-3 py-1 bg-white rounded-full text-xs text-stone-900 shadow-sm">
                         위치를 검색해주세요
                       </span>
                     </div>
@@ -639,8 +636,8 @@ export default function BoardWriteClient() {
             </div>
 
             {/* 반려동물 */}
-            <div className="bg-white rounded-2xl border border-[#ffe9d6] p-7">
-              <h2 className="text-xl font-bold text-[#281a0e] mb-1">
+            <div className="bg-white rounded-2xl border border-orange-100 p-7">
+              <h2 className="text-xl font-bold text-stone-900 mb-1">
                 함께할 반려동물을 선택해주세요
               </h2>
               <p className="text-gray-400 text-sm mb-5">
@@ -658,7 +655,7 @@ export default function BoardWriteClient() {
                       className={`relative rounded-2xl border-2 overflow-hidden transition-all ${
                         isSelected
                           ? "border-[var(--color-orange-500)]"
-                          : "border-[#ffe9d6] hover:border-[var(--color-orange-500)]/50"
+                          : "border-orange-100 hover:border-[var(--color-orange-500)]/50"
                       }`}
                     >
                       {isSelected && (
@@ -666,8 +663,8 @@ export default function BoardWriteClient() {
                           <Check className="w-3 h-3 text-white" />
                         </div>
                       )}
-                      <div className="relative bg-[#fff8f3] h-30 flex items-center justify-center">
-                        <span className="absolute top-2 left-2 px-2 py-0.5 bg-white border border-[#ffe9d6] rounded-full text-xs font-medium text-[var(--color-orange-500)] z-10">
+                      <div className="relative bg-orange-50 h-30 flex items-center justify-center">
+                        <span className="absolute top-2 left-2 px-2 py-0.5 bg-white border border-orange-100 rounded-full text-xs font-medium text-[var(--color-orange-500)] z-10">
                           {pet.type}
                         </span>
                         {pet.image_url ? (
@@ -682,7 +679,7 @@ export default function BoardWriteClient() {
                         )}
                       </div>
                       <div className="py-3 text-center">
-                        <div className="text-[#281a0e] text-base font-bold">
+                        <div className="text-stone-900 text-base font-bold">
                           {pet.name}
                         </div>
                         <div className="text-gray-400 text-xs mt-0.5">
@@ -696,9 +693,9 @@ export default function BoardWriteClient() {
                 <button
                   type="button"
                   onClick={() => router.push("/pet-register")}
-                  className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[#ffe9d6] hover:border-[var(--color-orange-500)]/50 transition-colors text-gray-400 hover:text-[var(--color-orange-500)] min-h-35"
+                  className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-orange-100 hover:border-[var(--color-orange-500)]/50 transition-colors text-gray-400 hover:text-[var(--color-orange-500)] min-h-35"
                 >
-                  <div className="w-10 h-10 bg-[#fff8f3] rounded-full flex items-center justify-center">
+                  <div className="w-10 h-10 bg-orange-50 rounded-full flex items-center justify-center">
                     <Plus className="w-5 h-5" />
                   </div>
                   <span className="text-sm font-medium">새 반려동물 등록</span>
@@ -707,10 +704,10 @@ export default function BoardWriteClient() {
             </div>
 
             {/* 상세 내용 */}
-            <div className="bg-white rounded-2xl border border-[#ffe9d6] p-7">
+            <div className="bg-white rounded-2xl border border-orange-100 p-7">
               <div className="flex flex-col gap-2 mb-6">
                 <div className="flex items-center justify-between">
-                  <label className="text-sm font-bold text-[#281a0e]">
+                  <label className="text-sm font-bold text-stone-900">
                     게시글 제목
                   </label>
                   <span className="text-xs text-gray-400">
@@ -728,13 +725,13 @@ export default function BoardWriteClient() {
                       }));
                   }}
                   placeholder="예: 이번 주말 강아지 산책 펫시터 구해요"
-                  className="w-full h-12 px-4 bg-white border border-[#ffe9d6] rounded-xl text-[#281a0e] placeholder:text-gray-400 outline-none focus:border-[var(--color-orange-500)] transition"
+                  className="w-full h-12 px-4 bg-white border border-orange-100 rounded-xl text-stone-900 placeholder:text-gray-400 outline-none focus:border-[var(--color-orange-500)] transition"
                 />
               </div>
 
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-sm font-bold text-[#281a0e]">
+                  <label className="text-sm font-bold text-stone-900">
                     상세 내용
                   </label>
                   <span className="text-xs text-gray-400">
@@ -758,7 +755,7 @@ export default function BoardWriteClient() {
                           content: t.text.slice(0, 500),
                         }))
                       }
-                      className="px-3 py-1 rounded-full text-xs font-medium border border-[#ffe9d6] text-gray-500 hover:border-[var(--color-orange-500)]/50 hover:text-[var(--color-orange-500)] transition-colors"
+                      className="px-3 py-1 rounded-full text-xs font-medium border border-orange-100 text-gray-500 hover:border-[var(--color-orange-500)]/50 hover:text-[var(--color-orange-500)] transition-colors"
                     >
                       {t.label}
                     </button>
@@ -775,18 +772,18 @@ export default function BoardWriteClient() {
                   }}
                   placeholder="펫시터에게 전달하고 싶은 내용을 입력해주세요"
                   rows={7}
-                  className="w-full px-4 py-3 bg-white border border-[#ffe9d6] rounded-xl text-[#281a0e] placeholder:text-gray-400 outline-none resize-none focus:border-[var(--color-orange-500)] transition mt-1"
+                  className="w-full px-4 py-3 bg-white border border-orange-100 rounded-xl text-stone-900 placeholder:text-gray-400 outline-none resize-none focus:border-[var(--color-orange-500)] transition mt-1"
                 />
               </div>
             </div>
 
             {/* 펫시터 조건 */}
-            <div className="bg-white rounded-2xl border border-[#ffe9d6] p-7">
+            <div className="bg-white rounded-2xl border border-orange-100 p-7">
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-sm font-bold text-[#281a0e] flex items-center gap-2">
+                  <label className="text-sm font-bold text-stone-900 flex items-center gap-2">
                     펫시터 조건
-                    <span className="px-2 py-0.5 bg-[#fff8f3] rounded-full text-xs font-medium text-[var(--color-orange-500)]">
+                    <span className="px-2 py-0.5 bg-orange-50 rounded-full text-xs font-medium text-[var(--color-orange-500)]">
                       선택
                     </span>
                   </label>
@@ -804,7 +801,7 @@ export default function BoardWriteClient() {
                       key={condition}
                       type="button"
                       onClick={() => appendCondition(condition)}
-                      className="px-3 py-1 rounded-full text-xs font-medium border border-[#ffe9d6] text-gray-500 hover:border-[var(--color-orange-500)]/50 hover:text-[var(--color-orange-500)] transition-colors"
+                      className="px-3 py-1 rounded-full text-xs font-medium border border-orange-100 text-gray-500 hover:border-[var(--color-orange-500)]/50 hover:text-[var(--color-orange-500)] transition-colors"
                     >
                       {condition}
                     </button>
@@ -821,7 +818,7 @@ export default function BoardWriteClient() {
                   }}
                   placeholder="예: - 책임감 있고 성실하신 분"
                   rows={6}
-                  className="w-full px-4 py-3 bg-white border border-[#ffe9d6] rounded-xl text-[#281a0e] placeholder:text-gray-400 outline-none resize-none focus:border-[var(--color-orange-500)] transition mt-1"
+                  className="w-full px-4 py-3 bg-white border border-orange-100 rounded-xl text-stone-900 placeholder:text-gray-400 outline-none resize-none focus:border-[var(--color-orange-500)] transition mt-1"
                 />
               </div>
             </div>
@@ -829,7 +826,7 @@ export default function BoardWriteClient() {
         </div>
       </main>
 
-      <div className="sticky bottom-0 bg-white border-t border-[#ffe9d6] z-10">
+      <div className="sticky bottom-0 bg-white border-t border-orange-100 z-10">
         <div className="max-w-205 mx-auto flex items-center justify-end h-19 px-6">
           <button
             type="button"

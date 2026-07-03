@@ -13,6 +13,7 @@ interface SitterRow {
   full_name: string | null;
   profile_image: string | null;
   service_types: string[];
+  review_count: number;
 }
 
 export interface SitterFilters {
@@ -31,9 +32,27 @@ export function useSitters(filters: SitterFilters) {
         p_dong: (filters.dong || null) as any,
       });
       if (error) throw error;
-      return (data as SitterRow[]).filter(
+      const rows = (data as Omit<SitterRow, "review_count">[]).filter(
         (row) => row.latitude != null && row.longitude != null,
       );
+
+      const sitterIds = rows.map((row) => row.id);
+      const reviewCounts = new Map<string, number>();
+      if (sitterIds.length > 0) {
+        const { data: reviewRows, error: reviewError } = await supabase
+          .from("reviews")
+          .select("sitter_id")
+          .in("sitter_id", sitterIds);
+        if (reviewError) throw reviewError;
+        for (const { sitter_id } of reviewRows ?? []) {
+          reviewCounts.set(sitter_id, (reviewCounts.get(sitter_id) ?? 0) + 1);
+        }
+      }
+
+      return rows.map((row) => ({
+        ...row,
+        review_count: reviewCounts.get(row.id) ?? 0,
+      }));
     },
     staleTime: 1000 * 30,
   });
