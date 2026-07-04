@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Star, Trash2, ChevronLeft, Flag } from "lucide-react";
+import { Star, Trash2, Flag } from "lucide-react";
 import Header from "@/components/layout/Header";
+import { MobileBackButton, DesktopBackButton } from "@/components/common/BackButton";
 import Avatar from "@/components/ui/Avatar";
 import { deleteReview } from "@/app/actions/reviews";
 import { CustomModal } from "@/components/common/CustomModal";
@@ -251,7 +251,6 @@ export default function ReviewsClient({
   initialSitterId?: string | null;
   initialWrittenReviews?: WrittenReview[];
 }) {
-  const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabId>("written");
   const [sitterId, setSitterId] = useState<string | null | undefined>(
     initialSitterId !== undefined ? initialSitterId : undefined,
@@ -392,22 +391,14 @@ export default function ReviewsClient({
 
       <div className="md:hidden sticky top-16 z-50 bg-white border-b border-orange-100">
         <div className="h-14 px-5 flex items-center gap-3">
-          <button onClick={() => router.back()} aria-label="뒤로 가기" className="p-1 -ml-1">
-            <ChevronLeft size={24} className="text-stone-900" />
-          </button>
+          <MobileBackButton />
           <span className="flex-1 font-semibold text-stone-900">후기 관리</span>
         </div>
       </div>
 
       <main className="w-full max-w-200 mx-auto px-4 md:px-6 pt-6 md:pt-12 pb-10 md:pb-20">
         <div className="hidden md:flex items-center gap-4 mb-8">
-          <button
-            onClick={() => router.back()}
-            aria-label="뒤로 가기"
-            className="w-10 h-10 rounded-xl border border-orange-100 flex items-center justify-center hover:bg-orange-50 transition-colors shrink-0"
-          >
-            <ChevronLeft size={20} className="text-stone-900" />
-          </button>
+          <DesktopBackButton />
           <div>
             <h2 className="text-2xl font-bold text-stone-900">후기 관리</h2>
             <p className="text-sm text-gray-500 mt-1">

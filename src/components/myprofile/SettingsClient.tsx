@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Mail, Phone, MapPin, Calendar, ChevronLeft, Building2, Check, X, Pencil } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { Mail, Phone, MapPin, Calendar, Building2, Check, X, Pencil } from "lucide-react";
 import Script from "next/script";
 import Header from "@/components/layout/Header";
+import { MobileBackButton, DesktopBackButton } from "@/components/common/BackButton";
 import { AvatarWithCamera } from "@/components/ui/Avatar";
 import { Switch } from "@/components/ui/switch";
 import { CustomModal } from "@/components/common/CustomModal";
@@ -84,7 +84,6 @@ export default function SettingsClient({
   initialUser?: UserProfile | null;
   initialBankAccount?: BankAccount | null;
 }) {
-  const router = useRouter();
   const user = useUserStore((s) => s.user) ?? initialUser ?? null;
   const setUser = useUserStore((s) => s.setUser);
 
@@ -295,21 +294,14 @@ export default function SettingsClient({
 
       <div className="md:hidden sticky top-16 z-50 bg-white border-b border-[#FFE9D6]">
         <div className="h-14 px-5 flex items-center gap-3">
-          <button onClick={() => router.back()} className="p-1 -ml-1">
-            <ChevronLeft size={24} className="text-[#281A0E]" />
-          </button>
+          <MobileBackButton />
           <span className="flex-1 font-semibold text-[#281A0E]">프로필 설정</span>
         </div>
       </div>
 
       <div className="w-full max-w-[1200px] mx-auto px-4 md:px-6 pt-6 md:pt-12 pb-10 md:pb-20">
         <div className="hidden md:flex items-center gap-4 mb-8">
-          <button
-            onClick={() => router.back()}
-            className="w-10 h-10 rounded-xl border border-[#FFE9D6] flex items-center justify-center hover:bg-[#FFF8F3] transition-colors shrink-0"
-          >
-            <ChevronLeft size={20} className="text-[#281A0E]" />
-          </button>
+          <DesktopBackButton />
           <div>
             <h2 className="text-2xl font-bold text-[#281A0E]">프로필 설정</h2>
             <p className="text-sm text-[#6B7280] mt-1">계정 정보 및 설정을 관리하세요</p>

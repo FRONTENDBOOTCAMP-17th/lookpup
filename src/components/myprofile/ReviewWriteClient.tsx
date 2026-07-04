@@ -4,7 +4,6 @@ import { useState, useRef, useEffect, Suspense } from "react";
 import { uploadToCloudinary } from "@/utils/cloudinary";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  ChevronLeft,
   Star,
   Camera,
   X,
@@ -13,6 +12,7 @@ import {
   BadgeCheck,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
+import { MobileBackButton, DesktopBackButton } from "@/components/common/BackButton";
 import { CustomModal } from "@/components/common/CustomModal";
 import { createReview } from "@/app/actions/reviews";
 import Avatar from "@/components/ui/Avatar";
@@ -750,12 +750,10 @@ function ReviewWriteContent() {
 
       <div className="md:hidden sticky top-16 z-50 bg-white border-b border-orange-100">
         <div className="h-14 px-5 flex items-center">
-          <button
-            onClick={() => mobileScreen === 2 ? setMobileScreen(1) : router.back()}
-            className="p-1 -ml-1 mr-3"
-          >
-            <ChevronLeft size={24} className="text-stone-900" />
-          </button>
+          <MobileBackButton
+            onClick={() => (mobileScreen === 2 ? setMobileScreen(1) : router.back())}
+            className="mr-3"
+          />
           <span className="flex-1 text-center font-semibold text-stone-900 pr-8">후기 작성</span>
           <span className="absolute right-5 text-xs text-gray-500 font-medium">{mobileScreen} / 2</span>
         </div>
@@ -772,12 +770,7 @@ function ReviewWriteContent() {
 
       <div className="hidden md:block w-full max-w-160 mx-auto px-4 pt-12 pb-20">
         <div className="flex items-center gap-4 mb-8">
-          <button
-            onClick={() => router.back()}
-            className="w-10 h-10 rounded-xl border border-orange-100 flex items-center justify-center hover:bg-orange-50 transition-colors shrink-0"
-          >
-            <ChevronLeft size={20} className="text-stone-900" />
-          </button>
+          <DesktopBackButton />
           <div>
             <h2 className="text-2xl font-bold text-stone-900 mb-0.5">후기를 남겨주세요</h2>
             <p className="text-sm text-gray-500">솔직한 후기가 더 좋은 돌봄 문화를 만들어요</p>

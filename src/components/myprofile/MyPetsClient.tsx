@@ -3,7 +3,6 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ChevronLeft,
   Plus,
   PawPrint,
   AlertTriangle,
@@ -15,6 +14,7 @@ import {
   Check,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
+import { MobileBackButton, DesktopBackButton } from "@/components/common/BackButton";
 import { CustomModal } from "@/components/common/CustomModal";
 import { updatePet, deletePet } from "@/app/actions/pets";
 
@@ -791,9 +791,7 @@ export default function MyPetsClient({ initialPets }: MyPetsClientProps) {
             </>
           ) : (
             <>
-              <button onClick={() => router.back()} className="p-1 -ml-1">
-                <ChevronLeft size={24} className="text-[#281A0E]" />
-              </button>
+              <MobileBackButton />
               <span className="flex-1 font-semibold text-[#281A0E]">내 반려동물</span>
               {pets.length > 0 && (
                 <button
@@ -818,12 +816,7 @@ export default function MyPetsClient({ initialPets }: MyPetsClientProps) {
       <div className="hidden md:block w-full max-w-[1200px] mx-auto px-6 pt-10 pb-20">
         <div className="flex items-start justify-between mb-8">
           <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.back()}
-              className="w-10 h-10 rounded-xl border border-[#FFE9D6] flex items-center justify-center hover:bg-[#FFF8F3] transition-colors shrink-0"
-            >
-              <ChevronLeft size={20} className="text-[#281A0E]" />
-            </button>
+            <DesktopBackButton />
             <div>
               <h2 className="text-2xl font-bold text-[#281A0E]">내 반려동물</h2>
               <p className="text-sm text-[#6B7280] mt-1">등록된 반려동물을 관리할 수 있어요</p>

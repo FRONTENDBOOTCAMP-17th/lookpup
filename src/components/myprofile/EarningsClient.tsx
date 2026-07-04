@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { TrendingUp, Calendar, ChevronLeft } from "lucide-react";
+import { TrendingUp, Calendar } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
 import Header from "@/components/layout/Header";
+import { MobileBackButton, DesktopBackButton } from "@/components/common/BackButton";
 import {
   ChartContainer,
   ChartTooltip,
@@ -47,7 +47,6 @@ function formatCurrency(amount: number) {
 }
 
 export default function EarningsClient({ initialData }: { initialData?: EarningsData | null }) {
-  const router = useRouter();
   const [data, setData] = useState<EarningsData>(
     initialData ?? { total: 0, thisMonth: 0, thisWeek: 0, monthly: [], transactions: [] },
   );
@@ -71,9 +70,7 @@ export default function EarningsClient({ initialData }: { initialData?: Earnings
       {/* 모바일 헤더 */}
       <div className="md:hidden sticky top-16 z-50 bg-white border-b border-[#FFE9D6]">
         <div className="h-14 px-5 flex items-center gap-3">
-          <button onClick={() => router.back()} className="p-1 -ml-1">
-            <ChevronLeft size={24} className="text-[#281A0E]" />
-          </button>
+          <MobileBackButton />
           <span className="flex-1 font-semibold text-[#281A0E]">수익 관리</span>
         </div>
       </div>
@@ -82,12 +79,7 @@ export default function EarningsClient({ initialData }: { initialData?: Earnings
         {/* 데스크탑 타이틀 */}
         <div className="hidden md:flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.back()}
-              className="w-10 h-10 rounded-xl border border-[#FFE9D6] flex items-center justify-center hover:bg-[#FFF8F3] transition-colors shrink-0"
-            >
-              <ChevronLeft size={20} className="text-[#281A0E]" />
-            </button>
+            <DesktopBackButton />
             <div>
               <h2 className="text-2xl font-bold text-[#281A0E]">수익 관리</h2>
               <p className="text-sm text-[#6B7280] mt-1">

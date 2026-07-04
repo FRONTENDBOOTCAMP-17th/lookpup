@@ -3,13 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ChevronLeft,
   AlertTriangle,
   AlertCircle,
   CheckCircle2,
   PawPrint,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
+import { MobileBackButton, DesktopBackButton } from "@/components/common/BackButton";
 import { CustomModal } from "@/components/common/CustomModal";
 import { deleteUser } from "@/app/actions/users";
 import { createClient } from "@/utils/supabase/client";
@@ -95,22 +95,14 @@ export default function WithdrawClient() {
 
       <div className="md:hidden sticky top-16 z-50 bg-white border-b border-[#FFE9D6]">
         <div className="h-14 px-5 flex items-center gap-3">
-          <button type="button" onClick={() => router.back()} className="p-1 -ml-1">
-            <ChevronLeft size={24} className="text-[#281A0E]" />
-          </button>
+          <MobileBackButton />
           <span className="flex-1 font-semibold text-[#281A0E]">회원 탈퇴</span>
         </div>
       </div>
 
       <main className="max-w-190 mx-auto px-4 md:px-6 pt-4 md:pt-12 pb-20">
         <div className="hidden md:flex items-center gap-3 mb-8">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="w-10 h-10 rounded-xl border border-[#FFE9D6] flex items-center justify-center hover:bg-[#FFF8F3] transition-colors shrink-0"
-          >
-            <ChevronLeft size={20} className="text-[#281A0E]" />
-          </button>
+          <DesktopBackButton />
           <div>
             <h1 className="text-2xl font-bold text-[#281A0E]">회원 탈퇴</h1>
             <p className="text-sm text-[#6B7280] mt-1">서비스 이용을 종료하고 계정을 삭제할 수 있어요</p>
