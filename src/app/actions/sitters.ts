@@ -252,7 +252,7 @@ export async function getMySitterProfile() {
     data: {
       id: data.id,
       availableArea: data.available_area ?? "",
-      displayArea: (data as any).display_area ?? null,
+      displayArea: data.display_area ?? null,
       career: data.career ?? null,
       introduction: data.introduction ?? null,
       rating: data.rating ?? 0,
