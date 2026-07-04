@@ -2,6 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import type { TablesUpdate } from "@/types/database.types";
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -162,7 +163,7 @@ export async function getAdminReservations() {
        accepted_at, started_at, completed_at, canceled_at, paid_at, created_at,
        cancel_reason, memo,
        owner:users!reservations_owner_id_fkey(id, full_name, email, profile_image),
-       sitter:sitters!reservations_sitter_id_fkey(id, user_id, users(full_name, email, profile_image))`
+       sitter:sitters!reservations_sitter_id_fkey(id, user_id, users(id, full_name, email, profile_image))`
     )
     .order("created_at", { ascending: false })
     .limit(200);
@@ -190,7 +191,7 @@ export async function adminUpdateReservationStatus(
   if (!reservation) return { error: { code: "NOT_FOUND", message: "예약을 찾을 수 없습니다." } };
 
   const now = new Date().toISOString();
-  const updates: { status: string; accepted_at?: string; started_at?: string; completed_at?: string; canceled_at?: string; cancel_reason?: string | null } = { status };
+  const updates: TablesUpdate<"reservations"> = { status };
 
   if (status === "accepted") updates.accepted_at = now;
   else if (status === "in_progress") updates.started_at = now;

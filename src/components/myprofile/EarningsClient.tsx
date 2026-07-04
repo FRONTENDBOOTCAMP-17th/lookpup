@@ -22,16 +22,14 @@ export default function EarningsClient({
   const earnings = data ?? { total: 0, thisMonth: 0, thisWeek: 0, monthly: [], transactions: [] };
 
   return (
-    <div className="min-h-screen bg-[#FFF8F3]">
+    <div className="min-h-screen bg-orange-50">
       <Header />
 
       {/* 모바일 헤더 */}
-      <div className="md:hidden sticky top-16 z-50 bg-white border-b border-[#FFE9D6]">
+      <div className="md:hidden sticky top-16 z-50 bg-white border-b border-orange-100">
         <div className="h-14 px-5 flex items-center gap-3">
-          <button onClick={() => router.back()} className="p-1 -ml-1">
-            <ChevronLeft size={24} className="text-[#281A0E]" />
-          </button>
-          <span className="flex-1 font-semibold text-[#281A0E]">수익 관리</span>
+          <MobileBackButton />
+          <span className="flex-1 font-semibold text-stone-900">수익 관리</span>
         </div>
       </div>
 
@@ -39,12 +37,7 @@ export default function EarningsClient({
         {/* 데스크탑 타이틀 */}
         <div className="hidden md:flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.back()}
-              className="w-10 h-10 rounded-xl border border-[#FFE9D6] flex items-center justify-center hover:bg-[#FFF8F3] transition-colors shrink-0"
-            >
-              <ChevronLeft size={20} className="text-[#281A0E]" />
-            </button>
+            <DesktopBackButton />
             <div>
               <h2 className="text-2xl font-bold text-[#281A0E]">수익 관리</h2>
               <p className="text-sm text-[#6B7280] mt-1">펫시터 활동 수익을 확인하세요</p>

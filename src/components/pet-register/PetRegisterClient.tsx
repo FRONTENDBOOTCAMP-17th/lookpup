@@ -2,15 +2,16 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Camera } from "lucide-react";
+import { Camera, X } from "lucide-react";
 import Header from "@/components/layout/Header";
+import { DesktopBackButton } from "@/components/common/BackButton";
 import { CustomModal } from "@/components/common/CustomModal";
 import { usePetRegisterForm } from "@/hooks/pet-register/usePetRegisterForm";
 import { usePetRegisterMutation } from "@/hooks/pet-register/usePetRegisterMutation";
 import { COMMON_NOTES } from "@/schemas/petRegister";
 
 const inputCls =
-  "w-full h-12 px-4 py-3 bg-white rounded-xl border border-[#ffe9d6] text-base font-normal text-[#281a0e] placeholder:text-gray-400 focus:outline-none focus:border-[var(--color-orange-500)] transition-all";
+  "w-full h-12 px-4 py-3 bg-white rounded-xl border border-orange-100 text-base font-normal text-stone-900 placeholder:text-gray-400 focus:outline-none focus:border-[var(--color-orange-500)] transition-all";
 const numberInputCls = `${inputCls} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`;
 
 export default function PetRegisterClient() {
@@ -59,40 +60,35 @@ export default function PetRegisterClient() {
   });
 
   return (
-    <div className="min-h-screen bg-[#fff8f3]">
+    <div className="min-h-screen bg-orange-50">
       <Header />
 
       <main className="flex justify-center py-8 px-4">
         <div className="w-full max-w-[800px]">
           <div className="flex items-center gap-3 mb-6">
-            <button
-              type="button"
-              onClick={() => router.back()}
-              className="w-10 h-10 rounded-xl border border-[#ffe9d6] flex items-center justify-center text-[#281a0e] hover:bg-white transition-colors"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <h1 className="text-2xl font-bold text-[#281a0e]">반려동물 등록</h1>
+            <DesktopBackButton />
+            <h1 className="text-2xl font-bold text-stone-900">반려동물 등록</h1>
           </div>
 
           <form
             onSubmit={onSubmit}
-            className="w-full p-7 bg-white rounded-2xl border border-[#ffe9d6] flex flex-col"
+            className="w-full p-7 bg-white rounded-2xl border border-orange-100 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] flex flex-col"
           >
             {/* Photos */}
             <section className="flex flex-col">
-              <label className="text-[#281a0e] text-sm font-medium leading-5">사진</label>
+              <label className="text-stone-900 text-sm font-medium leading-5">사진</label>
               <div className="pt-3 flex items-start gap-3 overflow-x-auto">
                 {photoUrl && (
-                  <div className="relative shrink-0 w-32 h-32 rounded-2xl overflow-hidden border border-[#ffe9d6]">
+                  <div className="relative shrink-0 w-32 h-32 rounded-2xl overflow-hidden border border-orange-100">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={photoUrl} alt="반려동물 사진" className="w-full h-full object-cover" />
                     <button
                       type="button"
                       onClick={handlePhotoRemove}
-                      className="absolute top-1 right-1 w-5 h-5 bg-black/50 rounded-full text-white text-xs flex items-center justify-center"
+                      aria-label="사진 삭제"
+                      className="absolute top-1 right-1 w-5 h-5 bg-black/50 rounded-full text-white flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
                     >
-                      ✕
+                      <X size={12} />
                     </button>
                   </div>
                 )}
@@ -101,7 +97,7 @@ export default function PetRegisterClient() {
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     style={{ width: "128px", height: "128px", minWidth: "128px" }}
-                    className="shrink-0 bg-[#fff8f3] rounded-2xl border border-[#ffe9d6] flex flex-col justify-center items-center gap-2 hover:bg-orange-50 transition-colors"
+                    className="shrink-0 bg-orange-50 rounded-2xl border border-orange-100 flex flex-col justify-center items-center gap-2 hover:bg-orange-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
                   >
                     <Camera className="w-8 h-8 text-gray-500" strokeWidth={2} />
                     <span className="text-gray-500 text-xs font-normal leading-4">사진 추가</span>
@@ -119,21 +115,21 @@ export default function PetRegisterClient() {
 
             {/* Pet Type */}
             <section className="pt-6 flex flex-col">
-              <label className="text-[#281a0e] text-sm font-medium leading-5">동물 종류</label>
+              <label className="text-stone-900 text-sm font-medium leading-5">동물 종류</label>
               <div className="pt-3 flex gap-3">
                 {([["dog", "🐕", "강아지"], ["cat", "🐈", "고양이"]] as const).map(([type, emoji, label]) => (
                   <button
                     key={type}
                     type="button"
                     onClick={() => setValue("petType", type)}
-                    className={`flex-1 p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all ${
+                    className={`flex-1 p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
                       petType === type
-                        ? "bg-[#fff8f3] border-[var(--color-orange-500)]"
-                        : "bg-white border-[#ffe9d6] hover:border-[var(--color-orange-500)]/50"
+                        ? "bg-orange-50 border-[var(--color-orange-500)]"
+                        : "bg-white border-orange-100 hover:border-[var(--color-orange-500)]/50"
                     }`}
                   >
                     <span className="text-3xl leading-9">{emoji}</span>
-                    <span className={`text-base font-medium leading-6 ${petType === type ? "text-[var(--color-orange-500)]" : "text-[#281a0e]"}`}>
+                    <span className={`text-base font-medium leading-6 ${petType === type ? "text-[var(--color-orange-500)]" : "text-stone-900"}`}>
                       {label}
                     </span>
                   </button>
@@ -143,7 +139,7 @@ export default function PetRegisterClient() {
 
             {/* Name */}
             <section className="pt-6 flex flex-col">
-              <label className="text-[#281a0e] text-sm font-medium leading-5 mb-2">이름</label>
+              <label className="text-stone-900 text-sm font-medium leading-5 mb-2">이름</label>
               <input
                 type="text"
                 placeholder="반려동물 이름을 입력하세요"
@@ -154,7 +150,7 @@ export default function PetRegisterClient() {
 
             {/* Breed */}
             <section className="pt-6 flex flex-col">
-              <label className="text-[#281a0e] text-sm font-medium leading-5 mb-2">품종</label>
+              <label className="text-stone-900 text-sm font-medium leading-5 mb-2">품종</label>
               <input
                 type="text"
                 placeholder="품종을 입력하세요"
@@ -167,7 +163,7 @@ export default function PetRegisterClient() {
             <section className="pt-6">
               <div className="flex gap-4">
                 <div className="flex-1 flex flex-col">
-                  <label className="text-[#281a0e] text-sm font-medium leading-5 mb-2">나이</label>
+                  <label className="text-stone-900 text-sm font-medium leading-5 mb-2">나이</label>
                   <input
                     type="number"
                     placeholder="3"
@@ -178,7 +174,7 @@ export default function PetRegisterClient() {
                   />
                 </div>
                 <div className="flex-1 flex flex-col">
-                  <label className="text-[#281a0e] text-sm font-medium leading-5 mb-2">체중 (kg)</label>
+                  <label className="text-stone-900 text-sm font-medium leading-5 mb-2">체중 (kg)</label>
                   <input
                     type="number"
                     placeholder="4.5"
@@ -193,20 +189,20 @@ export default function PetRegisterClient() {
 
             {/* Gender */}
             <section className="pt-6 flex flex-col">
-              <label className="text-[#281a0e] text-sm font-medium leading-5">성별</label>
+              <label className="text-stone-900 text-sm font-medium leading-5">성별</label>
               <div className="pt-3 flex gap-3">
                 {([["male", "남아"], ["female", "여아"]] as const).map(([value, label]) => (
                   <button
                     key={value}
                     type="button"
                     onClick={() => setValue("gender", value)}
-                    className={`flex-1 h-12 rounded-xl border-2 flex justify-center items-center transition-all ${
+                    className={`flex-1 h-12 rounded-xl border-2 flex justify-center items-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
                       gender === value
-                        ? "bg-[#fff8f3] border-[var(--color-orange-500)]"
-                        : "bg-white border-[#ffe9d6] hover:border-[var(--color-orange-500)]/50"
+                        ? "bg-orange-50 border-[var(--color-orange-500)]"
+                        : "bg-white border-orange-100 hover:border-[var(--color-orange-500)]/50"
                     }`}
                   >
-                    <span className={`text-sm font-medium leading-5 ${gender === value ? "text-[var(--color-orange-500)]" : "text-[#281a0e]"}`}>
+                    <span className={`text-sm font-medium leading-5 ${gender === value ? "text-[var(--color-orange-500)]" : "text-stone-900"}`}>
                       {label}
                     </span>
                   </button>
@@ -219,8 +215,8 @@ export default function PetRegisterClient() {
               <button
                 type="button"
                 onClick={() => setValue("neutered", !neutered)}
-                className={`w-full h-14 px-4 rounded-xl border-2 flex items-center gap-3 transition-all ${
-                  neutered ? "bg-[#fff8f3] border-[var(--color-orange-500)]" : "bg-white border-[#ffe9d6] hover:border-[var(--color-orange-500)]/50"
+                className={`w-full h-14 px-4 rounded-xl border-2 flex items-center gap-3 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
+                  neutered ? "bg-orange-50 border-[var(--color-orange-500)]" : "bg-white border-orange-100 hover:border-[var(--color-orange-500)]/50"
                 }`}
               >
                 <div
@@ -234,18 +230,18 @@ export default function PetRegisterClient() {
                     </svg>
                   )}
                 </div>
-                <span className="text-[#281a0e] text-sm font-medium leading-5">중성화 수술 완료</span>
+                <span className="text-stone-900 text-sm font-medium leading-5">중성화 수술 완료</span>
               </button>
             </section>
 
             {/* Notes */}
             <section className="pt-6 flex flex-col">
-              <label className="text-[#281a0e] text-sm font-medium leading-5 mb-2">특이사항</label>
+              <label className="text-stone-900 text-sm font-medium leading-5 mb-2">특이사항</label>
               <textarea
                 placeholder="알러지, 질병, 주의사항 등을 입력해주세요"
                 style={{ height: "120px" }}
                 maxLength={500}
-                className="w-full px-4 py-3 bg-white rounded-xl border border-[#ffe9d6] text-base font-normal leading-6 text-[#281a0e] placeholder:text-[#281a0e]/50 resize-none focus:outline-none focus:border-[var(--color-orange-500)] transition-all"
+                className="w-full px-4 py-3 bg-white rounded-xl border border-orange-100 text-base font-normal leading-6 text-stone-900 placeholder:text-stone-900/50 resize-none focus:outline-none focus:border-[var(--color-orange-500)] transition-all"
                 {...register("notes")}
               />
               <div className="pt-1 flex justify-end">
@@ -255,17 +251,17 @@ export default function PetRegisterClient() {
 
             {/* Common Notes Tags */}
             <section className="pt-6 flex flex-col">
-              <label className="text-[#281a0e] text-sm font-medium leading-5">자주 선택되는 특이사항</label>
+              <label className="text-stone-900 text-sm font-medium leading-5">자주 선택되는 특이사항</label>
               <div className="pt-3 flex flex-wrap gap-2">
                 {COMMON_NOTES.map((note) => (
                   <button
                     key={note}
                     type="button"
                     onClick={() => toggleNote(note)}
-                    className={`h-9 px-4 rounded-full border text-xs font-medium leading-4 transition-all ${
+                    className={`h-9 px-4 rounded-full border text-xs font-medium leading-4 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
                       selectedNotes.includes(note)
                         ? "bg-[var(--color-orange-500)] border-[var(--color-orange-500)] text-white"
-                        : "bg-white border-[#ffe9d6] text-[#281a0e] hover:border-[var(--color-orange-500)]/50"
+                        : "bg-white border-orange-100 text-stone-900 hover:border-[var(--color-orange-500)]/50"
                     }`}
                   >
                     {note}
@@ -279,14 +275,14 @@ export default function PetRegisterClient() {
               <button
                 type="button"
                 onClick={() => router.back()}
-                className="flex-1 h-12 px-6 bg-white rounded-xl border border-[#ffe9d6] flex justify-center items-center hover:bg-[#fff8f3] hover:border-[var(--color-orange-500)]/50 transition-colors"
+                className="flex-1 h-12 px-6 bg-white rounded-xl border border-orange-100 flex justify-center items-center hover:bg-orange-50 hover:border-[var(--color-orange-500)]/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
               >
-                <span className="text-[#6b7280] text-base font-semibold leading-6">취소</span>
+                <span className="text-gray-500 text-base font-semibold leading-6">취소</span>
               </button>
               <button
                 type="submit"
                 disabled={mutation.isPending}
-                className="flex-1 h-12 px-6 bg-[var(--color-orange-500)] rounded-xl flex justify-center items-center hover:bg-orange-600 disabled:opacity-60 transition-colors"
+                className="flex-1 h-12 px-6 bg-[var(--color-orange-500)] rounded-xl flex justify-center items-center hover:bg-orange-600 disabled:opacity-60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2"
               >
                 <span className="text-white text-base font-semibold leading-6">
                   {mutation.isPending ? "등록 중..." : "등록하기"}

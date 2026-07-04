@@ -3,6 +3,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { fuzzCoordinate } from "@/utils/geoPrivacy";
+import type { TablesUpdate } from "@/types/database.types";
 
 interface ServiceInput {
   service_type: "walk" | "care" | "hotel" | "pickup";
@@ -155,14 +156,17 @@ export async function createSitter(input: SitterInput) {
   }
 
   // 프로필 사진 및 role 업데이트
-  const userUpdates: Record<string, unknown> = { role: "both" };
+  const userUpdates: TablesUpdate<"users"> = { role: "both" };
   if (profile_photo_url) userUpdates.profile_image = profile_photo_url;
   await db.from("users").update(userUpdates).eq("id", user.id);
 
   return { data: sitter };
 }
 
-export async function updateSitter(id: string, input: Partial<Omit<SitterInput, "services">>) {
+export async function updateSitter(
+  id: string,
+  input: Partial<Omit<SitterInput, "services" | "profile_photo_url">>,
+) {
   const user = await getAuthUser();
 
   if (!user) {
@@ -303,7 +307,7 @@ export async function updateSitterProfile(input: UpdateSitterProfileInput) {
     return { error: { code: "NOT_FOUND", message: "시터 프로필을 찾을 수 없습니다." } };
   }
 
-  const updatePayload: Record<string, unknown> = {
+  const updatePayload: TablesUpdate<"sitters"> = {
     available_area: input.availableArea,
     introduction: input.introduction,
     career: input.career,

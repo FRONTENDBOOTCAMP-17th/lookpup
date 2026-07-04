@@ -8,7 +8,7 @@
  *    메시지 전송 시 채널로 broadcast하고, 상대방은 broadcast 구독으로 수신.
  *    채팅방이 바뀌거나 컴포넌트가 사라지면 해당 구독을 해제함.
  */
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import type {
@@ -176,7 +176,9 @@ function toMessage(m: MessageApiItem, userId: string): Message {
     const jsonPart = m.content.slice(SERVICE_COMPLETE_CONFIRMED_PREFIX.length);
     if (jsonPart) {
       try {
-        serviceCompleteConfirmedData = JSON.parse(jsonPart) as ServiceCompleteData;
+        serviceCompleteConfirmedData = JSON.parse(
+          jsonPart,
+        ) as ServiceCompleteData;
       } catch {}
     }
     return {
@@ -277,7 +279,10 @@ function toMessage(m: MessageApiItem, userId: string): Message {
         id: m.id,
         from: "reservation_edit_response" as const,
         text: "",
-        reservationEditResponseData: { ...payload, sentByMe: m.sender_id === userId },
+        reservationEditResponseData: {
+          ...payload,
+          sentByMe: m.sender_id === userId,
+        },
         time: m.created_at ? formatTime(m.created_at) : undefined,
         rawDate: m.created_at ?? undefined,
       };
@@ -420,33 +425,50 @@ export function useChatMessages(
     };
   }, [activeRoomId, userId]);
 
-  function addMessage(m: MessageApiItem) {
-    setMessages((prev) => [...prev, toMessage(m, userId ?? "")]);
-  }
+  const addMessage = useCallback(
+    (m: MessageApiItem) => {
+      setMessages((prev) => [...prev, toMessage(m, userId ?? "")]);
+    },
+    [userId],
+  );
 
-  function broadcastMessage(m: MessageApiItem) {
-    channelRef.current?.send({
-      type: "broadcast",
-      event: "new_message",
-      payload: m,
-    });
-  }
+  const broadcastMessage = useCallback(
+    (roomId: string, m: MessageApiItem) => {
+      if (roomId === activeRoomId) {
+        channelRef.current?.send({
+          type: "broadcast",
+          event: "new_message",
+          payload: m,
+        });
+        return;
+      }
+      const supabase = createClient();
+      const channel = supabase.channel(`room-${roomId}`);
+      channel.subscribe((status) => {
+        if (status !== "SUBSCRIBED") return;
+        channel
+          .send({ type: "broadcast", event: "new_message", payload: m })
+          .finally(() => supabase.removeChannel(channel));
+      });
+    },
+    [activeRoomId],
+  );
 
-  function broadcastConfirmation() {
+  const broadcastConfirmation = useCallback(() => {
     channelRef.current?.send({
       type: "broadcast",
       event: "application_confirmed",
       payload: {},
     });
-  }
+  }, []);
 
-  function broadcastReservationAccepted(roomId: string) {
+  const broadcastReservationAccepted = useCallback((roomId: string) => {
     channelRef.current?.send({
       type: "broadcast",
       event: "reservation_accepted",
       payload: { room_id: roomId },
     });
-  }
+  }, []);
 
   const paymentState = useMemo(() => derivePaymentState(messages), [messages]);
 
@@ -463,7 +485,7 @@ export function useChatMessages(
     return ids;
   }, [messages]);
 
-  async function loadMore() {
+  const loadMore = useCallback(async () => {
     if (!nextCursor || !activeRoomId || !userId || loadingMore) return;
     setLoadingMore(true);
     try {
@@ -484,7 +506,7 @@ export function useChatMessages(
     } finally {
       setLoadingMore(false);
     }
-  }
+  }, [nextCursor, activeRoomId, userId, loadingMore]);
 
   return {
     messages,

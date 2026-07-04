@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  ChevronLeft,
   AlertTriangle,
   Check,
   ImagePlus,
@@ -12,6 +11,8 @@ import {
   User,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
+import { MobileBackButton, DesktopBackButton } from "@/components/common/BackButton";
+import SectionCard from "@/components/common/SectionCard";
 import { CustomModal } from "@/components/common/CustomModal";
 import { AvatarReport } from "@/components/ui/Avatar";
 import { createReport } from "@/app/actions/reports";
@@ -167,22 +168,14 @@ export default function ReportClient() {
 
       <div className="md:hidden sticky top-16 z-50 bg-white border-b border-orange-100">
         <div className="h-14 px-5 flex items-center gap-3">
-          <button type="button" onClick={() => router.back()} className="p-1 -ml-1">
-            <ChevronLeft size={24} className="text-stone-900" />
-          </button>
+          <MobileBackButton />
           <span className="flex-1 font-semibold text-stone-900">신고하기</span>
         </div>
       </div>
 
       <main className="max-w-190 mx-auto px-4 md:px-6 pt-4 md:pt-12 pb-20">
         <div className="hidden md:flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="w-10 h-10 rounded-xl border border-orange-100 flex items-center justify-center hover:bg-orange-50 transition-colors shrink-0"
-          >
-            <ChevronLeft size={20} className="text-stone-900" />
-          </button>
+          <DesktopBackButton />
           <h1 className="text-2xl font-bold text-stone-900">신고하기</h1>
         </div>
 
@@ -195,7 +188,7 @@ export default function ReportClient() {
           </div>
 
           {needsSearch && (
-            <div className="bg-white border border-orange-100 rounded-2xl p-6 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)]">
+            <SectionCard className="p-6 gap-0">
               <p className="text-lg font-bold text-stone-900 mb-4">신고할 사용자 검색</p>
               <div className="relative">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -252,11 +245,11 @@ export default function ReportClient() {
               {searchQuery.trim().length > 0 && !isSearching && searchResults.length === 0 && (
                 <p className="mt-3 text-sm text-gray-400 text-center">검색 결과가 없습니다.</p>
               )}
-            </div>
+            </SectionCard>
           )}
 
           {targetId && (
-            <div className="bg-white border border-orange-100 rounded-2xl p-6 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)]">
+            <SectionCard className="p-6 gap-0">
               <div className="flex items-center justify-between mb-4">
                 <p className="text-sm font-semibold text-gray-500">신고 대상</p>
                 {needsSearch && (
@@ -293,12 +286,12 @@ export default function ReportClient() {
                   {targetService && <p className="text-sm text-gray-500">{targetService}</p>}
                 </div>
               </div>
-            </div>
+            </SectionCard>
           )}
 
           {targetId && (
             <>
-              <div className="bg-white border border-orange-100 rounded-2xl p-6 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)]">
+              <SectionCard className="p-6 gap-0">
                 <p className="text-lg font-bold text-stone-900">신고 사유<span className="text-red-500 ml-0.5">*</span></p>
                 <div className="flex flex-col gap-2.5 mt-4">
                   {REPORT_REASONS.map((reason) => {
@@ -324,9 +317,9 @@ export default function ReportClient() {
                     );
                   })}
                 </div>
-              </div>
+              </SectionCard>
 
-              <div className="bg-white border border-orange-100 rounded-2xl p-6 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)]">
+              <SectionCard className="p-6 gap-0">
                 <p className="text-lg font-bold text-stone-900">상세 내용<span className="text-red-500 ml-0.5">*</span></p>
                 <p className="text-sm text-gray-500 mt-1">최소 10자 이상 작성해주세요</p>
                 <textarea
@@ -338,9 +331,9 @@ export default function ReportClient() {
                 <div className="flex justify-end mt-1">
                   <span className="text-xs text-gray-500">{content.length} / 1000</span>
                 </div>
-              </div>
+              </SectionCard>
 
-              <div className="bg-white border border-orange-100 rounded-2xl p-6 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)]">
+              <SectionCard className="p-6 gap-0">
                 <div className="flex items-center gap-2">
                   <p className="text-lg font-bold text-stone-900">증거 자료 첨부</p>
                   <span className="text-xs px-2 py-0.5 bg-orange-50 border border-orange-100 rounded-full text-gray-500">선택</span>
@@ -389,7 +382,7 @@ export default function ReportClient() {
                   className="hidden"
                   onChange={handleImageChange}
                 />
-              </div>
+              </SectionCard>
 
               {submitError && (
                 <p className="text-sm text-red-500 text-center">{submitError}</p>

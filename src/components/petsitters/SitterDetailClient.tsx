@@ -28,9 +28,21 @@ const SERVICE_TYPE_LABEL: Record<string, string> = {
 const TABS = ["소개", "서비스", "후기", "위치"] as const;
 type Tab = (typeof TABS)[number];
 
-export default function SitterDetailClient({ sitterId }: { sitterId: string }) {
+export default function SitterDetailClient({
+  sitterId,
+  from,
+  roomId,
+}: {
+  sitterId: string;
+  from?: string;
+  roomId?: string;
+}) {
   const [activeTab, setActiveTab] = useState<Tab>("소개");
   const currentUserId = useUserStore((s) => s.user?.id ?? null);
+
+  const isFromChat = from === "chat" && !!roomId;
+  const backHref = isFromChat ? `/chat?roomId=${roomId}` : "/petsitters";
+  const backLabel = isFromChat ? "채팅으로" : "목록으로";
 
   const { data: sitter, isLoading, isError } = useSitterDetail(sitterId);
   const { data: reviews = [] } = useSitterReviews(sitterId);
@@ -69,8 +81,8 @@ export default function SitterDetailClient({ sitterId }: { sitterId: string }) {
       return (
         <div className="flex flex-col items-center justify-center py-20 gap-3">
           <p className="text-gray-400 text-sm">펫시터 정보를 찾을 수 없습니다.</p>
-          <Link href="/petsitters" className="text-orange-500 text-sm underline underline-offset-2">
-            목록으로 돌아가기
+          <Link href={backHref} className="text-orange-500 text-sm underline underline-offset-2">
+            {isFromChat ? "채팅으로 돌아가기" : "목록으로 돌아가기"}
           </Link>
         </div>
       );
@@ -105,7 +117,7 @@ export default function SitterDetailClient({ sitterId }: { sitterId: string }) {
 
       <div className="hidden md:block bg-orange-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-10 pt-12">
-          <BackButton href="/petsitters" className="mb-6" />
+          <BackButton href={backHref} label={backLabel} className="mb-6" />
         </div>
       </div>
 
@@ -127,8 +139,8 @@ export default function SitterDetailClient({ sitterId }: { sitterId: string }) {
                 }
               >
                 <Link
-                  href="/petsitters"
-                  aria-label="펫시터 목록으로 돌아가기"
+                  href={backHref}
+                  aria-label={isFromChat ? "채팅으로 돌아가기" : "펫시터 목록으로 돌아가기"}
                   className="absolute top-4 left-4 w-9 h-9 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm"
                 >
                   <ChevronLeft size={20} className="text-stone-900" aria-hidden="true" />

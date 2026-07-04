@@ -13,6 +13,8 @@ import {
   ChevronRight,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
+import { MobileBackButton, DesktopBackButton } from "@/components/common/BackButton";
+import SectionCard from "@/components/common/SectionCard";
 import Avatar from "@/components/ui/Avatar";
 import { CustomModal } from "@/components/common/CustomModal";
 import {
@@ -139,7 +141,7 @@ function BookingCard({
   }
 
   return (
-    <div className="bg-white border border-orange-100 rounded-2xl overflow-hidden shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)]">
+    <SectionCard className="overflow-hidden p-0 gap-0">
       <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-orange-100">
         <div className="flex items-center gap-2">
           <span
@@ -329,7 +331,7 @@ function BookingCard({
           </>
         )}
       </div>
-    </div>
+    </SectionCard>
   );
 }
 
@@ -345,7 +347,7 @@ function ApplicationCard({
     APPLICATION_STATUS_CONFIG.pending;
 
   return (
-    <div className="bg-white border border-orange-100 rounded-2xl overflow-hidden shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)]">
+    <SectionCard className="overflow-hidden p-0 gap-0">
       <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-orange-100">
         <span
           className="text-xs font-semibold px-3 py-1 rounded-full border"
@@ -399,7 +401,7 @@ function ApplicationCard({
           </button>
         </div>
       )}
-    </div>
+    </SectionCard>
   );
 }
 
@@ -431,7 +433,6 @@ export default function BookingHistoryClient({
   initialSitterApplications?: Application[];
   initialIsSitter?: boolean;
 }) {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useUserStore();
   const isSitter = user ? user.role === "both" || user.role === "admin" : (initialIsSitter ?? false);
@@ -569,21 +570,14 @@ export default function BookingHistoryClient({
 
       <div className="md:hidden sticky top-16 z-50 bg-white border-b border-orange-100">
         <div className="h-14 px-5 flex items-center gap-3">
-          <button onClick={() => router.back()} className="p-1 -ml-1">
-            <ChevronLeft size={24} className="text-stone-900" />
-          </button>
+          <MobileBackButton />
           <span className="flex-1 font-semibold text-stone-900">예약 내역</span>
         </div>
       </div>
 
-      <div className="w-full max-w-[1200px] mx-auto px-4 md:px-6 pt-6 md:pt-12 pb-10 md:pb-20">
+      <main className="w-full max-w-[1200px] mx-auto px-4 md:px-6 pt-6 md:pt-12 pb-10 md:pb-20">
         <div className="hidden md:flex items-center gap-4 mb-8">
-          <button
-            onClick={() => router.back()}
-            className="w-10 h-10 rounded-xl border border-orange-100 flex items-center justify-center hover:bg-orange-50 transition-colors shrink-0"
-          >
-            <ChevronLeft size={20} className="text-stone-900" />
-          </button>
+          <DesktopBackButton />
           <div>
             <h2 className="text-2xl font-bold text-stone-900">예약 내역</h2>
             <p className="text-sm text-gray-500 mt-1">
@@ -683,10 +677,11 @@ export default function BookingHistoryClient({
         )}
 
         {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2">
+          <nav aria-label="페이지네이션" className="flex items-center justify-center gap-2">
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
+              aria-label="이전 페이지"
               className="w-9 h-9 rounded-xl border border-orange-100 flex items-center justify-center text-gray-500 hover:border-orange-300 disabled:opacity-40 transition-colors"
             >
               <ChevronLeft size={16} />
@@ -695,6 +690,8 @@ export default function BookingHistoryClient({
               <button
                 key={p}
                 onClick={() => setPage(p)}
+                aria-label={`${p}페이지로 이동`}
+                aria-current={page === p ? "page" : undefined}
                 className={`w-9 h-9 rounded-xl text-sm font-medium transition-all ${
                   page === p
                     ? "bg-[var(--color-orange-500)] text-white"
@@ -707,13 +704,14 @@ export default function BookingHistoryClient({
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
+              aria-label="다음 페이지"
               className="w-9 h-9 rounded-xl border border-orange-100 flex items-center justify-center text-gray-500 hover:border-orange-300 disabled:opacity-40 transition-colors"
             >
               <ChevronRight size={16} />
             </button>
-          </div>
+          </nav>
         )}
-      </div>
+      </main>
 
       <CustomModal
         open={cancelingId !== null}

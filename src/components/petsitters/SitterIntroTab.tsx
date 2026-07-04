@@ -1,8 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import type { SitterDetail } from "@/hooks/queries/useSitterDetail";
+import { ImageLightbox } from "@/components/common/ImageGallery";
 
 export default function SitterIntroTab({ sitter }: { sitter: SitterDetail }) {
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
   return (
     <div className="flex flex-col gap-4">
       <div className="bg-white rounded-2xl shadow-[0px_2px_12px_rgba(232,116,42,0.10)] border border-orange-100 p-6">
@@ -26,16 +30,28 @@ export default function SitterIntroTab({ sitter }: { sitter: SitterDetail }) {
         ) : (
           <div className="grid grid-cols-3 gap-3">
             {sitter.activity_photo_urls.map((url, idx) => (
-              <img
+              <button
                 key={idx}
-                src={url}
-                alt={`활동 사진 ${idx + 1}`}
-                className="aspect-square rounded-lg object-cover w-full"
-              />
+                onClick={() => setLightboxIndex(idx)}
+                className="focus:outline-none"
+              >
+                <img
+                  src={url}
+                  alt={`활동 사진 ${idx + 1}`}
+                  className="aspect-square rounded-lg object-cover w-full hover:opacity-90 transition-opacity"
+                />
+              </button>
             ))}
           </div>
         )}
       </div>
+
+      <ImageLightbox
+        urls={sitter.activity_photo_urls}
+        index={lightboxIndex}
+        onClose={() => setLightboxIndex(null)}
+        onIndexChange={setLightboxIndex}
+      />
     </div>
   );
 }

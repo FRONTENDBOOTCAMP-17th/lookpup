@@ -5,6 +5,8 @@ import { Mail, Phone, MapPin, Calendar, ChevronLeft, Building2, Check, X, Pencil
 import { useRouter, useSearchParams } from "next/navigation";
 import Script from "next/script";
 import Header from "@/components/layout/Header";
+import { MobileBackButton, DesktopBackButton } from "@/components/common/BackButton";
+import SectionCard from "@/components/common/SectionCard";
 import { AvatarWithCamera } from "@/components/ui/Avatar";
 import { Switch } from "@/components/ui/switch";
 import { CustomModal } from "@/components/common/CustomModal";
@@ -288,7 +290,7 @@ export default function SettingsClient({
   };
 
   return (
-    <div className="min-h-screen bg-[#FFF8F3]">
+    <div className="min-h-screen bg-orange-50">
       <Header />
 
       <Script
@@ -297,41 +299,34 @@ export default function SettingsClient({
         onLoad={() => window.kakao.maps.load(() => {})}
       />
 
-      <div className="md:hidden sticky top-16 z-50 bg-white border-b border-[#FFE9D6]">
+      <div className="md:hidden sticky top-16 z-50 bg-white border-b border-orange-100">
         <div className="h-14 px-5 flex items-center gap-3">
-          <button onClick={() => router.back()} className="p-1 -ml-1">
-            <ChevronLeft size={24} className="text-[#281A0E]" />
-          </button>
-          <span className="flex-1 font-semibold text-[#281A0E]">프로필 설정</span>
+          <MobileBackButton />
+          <span className="flex-1 font-semibold text-stone-900">프로필 설정</span>
         </div>
       </div>
 
       <div className="w-full max-w-[1200px] mx-auto px-4 md:px-6 pt-6 md:pt-12 pb-10 md:pb-20">
         <div className="hidden md:flex items-center gap-4 mb-8">
-          <button
-            onClick={() => router.back()}
-            className="w-10 h-10 rounded-xl border border-[#FFE9D6] flex items-center justify-center hover:bg-[#FFF8F3] transition-colors shrink-0"
-          >
-            <ChevronLeft size={20} className="text-[#281A0E]" />
-          </button>
+          <DesktopBackButton />
           <div>
-            <h2 className="text-2xl font-bold text-[#281A0E]">프로필 설정</h2>
-            <p className="text-sm text-[#6B7280] mt-1">계정 정보 및 설정을 관리하세요</p>
+            <h2 className="text-2xl font-bold text-stone-900">프로필 설정</h2>
+            <p className="text-sm text-gray-500 mt-1">계정 정보 및 설정을 관리하세요</p>
           </div>
         </div>
 
         <div className="flex flex-col gap-6 lg:flex-row lg:gap-8 lg:items-start">
-          <aside className="bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-[#FFE9D6] p-5 w-full lg:w-72 lg:shrink-0">
+          <aside className="bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100 p-5 w-full lg:w-72 lg:shrink-0">
             <div className="flex flex-col items-center">
               <AvatarWithCamera
                 initial={user?.fullName?.[0] ?? ""}
                 src={user?.profileImage}
                 className="mb-4"
               />
-              <p className="text-[#281A0E] text-xl font-bold">{user?.fullName ?? ""}</p>
-              <p className="mt-1 mb-3 text-[#6B7280] text-sm">{user?.email ?? ""}</p>
+              <p className="text-stone-900 text-xl font-bold">{user?.fullName ?? ""}</p>
+              <p className="mt-1 mb-3 text-gray-500 text-sm">{user?.email ?? ""}</p>
               <span
-                className={`px-3 py-1 rounded-md text-white text-xs font-medium ${user?.isVerified ? "bg-[var(--color-orange-500)]" : "bg-[#9CA3AF]"}`}
+                className={`px-3 py-1 rounded-md text-white text-xs font-medium ${user?.isVerified ? "bg-[var(--color-orange-500)]" : "bg-gray-400"}`}
               >
                 {user?.isVerified ? "본인인증 완료" : "본인인증 미완료"}
               </span>
@@ -341,7 +336,7 @@ export default function SettingsClient({
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`w-full h-12 rounded-xl text-left px-4 text-base font-medium transition-all ${activeTab === tab.id ? "bg-[var(--color-orange-500)] text-white" : "bg-[#FFF8F3] text-[#6B7280] hover:bg-[#FFF0E8]"}`}
+                  className={`w-full h-12 rounded-xl text-left px-4 text-base font-medium transition-all ${activeTab === tab.id ? "bg-[var(--color-orange-500)] text-white" : "bg-orange-50 text-gray-500 hover:bg-orange-100"}`}
                 >
                   {tab.label}
                 </button>
@@ -351,62 +346,62 @@ export default function SettingsClient({
 
           <div className="flex-1 flex flex-col gap-6">
             {activeTab === "profile" && (
-              <div className="bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-[#FFE9D6] p-5">
-                <h2 className="text-[#281A0E] text-xl font-bold mb-6">기본 정보</h2>
+              <SectionCard className="gap-0">
+                <h2 className="text-stone-900 text-xl font-bold mb-6">기본 정보</h2>
                 <div className="flex flex-col gap-6">
                   <div className="flex flex-col gap-2">
-                    <p className="text-[#281A0E] text-sm font-medium">이름</p>
+                    <p className="text-stone-900 text-sm font-medium">이름</p>
                     <input
                       value={fullName}
                       disabled
-                      className="w-full h-12 rounded-xl border border-[#FFE9D6] flex items-center px-4 text-[#6B7280] text-base bg-[#F9FAFB] cursor-not-allowed"
+                      className="w-full h-12 rounded-xl border border-orange-100 flex items-center px-4 text-gray-500 text-base bg-gray-50 cursor-not-allowed"
                     />
                   </div>
                   <div className="flex flex-col gap-2">
-                    <p className="text-[#281A0E] text-sm font-medium">이메일</p>
+                    <p className="text-stone-900 text-sm font-medium">이메일</p>
                     <div className="relative">
-                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-[#6B7280]" />
-                      <div className="w-full h-12 rounded-xl border border-[#FFE9D6] flex items-center pl-12 pr-4 text-[#6B7280] text-base">
+                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-gray-500" />
+                      <div className="w-full h-12 rounded-xl border border-orange-100 flex items-center pl-12 pr-4 text-gray-500 text-base">
                         {user?.email ?? ""}
                       </div>
                     </div>
                   </div>
                   <div className="flex flex-col gap-2">
-                    <p className="text-[#281A0E] text-sm font-medium">휴대폰 번호</p>
+                    <p className="text-stone-900 text-sm font-medium">휴대폰 번호</p>
                     <div className="relative">
-                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-[#6B7280]" />
+                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-gray-500" />
                       <input
                         value={phoneNumber}
                         disabled
-                        className="w-full h-12 rounded-xl border border-[#FFE9D6] flex items-center pl-12 pr-4 text-[#6B7280] text-base bg-[#F9FAFB] cursor-not-allowed"
+                        className="w-full h-12 rounded-xl border border-orange-100 flex items-center pl-12 pr-4 text-gray-500 text-base bg-gray-50 cursor-not-allowed"
                       />
                     </div>
                   </div>
                   <div className="flex flex-col gap-2">
-                    <p className="text-[#281A0E] text-sm font-medium">주소</p>
+                    <p className="text-stone-900 text-sm font-medium">주소</p>
                     <div className="relative">
-                      <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-[#6B7280]" />
+                      <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-gray-500" />
                       <input
                         value={addressQuery}
                         disabled
                         placeholder="도로명 또는 지번 주소 검색"
-                        className="w-full h-12 rounded-xl border border-[#FFE9D6] flex items-center pl-12 pr-4 text-[#6B7280] text-base bg-[#F9FAFB] cursor-not-allowed"
+                        className="w-full h-12 rounded-xl border border-orange-100 flex items-center pl-12 pr-4 text-gray-500 text-base bg-gray-50 cursor-not-allowed"
                       />
                       {false && showAddressSuggestions && addressSuggestions.length > 0 && (
-                        <ul className="absolute left-0 right-0 top-[calc(100%+4px)] z-20 max-h-52 overflow-y-auto bg-white border border-[#FFE9D6] rounded-xl shadow-lg py-1">
+                        <ul className="absolute left-0 right-0 top-[calc(100%+4px)] z-20 max-h-52 overflow-y-auto bg-white border border-orange-100 rounded-xl shadow-lg py-1">
                           {addressSuggestions.map((s, i) => (
                             <li key={`${s.addressName}-${i}`}>
                               <button
                                 type="button"
                                 onMouseDown={(e) => e.preventDefault()}
                                 onClick={() => handleSelectAddress(s)}
-                                className="w-full px-4 py-2.5 text-left hover:bg-[#FFF0E8] transition-colors"
+                                className="w-full px-4 py-2.5 text-left hover:bg-orange-50 transition-colors"
                               >
-                                <span className="block text-sm font-medium text-[#281A0E]">
+                                <span className="block text-sm font-medium text-stone-900">
                                   {s.roadAddress ?? s.addressName}
                                 </span>
                                 {s.jibunAddress && s.roadAddress && (
-                                  <span className="block text-xs text-[#9CA3AF] mt-0.5">
+                                  <span className="block text-xs text-gray-400 mt-0.5">
                                     {s.jibunAddress}
                                   </span>
                                 )}
@@ -417,45 +412,45 @@ export default function SettingsClient({
                       )}
                     </div>
                     {pendingAddress ? (
-                      <p className="text-xs text-[#6B7280] px-1">
+                      <p className="text-xs text-gray-500 px-1">
                         선택됨: {pendingAddress.dong} · 저장하기를 눌러야 반영돼요.
                       </p>
                     ) : (
                       savedAddress && (
-                        <p className="text-xs text-[#9CA3AF] px-1">
+                        <p className="text-xs text-gray-400 px-1">
                           현재 등록된 위치: {savedAddress.dong}
                         </p>
                       )
                     )}
                   </div>
                   <div className="flex flex-col gap-2">
-                    <p className="text-[#281A0E] text-sm font-medium">생년월일</p>
+                    <p className="text-stone-900 text-sm font-medium">생년월일</p>
                     <div className="relative">
-                      <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-[#6B7280]" />
+                      <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-gray-500" />
                       <input
                         type="date"
                         value={birthdate}
                         disabled
-                        className="w-full h-12 rounded-xl border border-[#FFE9D6] pl-12 pr-4 text-[#6B7280] text-base bg-[#F9FAFB] cursor-not-allowed"
+                        className="w-full h-12 rounded-xl border border-orange-100 pl-12 pr-4 text-gray-500 text-base bg-gray-50 cursor-not-allowed"
                       />
                     </div>
                   </div>
                 </div>
-              </div>
+              </SectionCard>
             )}
 
             {activeTab === "notifications" && (
-              <div className="bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-[#FFE9D6] p-5">
-                <h2 className="text-[#281A0E] text-xl font-bold mb-6">알림 설정</h2>
+              <SectionCard className="gap-0">
+                <h2 className="text-stone-900 text-xl font-bold mb-6">알림 설정</h2>
                 <div className="flex flex-col gap-4">
                   {NOTIFICATION_ITEMS.map((item) => (
                     <div
                       key={item.id}
-                      className="w-full p-4 bg-[#FFF8F3] rounded-xl flex justify-between items-center gap-4"
+                      className="w-full p-4 bg-orange-50 rounded-xl flex justify-between items-center gap-4"
                     >
                       <div className="flex flex-col gap-1">
-                        <p className="text-[#281A0E] text-base font-semibold">{item.label}</p>
-                        <p className="text-[#6B7280] text-sm">{item.description}</p>
+                        <p className="text-stone-900 text-base font-semibold">{item.label}</p>
+                        <p className="text-gray-500 text-sm">{item.description}</p>
                       </div>
                       <Switch
                         checked={notificationPrefs[item.id]}
@@ -464,19 +459,19 @@ export default function SettingsClient({
                     </div>
                   ))}
                 </div>
-              </div>
+              </SectionCard>
             )}
 
             {activeTab === "bank" && (
-              <div className="bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-[#FFE9D6] p-5">
+              <SectionCard className="gap-0">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-[#FFF8F3] flex items-center justify-center shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center shrink-0">
                       <Building2 size={20} className="text-[var(--color-orange-500)]" />
                     </div>
                     <div>
-                      <h2 className="text-[#281A0E] text-xl font-bold">정산 계좌</h2>
-                      <p className="text-xs text-[#6B7280] mt-0.5">수익 정산에 사용할 계좌를 등록해주세요</p>
+                      <h2 className="text-stone-900 text-xl font-bold">정산 계좌</h2>
+                      <p className="text-xs text-gray-500 mt-0.5">수익 정산에 사용할 계좌를 등록해주세요</p>
                     </div>
                   </div>
                   {!bankLoading && bankAccount && !isEditingBank && (
@@ -491,15 +486,15 @@ export default function SettingsClient({
                 </div>
 
                 {bankLoading ? (
-                  <div className="py-8 text-center text-[#6B7280] text-sm">불러오는 중...</div>
+                  <div className="py-8 text-center text-gray-500 text-sm">불러오는 중...</div>
                 ) : isEditingBank ? (
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-[#281A0E] mb-1.5">은행 선택</label>
+                      <label className="block text-sm font-medium text-stone-900 mb-1.5">은행 선택</label>
                       <select
                         value={bankForm.bank_name}
                         onChange={(e) => setBankForm((f) => ({ ...f, bank_name: e.target.value }))}
-                        className="w-full h-11 px-3 rounded-xl border border-[#FFE9D6] bg-white text-[#281A0E] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-orange-500)] focus:border-transparent"
+                        className="w-full h-11 px-3 rounded-xl border border-orange-100 bg-white text-stone-900 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-orange-500)] focus:border-transparent"
                       >
                         <option value="">은행을 선택해주세요</option>
                         {BANK_LIST.map((b) => (
@@ -508,24 +503,24 @@ export default function SettingsClient({
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-[#281A0E] mb-1.5">계좌번호</label>
+                      <label className="block text-sm font-medium text-stone-900 mb-1.5">계좌번호</label>
                       <input
                         type="text"
                         inputMode="numeric"
                         placeholder="- 없이 숫자만 입력"
                         value={bankForm.account_number}
                         onChange={(e) => setBankForm((f) => ({ ...f, account_number: e.target.value.replace(/\D/g, "") }))}
-                        className="w-full h-11 px-3 rounded-xl border border-[#FFE9D6] bg-white text-[#281A0E] text-sm placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[var(--color-orange-500)] focus:border-transparent"
+                        className="w-full h-11 px-3 rounded-xl border border-orange-100 bg-white text-stone-900 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--color-orange-500)] focus:border-transparent"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-[#281A0E] mb-1.5">예금주</label>
+                      <label className="block text-sm font-medium text-stone-900 mb-1.5">예금주</label>
                       <input
                         type="text"
                         placeholder="예금주명 입력"
                         value={bankForm.account_holder}
                         onChange={(e) => setBankForm((f) => ({ ...f, account_holder: e.target.value }))}
-                        className="w-full h-11 px-3 rounded-xl border border-[#FFE9D6] bg-white text-[#281A0E] text-sm placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[var(--color-orange-500)] focus:border-transparent"
+                        className="w-full h-11 px-3 rounded-xl border border-orange-100 bg-white text-stone-900 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--color-orange-500)] focus:border-transparent"
                       />
                     </div>
                     {bankError && <p className="text-sm text-red-500">{bankError}</p>}
@@ -533,7 +528,7 @@ export default function SettingsClient({
                       {bankAccount && (
                         <button
                           onClick={() => { setIsEditingBank(false); setBankError(""); }}
-                          className="flex items-center gap-1.5 h-11 px-5 rounded-xl border border-[#FFE9D6] text-sm font-medium text-[#6B7280] hover:bg-[#FFF8F3] transition-colors"
+                          className="flex items-center gap-1.5 h-11 px-5 rounded-xl border border-orange-100 text-sm font-medium text-gray-500 hover:bg-orange-50 transition-colors"
                         >
                           <X size={15} />
                           취소
@@ -551,21 +546,21 @@ export default function SettingsClient({
                   </div>
                 ) : bankAccount ? (
                   <div className="grid sm:grid-cols-3 gap-4">
-                    <div className="p-4 bg-[#FFF8F3] rounded-xl">
-                      <p className="text-xs text-[#6B7280] mb-1">은행</p>
-                      <p className="font-semibold text-[#281A0E]">{bankAccount.bank_name}</p>
+                    <div className="p-4 bg-orange-50 rounded-xl">
+                      <p className="text-xs text-gray-500 mb-1">은행</p>
+                      <p className="font-semibold text-stone-900">{bankAccount.bank_name}</p>
                     </div>
-                    <div className="p-4 bg-[#FFF8F3] rounded-xl">
-                      <p className="text-xs text-[#6B7280] mb-1">계좌번호</p>
-                      <p className="font-semibold text-[#281A0E]">{bankAccount.account_number}</p>
+                    <div className="p-4 bg-orange-50 rounded-xl">
+                      <p className="text-xs text-gray-500 mb-1">계좌번호</p>
+                      <p className="font-semibold text-stone-900">{bankAccount.account_number}</p>
                     </div>
-                    <div className="p-4 bg-[#FFF8F3] rounded-xl">
-                      <p className="text-xs text-[#6B7280] mb-1">예금주</p>
-                      <p className="font-semibold text-[#281A0E]">{bankAccount.account_holder}</p>
+                    <div className="p-4 bg-orange-50 rounded-xl">
+                      <p className="text-xs text-gray-500 mb-1">예금주</p>
+                      <p className="font-semibold text-stone-900">{bankAccount.account_holder}</p>
                     </div>
                   </div>
                 ) : null}
-              </div>
+              </SectionCard>
             )}
           </div>
         </div>

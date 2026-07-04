@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import SectionCard from "@/components/common/SectionCard";
 import Avatar from "@/components/ui/Avatar";
 import SitterProfileCard from "@/components/sitter/SitterProfileCard";
 import KakaoMap from "@/components/KakaoMap";
@@ -15,6 +16,7 @@ import StatGrid from "@/components/ui/StatGrid";
 import { useUserStore, type SitterData } from "@/store/userStore";
 import { getSitterServices } from "@/app/actions/sitters";
 import { useSitterReviews } from "@/hooks/queries/useSitterReviews";
+import { ImageGallery, ImageLightbox } from "@/components/common/ImageGallery";
 
 const TABS = ["소개", "서비스", "후기", "위치"] as const;
 type Tab = (typeof TABS)[number];
@@ -40,6 +42,7 @@ export default function SitterProfilePreviewClient({
   const [serviceDetails, setServiceDetails] = useState<ServiceDetail[]>(
     initialServiceDetails ?? [],
   );
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const { data: reviews = [] } = useSitterReviews(sitter?.id ?? "");
 
   useEffect(() => {
@@ -69,39 +72,56 @@ export default function SitterProfilePreviewClient({
     <>
       {activeTab === "소개" && (
         <div className="flex flex-col gap-4">
-          <div className="bg-white rounded-2xl shadow-[0px_2px_12px_rgba(232,116,42,0.10)] border border-orange-100 p-6">
+          <SectionCard className="p-6 gap-0">
             <h3 className="font-bold text-stone-900 mb-4">소개</h3>
             <p className="text-gray-500 text-sm leading-relaxed whitespace-pre-line">
               {sitter.introduction ?? "소개글이 없습니다."}
             </p>
-          </div>
+          </SectionCard>
 
-          <div className="bg-white rounded-2xl shadow-[0px_2px_12px_rgba(232,116,42,0.10)] border border-orange-100 p-6">
+          <SectionCard className="p-6 gap-0">
             <h3 className="font-bold text-stone-900 mb-4">경력</h3>
             <p className="text-gray-500 text-sm leading-relaxed whitespace-pre-line">
               {sitter.career ?? "등록된 경력 정보가 없습니다."}
             </p>
-          </div>
+          </SectionCard>
 
-          <div className="bg-white rounded-2xl shadow-[0px_2px_12px_rgba(232,116,42,0.10)] border border-orange-100 p-6">
+          <SectionCard className="p-6 gap-0">
             <h3 className="font-bold text-stone-900 mb-4">사진</h3>
             {sitter.activityPhotoUrls.length > 0 ? (
               <div className="grid grid-cols-3 gap-3">
                 {sitter.activityPhotoUrls.map((url, idx) => (
-                  <div key={idx} className="relative aspect-square rounded-lg overflow-hidden">
-                    <Image src={url} alt={`사진 ${idx + 1}`} fill className="object-cover" sizes="200px" />
-                  </div>
+                  <button
+                    key={idx}
+                    onClick={() => setLightboxIndex(idx)}
+                    className="relative aspect-square rounded-lg overflow-hidden focus:outline-none"
+                  >
+                    <Image
+                      src={url}
+                      alt={`사진 ${idx + 1}`}
+                      fill
+                      className="object-cover hover:opacity-90 transition-opacity"
+                      sizes="200px"
+                    />
+                  </button>
                 ))}
               </div>
             ) : (
               <p className="text-gray-400 text-sm">등록된 사진이 없습니다.</p>
             )}
-          </div>
+          </SectionCard>
+
+          <ImageLightbox
+            urls={sitter.activityPhotoUrls}
+            index={lightboxIndex}
+            onClose={() => setLightboxIndex(null)}
+            onIndexChange={setLightboxIndex}
+          />
         </div>
       )}
 
       {activeTab === "서비스" && (
-        <div className="bg-white rounded-2xl shadow-[0px_2px_12px_rgba(232,116,42,0.10)] border border-orange-100 p-6">
+        <SectionCard className="p-6 gap-0">
           <h3 className="font-bold text-stone-900 mb-4">제공 서비스 및 가격</h3>
           {serviceDetails.length > 0 ? (
             <div className="flex flex-col gap-3">
@@ -120,12 +140,12 @@ export default function SitterProfilePreviewClient({
           ) : (
             <p className="text-sm text-gray-400">등록된 서비스가 없습니다.</p>
           )}
-        </div>
+        </SectionCard>
       )}
 
       {activeTab === "후기" && (
         <div className="flex flex-col gap-4">
-          <div className="bg-white rounded-2xl shadow-[0px_2px_12px_rgba(232,116,42,0.10)] border border-orange-100 p-6">
+          <SectionCard className="p-6 gap-0">
             <div className="flex items-center gap-8">
               <div className="text-center">
                 <p className="text-5xl font-bold text-orange-500 mb-1">
@@ -158,7 +178,7 @@ export default function SitterProfilePreviewClient({
                 ))}
               </div>
             </div>
-          </div>
+          </SectionCard>
           {reviews.length === 0 ? (
             <div className="flex items-center justify-center py-10 text-gray-400 text-sm">
               아직 후기가 없습니다.
@@ -166,10 +186,7 @@ export default function SitterProfilePreviewClient({
           ) : (
             <div className="flex flex-col gap-3">
               {reviews.map((rv) => (
-                <div
-                  key={rv.id}
-                  className="bg-white rounded-2xl shadow-[0px_2px_12px_rgba(232,116,42,0.10)] border border-orange-100 p-5"
-                >
+                <SectionCard key={rv.id} className="p-5 gap-0">
                   <div className="flex items-center gap-3 mb-3">
                     {rv.owner?.profile_image ? (
                       <img
@@ -198,15 +215,8 @@ export default function SitterProfilePreviewClient({
                     {rv.content}
                   </p>
                   {rv.image_urls && rv.image_urls.length > 0 && (
-                    <div className="flex gap-2 mt-3 overflow-x-auto">
-                      {rv.image_urls.map((url, idx) => (
-                        <img
-                          key={idx}
-                          src={url}
-                          alt={`후기 사진 ${idx + 1}`}
-                          className="w-20 h-20 rounded-lg object-cover shrink-0"
-                        />
-                      ))}
+                    <div className="mt-3">
+                      <ImageGallery urls={rv.image_urls} />
                     </div>
                   )}
                   {rv.tags.length > 0 && (
@@ -221,7 +231,7 @@ export default function SitterProfilePreviewClient({
                       ))}
                     </div>
                   )}
-                </div>
+                </SectionCard>
               ))}
             </div>
           )}
@@ -229,7 +239,7 @@ export default function SitterProfilePreviewClient({
       )}
 
       {activeTab === "위치" && (
-        <div className="bg-white rounded-2xl shadow-[0px_2px_12px_rgba(232,116,42,0.10)] border border-orange-100 p-5">
+        <SectionCard className="p-5 gap-0">
           <h3 className="text-stone-900 text-lg font-semibold mb-4">활동 지역</h3>
           {sitter.latitude && sitter.longitude ? (
             <div className="h-100 rounded-xl overflow-hidden">
@@ -246,7 +256,7 @@ export default function SitterProfilePreviewClient({
             <MapPin size={14} className="text-orange-500 shrink-0" />
             {sitter.displayArea ?? sitter.availableArea}
           </p>
-        </div>
+        </SectionCard>
       )}
     </>
   );
@@ -310,7 +320,7 @@ export default function SitterProfilePreviewClient({
           </div>
 
           <div className="flex gap-8 items-start">
-            <div className="w-85.25 shrink-0 bg-white rounded-2xl shadow-[0px_2px_12px_rgba(232,116,42,0.10)] border border-orange-100 p-5 flex flex-col items-center">
+            <SectionCard className="w-85.25 shrink-0 items-center gap-0">
               <div className="relative w-full aspect-square rounded-xl overflow-hidden mb-4 bg-linear-to-br from-gray-100 to-gray-200">
                 {user.profileImage && (
                   <Image src={user.profileImage} alt={user.fullName} fill className="object-cover" sizes="342px" />
@@ -351,7 +361,7 @@ export default function SitterProfilePreviewClient({
               <div className="w-full h-13 bg-orange-500 text-white text-base font-semibold rounded-[10px] flex items-center justify-center">
                 예약하기
               </div>
-            </div>
+            </SectionCard>
 
             <div className="flex-1 min-w-0">
               <div className="border-b border-orange-100 flex gap-8 mb-6">

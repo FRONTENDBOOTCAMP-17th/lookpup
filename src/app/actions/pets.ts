@@ -22,34 +22,6 @@ async function getAuthUser() {
   return user;
 }
 
-export async function uploadPetPhoto(formData: FormData) {
-  const user = await getAuthUser();
-
-  if (!user) {
-    return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
-  }
-
-  const file = formData.get("file") as File | null;
-
-  if (!file || file.size === 0) {
-    return { error: { code: "VALIDATION_ERROR", message: "파일이 없습니다." } };
-  }
-
-  const db = createServiceClient();
-  const ext = file.name.split(".").pop();
-  const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
-
-  const { error } = await db.storage.from("pet-photos").upload(path, file);
-
-  if (error) {
-    return { error: { code: "INTERNAL_ERROR", message: error.message } };
-  }
-
-  const { data } = db.storage.from("pet-photos").getPublicUrl(path);
-
-  return { data: { url: data.publicUrl } };
-}
-
 export async function createPet(input: PetInput) {
   const user = await getAuthUser();
 
@@ -188,13 +160,23 @@ export async function deletePet(id: string) {
     };
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: activeReservations } = await (db as any)
-    .from("reservations")
-    .select("id")
-    .eq("pet_id", id)
-    .in("status", ["paid", "in_progress"])
-    .limit(1);
+  const { data: petReservationLinks } = await db
+    .from("reservation_items")
+    .select("reservation_id")
+    .eq("pet_id", id);
+
+  const linkedReservationIds = (petReservationLinks ?? []).map(
+    (item) => item.reservation_id,
+  );
+
+  const { data: activeReservations } = linkedReservationIds.length
+    ? await db
+        .from("reservations")
+        .select("id")
+        .in("id", linkedReservationIds)
+        .in("status", ["paid", "in_progress"])
+        .limit(1)
+    : { data: [] };
 
   if (activeReservations && activeReservations.length > 0) {
     return {

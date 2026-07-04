@@ -73,10 +73,16 @@ export function CustomModalPayment({
   const isPaymentType = requestType === "payment";
   const amountNum = Number(amount.replace(/,/g, ""));
   const total = isPaymentType
-    ? (paymentAmount && paymentAmount > 0 ? paymentAmount : null)
-    : (amount && !isNaN(amountNum) && amountNum > 0 ? amountNum : null);
+    ? paymentAmount && paymentAmount > 0
+      ? paymentAmount
+      : null
+    : amount && !isNaN(amountNum) && amountNum > 0
+      ? amountNum
+      : null;
   const displayAmount = isPaymentType
-    ? (paymentAmount ? paymentAmount.toLocaleString("ko-KR") : "")
+    ? paymentAmount
+      ? paymentAmount.toLocaleString("ko-KR")
+      : ""
     : amount;
 
   function handleAmountChange(value: string) {
@@ -85,7 +91,8 @@ export function CustomModalPayment({
   }
 
   async function handleSubmit() {
-    if (!total || (requestType === "extra" && !reason.trim()) || submitting) return;
+    if (!total || (requestType === "extra" && !reason.trim()) || submitting)
+      return;
     setSubmitError(null);
     setSubmitting(true);
     try {
@@ -121,7 +128,7 @@ export function CustomModalPayment({
                 결제 요청
               </p>
               <p className="text-gray-500 text-xs mt-0.5">
-                추가 서비스 또는 예약 연장 비용을 요청합니다
+                보호자에게 결제 또는 추가 비용을 요청합니다.
               </p>
             </div>
           </div>
@@ -136,6 +143,17 @@ export function CustomModalPayment({
 
         {/* 본문 */}
         <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-6">
+          {/* 안내 */}
+          <div className="bg-amber-50 rounded-xl px-4 py-3 text-amber-700 text-xs leading-relaxed">
+            결제가 완료되어야 서비스를 시작할 수 있습니다.
+            <br />
+            결제 비용이 변동되거나 서비스 중 추가 비용이 발생하면 추가금 요청을
+            보내주세요.
+            <br />
+            결제가 끝나면 채팅창에서{" "}
+            <span className="font-semibold">서비스 시작</span>을 꼭 눌러주세요.
+          </div>
+
           {/* 요청 유형 */}
           <div>
             <p className="text-[#281A0E] text-sm font-semibold mb-3">
@@ -144,8 +162,9 @@ export function CustomModalPayment({
             <div className="flex gap-3">
               {REQUEST_TYPES.map(({ value, label, sub }) => {
                 const selected = requestType === value;
-                const blocked =
-                  isAlreadyPaid ? value === "payment" : value === "extra";
+                const blocked = isAlreadyPaid
+                  ? value === "payment"
+                  : value === "extra";
                 return (
                   <button
                     key={value}
@@ -162,7 +181,10 @@ export function CustomModalPayment({
                   >
                     <div
                       className="mt-0.5 shrink-0 w-5 h-5 rounded-full flex items-center justify-center outline-[1.11px] outline-offset-[-1.11px] transition-colors"
-                      style={{ outlineColor: selected && !blocked ? "#f97316" : "#D1D5DB" }}
+                      style={{
+                        outlineColor:
+                          selected && !blocked ? "#f97316" : "#D1D5DB",
+                      }}
                     >
                       {selected && !blocked && (
                         <div className="w-2.5 h-2.5 rounded-full bg-orange-500" />
@@ -192,7 +214,9 @@ export function CustomModalPayment({
                 type="text"
                 inputMode="numeric"
                 value={displayAmount}
-                onChange={(e) => !isPaymentType && handleAmountChange(e.target.value)}
+                onChange={(e) =>
+                  !isPaymentType && handleAmountChange(e.target.value)
+                }
                 readOnly={isPaymentType}
                 placeholder="20,000"
                 className={`w-full h-13.5 pl-4 pr-10 rounded-xl outline outline-orange-200 outline-offset-[-1.11px] text-[15px] text-[#281A0E] placeholder-[rgba(40,26,14,0.50)] transition-colors ${isPaymentType ? "bg-gray-50 cursor-default" : "focus:outline-orange-500"}`}
@@ -202,30 +226,34 @@ export function CustomModalPayment({
               </span>
             </div>
             <p className="text-[#9CA3AF] text-xs mt-1.5">
-              {isPaymentType ? "예약 시 확정된 금액입니다" : "최소 1,000원 · 최대 500,000원"}
+              {isPaymentType
+                ? "예약 시 확정된 금액입니다"
+                : "0원보다 큰 금액을 입력해주세요"}
             </p>
           </div>
 
           {/* 요청 사유 — 추가금 요청 시에만 표시 */}
-          {requestType === "extra" && <div>
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-[#281A0E] text-sm font-semibold">
-                요청 사유<span className="text-red-500">*</span>
-              </p>
-              <span className="text-[#9CA3AF] text-xs">
-                {reason.length} / 300
-              </span>
+          {requestType === "extra" && (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[#281A0E] text-sm font-semibold">
+                  요청 사유<span className="text-red-500">*</span>
+                </p>
+                <span className="text-[#9CA3AF] text-xs">
+                  {reason.length} / 300
+                </span>
+              </div>
+              <textarea
+                value={reason}
+                onChange={(e) => setReason(e.target.value.slice(0, 300))}
+                placeholder={
+                  "추가 비용이 발생한 이유를 작성해주세요.\n예) 산책 시간 연장 30분\n예) 추가 목욕 서비스 제공"
+                }
+                rows={4}
+                className="w-full px-4 py-3.5 rounded-xl outline outline-orange-200 outline-offset-[-1.11px] text-[15px] text-[#281A0E] placeholder-[rgba(40,26,14,0.50)] resize-none focus:outline-orange-500 transition-colors leading-relaxed"
+              />
             </div>
-            <textarea
-              value={reason}
-              onChange={(e) => setReason(e.target.value.slice(0, 300))}
-              placeholder={
-                "추가 비용이 발생한 이유를 작성해주세요.\n예) 산책 시간 연장 30분\n예) 추가 목욕 서비스 제공"
-              }
-              rows={4}
-              className="w-full px-4 py-3.5 rounded-xl outline outline-orange-200 outline-offset-[-1.11px] text-[15px] text-[#281A0E] placeholder-[rgba(40,26,14,0.50)] resize-none focus:outline-orange-500 transition-colors leading-relaxed"
-            />
-          </div>}
+          )}
 
           {/* 총 요청 금액 */}
           <div className="bg-orange-50 rounded-2xl border border-orange-200 px-5 py-5 flex items-center justify-between">
@@ -266,7 +294,12 @@ export function CustomModalPayment({
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={!total || (requestType === "extra" && !reason.trim()) || (isPaymentType && isAlreadyPaid) || submitting}
+            disabled={
+              !total ||
+              (requestType === "extra" && !reason.trim()) ||
+              (isPaymentType && isAlreadyPaid) ||
+              submitting
+            }
             className="flex-1 h-13 rounded-xl bg-orange-500 flex items-center justify-center gap-2 text-white text-[15px] font-semibold hover:bg-orange-600 transition-colors disabled:opacity-40 disabled:cursor-default"
           >
             <CreditCard size={17} className="text-white" />
