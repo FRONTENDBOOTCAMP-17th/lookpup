@@ -3,13 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ChevronLeft,
   AlertTriangle,
   AlertCircle,
   CheckCircle2,
   PawPrint,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
+import { MobileBackButton, DesktopBackButton } from "@/components/common/BackButton";
 import { CustomModal } from "@/components/common/CustomModal";
 import { deleteUser } from "@/app/actions/users";
 import { createClient } from "@/utils/supabase/client";
@@ -26,14 +26,14 @@ const REASONS = [
 function SuccessScreen({ onGoHome }: { onGoHome: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
-      <div className="w-24 h-24 rounded-full bg-[#FFF0E8] flex items-center justify-center mb-6">
+      <div className="w-24 h-24 rounded-full bg-orange-50 flex items-center justify-center mb-6">
         <PawPrint size={40} className="text-[var(--color-orange-500)]" />
       </div>
       <div className="mb-2">
         <CheckCircle2 size={28} className="text-green-500 mx-auto mb-4" />
       </div>
-      <h2 className="text-xl font-bold text-[#281A0E] mb-3">회원 탈퇴가 완료되었습니다</h2>
-      <p className="text-sm text-[#6B7280] leading-relaxed mb-8">
+      <h2 className="text-xl font-bold text-stone-900 mb-3">회원 탈퇴가 완료되었습니다</h2>
+      <p className="text-sm text-gray-500 leading-relaxed mb-8">
         그동안 봐주개를 이용해주셔서 감사합니다.
       </p>
       <button
@@ -90,30 +90,22 @@ export default function WithdrawClient() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FFF8F3]">
+    <div className="min-h-screen bg-orange-50">
       <Header />
 
-      <div className="md:hidden sticky top-16 z-50 bg-white border-b border-[#FFE9D6]">
+      <div className="md:hidden sticky top-16 z-50 bg-white border-b border-orange-100">
         <div className="h-14 px-5 flex items-center gap-3">
-          <button type="button" onClick={() => router.back()} className="p-1 -ml-1">
-            <ChevronLeft size={24} className="text-[#281A0E]" />
-          </button>
-          <span className="flex-1 font-semibold text-[#281A0E]">회원 탈퇴</span>
+          <MobileBackButton />
+          <span className="flex-1 font-semibold text-stone-900">회원 탈퇴</span>
         </div>
       </div>
 
       <main className="max-w-190 mx-auto px-4 md:px-6 pt-4 md:pt-12 pb-20">
         <div className="hidden md:flex items-center gap-3 mb-8">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="w-10 h-10 rounded-xl border border-[#FFE9D6] flex items-center justify-center hover:bg-[#FFF8F3] transition-colors shrink-0"
-          >
-            <ChevronLeft size={20} className="text-[#281A0E]" />
-          </button>
+          <DesktopBackButton />
           <div>
-            <h1 className="text-2xl font-bold text-[#281A0E]">회원 탈퇴</h1>
-            <p className="text-sm text-[#6B7280] mt-1">서비스 이용을 종료하고 계정을 삭제할 수 있어요</p>
+            <h1 className="text-2xl font-bold text-stone-900">회원 탈퇴</h1>
+            <p className="text-sm text-gray-500 mt-1">서비스 이용을 종료하고 계정을 삭제할 수 있어요</p>
           </div>
         </div>
 
@@ -144,12 +136,12 @@ export default function WithdrawClient() {
               </div>
             )}
 
-            <div className="bg-white border border-[#FFE9D6] rounded-2xl p-6">
+            <div className="bg-white border border-orange-100 rounded-2xl p-6">
               <div className="flex items-center gap-3 mb-5">
-                <div className="w-10 h-10 rounded-xl bg-[#FFF0E8] flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center shrink-0">
                   <AlertTriangle size={20} className="text-[var(--color-orange-500)]" />
                 </div>
-                <h3 className="font-semibold text-[#281A0E]">탈퇴 전 확인해주세요</h3>
+                <h3 className="font-semibold text-stone-900">탈퇴 전 확인해주세요</h3>
               </div>
               <ul className="space-y-3">
                 {[
@@ -160,7 +152,7 @@ export default function WithdrawClient() {
                 ].map((text, i) => (
                   <li key={i} className="flex items-start gap-2.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-orange-500)] shrink-0 mt-1.75" />
-                    <span className="text-sm text-[#6B7280] leading-relaxed">{text}</span>
+                    <span className="text-sm text-gray-500 leading-relaxed">{text}</span>
                   </li>
                 ))}
               </ul>
@@ -168,23 +160,23 @@ export default function WithdrawClient() {
 
             {!hasActiveBookings && (
               <>
-                <div className="bg-white border border-[#FFE9D6] rounded-2xl p-6">
-                  <h3 className="font-semibold text-[#281A0E] mb-4">탈퇴 이유를 알려주세요</h3>
+                <div className="bg-white border border-orange-100 rounded-2xl p-6">
+                  <h3 className="font-semibold text-stone-900 mb-4">탈퇴 이유를 알려주세요</h3>
                   <div className="space-y-3">
                     {REASONS.map((r) => (
                       <label
                         key={r.id}
                         className={`flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
                           selectedReason === r.id
-                            ? "border-[var(--color-orange-500)] bg-[#FFF0E8]"
-                            : "border-[#FFE9D6] hover:border-[var(--color-orange-500)]/40"
+                            ? "border-[var(--color-orange-500)] bg-orange-50"
+                            : "border-orange-100 hover:border-[var(--color-orange-500)]/40"
                         }`}
                       >
                         <div
                           className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
                             selectedReason === r.id
                               ? "border-[var(--color-orange-500)] bg-[var(--color-orange-500)]"
-                              : "border-[#D1D5DB]"
+                              : "border-gray-300"
                           }`}
                         >
                           {selectedReason === r.id && <div className="w-2 h-2 rounded-full bg-white" />}
@@ -198,7 +190,7 @@ export default function WithdrawClient() {
                           onChange={() => setSelectedReason(r.id)}
                         />
                         <span
-                          className={`text-sm font-medium ${selectedReason === r.id ? "text-[var(--color-orange-500)]" : "text-[#281A0E]"}`}
+                          className={`text-sm font-medium ${selectedReason === r.id ? "text-[var(--color-orange-500)]" : "text-stone-900"}`}
                         >
                           {r.label}
                         </span>
@@ -213,20 +205,20 @@ export default function WithdrawClient() {
                         onChange={(e) => setOtherText(e.target.value)}
                         placeholder="의견을 자유롭게 입력해주세요"
                         rows={3}
-                        className="w-full px-4 py-3 border border-[#FFE9D6] rounded-xl text-sm text-[#281A0E] placeholder-[#9CA3AF] focus:outline-none focus:border-[var(--color-orange-500)] resize-none transition-colors"
+                        className="w-full px-4 py-3 border border-orange-100 rounded-xl text-sm text-stone-900 placeholder-gray-400 focus:outline-none focus:border-[var(--color-orange-500)] resize-none transition-colors"
                       />
                     </div>
                   )}
                 </div>
 
-                <div className="bg-white border border-[#FFE9D6] rounded-2xl p-6">
+                <div className="bg-white border border-orange-100 rounded-2xl p-6">
                   <label
                     className="flex items-start gap-3 cursor-pointer"
                     onClick={() => setAgreed((a) => !a)}
                   >
                     <div
                       className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all ${
-                        agreed ? "bg-[#EF4444] border-[#EF4444]" : "border-[#D1D5DB]"
+                        agreed ? "bg-[#EF4444] border-[#EF4444]" : "border-gray-300"
                       }`}
                     >
                       {agreed && (
@@ -235,7 +227,7 @@ export default function WithdrawClient() {
                         </svg>
                       )}
                     </div>
-                    <span className="text-sm text-[#281A0E] leading-relaxed">
+                    <span className="text-sm text-stone-900 leading-relaxed">
                       위 내용을 모두 확인했으며 회원 탈퇴에 동의합니다
                     </span>
                   </label>
@@ -249,7 +241,7 @@ export default function WithdrawClient() {
                   <button
                     type="button"
                     onClick={() => router.push("/myprofile")}
-                    className="flex-1 h-12 rounded-xl border border-[#FFE9D6] text-[#6B7280] font-semibold hover:bg-[#FFF8F3] transition-colors"
+                    className="flex-1 h-12 rounded-xl border border-orange-100 text-gray-500 font-semibold hover:bg-orange-50 transition-colors"
                   >
                     취소
                   </button>

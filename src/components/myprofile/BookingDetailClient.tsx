@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   Calendar,
   Clock,
@@ -14,6 +15,8 @@ import {
   ClipboardList,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
+import { MobileBackButton, DesktopBackButton } from "@/components/common/BackButton";
+import SectionCard from "@/components/common/SectionCard";
 import Avatar from "@/components/ui/Avatar";
 import { getReservationById, cancelReservationAndNotify } from "@/app/actions/reservations";
 import { getCareRecordsByReservationId, type CareRecord } from "@/app/actions/care-records";
@@ -113,7 +116,7 @@ function ReviewSection({
   }
 
   return (
-    <div className="bg-white border border-orange-100 rounded-2xl p-6 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)]">
+    <SectionCard className="p-6 gap-0">
       <div className="flex items-center gap-2 mb-4">
         <FileText size={18} className="text-gray-500" />
         <span className="font-semibold text-stone-900">작성한 후기</span>
@@ -124,13 +127,13 @@ function ReviewSection({
         ))}
         <span className="text-sm text-gray-500 ml-1">5.0</span>
       </div>
-    </div>
+    </SectionCard>
   );
 }
 
 function CareRecordTimeline({ records }: { records: CareRecord[] }) {
   return (
-    <div className="bg-white border border-orange-100 rounded-2xl px-6 py-5 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)]">
+    <SectionCard className="px-6 py-5 gap-0">
       <div className="flex items-center gap-2 mb-5">
         <ClipboardList size={18} className="text-orange-500" />
         <h3 className="text-sm font-semibold text-stone-900">돌봄 기록</h3>
@@ -183,7 +186,7 @@ function CareRecordTimeline({ records }: { records: CareRecord[] }) {
           })}
         </Timeline>
       )}
-    </div>
+    </SectionCard>
   );
 }
 
@@ -258,21 +261,14 @@ export default function BookingDetailClient({
 
       <div className="md:hidden sticky top-16 z-50 bg-white border-b border-orange-100">
         <div className="h-14 px-5 flex items-center gap-3">
-          <button onClick={() => router.back()} className="p-1 -ml-1">
-            <ChevronLeft size={24} className="text-stone-900" />
-          </button>
+          <MobileBackButton />
           <span className="flex-1 font-semibold text-stone-900">예약 상세</span>
         </div>
       </div>
 
-      <div className="w-full max-w-180 mx-auto px-4 md:px-6 pt-6 md:pt-12 pb-10 md:pb-20">
+      <main className="w-full max-w-180 mx-auto px-4 md:px-6 pt-6 md:pt-12 pb-10 md:pb-20">
         <div className="hidden md:flex items-center gap-4 mb-8">
-          <button
-            onClick={() => router.back()}
-            className="w-10 h-10 rounded-xl border border-orange-100 flex items-center justify-center hover:bg-orange-50 transition-colors shrink-0"
-          >
-            <ChevronLeft size={20} className="text-stone-900" />
-          </button>
+          <DesktopBackButton />
           <div>
             <h2 className="text-2xl font-bold text-stone-900">예약 상세</h2>
             <p className="text-sm text-gray-500 mt-1">{booking.bookingNo}</p>
@@ -280,7 +276,7 @@ export default function BookingDetailClient({
         </div>
 
         <div className="flex flex-col gap-4">
-          <div className="bg-white border border-orange-100 rounded-2xl px-6 py-5 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)]">
+          <SectionCard className="px-6 py-5 gap-0">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <span
@@ -296,7 +292,10 @@ export default function BookingDetailClient({
                   {status.label}
                 </span>
               </div>
-              <span className="font-bold text-orange-500">{booking.price.toLocaleString()}원</span>
+              <div className="flex flex-col items-end">
+                <span className="text-[11px] text-gray-500">총 결제 금액</span>
+                <span className="font-bold text-orange-500">{booking.price.toLocaleString()}원</span>
+              </div>
             </div>
             <div className="space-y-2">
               <div className="flex items-center gap-3 text-sm text-gray-500">
@@ -312,21 +311,24 @@ export default function BookingDetailClient({
                 <span>{booking.location}</span>
               </div>
             </div>
-          </div>
+          </SectionCard>
 
-          <div className="bg-white border border-orange-100 rounded-2xl px-6 py-5 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)]">
+          <SectionCard className="px-6 py-5 gap-0">
             <h3 className="text-sm font-semibold text-gray-500 mb-4">반려동물 정보</h3>
             <div className="flex items-center gap-4">
               <div
-                className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shrink-0 overflow-hidden"
+                className="relative w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shrink-0 overflow-hidden"
                 style={{ background: booking.pet.gradient }}
               >
                 {booking.pet.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
+                  <Image
                     src={booking.pet.imageUrl}
                     alt={booking.pet.name}
-                    className="w-full h-full object-cover"
+                    fill
+                    sizes="56px"
+                    preload
+                    fetchPriority="high"
+                    className="object-cover"
                   />
                 ) : (
                   booking.pet.emoji
@@ -351,9 +353,9 @@ export default function BookingDetailClient({
                 </div>
               </div>
             </div>
-          </div>
+          </SectionCard>
 
-          <div className="bg-white border border-orange-100 rounded-2xl px-6 py-5 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)]">
+          <SectionCard className="px-6 py-5 gap-0">
             <h3 className="text-sm font-semibold text-gray-500 mb-4">펫시터 정보</h3>
             <div className="flex items-center gap-4">
               <Avatar
@@ -390,15 +392,7 @@ export default function BookingDetailClient({
                 </button>
               )}
             </div>
-          </div>
-
-          <div className="bg-white border border-orange-100 rounded-2xl px-6 py-5 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)]">
-            <h3 className="text-sm font-semibold text-gray-500 mb-4">결제 정보</h3>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-stone-900">서비스 금액</span>
-              <span className="font-bold text-orange-500">{booking.price.toLocaleString()}원</span>
-            </div>
-          </div>
+          </SectionCard>
 
           <CareRecordTimeline records={careRecords} />
 
@@ -459,7 +453,7 @@ export default function BookingDetailClient({
             </>
           )}
         </div>
-      </div>
+      </main>
     </div>
   );
 }

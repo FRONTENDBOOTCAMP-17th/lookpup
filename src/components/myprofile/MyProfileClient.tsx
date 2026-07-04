@@ -30,6 +30,7 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import LocationEditModal from "@/components/myprofile/LocationEditModal";
+import SectionCard from "@/components/common/SectionCard";
 
 interface LocationData {
   address: string;
@@ -43,7 +44,6 @@ interface MenuItem {
   icon: React.ElementType;
   label: string;
   link: string;
-  color: string;
 }
 
 function getMenuIconColor(index: number, total: number) {
@@ -77,26 +77,26 @@ function MenuIcon({
 }
 
 const OWNER_MENU: MenuItem[] = [
-  { id: "profile", icon: User, label: "내 프로필", link: "/myprofile", color: "var(--color-orange-500)" },
-  { id: "pets", icon: Dog, label: "내 반려동물", link: "/myprofile/mypets", color: "#F59E0B" },
-  { id: "bookings", icon: Calendar, label: "예약 내역", link: "/myprofile/booking-history?role=owner", color: "#10B981" },
-  { id: "posts", icon: FileText, label: "게시글 관리", link: "/myprofile/posts", color: "var(--color-orange-500)" },
-  { id: "reviews", icon: BookOpen, label: "후기 관리", link: "/myprofile/reviews", color: "#3B82F6" },
-  { id: "settings", icon: Settings, label: "설정", link: "/myprofile/settings", color: "#8B5CF6" },
-  { id: "terms", icon: HelpCircle, label: "이용약관", link: "/terms", color: "#6B7280" },
-  { id: "report", icon: AlertTriangle, label: "신고하기", link: "/myprofile/report", color: "#DC2626" },
-  { id: "withdraw", icon: UserX, label: "회원 탈퇴", link: "/myprofile/settings/withdraw", color: "#EF4444" },
+  { id: "profile", icon: User, label: "내 프로필", link: "/myprofile" },
+  { id: "pets", icon: Dog, label: "내 반려동물", link: "/myprofile/mypets" },
+  { id: "bookings", icon: Calendar, label: "예약 내역", link: "/myprofile/booking-history?role=owner" },
+  { id: "posts", icon: FileText, label: "게시글 관리", link: "/myprofile/posts" },
+  { id: "reviews", icon: BookOpen, label: "후기 관리", link: "/myprofile/reviews" },
+  { id: "settings", icon: Settings, label: "설정", link: "/myprofile/settings" },
+  { id: "terms", icon: HelpCircle, label: "이용약관", link: "/terms" },
+  { id: "report", icon: AlertTriangle, label: "신고하기", link: "/myprofile/report" },
+  { id: "withdraw", icon: UserX, label: "회원 탈퇴", link: "/myprofile/settings/withdraw" },
 ];
 
 const SITTER_MENU: MenuItem[] = [
-  { id: "profile", icon: User, label: "내 프로필", link: "/myprofile", color: "var(--color-orange-500)" },
-  { id: "bookings", icon: Calendar, label: "예약 관리", link: "/myprofile/booking-history?role=sitter", color: "var(--color-orange-500)" },
-  { id: "reviews", icon: BookOpen, label: "후기 관리", link: "/myprofile/reviews", color: "#F59E0B" },
-  { id: "earnings", icon: Wallet, label: "수익 관리", link: "/myprofile/earnings", color: "#3B82F6" },
-  { id: "settings", icon: Settings, label: "설정", link: "/myprofile/settings", color: "#8B5CF6" },
-  { id: "terms", icon: HelpCircle, label: "이용약관", link: "/terms", color: "#6B7280" },
-  { id: "report", icon: AlertTriangle, label: "신고하기", link: "/myprofile/report", color: "#DC2626" },
-  { id: "withdraw", icon: UserX, label: "회원 탈퇴", link: "/myprofile/settings/withdraw", color: "#EF4444" },
+  { id: "profile", icon: User, label: "내 프로필", link: "/myprofile" },
+  { id: "bookings", icon: Calendar, label: "예약 내역", link: "/myprofile/booking-history?role=sitter" },
+  { id: "reviews", icon: BookOpen, label: "후기 관리", link: "/myprofile/reviews" },
+  { id: "earnings", icon: Wallet, label: "수익 관리", link: "/myprofile/earnings" },
+  { id: "settings", icon: Settings, label: "설정", link: "/myprofile/settings" },
+  { id: "terms", icon: HelpCircle, label: "이용약관", link: "/terms" },
+  { id: "report", icon: AlertTriangle, label: "신고하기", link: "/myprofile/report" },
+  { id: "withdraw", icon: UserX, label: "회원 탈퇴", link: "/myprofile/settings/withdraw" },
 ];
 
 function SidebarItem({
@@ -302,7 +302,7 @@ export default function MyProfileClient({
           <div className="flex gap-6">
             {/* 사이드바 */}
             <div className="w-72 shrink-0">
-              <div className="sticky top-24 bg-white rounded-2xl border border-orange-100 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] p-5 overflow-hidden">
+              <SectionCard className="sticky top-24 gap-0 overflow-hidden">
                 <div className="text-center pb-5 mb-4 border-b border-orange-100">
                   <Avatar
                     initial={user?.fullName?.charAt(0) ?? "?"}
@@ -373,7 +373,7 @@ export default function MyProfileClient({
                     />
                   ))}
                 </nav>
-              </div>
+              </SectionCard>
             </div>
 
             {/* 우측 콘텐츠 */}
@@ -463,10 +463,7 @@ export default function MyProfileClient({
             return (
               <Link key={item.id} href={item.link}>
                 <div className="w-full bg-white rounded-2xl px-4 py-3.5 flex items-center gap-4 shadow-sm border border-orange-100">
-                  <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ background: `${item.color}18` }}
-                  >
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-white shadow-sm border border-orange-100">
                     <MenuIcon icon={Icon} size={20} color={iconColor} />
                   </div>
                   <span className="flex-1 text-left text-sm font-medium text-stone-900">

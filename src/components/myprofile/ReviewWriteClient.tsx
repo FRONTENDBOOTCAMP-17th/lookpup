@@ -4,7 +4,6 @@ import { useState, useRef, useEffect, Suspense } from "react";
 import { uploadToCloudinary } from "@/utils/cloudinary";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  ChevronLeft,
   Star,
   Camera,
   X,
@@ -13,6 +12,7 @@ import {
   BadgeCheck,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
+import { MobileBackButton, DesktopBackButton } from "@/components/common/BackButton";
 import { CustomModal } from "@/components/common/CustomModal";
 import { createReview } from "@/app/actions/reviews";
 import Avatar from "@/components/ui/Avatar";
@@ -949,19 +949,12 @@ function ReviewWriteContent() {
       <main>
         <div className="md:hidden sticky top-16 z-50 bg-white border-b border-orange-100">
           <div className="h-14 px-5 flex items-center">
-            <button
+            <MobileBackButton
               onClick={() =>
                 mobileScreen === 2 ? setMobileScreen(1) : router.back()
               }
-              aria-label="뒤로가기"
-              className="p-1 -ml-1 mr-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-1"
-            >
-              <ChevronLeft
-                size={24}
-                className="text-stone-900"
-                aria-hidden="true"
-              />
-            </button>
+              className="mr-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-1"
+            />
             <span className="flex-1 text-center font-semibold text-stone-900 pr-8">
               후기 작성
             </span>
@@ -984,17 +977,10 @@ function ReviewWriteContent() {
 
         <div className="hidden md:block w-full max-w-160 mx-auto px-4 pt-12 pb-20">
           <div className="flex items-center gap-4 mb-8">
-            <button
+            <DesktopBackButton
               onClick={() => router.back()}
-              aria-label="뒤로가기"
-              className="w-10 h-10 rounded-xl border border-orange-100 flex items-center justify-center hover:bg-orange-50 transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2"
-            >
-              <ChevronLeft
-                size={20}
-                className="text-stone-900"
-                aria-hidden="true"
-              />
-            </button>
+              className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2"
+            />
             <div>
               <h2 className="text-2xl font-bold text-stone-900 mb-0.5">
                 후기를 남겨주세요

@@ -1,7 +1,8 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { createPet, uploadPetPhoto } from "@/app/actions/pets";
+import { createPet } from "@/app/actions/pets";
+import { uploadToCloudinary } from "@/utils/cloudinary";
 import type { PetRegisterFormValues } from "@/types/petRegister";
 
 export function usePetRegisterMutation() {
@@ -16,17 +17,9 @@ export function usePetRegisterMutation() {
             ? "FEMALE_NEUTERED"
             : "FEMALE";
 
-      // pets.image_url은 컬럼이 1개라 첫 번째 사진만 업로드해서 사용
-      let imageUrl: string | null = null;
-      if (values.photoFile) {
-        const formData = new FormData();
-        formData.append("file", values.photoFile);
-        const uploadResult = await uploadPetPhoto(formData);
-        if (uploadResult.error) {
-          throw new Error(uploadResult.error.message);
-        }
-        imageUrl = uploadResult.data.url;
-      }
+      const imageUrl = values.photoFile
+        ? await uploadToCloudinary(values.photoFile, "pets/photos")
+        : null;
 
       const result = await createPet({
         name: values.name.trim(),

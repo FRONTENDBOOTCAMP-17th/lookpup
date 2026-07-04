@@ -2,8 +2,10 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Plus, X, Eye, Camera, MapPin, Check } from "lucide-react";
+import { Plus, X, Eye, Camera, MapPin, Check } from "lucide-react";
 import Header from "@/components/layout/Header";
+import { MobileBackButton, DesktopBackButton } from "@/components/common/BackButton";
+import SectionCard from "@/components/common/SectionCard";
 import { CustomModal } from "@/components/common/CustomModal";
 import Avatar from "@/components/ui/Avatar";
 import StatGrid from "@/components/ui/StatGrid";
@@ -79,9 +81,6 @@ const EMPTY_FORM = {
 
 const TABS = ["소개", "서비스", "위치"] as const;
 type Tab = (typeof TABS)[number];
-
-const CARD =
-  "bg-white rounded-2xl shadow-[0px_2px_12px_rgba(232,116,42,0.10)] border border-orange-100 p-6";
 
 function ToggleChip({ label, selected, onToggle }: { label: string; selected: boolean; onToggle: () => void }) {
   return (
@@ -356,7 +355,7 @@ export default function SitterEditClient({
     <>
       {activeTab === "소개" && (
         <div className="flex flex-col gap-4">
-          <div className={CARD}>
+          <SectionCard className="p-6 gap-0">
             <h3 className="font-bold text-stone-900 mb-4">소개</h3>
             <textarea
               value={form.bio}
@@ -367,9 +366,9 @@ export default function SitterEditClient({
               className="w-full px-4 py-3 bg-white border border-orange-100 rounded-[10px] text-[15px] text-stone-900 placeholder:text-gray-400 outline-none focus:border-orange-300 resize-none leading-6"
             />
             <span className="block text-xs text-gray-400 mt-1">{form.bio.length}자</span>
-          </div>
+          </SectionCard>
 
-          <div className={`${CARD} md:hidden`}>
+          <SectionCard className="p-6 gap-0 md:hidden">
             <h3 className="font-bold text-stone-900 mb-4">경력</h3>
             <div className="flex items-center gap-3">
               <input
@@ -382,9 +381,9 @@ export default function SitterEditClient({
               />
               <span className="text-sm text-gray-500">년</span>
             </div>
-          </div>
+          </SectionCard>
 
-          <div className={CARD}>
+          <SectionCard className="p-6 gap-0">
             <h3 className="font-bold text-stone-900 mb-4">돌봄 가능</h3>
             <div className="flex flex-wrap gap-2">
               {PET_OPTIONS.map((p) => (
@@ -392,9 +391,9 @@ export default function SitterEditClient({
               ))}
             </div>
             <p className="mt-3 text-xs text-gray-400">돌볼 수 있는 반려동물 유형을 모두 선택해 주세요.</p>
-          </div>
+          </SectionCard>
 
-          <div className={CARD}>
+          <SectionCard className="p-6 gap-0">
             <h3 className="font-bold text-stone-900 mb-1">사진</h3>
             <p className="text-xs text-gray-400 mb-4">최대 6장까지 등록할 수 있습니다.</p>
             <div className="grid grid-cols-3 gap-3">
@@ -425,38 +424,38 @@ export default function SitterEditClient({
                 </div>
               ))}
             </div>
-          </div>
+          </SectionCard>
         </div>
       )}
 
       {activeTab === "서비스" && (
         <div className="flex flex-col gap-4">
-          <div className={CARD}>
+          <SectionCard className="p-6 gap-0">
             <h3 className="font-bold text-stone-900 mb-4">제공 서비스</h3>
             <div className="flex flex-wrap gap-2">
               {SERVICE_OPTIONS.map((s) => (
                 <ToggleChip key={s} label={s} selected={form.services.includes(s)} onToggle={() => toggleServiceEnabled(form.serviceList.find((item) => item.name === s)!.id)} />
               ))}
             </div>
-          </div>
+          </SectionCard>
           {form.serviceList.some((item) => item.enabled) && (
-            <div className={CARD}>
+            <SectionCard className="p-6 gap-0">
               <h3 className="font-bold text-stone-900 mb-4">서비스 및 가격</h3>
               <div className="space-y-3">
                 {form.serviceList.filter((item) => item.enabled).map((item) => (
                   <ServiceRow key={item.id} item={item} onChange={updateServiceItem} />
                 ))}
               </div>
-            </div>
+            </SectionCard>
           )}
         </div>
       )}
 
       {activeTab === "위치" && (
-        <div className={CARD}>
+        <SectionCard className="p-6 gap-0">
           <h3 className="font-bold text-stone-900 mb-4">활동 지역</h3>
           <LocationPickerWithMap value={locationValue} onChange={setLocationValue} />
-        </div>
+        </SectionCard>
       )}
     </>
   );
@@ -467,12 +466,7 @@ export default function SitterEditClient({
 
       <div className="md:hidden flex flex-col bg-orange-50">
         <div className="px-5 pt-4">
-          <button
-            onClick={() => router.back()}
-            className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-orange-100 transition-colors"
-          >
-            <ChevronLeft size={20} className="text-stone-900" />
-          </button>
+          <MobileBackButton />
         </div>
 
         <div className="px-5 pt-3 pb-5">
@@ -525,9 +519,7 @@ export default function SitterEditClient({
       <main className="hidden md:block bg-orange-50 min-h-screen">
         <div className="max-w-7xl mx-auto px-4 sm:px-10 py-12">
           <div className="flex items-center gap-3 mb-8">
-            <button onClick={() => router.back()} className="p-1 -ml-1">
-              <ChevronLeft size={20} className="text-stone-900" />
-            </button>
+            <DesktopBackButton />
             <div>
               <h1 className="text-xl font-bold text-stone-900">펫시터 프로필 수정</h1>
               <p className="text-sm text-gray-400">등록한 프로필 정보를 수정할 수 있습니다.</p>
@@ -535,7 +527,7 @@ export default function SitterEditClient({
           </div>
 
           <div className="flex gap-8 items-start">
-            <div className="w-85.25 shrink-0 bg-white rounded-2xl shadow-[0px_2px_12px_rgba(232,116,42,0.10)] border border-orange-100 p-5 flex flex-col items-center">
+            <SectionCard className="w-85.25 shrink-0 items-center gap-0">
               <div className="relative w-full aspect-square rounded-xl bg-linear-to-br from-gray-100 to-gray-200 mb-4 overflow-hidden flex items-center justify-center">
                 <Avatar initial={form.fullName[0] ?? "?"} size="2xl" variant="dark" src={profilePreview ?? user?.profileImage} />
                 <button
@@ -580,7 +572,7 @@ export default function SitterEditClient({
                   <span className="text-sm text-gray-500">년</span>
                 </div>
               </div>
-            </div>
+            </SectionCard>
 
             <div className="flex-1 min-w-0">
               <div className="border-b border-orange-100 flex gap-8 mb-6">
