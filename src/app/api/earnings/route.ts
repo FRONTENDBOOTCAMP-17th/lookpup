@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { buildEarningsData, getEarningsDateRanges } from "@/utils/earnings";
+import type { EarningsPaymentRow, EarningsMonthlyPaymentRow } from "@/utils/earnings";
 
 export async function GET() {
   const supabase = await createClient();
@@ -54,23 +56,7 @@ export async function GET() {
   }
 
   const now = new Date();
-  const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-  const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString();
-  const weekAgoStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
-
-  const paidPayments = payments.filter((p) => p.status === "paid");
-
-  const total = paidPayments.reduce((sum, p) => sum + (p.settle_amount ?? 0), 0);
-
-  const thisMonth = paidPayments
-    .filter((p) => p.paid_at && p.paid_at >= thisMonthStart && p.paid_at < nextMonthStart)
-    .reduce((sum, p) => sum + (p.settle_amount ?? 0), 0);
-
-  const thisWeek = paidPayments
-    .filter((p) => p.paid_at && p.paid_at >= weekAgoStart)
-    .reduce((sum, p) => sum + (p.settle_amount ?? 0), 0);
-
-  const twelveMonthsAgoStart = new Date(now.getFullYear(), now.getMonth() - 11, 1).toISOString();
+  const { twelveMonthsAgoStart } = getEarningsDateRanges(now);
 
   const { data: monthlyPayments, error: monthlyError } = await db
     .from("payments")
@@ -86,26 +72,11 @@ export async function GET() {
     );
   }
 
-  const monthly = Array.from({ length: 12 }, (_, i) => {
-    const d = new Date(now.getFullYear(), now.getMonth() - 11 + i, 1);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    const monthTotal = monthlyPayments
-      .filter((p) => (p.paid_at ?? "").slice(0, 7) === key)
-      .reduce((sum, p) => sum + (p.settle_amount ?? 0), 0);
-    return { month: key, label: `${d.getMonth() + 1}월`, total: monthTotal };
-  });
+  const earningsData = buildEarningsData(
+    payments as unknown as EarningsPaymentRow[],
+    monthlyPayments as EarningsMonthlyPaymentRow[],
+    now,
+  );
 
-  const transactions = payments.map((p) => {
-    const dateStr = (p.paid_at ?? p.created_at ?? "").slice(0, 10);
-    return {
-      id: p.id,
-      date: dateStr,
-      service: p.reservations?.services?.title ?? "-",
-      clientName: p.reservations?.users?.full_name ?? "-",
-      amount: p.settle_amount ?? 0,
-      status: p.status === "paid" ? "completed" : "pending",
-    };
-  });
-
-  return NextResponse.json({ data: { total, thisMonth, thisWeek, monthly, transactions } });
+  return NextResponse.json({ data: earningsData });
 }

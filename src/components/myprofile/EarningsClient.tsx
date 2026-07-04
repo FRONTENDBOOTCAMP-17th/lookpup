@@ -1,51 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { TrendingUp, Calendar, ChevronLeft, Building2, ArrowRight } from "lucide-react";
-import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
+import { ChevronLeft, Building2, ArrowRight } from "lucide-react";
 import Header from "@/components/layout/Header";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from "@/components/ui/chart";
-
-interface Transaction {
-  id: string;
-  date: string;
-  service: string;
-  clientName: string;
-  amount: number;
-  status: "completed" | "pending";
-}
-
-interface MonthlyEarning {
-  month: string;
-  label: string;
-  total: number;
-}
-
-interface EarningsData {
-  total: number;
-  thisMonth: number;
-  thisWeek: number;
-  monthly: MonthlyEarning[];
-  transactions: Transaction[];
-}
-
-const chartConfig = {
-  total: {
-    label: "수익",
-    color: "var(--color-orange-500)",
-  },
-} satisfies ChartConfig;
-
-function formatCurrency(amount: number) {
-  return amount.toLocaleString("ko-KR") + "원";
-}
+import EarningsSummaryCards from "@/components/myprofile/earnings/EarningsSummaryCards";
+import EarningsChart from "@/components/myprofile/earnings/EarningsChart";
+import EarningsTransactions from "@/components/myprofile/earnings/EarningsTransactions";
+import { useEarnings } from "@/hooks/queries/useEarnings";
+import type { EarningsData } from "@/types/earnings";
 
 export default function EarningsClient({
   initialData,
@@ -55,21 +18,8 @@ export default function EarningsClient({
   hasBankAccount?: boolean;
 }) {
   const router = useRouter();
-  const [data, setData] = useState<EarningsData>(
-    initialData ?? { total: 0, thisMonth: 0, thisWeek: 0, monthly: [], transactions: [] },
-  );
-  const [isLoading, setIsLoading] = useState(!initialData);
-
-  useEffect(() => {
-    if (initialData) return;
-    fetch("/api/earnings")
-      .then((r) => r.json())
-      .then(({ data: d }) => {
-        if (d) setData(d);
-      })
-      .catch(() => {})
-      .finally(() => setIsLoading(false));
-  }, [initialData]);
+  const { data, isLoading } = useEarnings(initialData ?? undefined);
+  const earnings = data ?? { total: 0, thisMonth: 0, thisWeek: 0, monthly: [], transactions: [] };
 
   return (
     <div className="min-h-screen bg-[#FFF8F3]">
@@ -97,9 +47,7 @@ export default function EarningsClient({
             </button>
             <div>
               <h2 className="text-2xl font-bold text-[#281A0E]">수익 관리</h2>
-              <p className="text-sm text-[#6B7280] mt-1">
-                펫시터 활동 수익을 확인하세요
-              </p>
+              <p className="text-sm text-[#6B7280] mt-1">펫시터 활동 수익을 확인하세요</p>
             </div>
           </div>
         </div>
@@ -116,12 +64,8 @@ export default function EarningsClient({
               <Building2 size={22} className="text-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-white font-bold leading-tight">
-                정산 계좌를 등록해주세요
-              </p>
-              <p className="text-white/85 text-xs mt-1">
-                계좌 등록 후 수익금을 정산받을 수 있어요
-              </p>
+              <p className="text-white font-bold leading-tight">정산 계좌를 등록해주세요</p>
+              <p className="text-white/85 text-xs mt-1">계좌 등록 후 수익금을 정산받을 수 있어요</p>
             </div>
             <div className="flex items-center gap-1 shrink-0 text-white text-sm font-semibold pl-2">
               <span className="hidden sm:inline">등록하기</span>
@@ -130,169 +74,16 @@ export default function EarningsClient({
           </Link>
         )}
 
-        {/* 요약 카드 */}
-        <div className="grid md:grid-cols-3 gap-4 mb-8">
-          <div className="p-6 rounded-2xl bg-gradient-to-br from-[var(--color-orange-500)] to-[#F5A05A] text-white shadow-[0_2px_12px_rgba(232,116,42,0.2)]">
-            <div className="flex items-start justify-between mb-3">
-              <p className="text-white/80 text-sm font-medium">이번 달 수익</p>
-              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-                <Calendar size={20} />
-              </div>
-            </div>
-            <p className="text-3xl font-bold mb-1">
-              {isLoading ? "-" : formatCurrency(data.thisMonth)}
-            </p>
-            <p className="text-white/70 text-sm">
-              {new Date().getFullYear()}년 {new Date().getMonth() + 1}월
-            </p>
-          </div>
+        <EarningsSummaryCards
+          isLoading={isLoading}
+          total={earnings.total}
+          thisMonth={earnings.thisMonth}
+          thisWeek={earnings.thisWeek}
+        />
 
-          <div className="p-6 rounded-2xl bg-white border border-[#FFE9D6] shadow-[0_2px_12px_rgba(232,116,42,0.06)]">
-            <div className="flex items-start justify-between mb-3">
-              <p className="text-[#6B7280] text-sm font-medium">총 수익</p>
-              <div className="w-10 h-10 rounded-full bg-[#FFF8F3] flex items-center justify-center">
-                <TrendingUp size={20} className="text-[var(--color-orange-500)]" />
-              </div>
-            </div>
-            <p className="text-3xl font-bold mb-1 text-[#281A0E]">
-              {isLoading ? "-" : formatCurrency(data.total)}
-            </p>
-            <p className="text-[#6B7280] text-sm">누적 수익</p>
-          </div>
+        <EarningsChart isLoading={isLoading} monthly={earnings.monthly} />
 
-          <div className="p-6 rounded-2xl bg-white border border-[#FFE9D6] shadow-[0_2px_12px_rgba(232,116,42,0.06)]">
-            <div className="flex items-start justify-between mb-3">
-              <p className="text-[#6B7280] text-sm font-medium">일주일 수익</p>
-              <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
-                <TrendingUp size={20} className="text-blue-500" />
-              </div>
-            </div>
-            <p className="text-3xl font-bold mb-1 text-[#281A0E]">
-              {isLoading ? "-" : formatCurrency(data.thisWeek)}
-            </p>
-            <p className="text-[#6B7280] text-sm">최근 7일</p>
-          </div>
-        </div>
-
-        {/* 월별 수익 차트 영역 */}
-        <div className="bg-white border border-[#FFE9D6] rounded-2xl p-6 mb-8 shadow-[0_2px_12px_rgba(232,116,42,0.06)]">
-          <h2 className="text-xl font-bold text-[#281A0E] mb-6">월별 수익 현황</h2>
-          {isLoading ? (
-            <div className="h-64 bg-[#FFF8F3] rounded-xl flex items-center justify-center">
-              <p className="text-[#6B7280] text-sm">불러오는 중...</p>
-            </div>
-          ) : (
-            <ChartContainer config={chartConfig} className="h-64 w-full">
-              <BarChart data={data.monthly} margin={{ left: 0, right: 0 }}>
-                <CartesianGrid vertical={false} stroke="#FFE9D6" />
-                <XAxis
-                  dataKey="label"
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={8}
-                  fontSize={12}
-                />
-                <ChartTooltip
-                  cursor={{ fill: "#FFF8F3" }}
-                  content={
-                    <ChartTooltipContent
-                      className="bg-white border-0 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.12)] text-[#281A0E] ring-0"
-                      formatter={(value) => formatCurrency(Number(value))}
-                    />
-                  }
-                />
-                <Bar dataKey="total" fill="var(--color-orange-500)" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ChartContainer>
-          )}
-        </div>
-
-        {/* 거래 내역 */}
-        <div className="bg-white border border-[#FFE9D6] rounded-2xl p-6 shadow-[0_2px_12px_rgba(232,116,42,0.06)]">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-[#281A0E]">거래 내역</h2>
-          </div>
-
-          {isLoading ? (
-            <div className="py-16 text-center text-[#6B7280] text-sm">
-              불러오는 중...
-            </div>
-          ) : data.transactions.length === 0 ? (
-            <div className="py-16 text-center text-[#6B7280] text-sm">
-              거래 내역이 없습니다.
-            </div>
-          ) : (
-            <>
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-[#FFE9D6]">
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-[#6B7280]">날짜</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-[#6B7280]">서비스</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-[#6B7280]">고객명</th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-[#6B7280]">금액</th>
-                      <th className="text-center py-3 px-4 text-sm font-semibold text-[#6B7280]">상태</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.transactions.map((transaction) => (
-                      <tr
-                        key={transaction.id}
-                        className="border-b border-[#FFE9D6] hover:bg-[#FFF8F3] transition-colors"
-                      >
-                        <td className="py-4 px-4 text-sm text-[#281A0E]">{transaction.date}</td>
-                        <td className="py-4 px-4 text-sm font-medium text-[#281A0E]">{transaction.service}</td>
-                        <td className="py-4 px-4 text-sm text-[#281A0E]">{transaction.clientName}</td>
-                        <td className="py-4 px-4 text-sm font-semibold text-right text-[#281A0E]">
-                          {formatCurrency(transaction.amount)}
-                        </td>
-                        <td className="py-4 px-4 text-center">
-                          <span
-                            className={`inline-block text-xs font-semibold px-3 py-1 rounded-full border ${
-                              transaction.status === "completed"
-                                ? "bg-[#F0FDF4] text-[#16A34A] border-[#BBF7D0]"
-                                : "bg-[#FFF7ED] text-[#EA580C] border-[#FED7AA]"
-                            }`}
-                          >
-                            {transaction.status === "completed" ? "정산완료" : "정산예정"}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="md:hidden space-y-3">
-                {data.transactions.map((transaction) => (
-                  <div key={transaction.id} className="p-4 bg-[#FFF8F3] rounded-xl">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <p className="font-semibold text-[#281A0E] mb-1">{transaction.service}</p>
-                        <p className="text-sm text-[#6B7280]">{transaction.clientName}</p>
-                      </div>
-                      <span
-                        className={`text-xs font-semibold px-3 py-1 rounded-full border ${
-                          transaction.status === "completed"
-                            ? "bg-[#F0FDF4] text-[#16A34A] border-[#BBF7D0]"
-                            : "bg-[#FFF7ED] text-[#EA580C] border-[#FED7AA]"
-                        }`}
-                      >
-                        {transaction.status === "completed" ? "정산완료" : "정산예정"}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between pt-2 border-t border-white">
-                      <p className="text-sm text-[#6B7280]">{transaction.date}</p>
-                      <p className="font-bold text-[var(--color-orange-500)]">
-                        {formatCurrency(transaction.amount)}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
+        <EarningsTransactions isLoading={isLoading} transactions={earnings.transactions} />
       </div>
     </div>
   );
