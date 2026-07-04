@@ -9,6 +9,7 @@ import EarningsChart from "@/components/myprofile/earnings/EarningsChart";
 import EarningsTransactions from "@/components/myprofile/earnings/EarningsTransactions";
 import { useEarnings } from "@/hooks/queries/useEarnings";
 import type { EarningsData } from "@/types/earnings";
+import { MobileBackButton, DesktopBackButton } from "@/components/common/BackButton";
 
 export default function EarningsClient({
   initialData,
