@@ -18,6 +18,7 @@ import {
 import Header from "@/components/layout/Header";
 import { MobileBackButton, DesktopBackButton } from "@/components/common/BackButton";
 import { CustomModal } from "@/components/common/CustomModal";
+import SectionCard from "@/components/common/SectionCard";
 import { deleteRequest, updateRequest } from "@/app/actions/requests";
 
 const REQUEST_TYPE_MAP: Record<string, string> = {
@@ -161,7 +162,7 @@ function PostCard({
   const isOpen = post.status === "open";
 
   return (
-    <div className="bg-white rounded-2xl border border-orange-100 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] p-5 flex flex-col gap-4">
+    <SectionCard>
       <div className="flex items-start gap-3 flex-wrap">
         <span className="text-sm text-stone-900 leading-5 flex-1 min-w-0">
           {post.title}
@@ -262,7 +263,7 @@ function PostCard({
           상세보기
         </button>
       )}
-    </div>
+    </SectionCard>
   );
 }
 

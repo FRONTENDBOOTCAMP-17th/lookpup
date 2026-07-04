@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import Header from "@/components/layout/Header";
 import { MobileBackButton, DesktopBackButton } from "@/components/common/BackButton";
+import SectionCard from "@/components/common/SectionCard";
 import Avatar from "@/components/ui/Avatar";
 import { getReservationById, cancelReservationAndNotify } from "@/app/actions/reservations";
 import { getCareRecordsByReservationId, type CareRecord } from "@/app/actions/care-records";
@@ -115,7 +116,7 @@ function ReviewSection({
   }
 
   return (
-    <div className="bg-white border border-orange-100 rounded-2xl p-6 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)]">
+    <SectionCard className="p-6 gap-0">
       <div className="flex items-center gap-2 mb-4">
         <FileText size={18} className="text-gray-500" />
         <span className="font-semibold text-stone-900">작성한 후기</span>
@@ -126,13 +127,13 @@ function ReviewSection({
         ))}
         <span className="text-sm text-gray-500 ml-1">5.0</span>
       </div>
-    </div>
+    </SectionCard>
   );
 }
 
 function CareRecordTimeline({ records }: { records: CareRecord[] }) {
   return (
-    <div className="bg-white border border-orange-100 rounded-2xl px-6 py-5 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)]">
+    <SectionCard className="px-6 py-5 gap-0">
       <div className="flex items-center gap-2 mb-5">
         <ClipboardList size={18} className="text-orange-500" />
         <h3 className="text-sm font-semibold text-stone-900">돌봄 기록</h3>
@@ -185,7 +186,7 @@ function CareRecordTimeline({ records }: { records: CareRecord[] }) {
           })}
         </Timeline>
       )}
-    </div>
+    </SectionCard>
   );
 }
 
@@ -275,7 +276,7 @@ export default function BookingDetailClient({
         </div>
 
         <div className="flex flex-col gap-4">
-          <div className="bg-white border border-orange-100 rounded-2xl px-6 py-5 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)]">
+          <SectionCard className="px-6 py-5 gap-0">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <span
@@ -310,9 +311,9 @@ export default function BookingDetailClient({
                 <span>{booking.location}</span>
               </div>
             </div>
-          </div>
+          </SectionCard>
 
-          <div className="bg-white border border-orange-100 rounded-2xl px-6 py-5 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)]">
+          <SectionCard className="px-6 py-5 gap-0">
             <h3 className="text-sm font-semibold text-gray-500 mb-4">반려동물 정보</h3>
             <div className="flex items-center gap-4">
               <div
@@ -352,9 +353,9 @@ export default function BookingDetailClient({
                 </div>
               </div>
             </div>
-          </div>
+          </SectionCard>
 
-          <div className="bg-white border border-orange-100 rounded-2xl px-6 py-5 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)]">
+          <SectionCard className="px-6 py-5 gap-0">
             <h3 className="text-sm font-semibold text-gray-500 mb-4">펫시터 정보</h3>
             <div className="flex items-center gap-4">
               <Avatar
@@ -391,7 +392,7 @@ export default function BookingDetailClient({
                 </button>
               )}
             </div>
-          </div>
+          </SectionCard>
 
           <CareRecordTimeline records={careRecords} />
 

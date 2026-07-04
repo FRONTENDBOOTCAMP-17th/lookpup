@@ -30,6 +30,7 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import LocationEditModal from "@/components/myprofile/LocationEditModal";
+import SectionCard from "@/components/common/SectionCard";
 
 interface LocationData {
   address: string;
@@ -301,7 +302,7 @@ export default function MyProfileClient({
           <div className="flex gap-6">
             {/* 사이드바 */}
             <div className="w-72 shrink-0">
-              <div className="sticky top-24 bg-white rounded-2xl border border-orange-100 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] p-5 overflow-hidden">
+              <SectionCard className="sticky top-24 gap-0 overflow-hidden">
                 <div className="text-center pb-5 mb-4 border-b border-orange-100">
                   <Avatar
                     initial={user?.fullName?.charAt(0) ?? "?"}
@@ -372,7 +373,7 @@ export default function MyProfileClient({
                     />
                   ))}
                 </nav>
-              </div>
+              </SectionCard>
             </div>
 
             {/* 우측 콘텐츠 */}

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Star, Trash2, Flag } from "lucide-react";
 import Header from "@/components/layout/Header";
 import { MobileBackButton, DesktopBackButton } from "@/components/common/BackButton";
+import SectionCard from "@/components/common/SectionCard";
 import Avatar from "@/components/ui/Avatar";
 import { deleteReview } from "@/app/actions/reviews";
 import { CustomModal } from "@/components/common/CustomModal";
@@ -97,7 +98,7 @@ function WrittenReviewCard({
 
   return (
     <>
-      <div className="bg-white rounded-2xl border border-orange-100 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] overflow-hidden">
+      <SectionCard className="overflow-hidden p-0 gap-0">
         <div className="flex items-start justify-between px-5 pt-5 pb-4">
           <div className="flex items-center gap-3">
             <Avatar
@@ -155,7 +156,7 @@ function WrittenReviewCard({
             <Trash2 size={12} /> {isDeleting ? "삭제 중..." : "삭제"}
           </button>
         </div>
-      </div>
+      </SectionCard>
 
       <CustomModal
         open={showDeleteModal}
@@ -183,7 +184,7 @@ function WrittenReviewCard({
 
 function ReceivedReviewCard({ review }: { review: ReceivedReview }) {
   return (
-    <div className="bg-white rounded-2xl border border-orange-100 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] overflow-hidden">
+    <SectionCard className="overflow-hidden p-0 gap-0">
       <div className="flex items-start justify-between px-5 pt-5 pb-4">
         <div className="flex items-center gap-3">
           <Avatar
@@ -240,7 +241,7 @@ function ReceivedReviewCard({ review }: { review: ReceivedReview }) {
           <Flag size={12} /> 신고
         </Link>
       </div>
-    </div>
+    </SectionCard>
   );
 }
 

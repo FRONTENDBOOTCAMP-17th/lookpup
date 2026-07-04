@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import SectionCard from "@/components/common/SectionCard";
 
 export type TitledItem = { title: string; text: string };
 export type ArticleItem = string | TitledItem;
@@ -98,7 +99,7 @@ export default function LegalPage({
 
         <div className="flex flex-col gap-4">
           {/* 소개 + 조항 전체 박스 */}
-          <div className="bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100 p-6 flex flex-col gap-6">
+          <SectionCard className="p-6 gap-6">
             {/* 소개 */}
             <div>
               <h1 className="text-xl font-bold text-stone-900 mb-4">{heading}</h1>
@@ -147,7 +148,7 @@ export default function LegalPage({
                 )}
               </div>
             ))}
-          </div>
+          </SectionCard>
 
           {/* 적용일자 */}
           <div className="bg-orange-50 rounded-2xl border border-orange-100 px-6 py-4">

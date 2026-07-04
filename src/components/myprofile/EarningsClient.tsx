@@ -5,6 +5,7 @@ import { TrendingUp, Calendar } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
 import Header from "@/components/layout/Header";
 import { MobileBackButton, DesktopBackButton } from "@/components/common/BackButton";
+import SectionCard from "@/components/common/SectionCard";
 import {
   ChartContainer,
   ChartTooltip,
@@ -106,7 +107,7 @@ export default function EarningsClient({ initialData }: { initialData?: Earnings
             </p>
           </div>
 
-          <div className="p-6 rounded-2xl bg-white border border-orange-100 shadow-[0_2px_12px_rgba(232,116,42,0.06)]">
+          <SectionCard className="p-6 gap-0">
             <div className="flex items-start justify-between mb-3">
               <p className="text-gray-500 text-sm font-medium">총 수익</p>
               <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center">
@@ -117,9 +118,9 @@ export default function EarningsClient({ initialData }: { initialData?: Earnings
               {isLoading ? "-" : formatCurrency(data.total)}
             </p>
             <p className="text-gray-500 text-sm">누적 수익</p>
-          </div>
+          </SectionCard>
 
-          <div className="p-6 rounded-2xl bg-white border border-orange-100 shadow-[0_2px_12px_rgba(232,116,42,0.06)]">
+          <SectionCard className="p-6 gap-0">
             <div className="flex items-start justify-between mb-3">
               <p className="text-gray-500 text-sm font-medium">일주일 수익</p>
               <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
@@ -130,11 +131,11 @@ export default function EarningsClient({ initialData }: { initialData?: Earnings
               {isLoading ? "-" : formatCurrency(data.thisWeek)}
             </p>
             <p className="text-gray-500 text-sm">최근 7일</p>
-          </div>
+          </SectionCard>
         </div>
 
         {/* 월별 수익 차트 영역 */}
-        <div className="bg-white border border-orange-100 rounded-2xl p-6 mb-8 shadow-[0_2px_12px_rgba(232,116,42,0.06)]">
+        <SectionCard className="p-6 mb-8 gap-0">
           <h2 className="text-xl font-bold text-stone-900 mb-6">월별 수익 현황</h2>
           {isLoading ? (
             <div className="h-64 bg-orange-50 rounded-xl flex items-center justify-center">
@@ -164,10 +165,10 @@ export default function EarningsClient({ initialData }: { initialData?: Earnings
               </BarChart>
             </ChartContainer>
           )}
-        </div>
+        </SectionCard>
 
         {/* 거래 내역 */}
-        <div className="bg-white border border-orange-100 rounded-2xl p-6 shadow-[0_2px_12px_rgba(232,116,42,0.06)]">
+        <SectionCard className="p-6 gap-0">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-stone-900">거래 내역</h2>
           </div>
@@ -251,7 +252,7 @@ export default function EarningsClient({ initialData }: { initialData?: Earnings
               </div>
             </>
           )}
-        </div>
+        </SectionCard>
       </div>
     </div>
   );

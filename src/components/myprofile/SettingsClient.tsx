@@ -5,6 +5,7 @@ import { Mail, Phone, MapPin, Calendar, Building2, Check, X, Pencil } from "luci
 import Script from "next/script";
 import Header from "@/components/layout/Header";
 import { MobileBackButton, DesktopBackButton } from "@/components/common/BackButton";
+import SectionCard from "@/components/common/SectionCard";
 import { AvatarWithCamera } from "@/components/ui/Avatar";
 import { Switch } from "@/components/ui/switch";
 import { CustomModal } from "@/components/common/CustomModal";
@@ -339,7 +340,7 @@ export default function SettingsClient({
 
           <div className="flex-1 flex flex-col gap-6">
             {activeTab === "profile" && (
-              <div className="bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100 p-5">
+              <SectionCard className="gap-0">
                 <h2 className="text-stone-900 text-xl font-bold mb-6">기본 정보</h2>
                 <div className="flex flex-col gap-6">
                   <div className="flex flex-col gap-2">
@@ -429,11 +430,11 @@ export default function SettingsClient({
                     </div>
                   </div>
                 </div>
-              </div>
+              </SectionCard>
             )}
 
             {activeTab === "notifications" && (
-              <div className="bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100 p-5">
+              <SectionCard className="gap-0">
                 <h2 className="text-stone-900 text-xl font-bold mb-6">알림 설정</h2>
                 <div className="flex flex-col gap-4">
                   {NOTIFICATION_ITEMS.map((item) => (
@@ -452,11 +453,11 @@ export default function SettingsClient({
                     </div>
                   ))}
                 </div>
-              </div>
+              </SectionCard>
             )}
 
             {activeTab === "bank" && (
-              <div className="bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100 p-5">
+              <SectionCard className="gap-0">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center shrink-0">
@@ -553,7 +554,7 @@ export default function SettingsClient({
                     </div>
                   </div>
                 ) : null}
-              </div>
+              </SectionCard>
             )}
           </div>
         </div>

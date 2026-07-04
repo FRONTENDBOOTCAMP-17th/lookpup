@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import Header from "@/components/layout/Header";
 import { MobileBackButton, DesktopBackButton } from "@/components/common/BackButton";
+import SectionCard from "@/components/common/SectionCard";
 import Avatar from "@/components/ui/Avatar";
 import { CustomModal } from "@/components/common/CustomModal";
 import {
@@ -140,7 +141,7 @@ function BookingCard({
   }
 
   return (
-    <div className="bg-white border border-orange-100 rounded-2xl overflow-hidden shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)]">
+    <SectionCard className="overflow-hidden p-0 gap-0">
       <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-orange-100">
         <div className="flex items-center gap-2">
           <span
@@ -330,7 +331,7 @@ function BookingCard({
           </>
         )}
       </div>
-    </div>
+    </SectionCard>
   );
 }
 
@@ -346,7 +347,7 @@ function ApplicationCard({
     APPLICATION_STATUS_CONFIG.pending;
 
   return (
-    <div className="bg-white border border-orange-100 rounded-2xl overflow-hidden shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)]">
+    <SectionCard className="overflow-hidden p-0 gap-0">
       <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-orange-100">
         <span
           className="text-xs font-semibold px-3 py-1 rounded-full border"
@@ -400,7 +401,7 @@ function ApplicationCard({
           </button>
         </div>
       )}
-    </div>
+    </SectionCard>
   );
 }
 
