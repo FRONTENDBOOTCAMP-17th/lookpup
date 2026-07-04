@@ -164,7 +164,7 @@ function PostCard({
   return (
     <SectionCard>
       <div className="flex items-start gap-3 flex-wrap">
-        <span className="text-sm text-stone-900 leading-5 flex-1 min-w-0">
+        <span className="text-sm font-bold text-stone-900 leading-5 flex-1 min-w-0">
           {post.title}
         </span>
         <span
@@ -359,19 +359,19 @@ export default function PostsClient({ initialPosts }: { initialPosts?: RequestRo
       <Header />
 
       {/* 모바일 헤더 */}
-      <div className="md:hidden sticky top-16 z-50 bg-white border-b border-[#FFE9D6]">
+      <div className="md:hidden sticky top-16 z-50 bg-white border-b border-orange-100">
         <div className="h-14 px-5 flex items-center gap-3">
           <MobileBackButton />
-          <span className="flex-1 font-semibold text-[#281A0E]">게시글 관리</span>
+          <span className="flex-1 font-semibold text-stone-900">게시글 관리</span>
         </div>
       </div>
 
-      <div className="flex-1 w-full max-w-[820px] mx-auto px-6 pt-6 pb-10">
+      <main className="flex-1 w-full max-w-[820px] mx-auto px-6 pt-6 pb-10">
         <div className="hidden md:flex items-center gap-3 mb-2">
           <DesktopBackButton />
           <div>
-            <h1 className="text-xl font-bold text-stone-900">게시글 관리</h1>
-            <p className="text-sm text-gray-400">
+            <h1 className="text-2xl font-bold text-stone-900">게시글 관리</h1>
+            <p className="text-sm text-gray-500 mt-1">
               작성한 돌봄 요청글을 확인하고 관리할 수 있어요.
             </p>
           </div>
@@ -383,14 +383,14 @@ export default function PostsClient({ initialPosts }: { initialPosts?: RequestRo
             aria-label="이전 탭"
             onClick={() => scrollTabs("left")}
             disabled={!canScrollLeft}
-            className="md:hidden shrink-0 w-8 h-8 rounded-full bg-white border border-[#FFE9D6] flex items-center justify-center text-[#6B7280] disabled:opacity-30 transition-opacity"
+            className="md:hidden shrink-0 w-8 h-8 rounded-full bg-white border border-orange-100 flex items-center justify-center text-gray-500 disabled:opacity-30 transition-opacity"
           >
             <ChevronLeft size={16} />
           </button>
 
           <div
             ref={tabsRef}
-            className="flex-1 min-w-0 flex gap-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden bg-white border border-[#FFE9D6] rounded-2xl p-1 scroll-smooth"
+            className="flex-1 min-w-0 flex gap-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden bg-white border border-orange-100 rounded-2xl p-1 scroll-smooth"
           >
             {TABS.map((tab) => {
               const isActive = activeTab === tab.id;
@@ -401,13 +401,13 @@ export default function PostsClient({ initialPosts }: { initialPosts?: RequestRo
                   className={`flex-1 min-w-fit px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${
                     isActive
                       ? "bg-[var(--color-orange-500)] text-white"
-                      : "text-[#6B7280] hover:text-[#281A0E]"
+                      : "text-gray-500 hover:text-stone-900"
                   }`}
                 >
                   {tab.label}
                   {tabCounts[tab.id] > 0 && (
                     <span
-                      className={`ml-1.5 text-xs ${isActive ? "text-white/80" : "text-[#9CA3AF]"}`}
+                      className={`ml-1.5 text-xs ${isActive ? "text-white/80" : "text-gray-400"}`}
                     >
                       {tabCounts[tab.id]}
                     </span>
@@ -422,7 +422,7 @@ export default function PostsClient({ initialPosts }: { initialPosts?: RequestRo
             aria-label="다음 탭"
             onClick={() => scrollTabs("right")}
             disabled={!canScrollRight}
-            className="md:hidden shrink-0 w-8 h-8 rounded-full bg-white border border-[#FFE9D6] flex items-center justify-center text-[#6B7280] disabled:opacity-30 transition-opacity"
+            className="md:hidden shrink-0 w-8 h-8 rounded-full bg-white border border-orange-100 flex items-center justify-center text-gray-500 disabled:opacity-30 transition-opacity"
           >
             <ChevronRight size={16} />
           </button>
@@ -450,7 +450,7 @@ export default function PostsClient({ initialPosts }: { initialPosts?: RequestRo
             ))
           )}
         </div>
-      </div>
+      </main>
 
       {deleteTargetId && (
         <CustomModal
