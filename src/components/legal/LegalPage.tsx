@@ -68,16 +68,16 @@ export default function LegalPage({
   const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-[#FFF8F3]">
+    <div className="min-h-screen bg-orange-50">
       <Header />
 
       {/* 모바일 헤더 */}
-      <div className="md:hidden sticky top-16 z-50 bg-white border-b border-[#FFE9D6]">
+      <div className="md:hidden sticky top-16 z-50 bg-white border-b border-orange-100">
         <div className="h-14 px-5 flex items-center gap-3">
           <button onClick={() => router.back()} className="p-1 -ml-1">
-            <ChevronLeft size={24} className="text-[#281A0E]" />
+            <ChevronLeft size={24} className="text-stone-900" />
           </button>
-          <span className="flex-1 font-semibold text-[#281A0E]">{title}</span>
+          <span className="flex-1 font-semibold text-stone-900">{title}</span>
         </div>
       </div>
 
@@ -86,29 +86,29 @@ export default function LegalPage({
         <div className="hidden md:flex items-center gap-4 mb-8">
           <button
             onClick={() => router.back()}
-            className="w-10 h-10 rounded-xl border border-[#FFE9D6] flex items-center justify-center hover:bg-[#FFF8F3] transition-colors shrink-0"
+            className="w-10 h-10 rounded-xl border border-orange-100 flex items-center justify-center hover:bg-orange-50 transition-colors shrink-0"
           >
-            <ChevronLeft size={20} className="text-[#281A0E]" />
+            <ChevronLeft size={20} className="text-stone-900" />
           </button>
           <div>
-            <h2 className="text-2xl font-bold text-[#281A0E]">{title}</h2>
-            <p className="text-sm text-[#6B7280] mt-1">{subtitle}</p>
+            <h2 className="text-2xl font-bold text-stone-900">{title}</h2>
+            <p className="text-sm text-gray-500 mt-1">{subtitle}</p>
           </div>
         </div>
 
         <div className="flex flex-col gap-4">
           {/* 소개 + 조항 전체 박스 */}
-          <div className="bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-[#FFE9D6] p-6 flex flex-col gap-6">
+          <div className="bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100 p-6 flex flex-col gap-6">
             {/* 소개 */}
             <div>
-              <h1 className="text-xl font-bold text-[#281A0E] mb-4">{heading}</h1>
+              <h1 className="text-xl font-bold text-stone-900 mb-4">{heading}</h1>
               {intro}
             </div>
 
             {/* 조항 목록 */}
             {articles.map((article, index) => (
               <div key={article.title}>
-                {index > 0 && <div className="border-t border-[#FFE9D6] mb-6" />}
+                {index > 0 && <div className="border-t border-orange-100 mb-6" />}
                 <h2 className="text-base font-bold text-[var(--color-orange-500)] mb-3">
                   {article.title}
                 </h2>
@@ -117,7 +117,7 @@ export default function LegalPage({
                     {article.content.map((text, i) => (
                       <p
                         key={i}
-                        className="text-sm text-[#281A0E] leading-relaxed"
+                        className="text-sm text-stone-900 leading-relaxed"
                       >
                         {text}
                       </p>
@@ -131,13 +131,13 @@ export default function LegalPage({
                           {i + 1}.
                         </span>
                         {isTitledItem(item) ? (
-                          <p className="text-sm text-[#281A0E] leading-relaxed">
+                          <p className="text-sm text-stone-900 leading-relaxed">
                             <span className="font-semibold">{item.title}</span>
                             <br />
                             {item.text}
                           </p>
                         ) : (
-                          <p className="text-sm text-[#281A0E] leading-relaxed whitespace-pre-line">
+                          <p className="text-sm text-stone-900 leading-relaxed whitespace-pre-line">
                             {renderWithLinks(item, linkMap)}
                           </p>
                         )}
@@ -150,11 +150,11 @@ export default function LegalPage({
           </div>
 
           {/* 적용일자 */}
-          <div className="bg-[#FFF0E8] rounded-2xl border border-[#FFE9D6] px-6 py-4">
+          <div className="bg-orange-50 rounded-2xl border border-orange-100 px-6 py-4">
             <p className="text-sm font-semibold text-[var(--color-orange-500)]">
               적용일자
             </p>
-            <p className="text-sm text-[#6B7280] mt-1">{effectiveDate}</p>
+            <p className="text-sm text-gray-500 mt-1">{effectiveDate}</p>
           </div>
         </div>
       </div>

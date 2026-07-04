@@ -64,14 +64,14 @@ export default function EarningsClient({ initialData }: { initialData?: Earnings
   }, [initialData]);
 
   return (
-    <div className="min-h-screen bg-[#FFF8F3]">
+    <div className="min-h-screen bg-orange-50">
       <Header />
 
       {/* 모바일 헤더 */}
-      <div className="md:hidden sticky top-16 z-50 bg-white border-b border-[#FFE9D6]">
+      <div className="md:hidden sticky top-16 z-50 bg-white border-b border-orange-100">
         <div className="h-14 px-5 flex items-center gap-3">
           <MobileBackButton />
-          <span className="flex-1 font-semibold text-[#281A0E]">수익 관리</span>
+          <span className="flex-1 font-semibold text-stone-900">수익 관리</span>
         </div>
       </div>
 
@@ -81,8 +81,8 @@ export default function EarningsClient({ initialData }: { initialData?: Earnings
           <div className="flex items-center gap-4">
             <DesktopBackButton />
             <div>
-              <h2 className="text-2xl font-bold text-[#281A0E]">수익 관리</h2>
-              <p className="text-sm text-[#6B7280] mt-1">
+              <h2 className="text-2xl font-bold text-stone-900">수익 관리</h2>
+              <p className="text-sm text-gray-500 mt-1">
                 펫시터 활동 수익을 확인하세요
               </p>
             </div>
@@ -106,44 +106,44 @@ export default function EarningsClient({ initialData }: { initialData?: Earnings
             </p>
           </div>
 
-          <div className="p-6 rounded-2xl bg-white border border-[#FFE9D6] shadow-[0_2px_12px_rgba(232,116,42,0.06)]">
+          <div className="p-6 rounded-2xl bg-white border border-orange-100 shadow-[0_2px_12px_rgba(232,116,42,0.06)]">
             <div className="flex items-start justify-between mb-3">
-              <p className="text-[#6B7280] text-sm font-medium">총 수익</p>
-              <div className="w-10 h-10 rounded-full bg-[#FFF8F3] flex items-center justify-center">
+              <p className="text-gray-500 text-sm font-medium">총 수익</p>
+              <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center">
                 <TrendingUp size={20} className="text-[var(--color-orange-500)]" />
               </div>
             </div>
-            <p className="text-3xl font-bold mb-1 text-[#281A0E]">
+            <p className="text-3xl font-bold mb-1 text-stone-900">
               {isLoading ? "-" : formatCurrency(data.total)}
             </p>
-            <p className="text-[#6B7280] text-sm">누적 수익</p>
+            <p className="text-gray-500 text-sm">누적 수익</p>
           </div>
 
-          <div className="p-6 rounded-2xl bg-white border border-[#FFE9D6] shadow-[0_2px_12px_rgba(232,116,42,0.06)]">
+          <div className="p-6 rounded-2xl bg-white border border-orange-100 shadow-[0_2px_12px_rgba(232,116,42,0.06)]">
             <div className="flex items-start justify-between mb-3">
-              <p className="text-[#6B7280] text-sm font-medium">일주일 수익</p>
+              <p className="text-gray-500 text-sm font-medium">일주일 수익</p>
               <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
                 <TrendingUp size={20} className="text-blue-500" />
               </div>
             </div>
-            <p className="text-3xl font-bold mb-1 text-[#281A0E]">
+            <p className="text-3xl font-bold mb-1 text-stone-900">
               {isLoading ? "-" : formatCurrency(data.thisWeek)}
             </p>
-            <p className="text-[#6B7280] text-sm">최근 7일</p>
+            <p className="text-gray-500 text-sm">최근 7일</p>
           </div>
         </div>
 
         {/* 월별 수익 차트 영역 */}
-        <div className="bg-white border border-[#FFE9D6] rounded-2xl p-6 mb-8 shadow-[0_2px_12px_rgba(232,116,42,0.06)]">
-          <h2 className="text-xl font-bold text-[#281A0E] mb-6">월별 수익 현황</h2>
+        <div className="bg-white border border-orange-100 rounded-2xl p-6 mb-8 shadow-[0_2px_12px_rgba(232,116,42,0.06)]">
+          <h2 className="text-xl font-bold text-stone-900 mb-6">월별 수익 현황</h2>
           {isLoading ? (
-            <div className="h-64 bg-[#FFF8F3] rounded-xl flex items-center justify-center">
-              <p className="text-[#6B7280] text-sm">불러오는 중...</p>
+            <div className="h-64 bg-orange-50 rounded-xl flex items-center justify-center">
+              <p className="text-gray-500 text-sm">불러오는 중...</p>
             </div>
           ) : (
             <ChartContainer config={chartConfig} className="h-64 w-full">
               <BarChart data={data.monthly} margin={{ left: 0, right: 0 }}>
-                <CartesianGrid vertical={false} stroke="#FFE9D6" />
+                <CartesianGrid vertical={false} stroke="#ffedd5" />
                 <XAxis
                   dataKey="label"
                   tickLine={false}
@@ -152,10 +152,10 @@ export default function EarningsClient({ initialData }: { initialData?: Earnings
                   fontSize={12}
                 />
                 <ChartTooltip
-                  cursor={{ fill: "#FFF8F3" }}
+                  cursor={{ fill: "#fff7ed" }}
                   content={
                     <ChartTooltipContent
-                      className="bg-white border-0 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.12)] text-[#281A0E] ring-0"
+                      className="bg-white border-0 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.12)] text-stone-900 ring-0"
                       formatter={(value) => formatCurrency(Number(value))}
                     />
                   }
@@ -167,17 +167,17 @@ export default function EarningsClient({ initialData }: { initialData?: Earnings
         </div>
 
         {/* 거래 내역 */}
-        <div className="bg-white border border-[#FFE9D6] rounded-2xl p-6 shadow-[0_2px_12px_rgba(232,116,42,0.06)]">
+        <div className="bg-white border border-orange-100 rounded-2xl p-6 shadow-[0_2px_12px_rgba(232,116,42,0.06)]">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-[#281A0E]">거래 내역</h2>
+            <h2 className="text-xl font-bold text-stone-900">거래 내역</h2>
           </div>
 
           {isLoading ? (
-            <div className="py-16 text-center text-[#6B7280] text-sm">
+            <div className="py-16 text-center text-gray-500 text-sm">
               불러오는 중...
             </div>
           ) : data.transactions.length === 0 ? (
-            <div className="py-16 text-center text-[#6B7280] text-sm">
+            <div className="py-16 text-center text-gray-500 text-sm">
               거래 내역이 없습니다.
             </div>
           ) : (
@@ -185,24 +185,24 @@ export default function EarningsClient({ initialData }: { initialData?: Earnings
               <div className="hidden md:block overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-[#FFE9D6]">
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-[#6B7280]">날짜</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-[#6B7280]">서비스</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-[#6B7280]">고객명</th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-[#6B7280]">금액</th>
-                      <th className="text-center py-3 px-4 text-sm font-semibold text-[#6B7280]">상태</th>
+                    <tr className="border-b border-orange-100">
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-500">날짜</th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-500">서비스</th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-500">고객명</th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-500">금액</th>
+                      <th className="text-center py-3 px-4 text-sm font-semibold text-gray-500">상태</th>
                     </tr>
                   </thead>
                   <tbody>
                     {data.transactions.map((transaction) => (
                       <tr
                         key={transaction.id}
-                        className="border-b border-[#FFE9D6] hover:bg-[#FFF8F3] transition-colors"
+                        className="border-b border-orange-100 hover:bg-orange-50 transition-colors"
                       >
-                        <td className="py-4 px-4 text-sm text-[#281A0E]">{transaction.date}</td>
-                        <td className="py-4 px-4 text-sm font-medium text-[#281A0E]">{transaction.service}</td>
-                        <td className="py-4 px-4 text-sm text-[#281A0E]">{transaction.clientName}</td>
-                        <td className="py-4 px-4 text-sm font-semibold text-right text-[#281A0E]">
+                        <td className="py-4 px-4 text-sm text-stone-900">{transaction.date}</td>
+                        <td className="py-4 px-4 text-sm font-medium text-stone-900">{transaction.service}</td>
+                        <td className="py-4 px-4 text-sm text-stone-900">{transaction.clientName}</td>
+                        <td className="py-4 px-4 text-sm font-semibold text-right text-stone-900">
                           {formatCurrency(transaction.amount)}
                         </td>
                         <td className="py-4 px-4 text-center">
@@ -224,11 +224,11 @@ export default function EarningsClient({ initialData }: { initialData?: Earnings
 
               <div className="md:hidden space-y-3">
                 {data.transactions.map((transaction) => (
-                  <div key={transaction.id} className="p-4 bg-[#FFF8F3] rounded-xl">
+                  <div key={transaction.id} className="p-4 bg-orange-50 rounded-xl">
                     <div className="flex items-start justify-between mb-2">
                       <div>
-                        <p className="font-semibold text-[#281A0E] mb-1">{transaction.service}</p>
-                        <p className="text-sm text-[#6B7280]">{transaction.clientName}</p>
+                        <p className="font-semibold text-stone-900 mb-1">{transaction.service}</p>
+                        <p className="text-sm text-gray-500">{transaction.clientName}</p>
                       </div>
                       <span
                         className={`text-xs font-semibold px-3 py-1 rounded-full border ${
@@ -241,7 +241,7 @@ export default function EarningsClient({ initialData }: { initialData?: Earnings
                       </span>
                     </div>
                     <div className="flex items-center justify-between pt-2 border-t border-white">
-                      <p className="text-sm text-[#6B7280]">{transaction.date}</p>
+                      <p className="text-sm text-gray-500">{transaction.date}</p>
                       <p className="font-bold text-[var(--color-orange-500)]">
                         {formatCurrency(transaction.amount)}
                       </p>
