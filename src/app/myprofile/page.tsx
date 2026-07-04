@@ -1,24 +1,28 @@
-import { createClient } from "@/utils/supabase/server";
+import { getServerUser } from "@/utils/supabase/serverUser";
 import { createServiceClient } from "@/utils/supabase/service";
 import { getMySitterProfile } from "@/app/actions/sitters";
 import MyProfileClient from "@/components/myprofile/MyProfileClient";
 import type { UserProfile, SitterData } from "@/store/userStore";
 
 export default async function MyProfilePage() {
-  const supabase = await createClient();
-  const { data: { user: authUser } } = await supabase.auth.getUser();
+  const { data: { user: authUser } } = await getServerUser();
 
   if (!authUser) return <MyProfileClient />;
 
   const db = createServiceClient();
-  const { data: row } = await db
-    .from("users")
-    .select(
-      "id, email, full_name, phone_number, address, display_area, latitude, longitude, birthdate, profile_image, is_verified, role, deleted_at",
-    )
-    .eq("id", authUser.id)
-    .single();
 
+  const [userResult, sitterResult] = await Promise.all([
+    db
+      .from("users")
+      .select(
+        "id, email, full_name, phone_number, address, display_area, latitude, longitude, birthdate, profile_image, is_verified, role, deleted_at",
+      )
+      .eq("id", authUser.id)
+      .single(),
+    getMySitterProfile(),
+  ]);
+
+  const row = userResult.data;
   if (!row || row.deleted_at) return <MyProfileClient />;
 
   const initialUser: UserProfile = {
@@ -37,9 +41,8 @@ export default async function MyProfilePage() {
   };
 
   let initialSitter: SitterData | null = null;
-  if (row.role === "both" || row.role === "admin") {
-    const result = await getMySitterProfile();
-    if ("data" in result && result.data) initialSitter = result.data;
+  if ((row.role === "both" || row.role === "admin") && "data" in sitterResult && sitterResult.data) {
+    initialSitter = sitterResult.data;
   }
 
   return <MyProfileClient initialUser={initialUser} initialSitter={initialSitter} />;
