@@ -22,34 +22,6 @@ async function getAuthUser() {
   return user;
 }
 
-export async function uploadPetPhoto(formData: FormData) {
-  const user = await getAuthUser();
-
-  if (!user) {
-    return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
-  }
-
-  const file = formData.get("file") as File | null;
-
-  if (!file || file.size === 0) {
-    return { error: { code: "VALIDATION_ERROR", message: "파일이 없습니다." } };
-  }
-
-  const db = createServiceClient();
-  const ext = file.name.split(".").pop();
-  const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
-
-  const { error } = await db.storage.from("pet-photos").upload(path, file);
-
-  if (error) {
-    return { error: { code: "INTERNAL_ERROR", message: error.message } };
-  }
-
-  const { data } = db.storage.from("pet-photos").getPublicUrl(path);
-
-  return { data: { url: data.publicUrl } };
-}
-
 export async function createPet(input: PetInput) {
   const user = await getAuthUser();
 
