@@ -17,7 +17,7 @@ import { updateProfile } from "@/app/actions/users";
 import { uploadToCloudinary } from "@/utils/cloudinary";
 import LocationPickerWithMap, { type LocationValue } from "@/components/LocationPickerWithMap";
 
-const SERVICE_OPTIONS = ["방문돌봄", "위탁돌봄", "산책", "호텔"];
+const SERVICE_OPTIONS = ["방문돌봄", "위탁돌봄", "산책", "펫호텔"];
 
 const PET_OPTIONS = [
   "강아지 소형 (7kg 미만)",

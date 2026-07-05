@@ -23,7 +23,7 @@ const SERVICE_KEY_TO_TYPE: Record<string, string> = {
   visit: "방문돌봄",
   home: "위탁돌봄",
   walk: "산책",
-  hotel: "호텔",
+  hotel: "펫호텔",
 };
 
 function formatDateRange(range: DateRange | undefined): string {

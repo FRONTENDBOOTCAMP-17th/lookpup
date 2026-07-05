@@ -29,7 +29,7 @@ const SERVICE_KEY_TO_TYPE: Record<ServiceKey, string> = {
   visit: "방문돌봄",
   home: "위탁돌봄",
   walk: "산책",
-  hotel: "호텔",
+  hotel: "펫호텔",
 };
 
 export { SERVICE_KEY_TO_TYPE };

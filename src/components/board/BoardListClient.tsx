@@ -18,7 +18,7 @@ import LoadingPage from "@/components/common/LoadingPage";
 import { useUserStore } from "@/store/userStore";
 import { splitConditions } from "@/utils/boardConditions";
 
-const CATEGORIES = ["전체", "방문돌봄", "위탁돌봄", "산책", "호텔"];
+const CATEGORIES = ["전체", "방문돌봄", "위탁돌봄", "산책", "펫호텔"];
 
 const ITEMS_PER_PAGE = 5;
 const PAGE_WINDOW_SIZE = 5;

@@ -2,7 +2,7 @@ import { MapPin, LocateFixed, X } from "lucide-react";
 import SearchFilterBar from "@/components/common/SearchFilterBar";
 import type { LocationSuggestion } from "@/utils/kakaoGeocode";
 
-export const PETSITTER_FILTERS = ["전체", "방문돌봄", "위탁돌봄", "산책", "호텔"] as const;
+export const PETSITTER_FILTERS = ["전체", "방문돌봄", "위탁돌봄", "산책", "펫호텔"] as const;
 export type PetsitterFilter = (typeof PETSITTER_FILTERS)[number];
 
 interface PetsitterSearchBarProps {
