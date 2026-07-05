@@ -35,7 +35,7 @@ export default function StepDateSelect({
   sitter: SitterBookingInfo;
   bookedRanges: { from: Date; to: Date }[];
 }) {
-  const { register, watch, setValue, formState: { errors } } = useFormContext<Step1Values>();
+  const { watch, setValue, formState: { errors } } = useFormContext<Step1Values>();
   const { dateRange, setDateRange } = useBookingStore();
   const startTime = watch("startTime") ?? "";
   const endTime = watch("endTime") ?? "";

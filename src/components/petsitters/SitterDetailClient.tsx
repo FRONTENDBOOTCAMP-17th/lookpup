@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
-import Avatar from "@/components/ui/Avatar";
 import LoadingPage from "@/components/common/LoadingPage";
 import BackButton from "@/components/common/BackButton";
 import Pill from "@/components/ui/Pill";
