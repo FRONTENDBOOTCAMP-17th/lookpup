@@ -23,13 +23,13 @@ import StepConfirm from "./StepConfirm";
 const STEP_LABELS = ["날짜 선택", "반려동물·서비스", "특이사항", "완료"];
 const TOTAL_STEPS = 4;
 
-export type ServiceKey = "visit" | "home" | "walk" | "hotel";
+export type ServiceKey = "visit" | "home" | "walk" | "pickup";
 
 const SERVICE_KEY_TO_TYPE: Record<ServiceKey, string> = {
   visit: "방문돌봄",
   home: "위탁돌봄",
   walk: "산책",
-  hotel: "펫호텔",
+  pickup: "픽업",
 };
 
 export { SERVICE_KEY_TO_TYPE };

@@ -14,7 +14,7 @@ const SERVICES: { key: string; label: string }[] = [
   { key: "visit", label: "방문돌봄" },
   { key: "home", label: "위탁돌봄" },
   { key: "walk", label: "산책" },
-  { key: "hotel", label: "펫호텔" },
+  { key: "pickup", label: "픽업" },
 ];
 
 function formatDateRange(range: DateRange | undefined): string {

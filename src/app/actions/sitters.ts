@@ -12,7 +12,7 @@ interface ServiceInput {
   description?: string | null;
 }
 
-type RequestType = "visit" | "foster" | "walk" | "hotel";
+type RequestType = "visit" | "foster" | "walk" | "pickup";
 type AnimalType = "small_dog" | "medium_dog" | "large_dog" | "cat";
 
 interface SitterInput {
@@ -72,7 +72,7 @@ export async function createSitter(input: SitterInput) {
     };
   }
 
-  const validRequestTypes: RequestType[] = ["visit", "foster", "walk", "hotel"];
+  const validRequestTypes: RequestType[] = ["visit", "foster", "walk", "pickup"];
   if (
     input.request_type &&
     input.request_type.some((t) => !validRequestTypes.includes(t))

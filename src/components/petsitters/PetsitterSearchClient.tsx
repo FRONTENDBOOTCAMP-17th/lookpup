@@ -19,7 +19,7 @@ import PetsitterListPanel from "@/components/petsitters/PetsitterListPanel";
 const SERVICE_TYPE_MAP: Record<string, string> = {
   walk: "산책",
   care: "방문돌봄",
-  hotel: "펫호텔",
+  pickup: "픽업",
   foster: "위탁돌봄",
 };
 
