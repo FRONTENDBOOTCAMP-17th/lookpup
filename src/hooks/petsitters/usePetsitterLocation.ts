@@ -111,7 +111,6 @@ export function usePetsitterLocation({
     } else {
       setShowLocationModal(true);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [consent, urlDistrict]);
 
   async function requestLocation() {

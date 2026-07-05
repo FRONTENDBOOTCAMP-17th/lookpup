@@ -170,12 +170,11 @@ export function SimpleTimePicker({
       }
     }, 1);
     return () => clearTimeout(timeoutId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
   const onHourChange = useCallback(
     (v: SimpleTimeOption) => {
       if (min) {
-        let newTime = buildTime({
+        const newTime = buildTime({
           use12HourFormat,
           value,
           formatStr,
@@ -188,7 +187,7 @@ export function SimpleTimePicker({
         }
       }
       if (max) {
-        let newTime = buildTime({
+        const newTime = buildTime({
           use12HourFormat,
           value,
           formatStr,
@@ -212,7 +211,7 @@ export function SimpleTimePicker({
   const onAmpmChange = useCallback(
     (v: SimpleTimeOption) => {
       if (min) {
-        let newTime = buildTime({
+        const newTime = buildTime({
           use12HourFormat,
           value,
           formatStr,
@@ -227,7 +226,7 @@ export function SimpleTimePicker({
         }
       }
       if (max) {
-        let newTime = buildTime({
+        const newTime = buildTime({
           use12HourFormat,
           value,
           formatStr,
