@@ -11,7 +11,7 @@ interface PetsitterListItem {
   neighborhood: string;
   rating: number;
   reviewCount: number;
-  price: number;
+  price: number | null;
   services: string[];
   distanceKm: number;
 }
