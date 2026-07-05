@@ -82,7 +82,7 @@ export default function LegalPage({
         </div>
       </div>
 
-      <div className="w-full max-w-200 mx-auto px-4 md:px-6 pt-6 md:pt-12 pb-16">
+      <div className="w-full max-w-[1280px] mx-auto px-4 sm:px-10 pt-6 md:pt-12 pb-16">
         {/* 데스크탑 타이틀 */}
         <div className="hidden md:flex items-center gap-4 mb-8">
           <button

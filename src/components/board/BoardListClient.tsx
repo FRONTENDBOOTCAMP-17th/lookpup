@@ -195,7 +195,7 @@ export default function BoardListClient() {
       <Header />
 
       <main className="flex-1 bg-orange-50">
-        <div className="max-w-6xl mx-auto px-4 md:px-8 py-8 md:py-12">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-10 py-8 md:py-12">
           <div className="flex flex-col sm:flex-row items-start justify-between gap-4 mb-8">
             <div>
               <h1 className="text-3xl font-bold text-stone-900">구인게시판</h1>

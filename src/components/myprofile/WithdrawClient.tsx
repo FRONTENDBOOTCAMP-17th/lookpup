@@ -107,7 +107,7 @@ export default function WithdrawClient() {
         </div>
       </div>
 
-      <main className="max-w-190 mx-auto px-4 md:px-6 pt-4 md:pt-12 pb-20">
+      <main className="w-full max-w-[1280px] mx-auto px-4 sm:px-10 pt-4 md:pt-12 pb-20">
         <div className="hidden md:flex items-center gap-3 mb-8">
           <DesktopBackButton />
           <div>

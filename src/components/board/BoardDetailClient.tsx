@@ -218,7 +218,7 @@ export default function BoardDetailClient({
       <>
         <Header />
         <main className="flex-1 bg-orange-50 min-h-screen">
-          <div className="max-w-7xl mx-auto px-4 md:px-10 py-20 text-center text-gray-400">
+          <div className="max-w-[1280px] mx-auto px-4 sm:px-10 py-20 text-center text-gray-400">
             {postLoading ? "불러오는 중..." : "게시글을 찾을 수 없습니다."}
           </div>
         </main>
@@ -272,7 +272,7 @@ export default function BoardDetailClient({
       <Header />
 
       <main className="flex-1 bg-orange-50 min-h-screen">
-        <div className="max-w-7xl mx-auto px-4 md:px-10 py-6 md:py-8">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-10 py-6 md:py-8">
           <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 mb-6">
             <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
               <BackButton href="/board" />
