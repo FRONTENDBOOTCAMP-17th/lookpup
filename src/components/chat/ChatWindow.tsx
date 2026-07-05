@@ -463,7 +463,7 @@ function ChatWindowImpl({
         {/* 메시지 영역 */}
         <div
           ref={mobileScrollRef}
-          className="flex-1 min-h-0 overflow-y-auto bg-orange-50"
+          className="flex-1 min-h-0 overflow-y-auto bg-white"
         >
           <div
             className="px-4 py-4 flex flex-col gap-4"

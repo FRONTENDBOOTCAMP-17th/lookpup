@@ -1869,7 +1869,7 @@ function ChatPageContent({
         </div>
 
         {/* 데스크톱 */}
-        <div className="hidden md:flex flex-1 bg-orange-50 overflow-hidden">
+        <div className="hidden md:flex flex-1 bg-white overflow-hidden">
           <ChatSidebar
             {...sharedSidebarProps}
             className="w-96 bg-white border-r border-orange-100 flex flex-col shrink-0"
