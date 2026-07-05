@@ -1,4 +1,5 @@
 import { Search, Calendar, MessageCircle, Star, MapPin } from "lucide-react";
+import ScrollReveal from "@/components/common/ScrollReveal";
 
 const FEATURES = [
   {
@@ -32,24 +33,29 @@ export default function FeaturesSection() {
   return (
     <section className="py-16 md:py-20">
       <div className="max-w-[1280px] mx-auto px-4 sm:px-10">
-        <h2 className="text-2xl md:text-3xl font-bold text-stone-900 text-center mb-4">
-          주요 기능
-        </h2>
-        <p className="text-gray-500 text-center mb-10 md:mb-14">
-          봐주개가 제공하는 핵심 기능을 확인하세요
-        </p>
+        <ScrollReveal>
+          <h2 className="text-2xl md:text-3xl font-bold text-stone-900 text-center mb-4">
+            주요 기능
+          </h2>
+          <p className="text-gray-500 text-center mb-10 md:mb-14">
+            봐주개가 제공하는 핵심 기능을 확인하세요
+          </p>
+        </ScrollReveal>
         <div className="flex flex-wrap justify-center gap-6">
-          {FEATURES.map(({ icon: Icon, title, desc }) => (
-            <div
+          {FEATURES.map(({ icon: Icon, title, desc }, index) => (
+            <ScrollReveal
               key={title}
-              className="w-full sm:w-[calc(50%-0.75rem)] lg:w-[calc(33.333%-1rem)] p-5 bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100 flex flex-col gap-4 hover:border-orange-500 hover:-translate-y-1 hover:shadow-[0px_8px_24px_0px_rgba(232,116,42,0.15)] transition-all duration-200"
+              delay={index * 0.08}
+              className="w-full sm:w-[calc(50%-0.75rem)] lg:w-[calc(33.333%-1rem)]"
             >
-              <div className="w-14 h-14 bg-orange-500/10 rounded-2xl flex items-center justify-center">
-                <Icon className="w-7 h-7 text-orange-500" />
+              <div className="p-5 bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100 flex flex-col gap-4 hover:border-orange-500 hover:-translate-y-1 hover:shadow-[0px_8px_24px_0px_rgba(232,116,42,0.15)] transition-all duration-200">
+                <div className="w-14 h-14 bg-orange-500/10 rounded-2xl flex items-center justify-center">
+                  <Icon className="w-7 h-7 text-orange-500" />
+                </div>
+                <h3 className="text-stone-900 text-lg font-semibold">{title}</h3>
+                <p className="text-gray-500 text-base leading-6">{desc}</p>
               </div>
-              <h3 className="text-stone-900 text-lg font-semibold">{title}</h3>
-              <p className="text-gray-500 text-base leading-6">{desc}</p>
-            </div>
+            </ScrollReveal>
           ))}
         </div>
       </div>
