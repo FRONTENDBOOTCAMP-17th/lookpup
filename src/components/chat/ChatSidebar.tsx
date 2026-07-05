@@ -102,7 +102,8 @@ function ChatSidebarImpl({
   function togglePostCollapse(postId: string) {
     setCollapsedPosts((prev) => {
       const next = new Set(prev);
-      next.has(postId) ? next.delete(postId) : next.add(postId);
+      if (next.has(postId)) next.delete(postId);
+      else next.add(postId);
       return next;
     });
   }
