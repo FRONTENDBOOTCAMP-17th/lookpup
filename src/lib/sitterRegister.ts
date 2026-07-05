@@ -9,7 +9,7 @@ export const SERVICES: {
   { id: "visit", emoji: "🏠", title: "방문돌봄", desc: "보호자님 집에서 돌봄" },
   { id: "foster", emoji: "🏡", title: "위탁돌봄", desc: "내 집에서 돌봄" },
   { id: "walk", emoji: "🚶", title: "산책", desc: "반려동물 산책 서비스" },
-  { id: "hotel", emoji: "🏨", title: "펫호텔", desc: "장기 위탁 돌봄" },
+  { id: "pickup", emoji: "🚗", title: "픽업", desc: "반려동물 픽업 서비스" },
 ];
 
 export const ANIMALS: { id: SitterAnimalId; label: string }[] = [

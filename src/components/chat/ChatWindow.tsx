@@ -346,7 +346,7 @@ function ChatWindowImpl({
           : undefined
       }
       onReservationEdit={
-        activeTab === "one_on_one"
+        activeTab === "one_on_one" && !hasServiceStarted
           ? () => {
               setPlusMenuOpen(false);
               onOpenReservationEdit();
