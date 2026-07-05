@@ -81,10 +81,27 @@ body {
   animation: scroll-reveal-up 0.6s ease-out forwards;
 }
 
+@keyframes list-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-list-fade-in {
+  opacity: 0;
+  animation: list-fade-in-up 0.45s ease-out forwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-hero-text,
   .animate-hero-card,
-  .scroll-reveal-visible {
+  .scroll-reveal-visible,
+  .animate-list-fade-in {
     animation: none;
     opacity: 1;
     transform: none;
