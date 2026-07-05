@@ -349,13 +349,20 @@ function ChatPageContent({
     [messages],
   );
 
+  const [prevActiveRoomId, setPrevActiveRoomId] = useState(activeRoomId);
+  if (activeRoomId !== prevActiveRoomId) {
+    setPrevActiveRoomId(activeRoomId);
+    if (activeRoomId) {
+      setSendError(null);
+      setInput("");
+      setConfirmedServiceIds(new Set());
+    }
+  }
+
   useEffect(() => {
     if (!activeRoomId) return;
     markRoomAsRead(activeRoomId);
     markRoomRead(activeRoomId);
-    setSendError(null);
-    setInput("");
-    setConfirmedServiceIds(new Set());
     checkedReservationIdsRef.current = new Set();
   }, [activeRoomId, markRoomAsRead]);
 
@@ -431,6 +438,7 @@ function ChatPageContent({
   useEffect(() => {
     if (!acceptedDirectRoomId) return;
     clearAcceptedDirectRoomId();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setActiveTab("one_on_one");
     setSelectedRoomId(acceptedDirectRoomId);
     setSelectedReservationRequestId(null);
