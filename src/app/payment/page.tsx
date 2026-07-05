@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CreditCard, ChevronLeft } from "lucide-react";
 import Header from "@/components/layout/Header";
@@ -127,12 +128,12 @@ function PaymentPageContent() {
 
       <main className="min-h-screen bg-orange-50 flex flex-col items-center px-4 py-8 sm:py-12">
         <div className="w-full max-w-200 flex items-center gap-3 mb-6">
-          <button
-            onClick={() => router.push(getBackHref())}
+          <Link
+            href={getBackHref()}
             className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-orange-100 flex items-center justify-center text-stone-900 hover:bg-orange-100 transition-colors shrink-0"
           >
             <ChevronLeft size={20} />
-          </button>
+          </Link>
           <h1 className="text-stone-900 text-lg sm:text-xl font-bold">
             결제 확인
           </h1>
