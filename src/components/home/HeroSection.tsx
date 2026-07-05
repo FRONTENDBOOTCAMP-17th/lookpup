@@ -20,13 +20,19 @@ export default function HeroSection() {
         {/* 텍스트 */}
 
         <div className="flex-1 max-w-[560px] flex flex-col items-center lg:items-start text-center lg:text-left">
-          <div className="inline-flex items-center px-3 py-1 bg-orange-50 rounded-full border border-orange-100 mb-6">
+          <div
+            className="animate-hero-text inline-flex items-center px-3 py-1 bg-orange-50 rounded-full border border-orange-100 mb-6"
+            style={{ animationDelay: "0s" }}
+          >
             <span className="text-orange-500 text-xs font-medium">
               반려동물 돌봄 플랫폼 🐾
             </span>
           </div>
 
-          <h1 className="text-4xl lg:text-5xl font-bold leading-tight text-stone-900 mb-6">
+          <h1
+            className="animate-hero-text text-4xl lg:text-5xl font-bold leading-tight text-stone-900 mb-6"
+            style={{ animationDelay: "0.1s" }}
+          >
             우리 아이를{" "}
             <span className="text-orange-500 whitespace-nowrap">
               믿고 맡길 수 있는
@@ -35,15 +41,23 @@ export default function HeroSection() {
             반려동물 돌봄 플랫폼
           </h1>
 
-          <p className="text-gray-500 text-base sm:text-lg leading-7 mb-8">
+          <p
+            className="animate-hero-text text-gray-500 text-base sm:text-lg leading-7 mb-8"
+            style={{ animationDelay: "0.2s" }}
+          >
             지역 기반 검색으로 가까운 펫시터를 찾고,
             <br />
             안전한 예약과 결제까지 한 번에
           </p>
 
-          <HeroButtons />
+          <div className="animate-hero-text" style={{ animationDelay: "0.3s" }}>
+            <HeroButtons />
+          </div>
 
-          <div className="flex items-center gap-8">
+          <div
+            className="animate-hero-text flex items-center gap-8"
+            style={{ animationDelay: "0.4s" }}
+          >
             <div className="text-center lg:text-left">
               <p className="text-orange-500 text-2xl font-bold">5,200+</p>
               <p className="text-gray-500 text-sm">펫시터</p>
@@ -64,7 +78,10 @@ export default function HeroSection() {
         {/* 플로팅 카드 */}
         <div className="hidden lg:block relative w-[420px] h-[480px] shrink-0">
           {/* 카드 1 */}
-          <div className="-rotate-3 absolute top-12 left-8 w-80 shadow-[0px_4px_20px_0px_rgba(232,116,42,0.15)] rounded-2xl z-10">
+          <div
+            className="animate-hero-card absolute top-12 left-8 w-80 shadow-[0px_4px_20px_0px_rgba(232,116,42,0.15)] rounded-2xl z-10"
+            style={{ animationDelay: "0s", "--hero-rotate": "-3deg" } as React.CSSProperties}
+          >
             <div className="p-5 bg-white rounded-2xl border border-orange-100">
               <div className="flex items-start gap-4">
                 <Avatar initial="김" size="lg" variant="orange" />
@@ -107,7 +124,16 @@ export default function HeroSection() {
           </div>
 
           {/* 카드 2 */}
-          <div className="rotate-3 absolute bottom-20 right-0 w-72 opacity-80 shadow-lg rounded-2xl">
+          <div
+            className="animate-hero-card absolute bottom-20 right-0 w-72 opacity-80 shadow-lg rounded-2xl"
+            style={
+              {
+                animationDelay: "0.15s",
+                "--hero-rotate": "3deg",
+                "--hero-opacity": "0.8",
+              } as React.CSSProperties
+            }
+          >
             <div className="p-5 bg-white rounded-2xl border border-orange-100">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 bg-orange-50 rounded-full border border-orange-100 flex items-center justify-center shrink-0">
@@ -129,14 +155,23 @@ export default function HeroSection() {
           </div>
 
           {/* 배지들 */}
-          <div className="absolute top-0 right-8 px-4 py-3 bg-white rounded-2xl shadow-lg flex items-center gap-2 z-20">
+          <div
+            className="animate-hero-card absolute top-0 right-8 px-4 py-3 bg-white rounded-2xl shadow-lg flex items-center gap-2 z-20"
+            style={{ animationDelay: "0.3s" }}
+          >
             <Star className="w-5 h-5 fill-amber-400 text-amber-400" />
             <span className="text-stone-900 text-base font-bold">4.9</span>
           </div>
-          <div className="absolute top-48 left-0 px-4 py-3 bg-white rounded-2xl shadow-lg z-20">
+          <div
+            className="animate-hero-card absolute top-48 left-0 px-4 py-3 bg-white rounded-2xl shadow-lg z-20"
+            style={{ animationDelay: "0.45s" }}
+          >
             <span className="text-gray-500 text-xs">인증 펫시터</span>
           </div>
-          <div className="absolute bottom-8 right-8 px-4 py-2.5 bg-orange-500 rounded-2xl shadow-lg z-20">
+          <div
+            className="animate-hero-card absolute bottom-8 right-8 px-4 py-2.5 bg-orange-500 rounded-2xl shadow-lg z-20"
+            style={{ animationDelay: "0.6s" }}
+          >
             <span className="text-white text-sm font-medium">
               즉시 예약 가능
             </span>
