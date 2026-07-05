@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { DateRange } from "react-day-picker";
 import {
@@ -686,16 +687,15 @@ export default function BoardWriteClient() {
                   );
                 })}
 
-                <button
-                  type="button"
-                  onClick={() => router.push("/pet-register")}
+                <Link
+                  href="/pet-register"
                   className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-orange-100 hover:border-[var(--color-orange-500)]/50 transition-colors text-gray-400 hover:text-[var(--color-orange-500)] min-h-35"
                 >
                   <div className="w-10 h-10 bg-orange-50 rounded-full flex items-center justify-center">
                     <Plus className="w-5 h-5" />
                   </div>
                   <span className="text-sm font-medium">새 반려동물 등록</span>
-                </button>
+                </Link>
               </div>
             </div>
 
