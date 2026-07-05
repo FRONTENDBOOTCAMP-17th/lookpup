@@ -11,7 +11,8 @@ import { AvatarWithCamera } from "@/components/ui/Avatar";
 import { Switch } from "@/components/ui/switch";
 import { CustomModal } from "@/components/common/CustomModal";
 import { useUserStore, type UserProfile } from "@/store/userStore";
-import { updateUserInfo, updateOwnerLocation } from "@/app/actions/users";
+import { updateUserInfo, updateOwnerLocation, updateProfile } from "@/app/actions/users";
+import { uploadToCloudinary } from "@/utils/cloudinary";
 import {
   searchAddressList,
   coordToRegion,
@@ -99,12 +100,18 @@ export default function SettingsClient({
     loadNotificationPrefs(),
   );
   const [showSaveModal, setShowSaveModal] = useState(false);
+  const [showPhotoUpdatedModal, setShowPhotoUpdatedModal] = useState(false);
 
   const [fullName, setFullName] = useState(initialUser?.fullName ?? "");
   const [phoneNumber, setPhoneNumber] = useState(initialUser?.phoneNumber ?? "");
   const [birthdate, setBirthdate] = useState(initialUser?.birthdate ?? "");
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  const [profilePreview, setProfilePreview] = useState<string | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const profileFileRef = useRef<HTMLInputElement>(null);
 
   const [bankAccount, setBankAccount] = useState<BankAccount | null>(initialBankAccount ?? null);
   const [bankLoading, setBankLoading] = useState(initialBankAccount === undefined);
@@ -161,6 +168,33 @@ export default function SettingsClient({
     });
     setAddressQuery(user.address);
   }, [user?.address, user?.displayArea]);
+
+  const handleProfileFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    const previewUrl = URL.createObjectURL(file);
+    setProfilePreview(previewUrl);
+    setUploadingPhoto(true);
+    setPhotoError(null);
+    try {
+      const uploadedUrl = await uploadToCloudinary(file, "users/profile");
+      const result = await updateProfile(uploadedUrl);
+      if ("error" in result) {
+        setPhotoError(result.error?.message ?? "프로필 사진 변경에 실패했습니다.");
+        return;
+      }
+      if (user) setUser({ ...user, profileImage: uploadedUrl });
+      setShowPhotoUpdatedModal(true);
+    } catch {
+      setPhotoError("프로필 사진 변경 중 오류가 발생했습니다.");
+    } finally {
+      URL.revokeObjectURL(previewUrl);
+      setProfilePreview(null);
+      setUploadingPhoto(false);
+    }
+  };
 
   const handleAddressInputChange = (value: string) => {
     setAddressQuery(value);
@@ -320,9 +354,23 @@ export default function SettingsClient({
             <div className="flex flex-col items-center">
               <AvatarWithCamera
                 initial={user?.fullName?.[0] ?? ""}
-                src={user?.profileImage}
+                src={profilePreview ?? user?.profileImage}
+                onCameraClick={() => {
+                  if (uploadingPhoto) return;
+                  profileFileRef.current?.click();
+                }}
                 className="mb-4"
               />
+              <input
+                ref={profileFileRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleProfileFileChange}
+              />
+              {photoError && (
+                <p className="text-xs text-red-500 mb-2">{photoError}</p>
+              )}
               <p className="text-stone-900 text-xl font-bold">{user?.fullName ?? ""}</p>
               <p className="mt-1 mb-3 text-gray-500 text-sm">{user?.email ?? ""}</p>
               <span
@@ -571,6 +619,13 @@ export default function SettingsClient({
         preset="saveConfirm"
         onClose={() => setShowSaveModal(false)}
         onConfirm={() => setShowSaveModal(false)}
+      />
+
+      <CustomModal
+        open={showPhotoUpdatedModal}
+        preset="profileImageUpdated"
+        onClose={() => setShowPhotoUpdatedModal(false)}
+        onConfirm={() => setShowPhotoUpdatedModal(false)}
       />
     </div>
   );
