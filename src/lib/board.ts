@@ -1,6 +1,6 @@
 // 구인게시판 작성/수정 폼에서 공유하는 상수와 매핑 헬퍼.
 
-import { Home, Heart, PawPrint, Moon, Car, MoreHorizontal } from "lucide-react";
+import { Home, Heart, PawPrint, Moon } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { Pet, PetRow } from "@/types/board";
 
@@ -11,8 +11,6 @@ export const SERVICE_TYPES: { label: string; icon: LucideIcon; value: string }[]
     { label: "위탁 돌봄", icon: Heart, value: "foster" },
     { label: "산책", icon: PawPrint, value: "walk" },
     { label: "펫 호텔", icon: Moon, value: "hotel" },
-    { label: "픽업 서비스", icon: Car, value: "pickup" },
-    { label: "기타", icon: MoreHorizontal, value: "other" },
   ];
 
 export const BUDGET_PRESETS = [10000, 20000, 30000, 50000];
