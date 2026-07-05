@@ -1579,6 +1579,15 @@ function ChatPageContent({
     selectedApplicantId !== null &&
     rejectedIds.has(selectedApplicantId);
 
+  const isRecipientLeft =
+    activeTab === "one_on_one"
+      ? !!selectedRoom?.recipientLeft
+      : activeTab === "applicants"
+        ? !!selectedApplicant?.recipientLeft
+        : activeTab === "reservations"
+          ? !!selectedReservationRequest?.recipientLeft
+          : false;
+
   const confirmedPostTitle = selectedApplicant
     ? (posts.find((p) => p.id === selectedApplicant.postId)?.title ?? "")
     : "";
@@ -1798,6 +1807,7 @@ function ChatPageContent({
     sending,
     sendError,
     isRejectedApplicant,
+    isRecipientLeft,
     showApplicantActions,
     applicationActionError,
     actioningId,
