@@ -11,6 +11,7 @@ import { markAllNotificationsRead } from "@/app/actions/notifications";
 import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { NotificationItem } from "./NotificationItem";
 import { NotificationsRealtimeSync } from "./NotificationsRealtimeSync";
+import LoadingPage from "@/components/common/LoadingPage";
 
 type NotificationRow = {
   id: string;
@@ -151,10 +152,7 @@ export default function NotificationsClient() {
           {/* 로딩 */}
           {isLoading && (
             <div className="bg-white rounded-2xl border border-orange-100 overflow-hidden">
-              <div className="py-10 flex flex-col items-center gap-2 text-gray-300">
-                <Bell size={28} strokeWidth={1.5} />
-                <p className="text-sm">불러오는 중...</p>
-              </div>
+              <LoadingPage className="py-10" />
             </div>
           )}
 

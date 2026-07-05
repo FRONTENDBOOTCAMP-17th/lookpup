@@ -10,6 +10,7 @@ import Avatar from "@/components/ui/Avatar";
 import { deleteReview } from "@/app/actions/reviews";
 import { CustomModal } from "@/components/common/CustomModal";
 import { ImageGallery } from "@/components/common/ImageGallery";
+import LoadingPage from "@/components/common/LoadingPage";
 
 interface WrittenReview {
   id: string;
@@ -436,9 +437,7 @@ export default function ReviewsClient({
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center py-20">
-            <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
-          </div>
+          <LoadingPage />
         ) : activeTab === "written" ? (
           writtenReviews !== null &&
           (writtenError ? (

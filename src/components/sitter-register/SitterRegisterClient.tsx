@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Header from "@/components/layout/Header";
+import LoadingPage from "@/components/common/LoadingPage";
 import { Progress } from "@/components/ui/progress";
 import { useUserStore } from "@/store/userStore";
 import { useSitterRegisterForm } from "@/hooks/sitter-register/useSitterRegisterForm";
@@ -26,7 +27,8 @@ export default function SitterRegisterClient() {
     mutation.mutate(values);
   });
 
-  if (authLoading || !isLoggedIn) return null;
+  if (authLoading) return <LoadingPage fullScreen />;
+  if (!isLoggedIn) return null;
 
   return (
     <>

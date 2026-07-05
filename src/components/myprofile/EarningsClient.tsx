@@ -6,6 +6,7 @@ import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
 import Header from "@/components/layout/Header";
 import { MobileBackButton, DesktopBackButton } from "@/components/common/BackButton";
 import SectionCard from "@/components/common/SectionCard";
+import LoadingPage from "@/components/common/LoadingPage";
 import {
   ChartContainer,
   ChartTooltip,
@@ -138,9 +139,7 @@ export default function EarningsClient({ initialData }: { initialData?: Earnings
         <SectionCard className="p-6 mb-8 gap-0">
           <h2 className="text-xl font-bold text-stone-900 mb-6">월별 수익 현황</h2>
           {isLoading ? (
-            <div className="h-64 bg-orange-50 rounded-xl flex items-center justify-center">
-              <p className="text-gray-500 text-sm">불러오는 중...</p>
-            </div>
+            <LoadingPage className="h-64 bg-orange-50 rounded-xl" />
           ) : (
             <ChartContainer config={chartConfig} className="h-64 w-full">
               <BarChart data={data.monthly} margin={{ left: 0, right: 0 }}>
@@ -174,9 +173,7 @@ export default function EarningsClient({ initialData }: { initialData?: Earnings
           </div>
 
           {isLoading ? (
-            <div className="py-16 text-center text-gray-500 text-sm">
-              불러오는 중...
-            </div>
+            <LoadingPage />
           ) : data.transactions.length === 0 ? (
             <div className="py-16 text-center text-gray-500 text-sm">
               거래 내역이 없습니다.

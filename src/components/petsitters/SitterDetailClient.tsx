@@ -5,6 +5,7 @@ import Link from "next/link";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import Avatar from "@/components/ui/Avatar";
+import LoadingPage from "@/components/common/LoadingPage";
 import BackButton from "@/components/common/BackButton";
 import Pill from "@/components/ui/Pill";
 import { MapPin, ChevronLeft } from "lucide-react";
@@ -71,11 +72,7 @@ export default function SitterDetailClient({
 
   const renderTabContent = () => {
     if (isLoading) {
-      return (
-        <div className="flex items-center justify-center py-20 text-gray-400 text-sm">
-          불러오는 중...
-        </div>
-      );
+      return <LoadingPage />;
     }
     if (isError || !sitter) {
       return (
