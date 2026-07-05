@@ -10,6 +10,10 @@
   --foreground: #1c1917;
 }
 
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
@@ -19,4 +23,73 @@ body {
 
 * {
   box-sizing: border-box;
+}
+
+@keyframes hero-fade-up-text {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes hero-fade-up-card {
+  0% {
+    opacity: 0;
+    transform: translateY(32px) scale(0.96) rotate(var(--hero-rotate, 0deg));
+  }
+  70% {
+    opacity: var(--hero-opacity, 1);
+    transform: translateY(-4px) scale(1.01) rotate(var(--hero-rotate, 0deg));
+  }
+  100% {
+    opacity: var(--hero-opacity, 1);
+    transform: translateY(0) scale(1) rotate(var(--hero-rotate, 0deg));
+  }
+}
+
+.animate-hero-text {
+  opacity: 0;
+  animation: hero-fade-up-text 0.7s ease-out forwards;
+}
+
+.animate-hero-card {
+  opacity: 0;
+  animation: hero-fade-up-card 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes scroll-reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.scroll-reveal {
+  opacity: 0;
+}
+
+.scroll-reveal-visible {
+  animation: scroll-reveal-up 0.6s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-hero-text,
+  .animate-hero-card,
+  .scroll-reveal-visible {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .scroll-reveal {
+    opacity: 1;
+  }
 }

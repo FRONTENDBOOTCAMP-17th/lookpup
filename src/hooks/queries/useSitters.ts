@@ -13,6 +13,7 @@ interface SitterRow {
   full_name: string | null;
   profile_image: string | null;
   service_types: string[];
+  service_prices: Record<string, number>;
   review_count: number;
 }
 
@@ -51,6 +52,7 @@ export function useSitters(filters: SitterFilters) {
 
       return rows.map((row) => ({
         ...row,
+        service_prices: row.service_prices ?? {},
         review_count: reviewCounts.get(row.id) ?? 0,
       }));
     },

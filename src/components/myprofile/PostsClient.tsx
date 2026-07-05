@@ -366,7 +366,7 @@ export default function PostsClient({ initialPosts }: { initialPosts?: RequestRo
         </div>
       </div>
 
-      <main className="flex-1 w-full max-w-[820px] mx-auto px-6 pt-6 pb-10">
+      <main className="flex-1 w-full max-w-[1280px] mx-auto px-4 sm:px-10 pt-6 pb-10">
         <div className="hidden md:flex items-center gap-3 mb-2">
           <DesktopBackButton />
           <div>

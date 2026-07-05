@@ -46,6 +46,10 @@ export default function PetsitterSearchClient() {
     const serviceTypes = (row.service_types as string[])
       .map((t) => SERVICE_TYPE_MAP[t] ?? t)
       .filter(Boolean);
+    const servicePrices: Record<string, number> = {};
+    for (const [rawType, price] of Object.entries(row.service_prices ?? {})) {
+      servicePrices[SERVICE_TYPE_MAP[rawType] ?? rawType] = price;
+    }
     return {
       id: row.id,
       user_id: row.user_id ?? null,
@@ -57,7 +61,10 @@ export default function PetsitterSearchClient() {
       neighborhood,
       rating: parseFloat(String(row.rating ?? 0)),
       reviewCount: row.review_count,
-      price: row.base_price ?? 0,
+      price:
+        activeFilter === "전체"
+          ? null
+          : (servicePrices[activeFilter] ?? row.base_price ?? 0),
       services: [...new Set(serviceTypes)],
       lat: parseFloat(String(row.latitude)),
       lng: parseFloat(String(row.longitude)),

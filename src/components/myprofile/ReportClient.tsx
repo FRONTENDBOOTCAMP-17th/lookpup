@@ -173,7 +173,7 @@ export default function ReportClient() {
         </div>
       </div>
 
-      <main className="max-w-190 mx-auto px-4 md:px-6 pt-4 md:pt-12 pb-20">
+      <main className="w-full max-w-[1280px] mx-auto px-4 sm:px-10 pt-4 md:pt-12 pb-20">
         <div className="hidden md:flex items-center gap-3">
           <DesktopBackButton />
           <h1 className="text-2xl font-bold text-stone-900">신고하기</h1>

@@ -14,7 +14,7 @@ interface Sitter {
   neighborhood: string;
   rating: number;
   reviewCount: number;
-  price: number;
+  price: number | null;
   services: string[];
 }
 
@@ -75,9 +75,11 @@ export default function PetsitterCard({
             <span className="text-stone-900 text-base font-bold">{sitter.rating.toFixed(1)}</span>
             <span className="text-gray-500 text-sm">({sitter.reviewCount})</span>
           </div>
-          <span className="text-orange-500 text-base font-semibold">
-            {sitter.price.toLocaleString()}원~
-          </span>
+          {sitter.price != null && (
+            <span className="text-orange-500 text-base font-semibold">
+              {sitter.price.toLocaleString()}원~
+            </span>
+          )}
         </div>
       </div>
     </div>

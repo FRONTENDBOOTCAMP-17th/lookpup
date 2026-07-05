@@ -8,6 +8,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import SearchFilterBar from "@/components/common/SearchFilterBar";
 import Pill from "@/components/ui/Pill";
+import LoadingPage from "@/components/common/LoadingPage";
 import { useUserStore } from "@/store/userStore";
 import { splitConditions } from "@/utils/boardConditions";
 
@@ -195,7 +196,10 @@ export default function BoardListClient() {
       <Header />
 
       <main className="flex-1 bg-orange-50">
-        <div className="max-w-6xl mx-auto px-4 md:px-8 py-8 md:py-12">
+        {postsLoading ? (
+          <LoadingPage fullScreen />
+        ) : (
+          <div className="max-w-[1280px] mx-auto px-4 sm:px-10 py-8 md:py-12">
           <div className="flex flex-col sm:flex-row items-start justify-between gap-4 mb-8">
             <div>
               <h1 className="text-3xl font-bold text-stone-900">구인게시판</h1>
@@ -236,11 +240,7 @@ export default function BoardListClient() {
           </div>
 
           <div className="flex flex-col gap-3">
-            {postsLoading ? (
-              <div className="py-20 text-center text-gray-400 text-base bg-white rounded-2xl border border-orange-100">
-                불러오는 중...
-              </div>
-            ) : paginated.length > 0 ? (
+            {paginated.length > 0 ? (
               paginated.map((post) => <PostCard key={post.id} post={post} />)
             ) : (
               <div className="py-20 text-center text-gray-400 text-base bg-white rounded-2xl border border-orange-100">
@@ -285,6 +285,7 @@ export default function BoardListClient() {
             </div>
           )}
         </div>
+        )}
       </main>
 
       <Footer />

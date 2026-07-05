@@ -813,7 +813,7 @@ export default function MyPetsClient({ initialPets }: MyPetsClientProps) {
       </div>
 
       {/* 데스크탑 콘텐츠 */}
-      <div className="hidden md:block w-full max-w-[1200px] mx-auto px-6 pt-10 pb-20">
+      <div className="hidden md:block w-full max-w-[1280px] mx-auto px-4 sm:px-10 pt-10 pb-20">
         <div className="flex items-start justify-between mb-8">
           <div className="flex items-center gap-4">
             <DesktopBackButton />

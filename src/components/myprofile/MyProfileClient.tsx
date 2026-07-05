@@ -298,7 +298,7 @@ export default function MyProfileClient({
 
       {/* 데스크탑 레이아웃 */}
       <div className="hidden md:block flex-1">
-        <div className="max-w-[1200px] mx-auto px-6 py-12">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-10 py-12">
           <div className="flex gap-6">
             {/* 사이드바 */}
             <div className="w-72 shrink-0">
