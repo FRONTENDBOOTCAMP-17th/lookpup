@@ -1,7 +1,7 @@
 "use client";
 
 import { useFormContext } from "react-hook-form";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Check } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -43,7 +43,6 @@ export default function StepPetService({
   sitterServices: SitterService[];
   sitter: SitterBookingInfo;
 }) {
-  const router = useRouter();
   const { watch, setValue, formState: { errors } } = useFormContext<Step2Values>();
   const { dateRange, petIds, togglePet } = useBookingStore();
 
@@ -112,13 +111,12 @@ export default function StepPetService({
             );
           })}
 
-          <button
-            type="button"
-            onClick={() => router.push("/pet-register")}
-            className="w-full min-h-11 h-14 rounded-2xl border-2 border-dashed border-orange-100 text-gray-400 text-sm font-medium hover:border-orange-500/50 hover:text-orange-500 transition-colors"
+          <Link
+            href="/pet-register"
+            className="w-full min-h-11 h-14 rounded-2xl border-2 border-dashed border-orange-100 text-gray-400 text-sm font-medium hover:border-orange-500/50 hover:text-orange-500 transition-colors flex items-center justify-center"
           >
             + 반려동물 추가
-          </button>
+          </Link>
         </div>
       </div>
 

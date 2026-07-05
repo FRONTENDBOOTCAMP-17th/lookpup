@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Plus,
@@ -852,12 +853,12 @@ export default function MyPetsClient({ initialPets }: MyPetsClientProps) {
                     반려동물 선택
                   </button>
                 )}
-                <button
-                  onClick={handleAddPet}
+                <Link
+                  href="/pet-register"
                   className="h-11 px-5 rounded-xl bg-orange-500 text-white font-semibold hover:bg-orange-600 transition-colors flex items-center gap-2 text-sm"
                 >
                   <Plus size={16} /> 반려동물 추가
-                </button>
+                </Link>
               </>
             )}
           </div>
