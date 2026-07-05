@@ -16,14 +16,14 @@ const SERVICES: { key: string; label: string; emoji: string; desc: string }[] = 
   { key: "visit", label: "방문돌봄", emoji: "🏠", desc: "보호자님 집에서 돌봄" },
   { key: "home", label: "위탁돌봄", emoji: "🏡", desc: "펫시터 집에서 돌봄" },
   { key: "walk", label: "산책", emoji: "🚶", desc: "반려동물 산책 서비스" },
-  { key: "hotel", label: "펫호텔", emoji: "🏨", desc: "장기 위탁 돌봄" },
+  { key: "pickup", label: "픽업", emoji: "🚗", desc: "반려동물 픽업 서비스" },
 ];
 
 const SERVICE_KEY_TO_TYPE: Record<string, string> = {
   visit: "방문돌봄",
   home: "위탁돌봄",
   walk: "산책",
-  hotel: "호텔",
+  pickup: "픽업",
 };
 
 function formatDateRange(range: DateRange | undefined): string {
@@ -47,10 +47,10 @@ export default function StepPetService({
   const { watch, setValue, formState: { errors } } = useFormContext<Step2Values>();
   const { dateRange, petIds, togglePet } = useBookingStore();
 
-  const nights = dateRange?.from && dateRange?.to
-    ? Math.max(1, differenceInDays(dateRange.to, dateRange.from))
+  const days = dateRange?.from && dateRange?.to
+    ? Math.max(1, differenceInDays(dateRange.to, dateRange.from) + 1)
     : 1;
-  const total = sitter.pricePerDay * nights;
+  const total = sitter.pricePerDay * days;
 
   function handleTogglePet(id: string, name: string) {
     togglePet(id, name);

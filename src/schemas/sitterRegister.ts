@@ -19,7 +19,7 @@ export const step1Schema = z.object({
 
 export const step2Schema = z.object({
   selectedServices: z
-    .array(z.enum(["visit", "foster", "walk", "hotel"]))
+    .array(z.enum(["visit", "foster", "walk", "pickup"]))
     .min(1, "제공 가능한 서비스를 1개 이상 선택해주세요."),
 });
 
