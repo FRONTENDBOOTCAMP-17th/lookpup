@@ -404,10 +404,10 @@ export default function MyProfileClient({
                           menuItems.length,
                         );
                         return (
-                          <button
+                          <Link
                             key={item.id}
-                            onClick={() => router.push(item.link)}
-                            className="flex items-center gap-3 p-4 bg-orange-50 hover:bg-orange-100 rounded-xl transition-colors text-left"
+                            href={item.link}
+                            className="flex items-center gap-3 p-4 bg-orange-50 hover:bg-orange-100 rounded-xl transition-colors"
                           >
                             <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-white shadow-sm border border-orange-100">
                               <MenuIcon icon={Icon} size={16} color={iconColor} />
@@ -416,7 +416,7 @@ export default function MyProfileClient({
                               {item.label}
                             </span>
                             <ChevronRight size={16} className="text-gray-500 ml-auto" />
-                          </button>
+                          </Link>
                         );
                       })}
                     </div>

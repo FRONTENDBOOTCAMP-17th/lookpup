@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
@@ -137,13 +138,12 @@ export default function WithdrawClient() {
                     </p>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => router.push("/myprofile/booking-history")}
-                  className="w-full h-11 rounded-xl border border-red-200 bg-white text-[#EF4444] font-semibold text-sm hover:bg-red-50 transition-colors"
+                <Link
+                  href="/myprofile/booking-history"
+                  className="w-full h-11 rounded-xl border border-red-200 bg-white text-[#EF4444] font-semibold text-sm hover:bg-red-50 transition-colors flex items-center justify-center"
                 >
                   예약 내역 보기
-                </button>
+                </Link>
               </div>
             )}
 
@@ -275,13 +275,12 @@ export default function WithdrawClient() {
                 )}
 
                 <div className="flex gap-3 pb-4">
-                  <button
-                    type="button"
-                    onClick={() => router.push("/myprofile")}
-                    className="flex-1 h-12 rounded-xl border border-orange-100 text-gray-500 font-semibold hover:bg-orange-50 transition-colors"
+                  <Link
+                    href="/myprofile"
+                    className="flex-1 h-12 rounded-xl border border-orange-100 text-gray-500 font-semibold hover:bg-orange-50 transition-colors flex items-center justify-center"
                   >
                     취소
-                  </button>
+                  </Link>
                   <button
                     type="button"
                     disabled={!canSubmit || isDeleting}

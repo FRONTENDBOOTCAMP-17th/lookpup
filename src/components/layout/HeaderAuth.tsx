@@ -221,19 +221,19 @@ export default function HeaderAuth() {
           </button>
         </HoverCardTrigger>
         <HoverCardContent align="end" sideOffset={8} className={`w-44 p-1 ${HOVER_CARD_CLS}`}>
-          <button type="button" onClick={() => router.push("/myprofile")} className="w-full px-3 py-2.5 flex items-center gap-3 text-sm text-stone-900 rounded-lg hover:bg-orange-50 transition-colors">
+          <Link href="/myprofile" className="w-full px-3 py-2.5 flex items-center gap-3 text-sm text-stone-900 rounded-lg hover:bg-orange-50 transition-colors">
             <User size={16} className="text-orange-500 shrink-0" strokeWidth={1.8} />
             마이페이지
-          </button>
-          <button type="button" onClick={() => router.push("/chat")} className="w-full px-3 py-2.5 flex items-center gap-3 text-sm text-stone-900 rounded-lg hover:bg-orange-50 transition-colors">
+          </Link>
+          <Link href="/chat" className="w-full px-3 py-2.5 flex items-center gap-3 text-sm text-stone-900 rounded-lg hover:bg-orange-50 transition-colors">
             <MessageSquare size={16} className="text-orange-500 shrink-0" strokeWidth={1.8} />
             채팅
-          </button>
+          </Link>
           {user?.role === "admin" && (
-            <button type="button" onClick={() => router.push("/admin")} className="w-full px-3 py-2.5 flex items-center gap-3 text-sm text-stone-900 rounded-lg hover:bg-orange-50 transition-colors">
+            <Link href="/admin" className="w-full px-3 py-2.5 flex items-center gap-3 text-sm text-stone-900 rounded-lg hover:bg-orange-50 transition-colors">
               <ShieldCheck size={16} className="text-orange-500 shrink-0" strokeWidth={1.8} />
               관리자 페이지
-            </button>
+            </Link>
           )}
           <div className="mx-2 my-1 h-px bg-[#ffe9d6]" />
           <button type="button" onClick={() => { clearUser(); signOut(); }} className="w-full px-3 py-2.5 flex items-center gap-3 text-sm text-gray-500 rounded-lg hover:bg-orange-50 transition-colors">

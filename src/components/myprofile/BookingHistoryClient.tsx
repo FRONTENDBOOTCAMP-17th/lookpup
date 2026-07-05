@@ -241,12 +241,12 @@ function BookingCard({
             {(booking.status === "in-progress" ||
               booking.status === "completed" ||
               booking.status === "cancelled") && (
-              <button
-                onClick={() => router.push(`/myprofile/booking-history/${booking.id}`)}
-                className="flex-1 h-10 rounded-xl border border-orange-100 text-gray-500 text-sm font-medium hover:border-orange-400 transition-colors"
+              <Link
+                href={`/myprofile/booking-history/${booking.id}`}
+                className="flex-1 h-10 rounded-xl border border-orange-100 text-gray-500 text-sm font-medium hover:border-orange-400 transition-colors flex items-center justify-center"
               >
                 상세보기
-              </button>
+              </Link>
             )}
           </>
         ) : (
@@ -278,12 +278,12 @@ function BookingCard({
             )}
             {booking.status === "in-progress" && (
               <>
-                <button
-                  onClick={() => router.push(`/myprofile/booking-history/${booking.id}`)}
-                  className="flex-1 h-10 rounded-xl border border-orange-100 text-stone-900 text-sm font-medium hover:border-orange-400 transition-colors"
+                <Link
+                  href={`/myprofile/booking-history/${booking.id}`}
+                  className="flex-1 h-10 rounded-xl border border-orange-100 text-stone-900 text-sm font-medium hover:border-orange-400 transition-colors flex items-center justify-center"
                 >
                   예약 상세보기
-                </button>
+                </Link>
                 <button
                   onClick={handleChatClick}
                   className="flex-1 h-10 rounded-xl bg-orange-50 text-orange-500 text-sm font-semibold hover:bg-orange-100 transition-colors flex items-center justify-center gap-1.5"
@@ -295,21 +295,19 @@ function BookingCard({
             )}
             {booking.status === "completed" && (
               <>
-                <button
-                  onClick={() => router.push(`/myprofile/booking-history/${booking.id}`)}
-                  className="flex-1 h-10 rounded-xl border border-orange-100 text-stone-900 text-sm font-medium hover:border-orange-400 transition-colors"
+                <Link
+                  href={`/myprofile/booking-history/${booking.id}`}
+                  className="flex-1 h-10 rounded-xl border border-orange-100 text-stone-900 text-sm font-medium hover:border-orange-400 transition-colors flex items-center justify-center"
                 >
                   예약 상세보기
-                </button>
+                </Link>
                 {!booking.reviewWritten ? (
-                  <button
-                    onClick={() =>
-                      router.push(`/myprofile/reviews/write?bookingId=${booking.id}`)
-                    }
-                    className="flex-1 h-10 rounded-xl bg-orange-500 text-white text-sm font-semibold hover:bg-orange-600 transition-colors"
+                  <Link
+                    href={`/myprofile/reviews/write?bookingId=${booking.id}`}
+                    className="flex-1 h-10 rounded-xl bg-orange-500 text-white text-sm font-semibold hover:bg-orange-600 transition-colors flex items-center justify-center"
                   >
                     후기 작성하기
-                  </button>
+                  </Link>
                 ) : (
                   <button
                     disabled
@@ -321,12 +319,12 @@ function BookingCard({
               </>
             )}
             {booking.status === "cancelled" && (
-              <button
-                onClick={() => router.push(`/myprofile/booking-history/${booking.id}`)}
-                className="flex-1 h-10 rounded-xl border border-orange-100 text-gray-500 text-sm font-medium hover:border-orange-400 transition-colors"
+              <Link
+                href={`/myprofile/booking-history/${booking.id}`}
+                className="flex-1 h-10 rounded-xl border border-orange-100 text-gray-500 text-sm font-medium hover:border-orange-400 transition-colors flex items-center justify-center"
               >
                 상세보기
-              </button>
+              </Link>
             )}
           </>
         )}

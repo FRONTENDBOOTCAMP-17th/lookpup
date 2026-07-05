@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus, X, Eye, Camera, MapPin, Check } from "lucide-react";
 import Header from "@/components/layout/Header";
@@ -604,14 +605,13 @@ export default function SitterEditClient({
           >
             취소
           </button>
-          <button
-            type="button"
-            onClick={() => router.push("/myprofile/sitter-profile")}
+          <Link
+            href="/myprofile/sitter-profile"
             className="flex-1 md:flex-none md:w-40 h-12 border border-orange-500 rounded-[10px] text-base font-semibold text-orange-500 flex items-center justify-center gap-2 hover:bg-orange-50 transition-colors"
           >
             <Eye size={16} />
             미리보기
-          </button>
+          </Link>
           <button
             type="button"
             onClick={handleSave}

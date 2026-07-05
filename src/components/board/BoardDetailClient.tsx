@@ -286,13 +286,13 @@ export default function BoardDetailClient({
                       모집마감
                     </button>
                   )}
-                  <button
-                    onClick={() => router.push(`/board/${post.id}/edit`)}
+                  <Link
+                    href={`/board/${post.id}/edit`}
                     className="px-3 py-1.5 bg-gray-100 rounded-lg text-gray-500 text-xs font-medium flex items-center gap-1 hover:bg-gray-200 transition-colors"
                   >
                     <Pencil size={12} />
                     수정
-                  </button>
+                  </Link>
                   <button
                     onClick={() => setDeleteTargetId(post.id)}
                     className="px-3 py-1.5 bg-gray-100 rounded-lg text-gray-500 text-xs font-medium flex items-center gap-1 hover:bg-gray-200 transition-colors"

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
@@ -383,13 +384,13 @@ export default function BookingDetailClient({
               {(booking.status === "in-progress" ||
                 booking.status === "confirmed" ||
                 booking.status === "pending") && (
-                <button
-                  onClick={() => router.push("/chat")}
+                <Link
+                  href="/chat"
                   className="flex items-center gap-2 px-4 py-2.5 bg-orange-50 text-orange-500 rounded-xl text-sm font-semibold hover:bg-orange-100 transition-colors shrink-0"
                 >
                   <MessageCircle size={15} />
                   채팅
-                </button>
+                </Link>
               )}
             </div>
           </SectionCard>
