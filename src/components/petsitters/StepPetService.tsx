@@ -47,10 +47,10 @@ export default function StepPetService({
   const { watch, setValue, formState: { errors } } = useFormContext<Step2Values>();
   const { dateRange, petIds, togglePet } = useBookingStore();
 
-  const nights = dateRange?.from && dateRange?.to
-    ? Math.max(1, differenceInDays(dateRange.to, dateRange.from))
+  const days = dateRange?.from && dateRange?.to
+    ? Math.max(1, differenceInDays(dateRange.to, dateRange.from) + 1)
     : 1;
-  const total = sitter.pricePerDay * nights;
+  const total = sitter.pricePerDay * days;
 
   function handleTogglePet(id: string, name: string) {
     togglePet(id, name);

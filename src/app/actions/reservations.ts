@@ -919,6 +919,17 @@ export async function createPetsitterReservationRequest(
       },
     };
 
+  // 실제 예약 금액 = 1일 단가 × 이용 일수 (KST 달력일 기준, 시작·종료일 포함)
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const KST_OFFSET_MS = 9 * 60 * 60 * 1000; // UTC+9
+  const toKstDayIndex = (iso: string) =>
+    Math.floor((new Date(iso).getTime() + KST_OFFSET_MS) / DAY_MS);
+  const days = Math.max(
+    1,
+    toKstDayIndex(input.end_datetime) - toKstDayIndex(input.start_datetime) + 1,
+  );
+  const totalPrice = service.price * days;
+
   const { data: reservation, error: reservationError } = await db
     .from("reservations")
     .insert({
@@ -927,7 +938,7 @@ export async function createPetsitterReservationRequest(
       service_id: input.service_id,
       start_datetime: input.start_datetime,
       end_datetime: input.end_datetime,
-      total_price: service.price,
+      total_price: totalPrice,
       status: "pending",
       memo: input.memo ?? null,
     })
@@ -990,7 +1001,7 @@ export async function createPetsitterReservationRequest(
     serviceTitle,
     startDatetime: input.start_datetime,
     endDatetime: input.end_datetime,
-    totalPrice: service.price,
+    totalPrice,
     petNames,
   })}`;
 
