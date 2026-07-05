@@ -3,7 +3,13 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { MapPin, Calendar, DollarSign, ChevronRight, ChevronLeft } from "lucide-react";
+import {
+  MapPin,
+  Calendar,
+  DollarSign,
+  ChevronRight,
+  ChevronLeft,
+} from "lucide-react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import SearchFilterBar from "@/components/common/SearchFilterBar";
@@ -12,7 +18,7 @@ import LoadingPage from "@/components/common/LoadingPage";
 import { useUserStore } from "@/store/userStore";
 import { splitConditions } from "@/utils/boardConditions";
 
-const CATEGORIES = ["전체", "방문돌봄", "위탁돌봄", "산책", "펫호텔", "픽업", "기타"];
+const CATEGORIES = ["전체", "방문돌봄", "위탁돌봄", "산책", "픽업"];
 
 const ITEMS_PER_PAGE = 5;
 const PAGE_WINDOW_SIZE = 5;
@@ -21,7 +27,6 @@ const REQUEST_TYPE_MAP: Record<string, string> = {
   care: "방문돌봄",
   foster: "위탁돌봄",
   walk: "산책",
-  hotel: "펫호텔",
   pickup: "픽업",
   other: "기타",
 };
@@ -70,10 +75,13 @@ function formatRelativeTime(dateStr: string) {
   return `${Math.floor(diffH / 24)}일 전`;
 }
 
-function PostCard({ post }: { post: Post }) {
+function PostCard({ post, index = 0 }: { post: Post; index?: number }) {
   return (
     <Link href={`/board/${post.id}`}>
-      <div className="p-5 bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100 flex justify-between items-start cursor-pointer hover:border-orange-500 hover:-translate-y-1 hover:shadow-[0px_8px_24px_0px_rgba(232,116,42,0.15)] transition-all duration-200">
+      <div
+        style={{ animationDelay: `${Math.min(index, 8) * 0.05}s` }}
+        className="animate-list-fade-in p-5 bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100 flex justify-between items-start cursor-pointer hover:border-orange-500 hover:-translate-y-1 hover:shadow-[0px_8px_24px_0px_rgba(232,116,42,0.15)] transition-all duration-200"
+      >
         <div className="flex-1 flex flex-col gap-2 min-w-0 pr-6">
           <div className="flex items-center gap-3">
             <Pill className="shrink-0">{post.category}</Pill>
@@ -199,92 +207,98 @@ export default function BoardListClient() {
         {postsLoading ? (
           <LoadingPage fullScreen />
         ) : (
-          <div className="max-w-[1280px] mx-auto px-4 sm:px-10 py-8 md:py-12">
-          <div className="flex flex-col sm:flex-row items-start justify-between gap-4 mb-8">
-            <div>
-              <h1 className="text-3xl font-bold text-stone-900">구인게시판</h1>
-              <p className="text-gray-500 text-base mt-2">
-                펫시터를 찾거나 구인 정보를 확인하세요
-              </p>
+          <div className="animate-list-fade-in max-w-[1280px] mx-auto px-4 sm:px-10 py-8 md:py-12">
+            <div className="flex flex-col sm:flex-row items-start justify-between gap-4 mb-8">
+              <div>
+                <h1 className="text-3xl font-bold text-stone-900">
+                  구인게시판
+                </h1>
+                <p className="text-gray-500 text-base mt-2">
+                  펫시터를 찾거나 구인 정보를 확인하세요
+                </p>
+              </div>
+              <Link
+                href="/board/write"
+                onClick={(e) => {
+                  if (!isLoggedIn) {
+                    e.preventDefault();
+                    router.push("/auth/login");
+                  }
+                }}
+                className="h-12 px-6 bg-orange-500 text-white text-base font-semibold rounded-[10px] flex items-center transition-all hover:bg-orange-600"
+              >
+                글쓰기
+              </Link>
             </div>
-            <Link
-              href="/board/write"
-              onClick={(e) => {
-                if (!isLoggedIn) {
-                  e.preventDefault();
-                  router.push("/auth/login");
-                }
-              }}
-              className="h-12 px-6 bg-orange-500 text-white text-base font-semibold rounded-[10px] flex items-center transition-all hover:bg-orange-600"
-            >
-              글쓰기
-            </Link>
-          </div>
 
-          <div className="p-4 md:p-6 bg-white rounded-2xl shadow-sm mb-6">
-            <SearchFilterBar
-              placeholder="제목, 내용으로 검색"
-              filters={CATEGORIES}
-              activeFilter={activeCategory}
-              onFilterChange={handleCategoryChange}
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-              className="[&>div:first-child>div:last-child]:hidden"
-            />
-          </div>
+            <div className="p-4 md:p-6 bg-white rounded-2xl shadow-sm mb-6">
+              <SearchFilterBar
+                placeholder="제목, 내용으로 검색"
+                filters={CATEGORIES}
+                activeFilter={activeCategory}
+                onFilterChange={handleCategoryChange}
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                className="[&>div:first-child>div:last-child]:hidden"
+              />
+            </div>
 
-          <div className="mb-4">
-            <span className="text-gray-500 text-sm">
-              총 {filtered.length}개의 구인글
-            </span>
-          </div>
+            <div className="mb-4">
+              <span className="text-gray-500 text-sm">
+                총 {filtered.length}개의 구인글
+              </span>
+            </div>
 
-          <div className="flex flex-col gap-3">
-            {paginated.length > 0 ? (
-              paginated.map((post) => <PostCard key={post.id} post={post} />)
-            ) : (
-              <div className="py-20 text-center text-gray-400 text-base bg-white rounded-2xl border border-orange-100">
-                검색 결과가 없습니다.
+            <div className="flex flex-col gap-3">
+              {paginated.length > 0 ? (
+                paginated.map((post, i) => (
+                  <PostCard key={post.id} post={post} index={i} />
+                ))
+              ) : (
+                <div className="py-20 text-center text-gray-400 text-base bg-white rounded-2xl border border-orange-100">
+                  검색 결과가 없습니다.
+                </div>
+              )}
+            </div>
+
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-2 mt-8">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={safePage === 1}
+                  aria-label="이전 페이지"
+                  className="w-10 h-10 rounded-lg bg-white text-gray-500 hover:bg-orange-50 disabled:opacity-40 disabled:hover:bg-white transition-colors flex items-center justify-center"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+
+                {pageNumbers.map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => setCurrentPage(n)}
+                    className={`w-10 h-10 rounded-lg text-base font-medium transition-colors ${
+                      n === safePage
+                        ? "bg-orange-500 text-white"
+                        : "bg-white text-gray-500 hover:bg-orange-50"
+                    }`}
+                  >
+                    {n}
+                  </button>
+                ))}
+
+                <button
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(totalPages, p + 1))
+                  }
+                  disabled={safePage === totalPages}
+                  aria-label="다음 페이지"
+                  className="w-10 h-10 rounded-lg bg-white text-gray-500 hover:bg-orange-50 disabled:opacity-40 disabled:hover:bg-white transition-colors flex items-center justify-center"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
               </div>
             )}
           </div>
-
-          {totalPages > 1 && (
-            <div className="flex justify-center items-center gap-2 mt-8">
-              <button
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={safePage === 1}
-                aria-label="이전 페이지"
-                className="w-10 h-10 rounded-lg bg-white text-gray-500 hover:bg-orange-50 disabled:opacity-40 disabled:hover:bg-white transition-colors flex items-center justify-center"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-
-              {pageNumbers.map((n) => (
-                <button
-                  key={n}
-                  onClick={() => setCurrentPage(n)}
-                  className={`w-10 h-10 rounded-lg text-base font-medium transition-colors ${
-                    n === safePage
-                      ? "bg-orange-500 text-white"
-                      : "bg-white text-gray-500 hover:bg-orange-50"
-                  }`}
-                >
-                  {n}
-                </button>
-              ))}
-
-              <button
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                disabled={safePage === totalPages}
-                aria-label="다음 페이지"
-                className="w-10 h-10 rounded-lg bg-white text-gray-500 hover:bg-orange-50 disabled:opacity-40 disabled:hover:bg-white transition-colors flex items-center justify-center"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          )}
-        </div>
         )}
       </main>
 
