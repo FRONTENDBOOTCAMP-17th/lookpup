@@ -957,6 +957,15 @@ function MessageBubbleImpl({
     );
   }
   if (msg.from === "divider") {
+    if (msg.text.startsWith("[돌봄기록]")) {
+      return (
+        <div className="flex justify-center">
+          <span className="px-4 py-1 bg-orange-300 rounded-full text-white text-sm">
+            {msg.text}
+          </span>
+        </div>
+      );
+    }
     return (
       <div className="flex justify-center">
         <span className="px-4 py-1 bg-white rounded-full text-gray-500 text-sm">
@@ -990,8 +999,8 @@ function MessageBubbleImpl({
               />
             </>
           ) : (
-            <div className="max-w-xs px-5 py-4 bg-white rounded-tl-sm rounded-tr-2xl rounded-bl-2xl rounded-br-2xl shadow-sm">
-              <p className="text-stone-900 text-sm leading-6">{msg.text}</p>
+            <div className="max-w-xs px-5 py-4 bg-orange-500 rounded-tl-sm rounded-tr-2xl rounded-bl-2xl rounded-br-2xl shadow-sm">
+              <p className="text-white text-sm leading-6">{msg.text}</p>
             </div>
           )}
           <p className="text-gray-500 text-xs mt-1 pl-3">{msg.time}</p>
