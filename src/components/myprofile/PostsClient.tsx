@@ -16,7 +16,10 @@ import {
   XCircle,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
-import { MobileBackButton, DesktopBackButton } from "@/components/common/BackButton";
+import {
+  MobileBackButton,
+  DesktopBackButton,
+} from "@/components/common/BackButton";
 import { CustomModal } from "@/components/common/CustomModal";
 import SectionCard from "@/components/common/SectionCard";
 import { deleteRequest, updateRequest } from "@/app/actions/requests";
@@ -25,9 +28,7 @@ const REQUEST_TYPE_MAP: Record<string, string> = {
   care: "방문돌봄",
   foster: "위탁돌봄",
   walk: "산책",
-  hotel: "펫호텔",
   pickup: "픽업",
-  other: "기타",
 };
 
 function formatPeriod(start: string, end: string) {
@@ -72,7 +73,13 @@ type RequestRow = {
 };
 
 type PostStatus = "open" | "matched" | "in-progress" | "completed" | "canceled";
-type TabId = "all" | "open" | "matched" | "in-progress" | "completed" | "canceled";
+type TabId =
+  | "all"
+  | "open"
+  | "matched"
+  | "in-progress"
+  | "completed"
+  | "canceled";
 
 interface Post {
   id: string;
@@ -121,10 +128,26 @@ const STATUS_CONFIG: Record<
   PostStatus,
   { label: string; badgeBg: string; badgeText: string }
 > = {
-  open: { label: "모집중", badgeBg: "bg-emerald-100", badgeText: "text-emerald-500" },
-  matched: { label: "예약완료", badgeBg: "bg-blue-100", badgeText: "text-blue-500" },
-  "in-progress": { label: "진행중", badgeBg: "bg-orange-50", badgeText: "text-orange-500" },
-  completed: { label: "완료", badgeBg: "bg-gray-100", badgeText: "text-gray-500" },
+  open: {
+    label: "모집중",
+    badgeBg: "bg-emerald-100",
+    badgeText: "text-emerald-500",
+  },
+  matched: {
+    label: "예약완료",
+    badgeBg: "bg-blue-100",
+    badgeText: "text-blue-500",
+  },
+  "in-progress": {
+    label: "진행중",
+    badgeBg: "bg-orange-50",
+    badgeText: "text-orange-500",
+  },
+  completed: {
+    label: "완료",
+    badgeBg: "bg-gray-100",
+    badgeText: "text-gray-500",
+  },
   canceled: { label: "취소", badgeBg: "bg-red-100", badgeText: "text-red-500" },
 };
 
@@ -213,12 +236,16 @@ function PostCard({
         {post.applicantCount !== undefined ? (
           <div className="flex items-center gap-1">
             <User size={12} className="text-gray-500" />
-            <span className="text-xs text-gray-500">지원자 {post.applicantCount}명</span>
+            <span className="text-xs text-gray-500">
+              지원자 {post.applicantCount}명
+            </span>
           </div>
         ) : post.sitterName ? (
           <div className="flex items-center gap-1">
             <User size={12} className="text-gray-500" />
-            <span className="text-xs text-gray-500">펫시터 {post.sitterName}</span>
+            <span className="text-xs text-gray-500">
+              펫시터 {post.sitterName}
+            </span>
           </div>
         ) : (
           <div />
@@ -269,7 +296,11 @@ function PostCard({
 
 export type { RequestRow };
 
-export default function PostsClient({ initialPosts }: { initialPosts?: RequestRow[] }) {
+export default function PostsClient({
+  initialPosts,
+}: {
+  initialPosts?: RequestRow[];
+}) {
   const router = useRouter();
   const [posts, setPosts] = useState<Post[]>(
     initialPosts ? initialPosts.map(toPost) : [],
@@ -314,7 +345,10 @@ export default function PostsClient({ initialPosts }: { initialPosts?: RequestRo
     const el = tabsRef.current;
     if (!el) return;
     const amount = el.clientWidth * 0.7;
-    el.scrollBy({ left: dir === "left" ? -amount : amount, behavior: "smooth" });
+    el.scrollBy({
+      left: dir === "left" ? -amount : amount,
+      behavior: "smooth",
+    });
   };
 
   const filtered =
@@ -362,7 +396,9 @@ export default function PostsClient({ initialPosts }: { initialPosts?: RequestRo
       <div className="md:hidden sticky top-16 z-50 bg-white border-b border-orange-100">
         <div className="h-14 px-5 flex items-center gap-3">
           <MobileBackButton />
-          <span className="flex-1 font-semibold text-stone-900">게시글 관리</span>
+          <span className="flex-1 font-semibold text-stone-900">
+            게시글 관리
+          </span>
         </div>
       </div>
 
@@ -434,9 +470,13 @@ export default function PostsClient({ initialPosts }: { initialPosts?: RequestRo
 
         <div className="flex flex-col gap-3">
           {postsLoading ? (
-            <div className="py-20 text-center text-gray-400 text-sm">불러오는 중...</div>
+            <div className="py-20 text-center text-gray-400 text-sm">
+              불러오는 중...
+            </div>
           ) : sorted.length === 0 ? (
-            <div className="py-20 text-center text-gray-400 text-sm">게시글이 없습니다.</div>
+            <div className="py-20 text-center text-gray-400 text-sm">
+              게시글이 없습니다.
+            </div>
           ) : (
             sorted.map((post) => (
               <PostCard

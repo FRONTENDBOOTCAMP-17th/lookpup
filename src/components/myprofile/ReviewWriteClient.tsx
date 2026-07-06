@@ -12,7 +12,10 @@ import {
   BadgeCheck,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
-import { MobileBackButton, DesktopBackButton } from "@/components/common/BackButton";
+import {
+  MobileBackButton,
+  DesktopBackButton,
+} from "@/components/common/BackButton";
 import { CustomModal } from "@/components/common/CustomModal";
 import { createReview } from "@/app/actions/reviews";
 import Avatar from "@/components/ui/Avatar";
@@ -43,8 +46,6 @@ const QUICK_TAGS = [
 const SERVICE_TYPE_LABELS: Record<string, string> = {
   walk: "산책",
   care: "방문돌봄",
-  visit: "방문돌봄",
-  hotel: "펫호텔",
   pickup: "픽업",
   foster: "위탁돌봄",
 };
@@ -815,8 +816,10 @@ function ReviewWriteContent() {
   const reservationId = searchParams.get("bookingId");
 
   const [booking, setBooking] = useState<BookingDisplayInfo | null>(null);
-  const [bookingLoading, setBookingLoading] = useState(true);
-  const [bookingError, setBookingError] = useState<string | null>(null);
+  const [bookingLoading, setBookingLoading] = useState(!!reservationId);
+  const [bookingError, setBookingError] = useState<string | null>(
+    reservationId ? null : "예약 정보를 찾을 수 없습니다.",
+  );
 
   const [mobileScreen, setMobileScreen] = useState<1 | 2>(1);
   const [photos, setPhotos] = useState<{ file: File; previewUrl: string }[]>(
@@ -844,11 +847,7 @@ function ReviewWriteContent() {
   }, []);
 
   useEffect(() => {
-    if (!reservationId) {
-      setBookingError("예약 정보를 찾을 수 없습니다.");
-      setBookingLoading(false);
-      return;
-    }
+    if (!reservationId) return;
 
     fetch(`/api/reservations/${reservationId}`)
       .then((r) => {
