@@ -98,7 +98,7 @@ function MessageListImpl({
       const ref = dedupedMessages.find(
         (r) => r.id === m.paymentRequestMessageId,
       );
-      return ref?.paymentData?.isExtra === false;
+      return ref?.paymentData?.isExtra !== true;
     });
     const map = new Map<string, boolean>();
     for (const msg of dedupedMessages) {
@@ -109,10 +109,23 @@ function MessageListImpl({
             m.from === "payment_complete" &&
             m.paymentRequestMessageId === msg.id,
         ) ||
-        (msg.paymentData?.isExtra === false && hasBasePaymentComplete);
+        (msg.paymentData?.isExtra !== true && hasBasePaymentComplete);
       map.set(msg.id, isPaid);
     }
     return map;
+  }, [dedupedMessages]);
+
+  // 기본 결제 요청은 방마다 하나의 예약만 결제 가능하므로, 가장 최근 요청만
+  // 활성화하고 이전에 보낸 요청들은 "새 결제 요청이 전송되었어요"로 막아둔다.
+  // (추가금 요청은 각각 별개로 결제 가능하므로 대상에서 제외)
+  const lastBaseRequestId = useMemo(() => {
+    for (let i = dedupedMessages.length - 1; i >= 0; i--) {
+      const m = dedupedMessages[i];
+      if (m.from === "payment_request" && m.paymentData?.isExtra !== true) {
+        return m.id;
+      }
+    }
+    return null;
   }, [dedupedMessages]);
 
   return (
@@ -146,7 +159,9 @@ function MessageListImpl({
             onPaymentRequest={
               msg.from === "payment_request" &&
               msg.paymentData &&
-              msg.paymentData.amount > 0
+              msg.paymentData.amount > 0 &&
+              (msg.paymentData.isExtra === true ||
+                msg.id === lastBaseRequestId)
                 ? () =>
                     onPaymentRequest({
                       amount: msg.paymentData!.amount,
