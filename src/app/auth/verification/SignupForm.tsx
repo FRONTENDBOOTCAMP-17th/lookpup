@@ -5,7 +5,7 @@ import Verification from "@/components/Verification";
 import { useUserStore } from "@/store/userStore";
 import { completeSignup } from "./actions";
 
-export default function SignupForm() {
+export default function SignupForm({ next = "/" }: { next?: string }) {
   const router = useRouter();
   const verifyUser = useUserStore((s) => s.verifyUser);
 
@@ -14,7 +14,7 @@ export default function SignupForm() {
       onVerified={completeSignup}
       onSuccess={() => {
         verifyUser();
-        router.push("/");
+        router.push(next);
       }}
     />
   );

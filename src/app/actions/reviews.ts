@@ -140,6 +140,21 @@ export async function createReview(input: {
   return { data: review };
 }
 
+export async function getReviewedReservationIds(ids: string[]) {
+  const user = await getAuthUser();
+  if (!user || ids.length === 0) return { data: [] as string[] };
+
+  const db = createServiceClient();
+
+  const { data } = await db
+    .from("reviews")
+    .select("reservation_id")
+    .eq("owner_id", user.id)
+    .in("reservation_id", ids);
+
+  return { data: (data ?? []).map((r) => r.reservation_id) };
+}
+
 export async function deleteReview(id: string) {
   const user = await getAuthUser();
   if (!user) {

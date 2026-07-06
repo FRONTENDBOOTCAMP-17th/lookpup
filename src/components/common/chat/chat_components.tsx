@@ -599,6 +599,7 @@ type MessageBubbleProps = {
   onServiceConfirm?: (reservationId: string) => void;
   isServiceConfirmed?: boolean;
   isServiceConfirming?: boolean;
+  isReviewWritten?: boolean;
   onReservationEditConfirm?: (
     messageId: string,
     reservationId: string,
@@ -628,6 +629,7 @@ function MessageBubbleImpl({
   onServiceConfirm,
   isServiceConfirmed,
   isServiceConfirming,
+  isReviewWritten,
   onReservationEditConfirm,
   onReservationEditReject,
   confirmedEditIds,
@@ -878,7 +880,7 @@ function MessageBubbleImpl({
           senderInitial={senderInitial}
           senderProfileImage={senderProfileImage}
           data={msg.serviceCompleteConfirmedData}
-          canWriteReview={sentByMe}
+          canWriteReview={sentByMe && !isReviewWritten}
           onWriteReview={() => onWriteReview?.(confirmedReservationId)}
           onLeaveChat={onLeaveChat}
         />
