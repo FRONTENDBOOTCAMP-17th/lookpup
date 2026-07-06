@@ -52,7 +52,6 @@ export default function PetsitterSearchClient() {
     }
     return {
       id: row.id,
-      user_id: row.user_id ?? null,
       name,
       initial: name.charAt(0),
       profileImage: row.profile_image ?? null,
@@ -81,7 +80,6 @@ export default function PetsitterSearchClient() {
     locationError,
     showLocationModal,
     dismissLocationModal,
-    currentUserId,
     requestLocation,
   } = usePetsitterLocation({ urlCity, urlDistrict, urlDong });
 
@@ -110,12 +108,7 @@ export default function PetsitterSearchClient() {
   });
 
   // ── 필터/거리 계산 ───────────────────────────────────────────
-  const visibleSitters = sitters.filter((sitter) => {
-    if (!currentUserId) return true;
-    return sitter.user_id !== currentUserId;
-  });
-
-  const sittersWithDistance = visibleSitters.map((sitter) => ({
+  const sittersWithDistance = sitters.map((sitter) => ({
     ...sitter,
     distanceKm: calculateDistanceKm(basePosition, { lat: sitter.lat, lng: sitter.lng }),
   }));

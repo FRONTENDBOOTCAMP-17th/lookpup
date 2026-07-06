@@ -1,9 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/client";
 
 interface SitterRow {
   id: string;
-  user_id?: string | null;
   available_area: string | null;
   display_area: string | null;
   latitude: number | null;
@@ -26,6 +25,7 @@ export function useSitters(filters: SitterFilters) {
   return useQuery({
     queryKey: ["sitters", filters] as const,
     queryFn: async () => {
+      const supabase = createClient();
       const { data, error } = await supabase.rpc("get_petsitters_filtered", {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         p_district: (filters.district || null) as any,

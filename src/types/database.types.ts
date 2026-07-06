@@ -1105,8 +1105,8 @@ export type Database = {
           longitude: number
           profile_image: string
           rating: number
+          service_prices: Json
           service_types: string[]
-          user_id: string
         }[]
       }
       get_petsitters_for_map: {
