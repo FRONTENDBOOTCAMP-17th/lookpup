@@ -349,13 +349,20 @@ function ChatPageContent({
     [messages],
   );
 
+  const [prevActiveRoomId, setPrevActiveRoomId] = useState(activeRoomId);
+  if (activeRoomId !== prevActiveRoomId) {
+    setPrevActiveRoomId(activeRoomId);
+    if (activeRoomId) {
+      setSendError(null);
+      setInput("");
+      setConfirmedServiceIds(new Set());
+    }
+  }
+
   useEffect(() => {
     if (!activeRoomId) return;
     markRoomAsRead(activeRoomId);
     markRoomRead(activeRoomId);
-    setSendError(null);
-    setInput("");
-    setConfirmedServiceIds(new Set());
     checkedReservationIdsRef.current = new Set();
   }, [activeRoomId, markRoomAsRead]);
 
@@ -431,6 +438,7 @@ function ChatPageContent({
   useEffect(() => {
     if (!acceptedDirectRoomId) return;
     clearAcceptedDirectRoomId();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setActiveTab("one_on_one");
     setSelectedRoomId(acceptedDirectRoomId);
     setSelectedReservationRequestId(null);
@@ -1579,6 +1587,15 @@ function ChatPageContent({
     selectedApplicantId !== null &&
     rejectedIds.has(selectedApplicantId);
 
+  const isRecipientLeft =
+    activeTab === "one_on_one"
+      ? !!selectedRoom?.recipientLeft
+      : activeTab === "applicants"
+        ? !!selectedApplicant?.recipientLeft
+        : activeTab === "reservations"
+          ? !!selectedReservationRequest?.recipientLeft
+          : false;
+
   const confirmedPostTitle = selectedApplicant
     ? (posts.find((p) => p.id === selectedApplicant.postId)?.title ?? "")
     : "";
@@ -1798,6 +1815,7 @@ function ChatPageContent({
     sending,
     sendError,
     isRejectedApplicant,
+    isRecipientLeft,
     showApplicantActions,
     applicationActionError,
     actioningId,

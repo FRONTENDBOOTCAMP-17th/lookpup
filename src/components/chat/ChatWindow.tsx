@@ -32,7 +32,11 @@ interface MessageListProps {
   hasMore: boolean;
   loadingMore: boolean;
   onLoadMore: () => void;
-  onPaymentRequest: (data: { amount: number; reason: string; messageId: string }) => void;
+  onPaymentRequest: (data: {
+    amount: number;
+    reason: string;
+    messageId: string;
+  }) => void;
   onNavigateToPost: (postId: string) => void;
   onGoToChat: () => void;
   onServiceConfirm: (id: string) => void;
@@ -91,7 +95,8 @@ function MessageListImpl({
           (m) =>
             m.from === "payment_complete" &&
             m.paymentRequestMessageId === msg.id,
-        ) || (msg.paymentData?.isExtra === false && hasBasePaymentComplete);
+        ) ||
+        (msg.paymentData?.isExtra === false && hasBasePaymentComplete);
       map.set(msg.id, isPaid);
     }
     return map;
@@ -203,6 +208,7 @@ export interface ChatWindowProps {
   sending: boolean;
   sendError: string | null;
   isRejectedApplicant: boolean;
+  isRecipientLeft: boolean;
   showApplicantActions: boolean;
   applicationActionError: string | null;
   actioningId: string | null;
@@ -218,7 +224,11 @@ export interface ChatWindowProps {
   onSend: () => void;
   onLoadMore: () => void;
 
-  onPayNow: (data: { amount: number; reason: string; messageId: string }) => void;
+  onPayNow: (data: {
+    amount: number;
+    reason: string;
+    messageId: string;
+  }) => void;
   onOpenPaymentModal: () => void;
   onOpenCareRecord: () => void;
   onServiceStart: () => void;
@@ -279,6 +289,7 @@ function ChatWindowImpl({
   sending,
   sendError,
   isRejectedApplicant,
+  isRecipientLeft,
   showApplicantActions,
   applicationActionError,
   actioningId,
@@ -510,6 +521,10 @@ function ChatWindowImpl({
           <div className="px-4 py-3 bg-stone-50 border-t border-stone-200 text-center text-xs text-stone-400 shrink-0">
             지원이 거절되어 메시지를 보낼 수 없습니다.
           </div>
+        ) : isRecipientLeft ? (
+          <div className="px-4 py-3 bg-stone-50 border-t border-stone-200 text-center text-xs text-stone-400 shrink-0">
+            상대방이 채팅을 종료하여 메시지를 보낼 수 없습니다.
+          </div>
         ) : (
           <>
             {sendError && (
@@ -625,6 +640,10 @@ function ChatWindowImpl({
       {isRejectedApplicant ? (
         <div className="px-8 py-4 bg-stone-50 border-t border-stone-200 text-center text-sm text-stone-400 shrink-0">
           지원이 거절되어 메시지를 보낼 수 없습니다.
+        </div>
+      ) : isRecipientLeft ? (
+        <div className="px-8 py-4 bg-stone-50 border-t border-stone-200 text-center text-sm text-stone-400 shrink-0">
+          상대방이 채팅을 종료하여 메시지를 보낼 수 없습니다.
         </div>
       ) : (
         <>

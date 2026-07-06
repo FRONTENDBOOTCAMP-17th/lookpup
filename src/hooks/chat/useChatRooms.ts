@@ -124,6 +124,7 @@ function transformRoomsData(data: RoomApiItem[]): {
       lastMessage: formatPreview(r.last_message ?? ""),
       time: formatTime(r.last_message_at),
       unread: r.unread_count ?? 0,
+      recipientLeft: r.recipient_left,
     }));
 
   const requestRooms = data.filter((r) => r.room_type === "request");
@@ -140,6 +141,7 @@ function transformRoomsData(data: RoomApiItem[]): {
     time: formatTime(r.last_message_at),
     unread: r.unread_count ?? 0,
     applicationStatus: r.application_status ?? null,
+    recipientLeft: r.recipient_left,
   }));
 
   const reservationRequestList = data
@@ -158,6 +160,7 @@ function transformRoomsData(data: RoomApiItem[]): {
       time: formatTime(r.last_message_at),
       unread: r.unread_count ?? 0,
       reservationStatus: r.reservation_status ?? null,
+      recipientLeft: r.recipient_left,
     }));
 
   const seen = new Set<string>();

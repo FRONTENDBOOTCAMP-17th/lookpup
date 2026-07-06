@@ -9,6 +9,7 @@ export type PresetKey =
   | "report"
   | "payment"
   | "saveConfirm"
+  | "profileImageUpdated"
   | "logoutConfirm"
   | "logoutDisabled"
   | "deleteAccount"
@@ -80,6 +81,12 @@ export const modalPresets: Record<PresetKey, ModalConfig> = {
     description: "입력한 내용이 저장됩니다.",
     cancelText: "취소",
     confirmText: "저장하기",
+  },
+  profileImageUpdated: {
+    type: "success",
+    size: "small",
+    title: "프로필 사진이 변경되었습니다.",
+    confirmText: "확인",
   },
   logoutConfirm: {
     type: "confirm",

@@ -1,5 +1,6 @@
 import Image from "next/image";
 import type { ReactNode } from "react";
+import { Camera } from "lucide-react";
 
 interface AvatarProps {
   initial: string;
@@ -71,6 +72,16 @@ export function AvatarWithCamera({
   return (
     <div className={`relative ${className}`}>
       <Avatar initial={initial} src={src} size="2xl" variant={variant} />
+      {onCameraClick && (
+        <button
+          type="button"
+          onClick={onCameraClick}
+          aria-label="프로필 사진 변경"
+          className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-white border border-orange-100 shadow-sm flex items-center justify-center hover:bg-orange-50 transition-colors"
+        >
+          <Camera size={14} className="text-orange-500" />
+        </button>
+      )}
     </div>
   );
 }

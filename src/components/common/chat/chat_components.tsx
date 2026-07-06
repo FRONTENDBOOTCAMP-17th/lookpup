@@ -36,6 +36,7 @@ export type ChatRoom = {
   lastMessage: string;
   time: string;
   unread: number;
+  recipientLeft: boolean;
 };
 
 // 지원 목록의 각 목록
@@ -57,6 +58,7 @@ export type Applicant = {
   services?: string[];
   experience?: string;
   completedJobs?: string;
+  recipientLeft: boolean;
 };
 
 export type ReservationRequest = {
@@ -73,6 +75,7 @@ export type ReservationRequest = {
   time: string;
   unread: number;
   reservationStatus: string | null;
+  recipientLeft: boolean;
 };
 
 // 채팅방 나가기 제한
