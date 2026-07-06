@@ -827,11 +827,7 @@ function ChatPageContent({
       const payResult = await createPayment(reservationId, "CARD");
       let chargeAmount = totalAmount;
       if (payResult.error?.code === "FORBIDDEN") {
-        const extraResult = await createExtraPayment(
-          reservationId,
-          totalAmount,
-          data.reason ?? "추가 서비스",
-        );
+        const extraResult = await createExtraPayment(reservationId);
         if (extraResult.error) {
           setSendError(extraResult.error.message);
           setPayingNow(false);

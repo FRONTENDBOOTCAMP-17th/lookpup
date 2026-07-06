@@ -21,11 +21,11 @@ export async function createApplication(
     return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
   }
 
-  if (input.proposed_price != null && input.proposed_price < 0) {
+  if (input.proposed_price != null && input.proposed_price < 1000) {
     return {
       error: {
         code: "VALIDATION_ERROR",
-        message: "제안 금액은 0 이상이어야 합니다.",
+        message: "제안 금액은 1,000원 이상이어야 합니다.",
       },
     };
   }
