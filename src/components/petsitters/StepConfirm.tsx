@@ -72,11 +72,20 @@ export default function StepConfirm({
       <div className="w-full max-w-sm sm:max-w-[384px] bg-white rounded-2xl border border-orange-100 p-4 sm:p-5 mb-8">
         <p className="text-stone-900 text-base font-semibold mb-4">예약 정보</p>
         <div className="flex items-start gap-3 pb-3 border-b border-orange-100 mb-3">
-          <div className="w-10 h-10 bg-orange-50 rounded-full border border-orange-100 flex items-center justify-center shrink-0">
-            <span className="text-orange-500 text-base font-semibold">
-              {sitter.initial}
-            </span>
-          </div>
+          {sitter.profileImage ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={sitter.profileImage}
+              alt={`${sitter.name} 프로필`}
+              className="w-10 h-10 rounded-full border border-orange-100 object-cover shrink-0"
+            />
+          ) : (
+            <div className="w-10 h-10 bg-orange-50 rounded-full border border-orange-100 flex items-center justify-center shrink-0">
+              <span className="text-orange-500 text-base font-semibold">
+                {sitter.initial}
+              </span>
+            </div>
+          )}
           <div>
             <p className="text-stone-900 text-base font-medium">{sitter.name} 펫시터</p>
             <p className="text-gray-500 text-sm">{serviceLabel}</p>
