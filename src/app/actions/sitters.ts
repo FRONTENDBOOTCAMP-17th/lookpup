@@ -5,14 +5,15 @@ import { createServiceClient } from "@/utils/supabase/service";
 import { fuzzCoordinate } from "@/utils/geoPrivacy";
 import type { TablesUpdate } from "@/types/database.types";
 
+type RequestType = "visit" | "foster" | "walk" | "pickup";
+
 interface ServiceInput {
-  service_type: "walk" | "care" | "hotel" | "pickup";
+  service_type: RequestType;
   title: string;
   price: number;
   description?: string | null;
 }
 
-type RequestType = "visit" | "foster" | "walk" | "pickup";
 type AnimalType = "small_dog" | "medium_dog" | "large_dog" | "cat";
 
 interface SitterInput {
