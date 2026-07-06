@@ -81,11 +81,11 @@ export async function createRequest(input: RequestInput) {
       },
     };
   }
-  if (input.budget < 0) {
+  if (input.budget < 1000) {
     return {
       error: {
         code: "VALIDATION_ERROR",
-        message: "예산은 0 이상이어야 합니다.",
+        message: "예산은 1,000원 이상이어야 합니다.",
       },
     };
   }

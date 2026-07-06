@@ -83,6 +83,15 @@ export async function createPayment(
   }
 
   const amount = reservation.total_price;
+  if (amount < 1000) {
+    return {
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "예약 금액이 올바르지 않습니다. 관리자에게 문의해주세요.",
+      },
+    };
+  }
+
   const platformFee = Math.floor(amount * FEE_RATE);
   const settleAmount = amount - platformFee;
   const paymentId = `pay_${reservationId.replace(/-/g, "")}_${Date.now()}`;
@@ -114,22 +123,11 @@ export async function createPayment(
 
 export async function createExtraPayment(
   reservationId: string,
-  amount: number,
-  reason: string,
   payMethod: "CARD" | "VIRTUAL_ACCOUNT" | "TRANSFER" = "CARD",
 ) {
   const user = await getAuthUser();
   if (!user) {
     return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
-  }
-
-  if (amount < 1000 || amount > 500000) {
-    return {
-      error: {
-        code: "VALIDATION_ERROR",
-        message: "추가금은 1,000원 이상 500,000원 이하여야 합니다.",
-      },
-    };
   }
 
   const db = createServiceClient();
@@ -159,6 +157,34 @@ export async function createExtraPayment(
     };
   }
 
+  const { data: pendingCharge } = await db
+    .from("extra_charges")
+    .select("id, amount, reason")
+    .eq("reservation_id", reservationId)
+    .eq("status", "pending")
+    .order("requested_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!pendingCharge) {
+    return {
+      error: {
+        code: "NOT_FOUND",
+        message: "결제할 추가금 요청이 없습니다.",
+      },
+    };
+  }
+
+  const amount = pendingCharge.amount;
+  if (amount < 1000 || amount > 500000) {
+    return {
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "추가금은 1,000원 이상 500,000원 이하여야 합니다.",
+      },
+    };
+  }
+
   const platformFee = Math.floor(amount * FEE_RATE);
   const settleAmount = amount - platformFee;
   const paymentId = `extra_${reservationId.replace(/-/g, "")}_${Date.now()}`;
@@ -180,26 +206,14 @@ export async function createExtraPayment(
     return { error: { code: "INTERNAL_ERROR", message: error.message } };
   }
 
-  const { data: pendingCharge } = await db
+  await db
     .from("extra_charges")
-    .select("id")
-    .eq("reservation_id", reservationId)
-    .eq("status", "pending")
-    .eq("amount", amount)
-    .order("requested_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (pendingCharge) {
-    await db
-      .from("extra_charges")
-      .update({
-        status: "approved",
-        payment_id: newPayment.id,
-        responded_at: new Date().toISOString(),
-      })
-      .eq("id", pendingCharge.id);
-  }
+    .update({
+      status: "approved",
+      payment_id: newPayment.id,
+      responded_at: new Date().toISOString(),
+    })
+    .eq("id", pendingCharge.id);
 
   const sitter = reservation.sitters as unknown as {
     users: { full_name: string };
@@ -207,7 +221,12 @@ export async function createExtraPayment(
   const orderName = `${sitter.users.full_name} 펫시팅 추가 서비스`;
 
   return {
-    data: { payment_id: paymentId, amount, order_name: orderName, reason },
+    data: {
+      payment_id: paymentId,
+      amount,
+      order_name: orderName,
+      reason: pendingCharge.reason,
+    },
   };
 }
 
