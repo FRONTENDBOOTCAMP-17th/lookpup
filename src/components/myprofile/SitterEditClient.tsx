@@ -264,6 +264,8 @@ export default function SitterEditClient({
 
     if (initialProfile && initialServices) {
       formInitialized.current = true;
+      // formInitialized ref로 최초 1회만 실행되는 초기화 (prop 또는 아래 fetch로 폼을 채움)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       initForm(initialProfile.user, initialProfile.sitter, initialServices);
       return;
     }

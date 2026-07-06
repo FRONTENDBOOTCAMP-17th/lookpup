@@ -14,6 +14,8 @@ export function useRequest(applicants: Applicant[]) {
   useEffect(() => {
     if (applicants.length === 0) return;
 
+    // applicants prop 변경에 따라 기존 상태를 유지하며 새 항목만 누적하는 로직
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRejectedIds((prev) => {
       const toAdd = applicants.filter(
         (a) => a.applicationStatus === "rejected" && !prev.has(a.id),

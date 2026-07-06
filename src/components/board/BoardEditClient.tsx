@@ -142,6 +142,8 @@ export default function BoardEditClient({
     formInitialized.current = true;
 
     if (initialData) {
+      // formInitialized ref로 최초 1회만 실행되는 초기화 (prop 또는 아래 fetch로 폼을 채움)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       initFromData(initialData);
       if (initialPets) setPets(initialPets);
       return;
