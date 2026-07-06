@@ -34,7 +34,7 @@ import {
 } from "@/lib/board";
 import type { Pet, PetRow } from "@/types/board";
 
-type PostData = {
+export type PostData = {
   status: string;
   request_type: string;
   budget: number;
