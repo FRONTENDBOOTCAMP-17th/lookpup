@@ -282,6 +282,7 @@ function PhotoUploadHScroll({
           className="relative w-[calc((100%-24px)/3)] rounded-xl overflow-hidden border border-orange-100"
         >
           <div className="pb-[100%]" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={url}
             alt=""

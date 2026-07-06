@@ -46,6 +46,7 @@ export default function SitterRegisterStep1({ form }: SitterRegisterStep1Props) 
           render={({ field }) => (
             <label className="mt-3 w-24 h-24 bg-[#fff8f3] rounded-full border border-[#ffe9d6] flex items-center justify-center hover:bg-orange-100 transition-colors cursor-pointer overflow-hidden">
               {preview ? (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={preview}
                   alt="프로필 미리보기"
@@ -76,6 +77,7 @@ export default function SitterRegisterStep1({ form }: SitterRegisterStep1Props) 
         <DialogContent>
           <DialogTitle>프로필 사진 미리보기</DialogTitle>
           {preview && (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={preview}
               alt="프로필 사진 확대 미리보기"
