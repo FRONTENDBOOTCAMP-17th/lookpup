@@ -63,12 +63,16 @@ export function ServiceCompleteModal({
   const mounted = useMounted();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  useEffect(() => {
+  const [prevOpen, setPrevOpen] = useState(open);
+  const [prevReservations, setPrevReservations] = useState(reservations);
+  if (open !== prevOpen || reservations !== prevReservations) {
+    setPrevOpen(open);
+    setPrevReservations(reservations);
     if (open && reservations.length === 1) {
       setSelectedId(reservations[0].id);
     }
     if (!open) setSelectedId(null);
-  }, [open, reservations]);
+  }
 
   useEffect(() => {
     if (!open) return;

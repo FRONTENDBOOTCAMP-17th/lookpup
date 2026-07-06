@@ -118,7 +118,11 @@ export function ReservationConfirmModal({
   const [location, setLocation] = useState("");
   const [snapshot, setSnapshot] = useState({ startDt: "", endDt: "", price: "", location: "" });
 
-  useEffect(() => {
+  const [prevOpen, setPrevOpen] = useState(open);
+  const [prevDetails, setPrevDetails] = useState(details);
+  if (open !== prevOpen || details !== prevDetails) {
+    setPrevOpen(open);
+    setPrevDetails(details);
     if (details && open) {
       setStartDt(toDatetimeLocal(details.startDatetime));
       setEndDt(toDatetimeLocal(details.endDatetime));
@@ -126,7 +130,7 @@ export function ReservationConfirmModal({
       setLocation(details.location ?? "");
       setEditMode(false);
     }
-  }, [details, open]);
+  }
 
   useEffect(() => {
     if (!open) return;

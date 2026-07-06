@@ -56,7 +56,11 @@ export function CustomModalPayment({
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [open, onClose]);
 
-  useEffect(() => {
+  const [prevOpen, setPrevOpen] = useState(open);
+  const [prevIsAlreadyPaid, setPrevIsAlreadyPaid] = useState(isAlreadyPaid);
+  if (open !== prevOpen || isAlreadyPaid !== prevIsAlreadyPaid) {
+    setPrevOpen(open);
+    setPrevIsAlreadyPaid(isAlreadyPaid);
     if (open) {
       setRequestType(isAlreadyPaid ? "extra" : "payment");
     } else {
@@ -65,7 +69,7 @@ export function CustomModalPayment({
       setSubmitError(null);
       setSubmitting(false);
     }
-  }, [open, isAlreadyPaid]);
+  }
 
   if (!open || !mounted) return null;
 
