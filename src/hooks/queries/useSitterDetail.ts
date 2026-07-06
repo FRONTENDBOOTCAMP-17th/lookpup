@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/client";
 
 export interface ServiceRow {
   service_type: string;
@@ -11,7 +11,7 @@ export interface ServiceRow {
 
 export interface SitterDetail {
   id: string;
-  user_id: string;
+  is_self: boolean | null;
   full_name: string | null;
   profile_image: string | null;
   is_verified: boolean;
@@ -32,6 +32,7 @@ export function useSitterDetail(sitterId: string) {
   return useQuery({
     queryKey: ["sitter", sitterId] as const,
     queryFn: async () => {
+      const supabase = createClient();
       const { data, error } = await supabase.rpc("get_petsitter_detail", {
         p_sitter_id: sitterId,
       });
