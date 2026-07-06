@@ -107,6 +107,8 @@ export function usePetsitterLocation({
     consentHandledRef.current = true;
     if (urlDistrict) return;
     if (consent.hasConsent) {
+      // 브라우저 Geolocation API 호출이라 effect가 맞는 위치
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       requestLocationSilently();
     } else {
       setShowLocationModal(true);

@@ -479,6 +479,8 @@ export default function BookingHistoryClient({
   }, [role]);
 
   useEffect(() => {
+    // loadData가 서버에서 예약 목록을 fetch하는 함수라 effect가 맞는 위치
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadData();
   }, [loadData]);
 

@@ -320,6 +320,8 @@ export default function ReviewsClient({
     receivedFetchedRef.current = true;
 
     if (sitterId === null) {
+      // 서버 fetch 분기와 세트로 묶인 초기화라 effect가 맞는 위치
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setReceivedReviews([]);
       return;
     }
