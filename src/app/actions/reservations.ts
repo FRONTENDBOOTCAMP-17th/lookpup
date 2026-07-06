@@ -462,13 +462,31 @@ export async function ownerConfirmServiceComplete(reservationId: string) {
     .eq("id", reservation.sitter_id)
     .single();
 
-  const { data: room } = await db
+  const { data: roomByReservation } = await db
     .from("chat_rooms")
     .select("id")
     .eq("reservation_id", reservationId)
     .maybeSingle();
 
+  let room = roomByReservation;
+  if (!room) {
+    const { data: fallbackRoom } = await db
+      .from("chat_rooms")
+      .select("id")
+      .eq("owner_id", reservation.owner_id)
+      .eq("sitter_id", reservation.sitter_id)
+      .eq("room_type", "direct")
+      .maybeSingle();
+    room = fallbackRoom;
+  }
+
   let completionMessage = null;
+
+  if (!room) {
+    console.error(
+      `[ownerConfirmServiceComplete] 예약(${reservationId})에 연결된 채팅방을 찾지 못해 완료 안내 메시지를 생성하지 못했습니다.`,
+    );
+  }
 
   if (room) {
     const { data: service } = reservation.service_id
@@ -502,11 +520,17 @@ export async function ownerConfirmServiceComplete(reservationId: string) {
       },
     )}`;
 
-    const { data: insertedMessage } = await db
+    const { data: insertedMessage, error: messageError } = await db
       .from("messages")
       .insert({ room_id: room.id, sender_id: user.id, content: completionContent })
       .select()
       .single();
+    if (messageError) {
+      console.error(
+        "[ownerConfirmServiceComplete] 완료 안내 메시지 생성 실패:",
+        messageError.message,
+      );
+    }
     completionMessage = insertedMessage;
 
     await db
