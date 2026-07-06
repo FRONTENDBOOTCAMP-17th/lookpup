@@ -147,7 +147,6 @@ export default function BoardDetailClient({
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [applying, setApplying] = useState(false);
-  const [applyError, setApplyError] = useState<string | null>(null);
   const applyCancelledRef = useRef(false);
   const applyInFlightRef = useRef(false);
   const [post, setPost] = useState<RequestDetail | null>(initialPost ?? null);
@@ -174,13 +173,13 @@ export default function BoardDetailClient({
     if (!post?.id || applyInFlightRef.current) return;
     applyInFlightRef.current = true;
     setApplying(true);
-    setApplyError(null);
+    setErrorMessage(null);
 
     try {
       const result = await createApplication(post.id, {});
 
       if (result.error) {
-        setApplyError(result.error.message);
+        setErrorMessage(result.error.message);
         setShowApplyModal(false);
         return;
       }
@@ -190,7 +189,7 @@ export default function BoardDetailClient({
         router.push("/chat?tab=applicants");
       }
     } catch {
-      setApplyError("일시적인 오류가 발생했습니다. 다시 시도해 주세요.");
+      setErrorMessage("일시적인 오류가 발생했습니다. 다시 시도해 주세요.");
       setShowApplyModal(false);
     } finally {
       applyInFlightRef.current = false;
@@ -249,7 +248,7 @@ export default function BoardDetailClient({
       return;
     }
     applyCancelledRef.current = false;
-    setApplyError(null);
+    setErrorMessage(null);
     setShowApplyModal(true);
   };
 
@@ -404,11 +403,6 @@ export default function BoardDetailClient({
                           지원하기
                         </button>
                       </div>
-                    )}
-                    {applyError && (
-                      <p className="sm:col-span-2 text-sm text-red-500 text-center">
-                        {applyError}
-                      </p>
                     )}
                   </div>
                 </div>
