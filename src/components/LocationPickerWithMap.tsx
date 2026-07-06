@@ -29,8 +29,8 @@ export default function LocationPickerWithMap({
   className = "",
 }: LocationPickerWithMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<any>(null);
-  const markerRef = useRef<any>(null);
+  const mapRef = useRef<kakao.maps.Map | null>(null);
+  const markerRef = useRef<kakao.maps.Marker | null>(null);
 
   const [query, setQuery] = useState(value?.address ?? "");
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);

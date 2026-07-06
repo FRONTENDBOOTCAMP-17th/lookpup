@@ -30,7 +30,7 @@ export function searchAddressList(query: string): Promise<AddressSuggestion[]> {
     const geocoder = new window.kakao.maps.services.Geocoder();
     geocoder.addressSearch(
       query,
-      (result: any[], status: string) => {
+      (result, status) => {
         if (status === window.kakao.maps.services.Status.OK && result.length > 0) {
           resolve(
             result.map((r) => ({
@@ -58,7 +58,7 @@ export function coordToAddress(lat: number, lng: number): Promise<string | null>
       return;
     }
     const geocoder = new window.kakao.maps.services.Geocoder();
-    geocoder.coord2Address(lng, lat, (result: any[], status: string) => {
+    geocoder.coord2Address(lng, lat, (result, status) => {
       if (status !== window.kakao.maps.services.Status.OK || !result.length) {
         resolve(null);
         return;
@@ -77,7 +77,7 @@ export function searchAddressToCoord(query: string): Promise<CoordResult | null>
       return;
     }
     const geocoder = new window.kakao.maps.services.Geocoder();
-    geocoder.addressSearch(query, (result: any[], status: string) => {
+    geocoder.addressSearch(query, (result, status) => {
       if (status === window.kakao.maps.services.Status.OK && result.length > 0) {
         resolve({
           lat: parseFloat(result[0].y),
@@ -99,7 +99,7 @@ export function searchPlaceToCoord(query: string): Promise<CoordResult | null> {
       return;
     }
     const places = new window.kakao.maps.services.Places();
-    places.keywordSearch(query, (result: any[], status: string) => {
+    places.keywordSearch(query, (result, status) => {
       if (status === window.kakao.maps.services.Status.OK && result.length > 0) {
         resolve({
           lat: parseFloat(result[0].y),
@@ -144,7 +144,7 @@ export function searchAreaList(query: string): Promise<AreaSuggestion[]> {
     const geocoder = new window.kakao.maps.services.Geocoder();
     geocoder.addressSearch(
       query,
-      (result: any[], status: string) => {
+      (result, status) => {
         if (status !== window.kakao.maps.services.Status.OK || !result.length) {
           resolve([]);
           return;
@@ -155,9 +155,9 @@ export function searchAreaList(query: string): Promise<AreaSuggestion[]> {
 
         for (const r of result) {
           const addr = r.address ?? r;
-          const city: string = addr.region_1depth_name ?? "";
-          const district: string = addr.region_2depth_name ?? "";
-          const dong: string = addr.region_3depth_name ?? "";
+          const city = addr.region_1depth_name ?? "";
+          const district = addr.region_2depth_name ?? "";
+          const dong = addr.region_3depth_name ?? "";
 
           if (!district) continue;
 
@@ -213,13 +213,13 @@ export function searchPlaceList(query: string): Promise<PlaceSuggestion[]> {
     const places = new window.kakao.maps.services.Places();
     places.keywordSearch(
       query,
-      (result: any[], status: string) => {
+      (result, status) => {
         if (status !== window.kakao.maps.services.Status.OK || !result.length) {
           resolve([]);
           return;
         }
         resolve(
-          result.slice(0, 5).map((r: any) => ({
+          result.slice(0, 5).map((r) => ({
             type: 'place' as const,
             label: r.place_name,
             address: r.road_address_name || r.address_name,
@@ -239,13 +239,13 @@ export function coordToRegion(lat: number, lng: number): Promise<RegionResult | 
       return;
     }
     const geocoder = new window.kakao.maps.services.Geocoder();
-    geocoder.coord2RegionCode(lng, lat, (result: any[], status: string) => {
+    geocoder.coord2RegionCode(lng, lat, (result, status) => {
       if (status !== window.kakao.maps.services.Status.OK || !result.length) {
         resolve(null);
         return;
       }
       // region_type 'H'(행정동) 우선, 없으면 첫 번째
-      const region = result.find((r: any) => r.region_type === "H") ?? result[0];
+      const region = result.find((r) => r.region_type === "H") ?? result[0];
       resolve({
         sido: region.region_1depth_name,
         sigungu: region.region_2depth_name,
