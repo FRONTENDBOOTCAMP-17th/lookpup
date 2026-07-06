@@ -80,18 +80,30 @@ function MessageListImpl({
   onWriteReview,
   onLeaveChat,
 }: MessageListProps) {
+  // realtime 채널이 같은 메시지를 중복 전달할 수 있어 id 기준으로 dedupe.
+  const dedupedMessages = useMemo(() => {
+    const seen = new Set<string>();
+    return messages.filter((m) => {
+      if (seen.has(m.id)) return false;
+      seen.add(m.id);
+      return true;
+    });
+  }, [messages]);
+
   const paymentPaidByMessageId = useMemo(() => {
-    const hasBasePaymentComplete = messages.some((m) => {
+    const hasBasePaymentComplete = dedupedMessages.some((m) => {
       if (m.from !== "payment_complete") return false;
       if (!m.paymentRequestMessageId) return true;
-      const ref = messages.find((r) => r.id === m.paymentRequestMessageId);
+      const ref = dedupedMessages.find(
+        (r) => r.id === m.paymentRequestMessageId,
+      );
       return ref?.paymentData?.isExtra === false;
     });
     const map = new Map<string, boolean>();
-    for (const msg of messages) {
+    for (const msg of dedupedMessages) {
       if (msg.from !== "payment_request") continue;
       const isPaid =
-        messages.some(
+        dedupedMessages.some(
           (m) =>
             m.from === "payment_complete" &&
             m.paymentRequestMessageId === msg.id,
@@ -100,7 +112,7 @@ function MessageListImpl({
       map.set(msg.id, isPaid);
     }
     return map;
-  }, [messages]);
+  }, [dedupedMessages]);
 
   return (
     <>
@@ -115,7 +127,7 @@ function MessageListImpl({
           </button>
         </div>
       )}
-      {messages.map((msg) => {
+      {dedupedMessages.map((msg) => {
         const postId =
           msg.applicationData?.postId ||
           msg.paymentData?.postId ||
