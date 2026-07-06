@@ -1096,10 +1096,9 @@ export type Database = {
       get_petsitters_filtered: {
         Args: { p_district?: string; p_dong?: string }
         Returns: {
-          available_area: string
           base_price: number
           display_area: string
-          full_name: string
+          display_name: string
           id: string
           latitude: number
           longitude: number
@@ -1112,10 +1111,9 @@ export type Database = {
       get_petsitters_for_map: {
         Args: never
         Returns: {
-          available_area: string
           base_price: number
           display_area: string
-          full_name: string
+          display_name: string
           id: string
           latitude: number
           longitude: number

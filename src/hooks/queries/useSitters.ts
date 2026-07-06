@@ -3,13 +3,12 @@ import { createClient } from "@/utils/supabase/client";
 
 interface SitterRow {
   id: string;
-  available_area: string | null;
   display_area: string | null;
   latitude: number | null;
   longitude: number | null;
   base_price: number | null;
   rating: number | null;
-  full_name: string | null;
+  display_name: string | null;
   profile_image: string | null;
   service_types: string[];
   service_prices: Record<string, number>;

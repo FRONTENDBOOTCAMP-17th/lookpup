@@ -41,8 +41,8 @@ export default function PetsitterSearchClient() {
   const { data: rawSitters = [] } = useSitters({ district: urlDistrict, dong: urlDong });
 
   const sitters = rawSitters.map((row) => {
-    const name = row.full_name ?? "시터";
-    const { city, district, neighborhood } = parseArea(row.available_area);
+    const name = row.display_name ?? "시터";
+    const { city, district, neighborhood } = parseArea(row.display_area);
     const serviceTypes = (row.service_types as string[])
       .map((t) => SERVICE_TYPE_MAP[t] ?? t)
       .filter(Boolean);

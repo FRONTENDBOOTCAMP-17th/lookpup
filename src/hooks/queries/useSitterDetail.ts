@@ -11,7 +11,7 @@ export interface ServiceRow {
 
 export interface SitterDetail {
   id: string;
-  user_id: string;
+  is_self: boolean | null;
   full_name: string | null;
   profile_image: string | null;
   is_verified: boolean;

@@ -56,7 +56,7 @@ export default function PetsitterCard({
             <div className="flex items-center gap-1 mt-1">
               <MapPin size={14} className="text-gray-400" />
               <span className="text-gray-500 text-sm">
-                {sitter.district} {sitter.neighborhood}
+                {[sitter.district, sitter.neighborhood].filter(Boolean).join(" ")}
               </span>
               <span className="text-gray-400 text-xs">· {formatDistance(distance)}</span>
             </div>
