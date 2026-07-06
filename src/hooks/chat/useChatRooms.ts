@@ -312,6 +312,8 @@ export function useChatRooms(
 
   useEffect(() => {
     if (initialData) return;
+    // 초기 데이터가 없을 때 서버에서 채팅방 목록을 fetch하는 함수라 effect가 맞는 위치
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchRooms();
   }, [fetchRooms, initialData]);
 

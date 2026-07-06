@@ -877,6 +877,7 @@ export async function getReservationById(id: string) {
       },
       price: r.total_price,
       reviewWritten,
+      isSitter,
     },
   };
 }

@@ -67,6 +67,7 @@ export interface Booking {
   };
   price: number;
   reviewWritten?: boolean;
+  isSitter?: boolean;
 }
 
 const STATUS_CONFIG: Record<
@@ -396,7 +397,7 @@ export default function BookingDetailClient({
 
           <CareRecordTimeline records={careRecords} />
 
-          {booking.status === "completed" && (
+          {booking.status === "completed" && !booking.isSitter && (
             <ReviewSection
               reviewWritten={reviewWritten}
               onWrite={() => router.push(`/myprofile/reviews/write?bookingId=${booking.id}`)}

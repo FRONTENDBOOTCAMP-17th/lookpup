@@ -81,6 +81,8 @@ export default function BoardWriteClient() {
 
   useEffect(() => {
     if (!draftKey) return;
+    // localStorage는 브라우저 전용 API라 SSR 중엔 못 읽어서 effect가 맞는 위치
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHasDraft(localStorage.getItem(draftKey) !== null);
   }, [draftKey]);
 

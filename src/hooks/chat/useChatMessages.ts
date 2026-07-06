@@ -339,6 +339,8 @@ export function useChatMessages(
   useEffect(() => {
     if (!activeRoomId || !userId) return;
 
+    // 뒤이은 메시지 fetch 시작 전 초기화라 effect가 맞는 위치
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMessages([]);
     setNextCursor(null);
     setHasMore(false);

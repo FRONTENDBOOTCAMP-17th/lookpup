@@ -2,6 +2,34 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createServiceClient } from "@/utils/supabase/service";
 
+interface ReservationDetailRow {
+  id: string;
+  owner_id: string;
+  sitter_id: string;
+  service_id: string | null;
+  start_datetime: string | null;
+  end_datetime: string | null;
+  total_price: number;
+  status: string;
+  completed_at: string | null;
+  sitters: {
+    users: {
+      full_name: string | null;
+      profile_image: string | null;
+    } | null;
+  } | null;
+  services: {
+    service_type: string;
+  } | null;
+  reservation_items: {
+    pets: {
+      id: string;
+      name: string;
+      animal_type: string;
+    } | null;
+  }[];
+}
+
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -42,7 +70,7 @@ export async function GET(
     );
   }
 
-  const row = data as any;
+  const row = data as unknown as ReservationDetailRow;
 
   if (row.owner_id !== user.id) {
     return NextResponse.json(
@@ -65,7 +93,7 @@ export async function GET(
       sitter_profile_image: row.sitters?.users?.profile_image ?? null,
       service_type: row.services?.service_type ?? null,
       pets: (row.reservation_items ?? [])
-        .map((ri: any) => ri.pets)
+        .map((ri) => ri.pets)
         .filter(Boolean),
     },
   });

@@ -22,12 +22,11 @@ export default async function EarningsPage() {
 
   if (!sitterProfile) return <EarningsClient />;
 
-  // bank_accounts가 generated types에 없어서 타입 우회
-  const { data: bankAccount } = (await (db as any)
+  const { data: bankAccount } = await db
     .from("bank_accounts")
     .select("id")
     .eq("user_id", user.id)
-    .maybeSingle()) as { data: { id: string } | null };
+    .maybeSingle();
 
   const now = new Date();
   const { twelveMonthsAgoStart } = getEarningsDateRanges(now);
