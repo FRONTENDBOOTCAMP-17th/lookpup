@@ -140,6 +140,7 @@ export default function BoardDetailClient({
 }) {
   const router = useRouter();
   const user = useUserStore((state) => state.user);
+  const sitter = useUserStore((state) => state.sitter);
   const isLoggedIn = useUserStore((state) => state.isLoggedIn);
   const currentUserId = user?.id;
   const [showApplyModal, setShowApplyModal] = useState(false);
@@ -232,6 +233,7 @@ export default function BoardDetailClient({
 
   const isAuthor = !!currentUserId && currentUserId === post.owner_id;
   const isSitter = user?.role === "both" || user?.role === "admin";
+  const isUnapprovedSitter = isSitter && !!sitter && sitter.status !== "approved";
 
   const handleApplyClick = () => {
     if (!isLoggedIn) {
@@ -240,6 +242,10 @@ export default function BoardDetailClient({
     }
     if (!isSitter) {
       router.push("/sitter-register");
+      return;
+    }
+    if (isUnapprovedSitter) {
+      setErrorMessage("승인 대기 중이거나 반려된 펫시터는 지원할 수 없습니다.");
       return;
     }
     applyCancelledRef.current = false;

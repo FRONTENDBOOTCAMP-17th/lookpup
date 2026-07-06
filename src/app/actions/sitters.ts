@@ -232,7 +232,7 @@ export async function getMySitterProfile() {
 
   const { data, error } = await db
     .from("sitters")
-    .select("id, available_area, display_area, career, introduction, rating, latitude, longitude, request_type, available_animals, activity_photo_urls, services(title, is_active, deleted_at)")
+    .select("id, status, available_area, display_area, career, introduction, rating, latitude, longitude, request_type, available_animals, activity_photo_urls, services(title, is_active, deleted_at)")
     .eq("user_id", user.id)
     .single();
 
@@ -248,6 +248,7 @@ export async function getMySitterProfile() {
   return {
     data: {
       id: data.id,
+      status: data.status,
       availableArea: data.available_area ?? "",
       displayArea: data.display_area ?? null,
       career: data.career ?? null,

@@ -34,13 +34,22 @@ export async function createApplication(
 
   const { data: sitter } = await db
     .from("sitters")
-    .select("id")
+    .select("id, status")
     .eq("user_id", user.id)
     .maybeSingle();
 
   if (!sitter) {
     return {
       error: { code: "FORBIDDEN", message: "펫시터만 지원할 수 있습니다." },
+    };
+  }
+
+  if (sitter.status !== "approved") {
+    return {
+      error: {
+        code: "FORBIDDEN",
+        message: "승인된 펫시터만 지원할 수 있습니다.",
+      },
     };
   }
 
@@ -272,6 +281,21 @@ export async function updateApplication(
     if (requestRow.status !== "open") {
       return {
         error: { code: "FORBIDDEN", message: "이미 매칭된 구인글입니다." },
+      };
+    }
+
+    const { data: applicantSitter } = await db
+      .from("sitters")
+      .select("status")
+      .eq("id", application.sitter_id)
+      .single();
+
+    if (applicantSitter?.status !== "approved") {
+      return {
+        error: {
+          code: "FORBIDDEN",
+          message: "승인된 펫시터만 선택할 수 있습니다.",
+        },
       };
     }
 
