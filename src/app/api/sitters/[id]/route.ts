@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { parseArea } from "@/utils/petsitterArea";
 
 export async function GET(
   _request: NextRequest,
@@ -11,8 +12,8 @@ export async function GET(
   const { data: sitter, error } = await db
     .from("sitters")
     .select(
-      `id, user_id, title, introduction, career, available_area,
-       latitude, longitude, base_price, rating, status, request_type,
+      `id, title, introduction, career, available_area,
+       base_price, rating, status, request_type,
        users!inner(full_name, profile_image, is_verified),
        services(id, service_type, title, price, description, is_active, animal_type)`,
     )
@@ -33,19 +34,17 @@ export async function GET(
     .eq("sitter_id", id);
 
   const { full_name, profile_image, is_verified } = sitter.users;
+  const { city, district, neighborhood } = parseArea(sitter.available_area);
 
   return NextResponse.json({
     data: {
       id: sitter.id,
-      user_id: sitter.user_id,
       full_name,
       profile_image,
       title: sitter.title,
       introduction: sitter.introduction,
       career: sitter.career,
-      available_area: sitter.available_area,
-      latitude: sitter.latitude,
-      longitude: sitter.longitude,
+      available_area: [city, district, neighborhood].filter(Boolean).join(" "),
       base_price: sitter.base_price,
       rating: sitter.rating,
       status: sitter.status,
