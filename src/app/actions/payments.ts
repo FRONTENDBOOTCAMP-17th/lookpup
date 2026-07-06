@@ -13,18 +13,25 @@ async function getAuthUser() {
   return user;
 }
 
-export async function getActiveReservationBySitter(sitterId: string) {
+export async function getActiveReservationBySitter(
+  sitterId: string,
+  options?: { includePaid?: boolean },
+) {
   const user = await getAuthUser();
   if (!user) return null;
 
   const db = createServiceClient();
+
+  const statuses = options?.includePaid
+    ? ["accepted", "in_progress", "paid"]
+    : ["accepted", "in_progress"];
 
   const { data } = await db
     .from("reservations")
     .select("id")
     .eq("owner_id", user.id)
     .eq("sitter_id", sitterId)
-    .in("status", ["accepted", "in_progress"])
+    .in("status", statuses)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -122,7 +129,7 @@ export async function createPayment(
 }
 
 export async function createExtraPayment(
-  reservationId: string,
+  extraChargeId: string,
   payMethod: "CARD" | "VIRTUAL_ACCOUNT" | "TRANSFER" = "CARD",
 ) {
   const user = await getAuthUser();
@@ -132,9 +139,31 @@ export async function createExtraPayment(
 
   const db = createServiceClient();
 
+  const { data: pendingCharge } = await db
+    .from("extra_charges")
+    .select("id, amount, reason, reservation_id, owner_id")
+    .eq("id", extraChargeId)
+    .eq("status", "pending")
+    .maybeSingle();
+
+  if (!pendingCharge) {
+    return {
+      error: {
+        code: "NOT_FOUND",
+        message: "결제할 추가금 요청을 찾을 수 없습니다. 새로고침 후 다시 시도해주세요.",
+      },
+    };
+  }
+
+  if (pendingCharge.owner_id !== user.id) {
+    return { error: { code: "FORBIDDEN", message: "결제 권한이 없습니다." } };
+  }
+
+  const reservationId = pendingCharge.reservation_id;
+
   const { data: reservation } = await db
     .from("reservations")
-    .select(`id, owner_id, sitter_id, status, sitters!inner(users!inner(full_name))`)
+    .select(`id, sitter_id, status, sitters!inner(users!inner(full_name))`)
     .eq("id", reservationId)
     .single();
 
@@ -144,33 +173,11 @@ export async function createExtraPayment(
     };
   }
 
-  if (reservation.owner_id !== user.id) {
-    return { error: { code: "FORBIDDEN", message: "결제 권한이 없습니다." } };
-  }
-
   if (!["in_progress", "paid"].includes(reservation.status)) {
     return {
       error: {
         code: "FORBIDDEN",
         message: "진행 중인 예약에만 추가금을 결제할 수 있습니다.",
-      },
-    };
-  }
-
-  const { data: pendingCharge } = await db
-    .from("extra_charges")
-    .select("id, amount, reason")
-    .eq("reservation_id", reservationId)
-    .eq("status", "pending")
-    .order("requested_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (!pendingCharge) {
-    return {
-      error: {
-        code: "NOT_FOUND",
-        message: "결제할 추가금 요청이 없습니다.",
       },
     };
   }
