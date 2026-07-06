@@ -80,12 +80,17 @@ export function SimpleTimePicker({
   );
   const [minute, setMinute] = useState(value.getMinutes());
 
-  useEffect(() => {
+  // Sync from value/use12HourFormat during render (not in an effect) to avoid
+  // react-hooks/set-state-in-effect and a stale-state double-click bug.
+  const [prevValueTime, setPrevValueTime] = useState(value.getTime());
+  const [prevUse12HourFormat, setPrevUse12HourFormat] = useState(use12HourFormat);
+  if (value.getTime() !== prevValueTime || use12HourFormat !== prevUse12HourFormat) {
+    setPrevValueTime(value.getTime());
+    setPrevUse12HourFormat(use12HourFormat);
     setAmpm(format(value, "a") === "AM" ? AM_VALUE : PM_VALUE);
     setHour(use12HourFormat ? +format(value, "hh") : value.getHours());
     setMinute(value.getMinutes());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value.getTime(), use12HourFormat]);
+  }
 
   useEffect(() => {
     onChange(

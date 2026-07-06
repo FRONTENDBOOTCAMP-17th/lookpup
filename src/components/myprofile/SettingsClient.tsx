@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useBankAccount, type BankAccount } from "@/hooks/useBankAccount";
 import { Mail, Phone, MapPin, Calendar, ChevronLeft, Building2, Check, X, Pencil } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -131,21 +131,33 @@ export default function SettingsClient({
   const [pendingAddress, setPendingAddress] = useState<PendingAddress | null>(null);
   const addressDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    if (!user) return;
-    setFullName(user.fullName);
-    setPhoneNumber(user.phoneNumber);
-    setBirthdate(user.birthdate ?? "");
-  }, [user]);
+  const [prevUser, setPrevUser] = useState(user);
+  if (user !== prevUser) {
+    setPrevUser(user);
+    if (user) {
+      setFullName(user.fullName);
+      setPhoneNumber(user.phoneNumber);
+      setBirthdate(user.birthdate ?? "");
+    }
+  }
 
-  useEffect(() => {
-    if (!user?.address) return;
-    setSavedAddress({
-      address: user.address,
-      dong: user.displayArea || user.address,
-    });
-    setAddressQuery(user.address);
-  }, [user?.address, user?.displayArea]);
+  const [prevAddress, setPrevAddress] = useState({
+    address: user?.address,
+    displayArea: user?.displayArea,
+  });
+  if (
+    user?.address !== prevAddress.address ||
+    user?.displayArea !== prevAddress.displayArea
+  ) {
+    setPrevAddress({ address: user?.address, displayArea: user?.displayArea });
+    if (user?.address) {
+      setSavedAddress({
+        address: user.address,
+        dong: user.displayArea || user.address,
+      });
+      setAddressQuery(user.address);
+    }
+  }
 
   const handleProfileFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

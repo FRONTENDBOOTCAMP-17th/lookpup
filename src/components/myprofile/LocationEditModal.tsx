@@ -48,15 +48,20 @@ export default function LocationEditModal({
   const miniMarkerRef = useRef<kakao.maps.Marker | null>(null);
 
   // 모달 열릴 때 초기값 설정
-  useEffect(() => {
-    if (!open) return;
-    setLocationInput(initialData?.address ?? "");
-    setDetailInput("");
-    setPendingLocation(initialData ?? null);
-    setLocationModalError(null);
-    setSuggestions([]);
-    setShowSuggestions(false);
-  }, [open, initialData]);
+  const [prevOpen, setPrevOpen] = useState(open);
+  const [prevInitialData, setPrevInitialData] = useState(initialData);
+  if (open !== prevOpen || initialData !== prevInitialData) {
+    setPrevOpen(open);
+    setPrevInitialData(initialData);
+    if (open) {
+      setLocationInput(initialData?.address ?? "");
+      setDetailInput("");
+      setPendingLocation(initialData ?? null);
+      setLocationModalError(null);
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  }
 
   // 모달 닫힐 때 미니맵 인스턴스 초기화
   useEffect(() => {

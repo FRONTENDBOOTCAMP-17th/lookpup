@@ -482,12 +482,15 @@ export default function BookingHistoryClient({
     loadData();
   }, [loadData]);
 
-  useEffect(() => {
-    if (!fixedRole) return;
-    setRole(fixedRole);
-    setActiveTab("all");
-    setPage(1);
-  }, [fixedRole]);
+  const [prevFixedRole, setPrevFixedRole] = useState(fixedRole);
+  if (fixedRole !== prevFixedRole) {
+    setPrevFixedRole(fixedRole);
+    if (fixedRole) {
+      setRole(fixedRole);
+      setActiveTab("all");
+      setPage(1);
+    }
+  }
 
   useEffect(() => {
     if (role !== "owner" || !user?.id) return;
