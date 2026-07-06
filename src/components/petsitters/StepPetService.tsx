@@ -26,6 +26,15 @@ const SERVICE_KEY_TO_TYPE: Record<string, string> = {
   pickup: "픽업",
 };
 
+// service_type이 한글 라벨/영문 enum(walk/care/hotel/pickup)으로 혼재 저장돼 있어,
+// 서비스 제공 여부 판정 시 두 표기를 모두 허용한다.
+const SERVICE_KEY_TO_ENUM: Record<string, string> = {
+  visit: "care",
+  home: "hotel",
+  walk: "walk",
+  pickup: "pickup",
+};
+
 function formatDateRange(range: DateRange | undefined): string {
   if (!range?.from) return "-";
   if (!range.to || range.from.getTime() === range.to.getTime()) {
@@ -49,7 +58,6 @@ export default function StepPetService({
   const days = dateRange?.from && dateRange?.to
     ? Math.max(1, differenceInDays(dateRange.to, dateRange.from) + 1)
     : 1;
-  const total = sitter.pricePerDay * days;
 
   function handleTogglePet(id: string, name: string) {
     togglePet(id, name);
@@ -59,6 +67,14 @@ export default function StepPetService({
     setValue("petIds", next, { shouldValidate: true });
   }
   const selectedService = watch("selectedService");
+
+  // 표시 금액은 base_price가 아니라 '선택한 서비스'의 단가 × 일수로 계산한다.
+  // 실제 결제(reservations.ts)와 동일한 매칭·폴백을 사용해 표시 금액 = 청구 금액을 보장.
+  const matchedService =
+    sitter.services.find(
+      (s) => s.service_type === SERVICE_KEY_TO_TYPE[selectedService || "visit"],
+    ) ?? sitter.services[0];
+  const total = (matchedService?.price ?? 0) * days;
 
   const petNames = petIds
     .map((id) => pets.find((p) => p.id === id)?.name ?? "")
@@ -129,7 +145,9 @@ export default function StepPetService({
           {SERVICES.map((svc) => {
             const selected = selectedService === svc.key;
             const available = sitterServices.some(
-              (s) => s.service_type === SERVICE_KEY_TO_TYPE[svc.key],
+              (s) =>
+                s.service_type === SERVICE_KEY_TO_TYPE[svc.key] ||
+                s.service_type === SERVICE_KEY_TO_ENUM[svc.key],
             );
             return (
               <button
