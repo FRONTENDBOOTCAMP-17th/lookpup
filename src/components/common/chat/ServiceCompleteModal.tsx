@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { useMounted } from "@/hooks/useMounted";
 import {
   X,
   CheckCircle,
@@ -59,10 +60,8 @@ export function ServiceCompleteModal({
   onClose,
   onConfirm,
 }: Props & { variant?: "complete" | "start" }) {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useMounted();
   const [selectedId, setSelectedId] = useState<string | null>(null);
-
-  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     if (open && reservations.length === 1) {

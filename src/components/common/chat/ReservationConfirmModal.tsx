@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { useMounted } from "@/hooks/useMounted";
 import { X, CalendarDays, MapPin, PawPrint, Wrench, CircleDollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -108,7 +109,7 @@ export function ReservationConfirmModal({
   onClose,
   onConfirm,
 }: Props) {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useMounted();
   const [editMode, setEditMode] = useState(false);
 
   const [startDt, setStartDt] = useState("");
@@ -116,8 +117,6 @@ export function ReservationConfirmModal({
   const [price, setPrice] = useState("");
   const [location, setLocation] = useState("");
   const [snapshot, setSnapshot] = useState({ startDt: "", endDt: "", price: "", location: "" });
-
-  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     if (details && open) {
