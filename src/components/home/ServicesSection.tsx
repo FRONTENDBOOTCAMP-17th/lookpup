@@ -1,13 +1,12 @@
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
-import { Home, User, Activity, Building, Car } from "lucide-react";
+import { Home, User, Activity, Car } from "lucide-react";
 import ScrollReveal from "@/components/common/ScrollReveal";
 
 const SERVICES: { Icon: LucideIcon; label: string; desc: string; href: string }[] = [
   { Icon: Home, label: "방문돌봄", desc: "집에서 안전하게", href: "/board?category=방문돌봄" },
   { Icon: User, label: "위탁돌봄", desc: "펫시터 집에서", href: "/board?category=위탁돌봄" },
   { Icon: Activity, label: "산책", desc: "건강한 산책", href: "/board?category=산책" },
-  { Icon: Building, label: "펫호텔", desc: "프리미엄 케어", href: "/board?category=펫호텔" },
   { Icon: Car, label: "픽업", desc: "편리한 이동", href: "/board?category=픽업" },
 ];
 
@@ -24,7 +23,7 @@ export default function ServicesSection() {
           </p>
         </ScrollReveal>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 lg:gap-5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 lg:gap-5">
           {SERVICES.map(({ Icon, label, desc, href }, index) => (
             <ScrollReveal key={label} delay={index * 0.08}>
               <Link
