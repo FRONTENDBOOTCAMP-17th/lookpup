@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Header from "@/components/layout/Header";
 import LoadingPage from "@/components/common/LoadingPage";
+import { CustomModal } from "@/components/common/CustomModal";
 import { Progress } from "@/components/ui/progress";
 import { useUserStore } from "@/store/userStore";
 import { useSitterRegisterForm } from "@/hooks/sitter-register/useSitterRegisterForm";
@@ -18,14 +19,19 @@ export default function SitterRegisterClient() {
   const { isLoggedIn, isLoading: authLoading } = useUserStore();
   const { form, step, goNext, goPrev, totalSteps } = useSitterRegisterForm();
   const mutation = useSitterRegisterMutation();
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !isLoggedIn) router.replace("/auth/login");
   }, [authLoading, isLoggedIn, router]);
 
   const handleSubmit = form.handleSubmit((values) => {
-    mutation.mutate(values);
+    mutation.mutate(values, {
+      onSuccess: () => setShowApprovalModal(true),
+    });
   });
+
+  const goToMyProfile = () => router.push("/myprofile");
 
   if (authLoading) return <LoadingPage fullScreen />;
   if (!isLoggedIn) return null;
@@ -101,6 +107,13 @@ export default function SitterRegisterClient() {
           )}
         </div>
       </div>
+
+      <CustomModal
+        open={showApprovalModal}
+        preset="sitterRegisterPending"
+        onClose={goToMyProfile}
+        onConfirm={goToMyProfile}
+      />
     </>
   );
 }
