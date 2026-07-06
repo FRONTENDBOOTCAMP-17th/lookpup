@@ -27,7 +27,7 @@ import {
 } from "date-fns";
 
 interface SimpleTimeOption {
-  value: any;
+  value: number;
   label: string;
   disabled?: boolean;
 }
@@ -80,9 +80,6 @@ export function SimpleTimePicker({
   );
   const [minute, setMinute] = useState(value.getMinutes());
 
-  // value가 외부에서(예: 비동기로 불러온 기존 데이터) 바뀌면 내부 선택 상태도 맞춰준다.
-  // 안 그러면 마운트 시점 값으로 멈춰 있던 내부 state 때문에 처음 클릭한 값이 잘못 조합돼,
-  // 다른 항목을 한 번 더 클릭해야 원하는 시간이 반영되는 것처럼 보임.
   useEffect(() => {
     setAmpm(format(value, "a") === "AM" ? AM_VALUE : PM_VALUE);
     setHour(use12HourFormat ? +format(value, "hh") : value.getHours());
