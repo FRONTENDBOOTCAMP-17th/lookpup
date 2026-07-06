@@ -747,7 +747,7 @@ function ChatPageContent({
   const handlePaymentSubmit = useCallback(
     async (data: { type: string; amount: number; reason: string }) => {
       if (!activeRoomId) return;
-      const isBasePaid = paymentState?.paid === true || isPaymentAlreadyPaid;
+      const isBasePaid = isPaymentAlreadyPaid;
       if (data.type !== "extra" && isBasePaid) {
         setSendError("이미 결제된 예약입니다. 추가금 요청을 이용해주세요.");
         return;
@@ -793,7 +793,6 @@ function ChatPageContent({
     },
     [
       activeRoomId,
-      paymentState,
       isPaymentAlreadyPaid,
       selectedRoom,
       deliverMessage,
@@ -1976,7 +1975,7 @@ function ChatPageContent({
         open={paymentModalOpen}
         onClose={() => setPaymentModalOpen(false)}
         paymentAmount={paymentReservationAmount}
-        isAlreadyPaid={isPaymentAlreadyPaid || paymentState?.paid === true}
+        isAlreadyPaid={isPaymentAlreadyPaid}
         onSubmit={handlePaymentSubmit}
       />
 
