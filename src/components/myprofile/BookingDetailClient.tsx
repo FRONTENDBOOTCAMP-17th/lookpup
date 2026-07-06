@@ -10,7 +10,6 @@ import {
   MapPin,
   Star,
   MessageCircle,
-  ChevronLeft,
   FileText,
   BadgeCheck,
   ClipboardList,

@@ -11,7 +11,6 @@ import {
   Info,
   Inbox,
   Lock,
-  LogOut,
   Trash2,
   X,
 } from 'lucide-react';
