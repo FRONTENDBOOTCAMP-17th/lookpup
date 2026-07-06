@@ -32,6 +32,21 @@ async function getAuthUser() {
   return user;
 }
 
+async function verifyPetOwnership(
+  db: ReturnType<typeof createServiceClient>,
+  petIds: string[],
+  userId: string,
+) {
+  const { count } = await db
+    .from("pets")
+    .select("id", { count: "exact", head: true })
+    .in("id", petIds)
+    .eq("owner_id", userId)
+    .is("deleted_at", null);
+
+  return (count ?? 0) === new Set(petIds).size;
+}
+
 export async function createReservation(input: ReservationInput) {
   const user = await getAuthUser();
   if (!user) {
@@ -72,10 +87,19 @@ export async function createReservation(input: ReservationInput) {
 
   const db = createServiceClient();
 
+  if (!(await verifyPetOwnership(db, input.pet_ids, user.id))) {
+    return {
+      error: {
+        code: "FORBIDDEN",
+        message: "본인의 반려동물만 예약에 추가할 수 있습니다.",
+      },
+    };
+  }
+
   // 서비스 존재 및 해당 시터 소유 확인 + 가격 조회
   const { data: service } = await db
     .from("services")
-    .select("id, sitter_id, price, is_active")
+    .select("id, sitter_id, price, is_active, sitters!inner(user_id)")
     .eq("id", input.service_id)
     .single();
 
@@ -95,6 +119,13 @@ export async function createReservation(input: ReservationInput) {
   if (!service.is_active) {
     return {
       error: { code: "FORBIDDEN", message: "비활성화된 서비스입니다." },
+    };
+  }
+
+  const sitterUserId = (service.sitters as { user_id: string }).user_id;
+  if (sitterUserId === user.id) {
+    return {
+      error: { code: "FORBIDDEN", message: "본인에게는 예약할 수 없습니다." },
     };
   }
 
@@ -896,6 +927,15 @@ export async function createPetsitterReservationRequest(
 
   const db = createServiceClient();
 
+  if (!(await verifyPetOwnership(db, input.pet_ids, user.id))) {
+    return {
+      error: {
+        code: "FORBIDDEN",
+        message: "본인의 반려동물만 예약에 추가할 수 있습니다.",
+      },
+    };
+  }
+
   const { data: existingRoom } = await db
     .from("chat_rooms")
     .select("id, reservations(status)")
@@ -916,7 +956,9 @@ export async function createPetsitterReservationRequest(
 
   const { data: service } = await db
     .from("services")
-    .select("id, sitter_id, price, title, service_type, is_active")
+    .select(
+      "id, sitter_id, price, title, service_type, is_active, sitters!inner(user_id)",
+    )
     .eq("id", input.service_id)
     .single();
 
@@ -942,6 +984,13 @@ export async function createPetsitterReservationRequest(
         message: "서비스 가격이 설정되지 않았습니다.",
       },
     };
+
+  const sitterUserId = (service.sitters as { user_id: string }).user_id;
+  if (sitterUserId === user.id) {
+    return {
+      error: { code: "FORBIDDEN", message: "본인에게는 예약할 수 없습니다." },
+    };
+  }
 
   // 실제 예약 금액 = 1일 단가 × 이용 일수 (KST 달력일 기준, 시작·종료일 포함)
   const DAY_MS = 24 * 60 * 60 * 1000;

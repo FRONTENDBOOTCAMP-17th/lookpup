@@ -17,7 +17,8 @@ export type PresetKey =
   | "leaveChat"
   | "empty"
   | "error"
-  | "serviceComplete";
+  | "serviceComplete"
+  | "sitterRegisterPending";
 
 export const modalPresets: Record<PresetKey, ModalConfig> = {
   info: {
@@ -149,6 +150,14 @@ export const modalPresets: Record<PresetKey, ModalConfig> = {
     title: "서비스를 완료하시겠습니까?",
     description: "확인 시 서비스가 최종 완료 처리되며, 되돌릴 수 없습니다.",
     cancelText: "취소",
+    confirmText: "확인",
+  },
+  sitterRegisterPending: {
+    type: "success",
+    size: "small",
+    title: "펫시터 등록 신청이 완료되었습니다.",
+    description:
+      "관리자 승인 후 펫시터로 활동을 시작하실 수 있어요.\n승인까지 다소 시간이 걸릴 수 있으니 승인 완료까지 조금만 기다려 주세요.",
     confirmText: "확인",
   },
 };

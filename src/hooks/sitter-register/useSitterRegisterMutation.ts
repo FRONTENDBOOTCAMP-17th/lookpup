@@ -1,7 +1,6 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
 import { createSitter } from "@/app/actions/sitters";
 import { uploadToCloudinary } from "@/utils/cloudinary";
 import { SERVICES } from "@/lib/sitterRegister";
@@ -12,8 +11,6 @@ import type {
 const DEFAULT_SERVICE_PRICE = 10000;
 
 export function useSitterRegisterMutation() {
-  const router = useRouter();
-
   return useMutation({
     mutationFn: async (values: SitterRegisterFormValues) => {
       const profilePhotoUrl = values.profilePhotoFile
@@ -57,9 +54,6 @@ export function useSitterRegisterMutation() {
       }
 
       return result.data;
-    },
-    onSuccess: () => {
-      router.push("/myprofile");
     },
   });
 }
