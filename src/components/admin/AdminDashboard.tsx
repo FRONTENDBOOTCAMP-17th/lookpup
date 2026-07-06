@@ -1,25 +1,29 @@
 "use client";
 
 import { useState } from "react";
-import { Flag, CalendarClock } from "lucide-react";
+import { Flag, CalendarClock, ShieldCheck } from "lucide-react";
 import AdminReportsClient, { type AdminReportsClientProps } from "@/components/admin/AdminReportsClient";
 import AdminStateClient from "@/components/admin/AdminStateClient";
+import AdminSittersClient from "@/components/admin/AdminSittersClient";
 
-type Tab = "reports" | "state";
+type Tab = "reports" | "state" | "sitters";
 
 const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: "reports", label: "신고 관리", icon: <Flag className="w-4 h-4" /> },
   { key: "state", label: "예약 상태 관리", icon: <CalendarClock className="w-4 h-4" /> },
+  { key: "sitters", label: "펫시터 승인", icon: <ShieldCheck className="w-4 h-4" /> },
 ];
 
 interface AdminDashboardProps {
   initialReports: AdminReportsClientProps["initialReports"];
   initialReservations: React.ComponentProps<typeof AdminStateClient>["initialReservations"];
+  initialSitters: React.ComponentProps<typeof AdminSittersClient>["initialSitters"];
 }
 
 export default function AdminDashboard({
   initialReports,
   initialReservations,
+  initialSitters,
 }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<Tab>("reports");
 
@@ -53,6 +57,9 @@ export default function AdminDashboard({
       )}
       {activeTab === "state" && (
         <AdminStateClient initialReservations={initialReservations} />
+      )}
+      {activeTab === "sitters" && (
+        <AdminSittersClient initialSitters={initialSitters} />
       )}
     </div>
   );

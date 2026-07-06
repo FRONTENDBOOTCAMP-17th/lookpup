@@ -210,6 +210,42 @@ export async function adminUpdateReservationStatus(
   return { data: { status } };
 }
 
+export type SitterStatus = "pending" | "approved" | "rejected";
+
+export async function getAdminSitters() {
+  const auth = await requireAdmin();
+  if ("error" in auth) return { error: { code: auth.error, message: "권한이 없습니다." }, data: null };
+
+  const db = createServiceClient();
+  const { data, error } = await db
+    .from("sitters")
+    .select(
+      `id, user_id, status, title, introduction, career, available_area, display_area,
+       base_price, request_type, available_animals, certificate_urls, activity_photo_urls,
+       created_at,
+       users(id, full_name, email, phone_number, profile_image)`
+    )
+    .order("created_at", { ascending: false });
+
+  if (error) return { error: { code: "INTERNAL_ERROR", message: error.message }, data: null };
+  return { data, error: null };
+}
+
+export async function adminUpdateSitterStatus(sitterId: string, status: SitterStatus) {
+  const auth = await requireAdmin();
+  if ("error" in auth) return { error: { code: auth.error, message: "권한이 없습니다." } };
+
+  const db = createServiceClient();
+
+  const { data: sitter } = await db.from("sitters").select("status").eq("id", sitterId).single();
+  if (!sitter) return { error: { code: "NOT_FOUND", message: "펫시터를 찾을 수 없습니다." } };
+
+  const { error } = await db.from("sitters").update({ status }).eq("id", sitterId);
+  if (error) return { error: { code: "INTERNAL_ERROR", message: error.message } };
+
+  return { data: { status } };
+}
+
 export async function adminDeactivateService(serviceId: string) {
   const auth = await requireAdmin();
   if ("error" in auth) return { error: { code: auth.error, message: "권한이 없습니다." } };
