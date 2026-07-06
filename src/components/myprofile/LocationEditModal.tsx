@@ -44,8 +44,8 @@ export default function LocationEditModal({
 
   const suggestTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const miniMapContainerRef = useRef<HTMLDivElement>(null);
-  const miniMapRef = useRef<any>(null);
-  const miniMarkerRef = useRef<any>(null);
+  const miniMapRef = useRef<kakao.maps.Map | null>(null);
+  const miniMarkerRef = useRef<kakao.maps.Marker | null>(null);
 
   // 모달 열릴 때 초기값 설정
   useEffect(() => {

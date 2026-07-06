@@ -146,6 +146,7 @@ export default function BoardDetailClient({
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [applyError, setApplyError] = useState<string | null>(null);
   const [applying, setApplying] = useState(false);
   const applyCancelledRef = useRef(false);
   const applyInFlightRef = useRef(false);
@@ -173,23 +174,25 @@ export default function BoardDetailClient({
     if (!post?.id || applyInFlightRef.current) return;
     applyInFlightRef.current = true;
     setApplying(true);
-    setErrorMessage(null);
+    setApplyError(null);
 
     try {
       const result = await createApplication(post.id, {});
 
       if (result.error) {
-        setErrorMessage(result.error.message);
+        setApplyError(result.error.message);
         setShowApplyModal(false);
         return;
       }
 
       if (!applyCancelledRef.current) {
         setShowApplyModal(false);
-        router.push("/chat?tab=applicants");
+        router.push(
+          result.roomId ? `/chat?roomId=${result.roomId}` : "/chat?tab=applicants",
+        );
       }
     } catch {
-      setErrorMessage("일시적인 오류가 발생했습니다. 다시 시도해 주세요.");
+      setApplyError("일시적인 오류가 발생했습니다. 다시 시도해 주세요.");
       setShowApplyModal(false);
     } finally {
       applyInFlightRef.current = false;
@@ -248,7 +251,7 @@ export default function BoardDetailClient({
       return;
     }
     applyCancelledRef.current = false;
-    setErrorMessage(null);
+    setApplyError(null);
     setShowApplyModal(true);
   };
 
@@ -403,6 +406,11 @@ export default function BoardDetailClient({
                           지원하기
                         </button>
                       </div>
+                    )}
+                    {applyError && (
+                      <p className="sm:col-span-2 text-sm text-red-500 text-center">
+                        {applyError}
+                      </p>
                     )}
                   </div>
                 </div>

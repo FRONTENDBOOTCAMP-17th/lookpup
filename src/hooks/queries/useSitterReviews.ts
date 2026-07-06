@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/client";
 
 export interface ReviewRow {
   id: string;
@@ -18,6 +18,7 @@ export function useSitterReviews(sitterId: string) {
   return useQuery({
     queryKey: ["sitter-reviews", sitterId] as const,
     queryFn: async () => {
+      const supabase = createClient();
       const { data, error } = await supabase
         .from("reviews")
         .select("id, rating, content, image_urls, tags, created_at, owner_id")

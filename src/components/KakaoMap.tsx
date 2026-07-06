@@ -4,12 +4,6 @@ import { useEffect, useRef } from "react";
 import Script from "next/script";
 import { formatDistance } from "@/utils/distance";
 
-declare global {
-  interface Window {
-    kakao: any;
-  }
-}
-
 export interface MapMarker {
   lat: number;
   lng: number;
@@ -71,11 +65,11 @@ export default function KakaoMap({
   onMarkerDragEnd,
 }: KakaoMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<any>(null);
-  const markerOverlaysRef = useRef<any[]>([]);
-  const draggableMarkerRef = useRef<any>(null);
-  const overlayRef = useRef<any>(null);
-  const polylineRef = useRef<any>(null);
+  const mapRef = useRef<kakao.maps.Map | null>(null);
+  const markerOverlaysRef = useRef<kakao.maps.CustomOverlay[]>([]);
+  const draggableMarkerRef = useRef<kakao.maps.Marker | null>(null);
+  const overlayRef = useRef<kakao.maps.CustomOverlay | null>(null);
+  const polylineRef = useRef<kakao.maps.Polyline | null>(null);
   const onMarkerClickRef = useRef(onMarkerClick);
   const onMapClickRef = useRef(onMapClick);
   const onMarkerDragEndRef = useRef(onMarkerDragEnd);
@@ -159,7 +153,7 @@ export default function KakaoMap({
     window.kakao.maps.event.addListener(
       mapRef.current,
       "click",
-      (mouseEvent: any) => {
+      (mouseEvent: kakao.maps.MapMouseEvent) => {
         if (markerClickGuardRef.current) {
           markerClickGuardRef.current = false;
           return;
@@ -211,20 +205,17 @@ export default function KakaoMap({
     );
 
     if (!draggableMarkerRef.current) {
-      draggableMarkerRef.current = new window.kakao.maps.Marker({
+      const kakaoMarker = new window.kakao.maps.Marker({
         map,
         position,
         image: markerImage,
         draggable: true,
       });
-      window.kakao.maps.event.addListener(
-        draggableMarkerRef.current,
-        "dragend",
-        () => {
-          const pos = draggableMarkerRef.current.getPosition();
-          onMarkerDragEndRef.current?.(pos.getLat(), pos.getLng());
-        },
-      );
+      draggableMarkerRef.current = kakaoMarker;
+      window.kakao.maps.event.addListener(kakaoMarker, "dragend", () => {
+        const pos = kakaoMarker.getPosition();
+        onMarkerDragEndRef.current?.(pos.getLat(), pos.getLng());
+      });
     } else {
       draggableMarkerRef.current.setPosition(position);
     }

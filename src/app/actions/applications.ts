@@ -119,13 +119,20 @@ export async function createApplication(
     .eq("sitter_id", sitter.id)
     .maybeSingle();
 
+  let roomId = existingRoom?.id ?? null;
+
   if (!existingRoom) {
-    await db.from("chat_rooms").insert({
-      room_type: "request",
-      owner_id: requestRow.owner_id,
-      sitter_id: sitter.id,
-      request_id: requestId,
-    });
+    const { data: newRoom } = await db
+      .from("chat_rooms")
+      .insert({
+        room_type: "request",
+        owner_id: requestRow.owner_id,
+        sitter_id: sitter.id,
+        request_id: requestId,
+      })
+      .select("id")
+      .single();
+    roomId = newRoom?.id ?? null;
   }
 
   const { data: sitterUser } = await db
@@ -143,7 +150,7 @@ export async function createApplication(
     linkUrl: `/board/${requestId}`,
   });
 
-  return { data };
+  return { data, roomId };
 }
 
 export async function getRequestDetailsForReservation(roomId: string) {
