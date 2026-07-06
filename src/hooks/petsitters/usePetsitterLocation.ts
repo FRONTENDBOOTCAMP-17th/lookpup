@@ -39,16 +39,20 @@ export function usePetsitterLocation({
       return;
     }
     if (navigator.permissions) {
-      const status = await navigator.permissions.query({ name: "geolocation" });
-      if (status.state === "denied") {
-        const { data: saved } = await getOwnerLocation();
-        if (saved) {
-          setBasePosition({ lat: saved.lat, lng: saved.lng });
-          setBaseLabel(`저장된 위치 (${saved.dong || saved.address})`);
+      try {
+        const status = await navigator.permissions.query({ name: "geolocation" });
+        if (status.state === "denied") {
+          const { data: saved } = await getOwnerLocation();
+          if (saved) {
+            setBasePosition({ lat: saved.lat, lng: saved.lng });
+            setBaseLabel(`저장된 위치 (${saved.dong || saved.address})`);
+            return;
+          }
+          setLocationError("브라우저 위치 권한이 차단되어 있어요. 브라우저 설정에서 위치 권한을 허용해 주세요.");
           return;
         }
-        setLocationError("브라우저 위치 권한이 차단되어 있어요. 브라우저 설정에서 위치 권한을 허용해 주세요.");
-        return;
+      } catch {
+        // 일부 브라우저는 geolocation permission query를 지원하지 않음 - 아래 getCurrentPosition으로 폴백
       }
     }
     setLocationLoading(true);
@@ -91,10 +95,15 @@ export function usePetsitterLocation({
     if (window.kakao?.maps?.load) {
       window.kakao.maps.load(run);
     } else {
+      const MAX_ATTEMPTS = 100; // 100ms * 100 = 10초
+      let attempts = 0;
       const id = setInterval(() => {
+        attempts += 1;
         if (window.kakao?.maps?.load) {
           clearInterval(id);
           window.kakao.maps.load(run);
+        } else if (attempts >= MAX_ATTEMPTS) {
+          clearInterval(id);
         }
       }, 100);
       return () => clearInterval(id);
