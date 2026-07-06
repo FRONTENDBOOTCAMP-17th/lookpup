@@ -26,6 +26,7 @@ interface MessageListProps {
   payingNow: boolean;
   isPaymentPending: boolean;
   confirmedServiceIds: Set<string>;
+  reviewedReservationIds: Set<string>;
   isServiceConfirming: boolean;
   confirmedEditIds: Set<string>;
   reservationEditAction: ReservationEditActionState;
@@ -66,6 +67,7 @@ function MessageListImpl({
   payingNow,
   isPaymentPending,
   confirmedServiceIds,
+  reviewedReservationIds,
   isServiceConfirming,
   confirmedEditIds,
   reservationEditAction,
@@ -181,6 +183,12 @@ function MessageListImpl({
               confirmedServiceIds.has(msg.serviceCompleteData.reservationId)
             }
             isServiceConfirming={isServiceConfirming}
+            isReviewWritten={
+              !!msg.serviceCompleteConfirmedData?.reservationId &&
+              reviewedReservationIds.has(
+                msg.serviceCompleteConfirmedData.reservationId,
+              )
+            }
             onReservationEditConfirm={onReservationEditConfirm}
             onReservationEditReject={onReservationEditReject}
             confirmedEditIds={confirmedEditIds}
@@ -222,6 +230,7 @@ export interface ChatWindowProps {
   confirmedEditIds: Set<string>;
   reservationEditAction: ReservationEditActionState;
   confirmedServiceIds: Set<string>;
+  reviewedReservationIds: Set<string>;
   payingNow: boolean;
   isPaymentPending: boolean;
   isServiceConfirming: boolean;
@@ -305,6 +314,7 @@ function ChatWindowImpl({
   confirmedEditIds,
   reservationEditAction,
   confirmedServiceIds,
+  reviewedReservationIds,
   payingNow,
   isPaymentPending,
   isServiceConfirming,
@@ -413,6 +423,7 @@ function ChatWindowImpl({
       payingNow={payingNow}
       isPaymentPending={isPaymentPending}
       confirmedServiceIds={confirmedServiceIds}
+      reviewedReservationIds={reviewedReservationIds}
       isServiceConfirming={isServiceConfirming}
       confirmedEditIds={confirmedEditIds}
       reservationEditAction={reservationEditAction}

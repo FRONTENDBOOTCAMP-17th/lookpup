@@ -53,6 +53,7 @@ import {
   getReservationRequestDetails,
   updateReservationDetails,
 } from "@/app/actions/reservations";
+import { getReviewedReservationIds } from "@/app/actions/reviews";
 import type { ActiveReservation } from "@/components/common/chat/ServiceCompleteModal";
 import { usePortOne } from "@/hooks/usePortOne";
 import { uploadToCloudinary } from "@/utils/cloudinary";
@@ -223,6 +224,10 @@ function ChatPageContent({
     new Set(),
   );
   const checkedReservationIdsRef = useRef(new Set<string>());
+  const [reviewedReservationIds, setReviewedReservationIds] = useState<
+    Set<string>
+  >(new Set());
+  const checkedReviewReservationIdsRef = useRef(new Set<string>());
   const [isServiceConfirming, setIsServiceConfirming] = useState(false);
   const [pendingServiceConfirmId, setPendingServiceConfirmId] = useState<
     string | null
@@ -357,6 +362,7 @@ function ChatPageContent({
       setSendError(null);
       setInput("");
       setConfirmedServiceIds(new Set());
+      setReviewedReservationIds(new Set());
     }
   }
 
@@ -365,6 +371,7 @@ function ChatPageContent({
     markRoomAsRead(activeRoomId);
     markRoomRead(activeRoomId);
     checkedReservationIdsRef.current = new Set();
+    checkedReviewReservationIdsRef.current = new Set();
   }, [activeRoomId, markRoomAsRead]);
 
   useLayoutEffect(() => {
@@ -484,6 +491,30 @@ function ChatPageContent({
       if (completed.length > 0) {
         setConfirmedServiceIds((prev) => new Set([...prev, ...completed]));
       }
+    });
+  }, [messages]);
+
+  useEffect(() => {
+    const uncheckedIds = messages
+      .filter(
+        (m) =>
+          m.from === "service_complete_confirmed" &&
+          m.sentByMe &&
+          m.serviceCompleteConfirmedData?.reservationId &&
+          !checkedReviewReservationIdsRef.current.has(
+            m.serviceCompleteConfirmedData.reservationId,
+          ),
+      )
+      .map((m) => m.serviceCompleteConfirmedData!.reservationId);
+
+    if (uncheckedIds.length === 0) return;
+    uncheckedIds.forEach((id) =>
+      checkedReviewReservationIdsRef.current.add(id),
+    );
+
+    getReviewedReservationIds(uncheckedIds).then(({ data }) => {
+      if (!data || data.length === 0) return;
+      setReviewedReservationIds((prev) => new Set([...prev, ...data]));
     });
   }, [messages]);
 
@@ -1809,6 +1840,7 @@ function ChatPageContent({
     confirmedEditIds,
     reservationEditAction,
     confirmedServiceIds,
+    reviewedReservationIds,
     payingNow,
     isPaymentPending,
     isServiceConfirming,
