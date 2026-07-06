@@ -64,6 +64,7 @@ export const useUserStore = create<UserState>((set) => ({
       isLoggedIn: false,
       isLoading: false,
       isDeletedAccount: false,
+      unreadCount: 0,
     }),
   verifyUser: () =>
     set((state) =>
@@ -76,6 +77,7 @@ export const useUserStore = create<UserState>((set) => ({
       isLoggedIn: false,
       isLoading: false,
       isDeletedAccount: true,
+      unreadCount: 0,
     }),
   setUnreadCount: (count) => set({ unreadCount: count }),
 }));
