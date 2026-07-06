@@ -90,6 +90,8 @@ export default function ReservationEditModal({ open, roomId, onClose, onSubmit }
 
   useEffect(() => {
     if (!open) return;
+    // 뒤이은 예약 목록 fetch 시작 전 초기화라 effect가 맞는 위치
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setStep("select");
     setSelected(null);
     setFetchError(null);
