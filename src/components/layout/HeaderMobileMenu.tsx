@@ -27,7 +27,11 @@ export default function HeaderMobileMenu({ navItems }: { navItems: readonly NavI
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
-  useEffect(() => { setOpen(false); }, [pathname]);
+  const [prevPathname, setPrevPathname] = useState(pathname);
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname);
+    setOpen(false);
+  }
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
