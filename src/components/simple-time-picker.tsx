@@ -254,7 +254,10 @@ export function SimpleTimePicker({
   return (
     <Popover open={open} onOpenChange={setOpen} modal={modal}>
       <PopoverTrigger asChild>
+        {/* Radix Popover.Trigger가 asChild일 때 aria-controls/aria-haspopup을
+            자동으로 주입해줘서 실제로는 누락이 아님 (정적 분석 오탐) */}
         <div
+          // eslint-disable-next-line jsx-a11y/role-has-required-aria-props
           role="combobox"
           aria-expanded={open}
           className={cn(

@@ -65,6 +65,8 @@ export default function BookingClient({ sitterId }: { sitterId: string }) {
   });
 
   // 현재 step의 폼에서 값 읽기
+  // react-hook-form의 watch()는 메모이제이션 불가능한 함수를 반환하는 걸로 알려진 라이브러리 제약
+  // eslint-disable-next-line react-hooks/incompatible-library
   const startTime = step1Form.watch("startTime") ?? "";
   const endTime = step1Form.watch("endTime") ?? "";
   const selectedService = (step2Form.watch("selectedService") || null) as ServiceKey | null;
