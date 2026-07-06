@@ -12,9 +12,6 @@ import {
   SERVICE_COMPLETE_CONFIRMED_PREFIX,
 } from "@/lib/chatMessagePrefixes";
 
-const FEE_RATE = 0.05;
-
-
 interface ReservationInput {
   sitter_id: string;
   service_id: string;

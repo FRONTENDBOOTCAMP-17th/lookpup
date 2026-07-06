@@ -45,6 +45,8 @@ export default function LocationPickerWithMap({
     if (debounceRef.current) clearTimeout(debounceRef.current);
     const q = query.trim();
     if (q.length < 2) {
+      // 디바운스 검색 effect의 일부 — 검색어가 짧아 API 호출 없이 목록만 비우는 분기
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSuggestions([]);
       return;
     }

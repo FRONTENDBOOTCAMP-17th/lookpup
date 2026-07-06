@@ -86,7 +86,7 @@ export default function UserProvider({
     });
 
     return () => subscription.unsubscribe();
-  }, [setUser, clearUser, setDeletedAccount, queryClient]);
+  }, [setUser, setSitter, clearUser, setDeletedAccount, queryClient]);
 
   return <>{children}</>;
 }

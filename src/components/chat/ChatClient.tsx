@@ -416,6 +416,8 @@ function ChatPageContent({
     const room = rooms.find((r) => r.id === initialRoomId);
     if (room) {
       hasAutoSelected.current = true;
+      // hasAutoSelected ref로 최초 1회만 실행되는, URL의 초기 roomId 기반 자동 선택
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveTab("one_on_one");
       setSelectedRoomId(room.id);
       setMobileChatView("room");

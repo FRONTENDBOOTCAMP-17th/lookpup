@@ -2,8 +2,8 @@
 
 import { useRef, useState } from "react";
 import { useBankAccount, type BankAccount } from "@/hooks/useBankAccount";
-import { Mail, Phone, MapPin, Calendar, ChevronLeft, Building2, Check, X, Pencil } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { Mail, Phone, MapPin, Calendar, Building2, Check, X, Pencil } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import Script from "next/script";
 import Header from "@/components/layout/Header";
 import { MobileBackButton, DesktopBackButton } from "@/components/common/BackButton";
@@ -12,10 +12,9 @@ import { AvatarWithCamera } from "@/components/ui/Avatar";
 import { Switch } from "@/components/ui/switch";
 import { CustomModal } from "@/components/common/CustomModal";
 import { useUserStore, type UserProfile } from "@/store/userStore";
-import { updateUserInfo, updateOwnerLocation, updateProfile } from "@/app/actions/users";
+import { updateProfile } from "@/app/actions/users";
 import { uploadToCloudinary } from "@/utils/cloudinary";
 import {
-  searchAddressList,
   coordToRegion,
   type AddressSuggestion,
 } from "@/utils/kakaoGeocode";
@@ -81,7 +80,6 @@ export default function SettingsClient({
   initialUser?: UserProfile | null;
   initialBankAccount?: BankAccount | null;
 }) {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const user = useUserStore((s) => s.user) ?? initialUser ?? null;
   const setUser = useUserStore((s) => s.setUser);
@@ -99,8 +97,6 @@ export default function SettingsClient({
   const [fullName, setFullName] = useState(initialUser?.fullName ?? "");
   const [phoneNumber, setPhoneNumber] = useState(initialUser?.phoneNumber ?? "");
   const [birthdate, setBirthdate] = useState(initialUser?.birthdate ?? "");
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
 
   const [profilePreview, setProfilePreview] = useState<string | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -186,23 +182,6 @@ export default function SettingsClient({
     }
   };
 
-  const handleAddressInputChange = (value: string) => {
-    setAddressQuery(value);
-    setPendingAddress(null);
-    if (addressDebounceRef.current) clearTimeout(addressDebounceRef.current);
-    const q = value.trim();
-    if (q.length < 2) {
-      setAddressSuggestions([]);
-      setShowAddressSuggestions(false);
-      return;
-    }
-    addressDebounceRef.current = setTimeout(async () => {
-      const results = await searchAddressList(q);
-      setAddressSuggestions(results);
-      setShowAddressSuggestions(results.length > 0);
-    }, 300);
-  };
-
   const handleSelectAddress = async (s: AddressSuggestion) => {
     if (addressDebounceRef.current) clearTimeout(addressDebounceRef.current);
     setAddressQuery(s.addressName);
@@ -221,61 +200,6 @@ export default function SettingsClient({
       saveNotificationPrefs(next);
       return next;
     });
-  };
-
-  const handleSave = async () => {
-    setIsSaving(true);
-    setSaveError(null);
-
-    const result = await updateUserInfo({
-      fullName,
-      phoneNumber,
-      birthdate: birthdate || null,
-    });
-
-    if ("error" in result) {
-      setIsSaving(false);
-      setSaveError(result.error?.message ?? "저장 중 오류가 발생했습니다.");
-      return;
-    }
-
-    const newAddress = pendingAddress;
-
-    if (newAddress) {
-      const locationResult = await updateOwnerLocation({
-        address: newAddress.address,
-        lat: newAddress.lat,
-        lng: newAddress.lng,
-        dong: newAddress.dong,
-      });
-
-      if ("error" in locationResult) {
-        setIsSaving(false);
-        setSaveError(
-          locationResult.error?.message ?? "주소 저장 중 오류가 발생했습니다.",
-        );
-        return;
-      }
-
-      setSavedAddress({ address: newAddress.address, dong: newAddress.dong });
-      setPendingAddress(null);
-    }
-
-    if (user) {
-      setUser({
-        ...user,
-        fullName: result.data.full_name ?? "",
-        phoneNumber: result.data.phone_number ?? "",
-        birthdate: result.data.birthdate ?? null,
-        address: newAddress?.address ?? user.address,
-        displayArea: newAddress?.dong ?? user.displayArea,
-        latitude: newAddress?.lat ?? user.latitude,
-        longitude: newAddress?.lng ?? user.longitude,
-      });
-    }
-
-    setIsSaving(false);
-    setShowSaveModal(true);
   };
 
   return (
