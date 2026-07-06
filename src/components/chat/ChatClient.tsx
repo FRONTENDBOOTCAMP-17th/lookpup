@@ -824,7 +824,8 @@ function ChatPageContent({
         return;
       }
 
-      const payResult = await createPayment(reservationId, "CARD", totalAmount);
+      const payResult = await createPayment(reservationId, "CARD");
+      let chargeAmount = totalAmount;
       if (payResult.error?.code === "FORBIDDEN") {
         const extraResult = await createExtraPayment(
           reservationId,
@@ -838,6 +839,7 @@ function ChatPageContent({
         }
         portonePaymentId = extraResult.data!.payment_id;
         orderName = extraResult.data!.order_name;
+        chargeAmount = extraResult.data!.amount;
       } else if (payResult.error) {
         setSendError(payResult.error.message);
         setPayingNow(false);
@@ -845,13 +847,14 @@ function ChatPageContent({
       } else {
         portonePaymentId = payResult.data!.payment_id;
         orderName = payResult.data!.order_name;
+        chargeAmount = payResult.data!.amount;
       }
 
       requestPayment(
         {
           paymentId: portonePaymentId,
           orderName,
-          totalAmount,
+          totalAmount: chargeAmount,
           currency: "KRW",
           payMethod: "CARD",
           redirectUrl: `${window.location.origin}/payment/complete`,
@@ -866,7 +869,7 @@ function ChatPageContent({
                 return;
               }
               const result = await sendPaymentCompleteMessage(activeRoomId, {
-                amount: totalAmount,
+                amount: chargeAmount,
                 paymentRequestMessageId: data.messageId,
               });
               if (result.data) {
