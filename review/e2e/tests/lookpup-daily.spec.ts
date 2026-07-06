@@ -8,7 +8,7 @@ import { test, expect, Page } from "@playwright/test";
 // Kakao Map은 도메인 미등록으로 빈 캔버스 — known limitation.
 // networkidle 금지 (Supabase Realtime websocket으로 hang).
 
-const IMG = "../images/2026-07-02";
+const IMG = "../images/2026-07-06";
 const AUTH_STATE = ".auth/lookpup.json";
 
 async function visit(page: Page, path: string) {
@@ -217,6 +217,30 @@ test.describe("인증 후", () => {
     await visit(page, "/myprofile/sitter-profile");
     await shot(page, "A7-sitter-profile");
     assertLoggedIn(page, "A7");
+  });
+
+  // ── 19차 이번 회차 변경 흐름 ─────────────────────────────────────────────
+  test("A8 채팅방 진입 + 방 나가기 UI (b552772)", async ({ page }) => {
+    await visit(page, "/chat");
+    const room = page.locator('[class*="room"], a[href^="/chat"], li').first();
+    if (await room.isVisible().catch(() => false)) {
+      await room.click().catch(() => {});
+      await page.waitForTimeout(1500);
+    }
+    await shot(page, "A8-chat-room");
+    assertLoggedIn(page, "A8");
+  });
+
+  test("A9 알림 목록 /notifications", async ({ page }) => {
+    await visit(page, "/notifications");
+    await shot(page, "A9-notifications");
+    assertLoggedIn(page, "A9");
+  });
+
+  test("A10 보호자 프로필 설정 (사진 변경 연결 072398d)", async ({ page }) => {
+    await visit(page, "/myprofile/settings");
+    await shot(page, "A10-settings");
+    assertLoggedIn(page, "A10");
   });
 });
 
