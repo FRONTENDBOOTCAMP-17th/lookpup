@@ -140,13 +140,14 @@ export default function BoardDetailClient({
 }) {
   const router = useRouter();
   const user = useUserStore((state) => state.user);
+  const sitter = useUserStore((state) => state.sitter);
   const isLoggedIn = useUserStore((state) => state.isLoggedIn);
   const currentUserId = user?.id;
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [applying, setApplying] = useState(false);
   const [applyError, setApplyError] = useState<string | null>(null);
+  const [applying, setApplying] = useState(false);
   const applyCancelledRef = useRef(false);
   const applyInFlightRef = useRef(false);
   const [post, setPost] = useState<RequestDetail | null>(initialPost ?? null);
@@ -186,7 +187,9 @@ export default function BoardDetailClient({
 
       if (!applyCancelledRef.current) {
         setShowApplyModal(false);
-        router.push("/chat?tab=applicants");
+        router.push(
+          result.roomId ? `/chat?roomId=${result.roomId}` : "/chat?tab=applicants",
+        );
       }
     } catch {
       setApplyError("일시적인 오류가 발생했습니다. 다시 시도해 주세요.");
@@ -218,7 +221,7 @@ export default function BoardDetailClient({
       <>
         <Header />
         <main className="flex-1 bg-orange-50 min-h-screen">
-          <div className="max-w-7xl mx-auto px-4 md:px-10 py-20 text-center text-gray-400">
+          <div className="max-w-[1280px] mx-auto px-4 sm:px-10 py-20 text-center text-gray-400">
             {postLoading ? "불러오는 중..." : "게시글을 찾을 수 없습니다."}
           </div>
         </main>
@@ -232,6 +235,7 @@ export default function BoardDetailClient({
 
   const isAuthor = !!currentUserId && currentUserId === post.owner_id;
   const isSitter = user?.role === "both" || user?.role === "admin";
+  const isUnapprovedSitter = isSitter && !!sitter && sitter.status !== "approved";
 
   const handleApplyClick = () => {
     if (!isLoggedIn) {
@@ -240,6 +244,10 @@ export default function BoardDetailClient({
     }
     if (!isSitter) {
       router.push("/sitter-register");
+      return;
+    }
+    if (isUnapprovedSitter) {
+      setErrorMessage("승인 대기 중이거나 반려된 펫시터는 지원할 수 없습니다.");
       return;
     }
     applyCancelledRef.current = false;
@@ -272,7 +280,7 @@ export default function BoardDetailClient({
       <Header />
 
       <main className="flex-1 bg-orange-50 min-h-screen">
-        <div className="max-w-7xl mx-auto px-4 md:px-10 py-6 md:py-8">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-10 py-6 md:py-8">
           <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 mb-6">
             <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
               <BackButton href="/board" />
@@ -286,13 +294,13 @@ export default function BoardDetailClient({
                       모집마감
                     </button>
                   )}
-                  <button
-                    onClick={() => router.push(`/board/${post.id}/edit`)}
+                  <Link
+                    href={`/board/${post.id}/edit`}
                     className="px-3 py-1.5 bg-gray-100 rounded-lg text-gray-500 text-xs font-medium flex items-center gap-1 hover:bg-gray-200 transition-colors"
                   >
                     <Pencil size={12} />
                     수정
-                  </button>
+                  </Link>
                   <button
                     onClick={() => setDeleteTargetId(post.id)}
                     className="px-3 py-1.5 bg-gray-100 rounded-lg text-gray-500 text-xs font-medium flex items-center gap-1 hover:bg-gray-200 transition-colors"

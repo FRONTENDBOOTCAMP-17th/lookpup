@@ -5,7 +5,11 @@ import { createClient } from "@/utils/supabase/server";
 import { isUserVerified } from "@/utils/supabase/service";
 import SignupForm from "./SignupForm";
 
-export default async function SignupPage() {
+export default async function SignupPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -15,7 +19,10 @@ export default async function SignupPage() {
     redirect("/auth/login");
   }
 
-  if (await isUserVerified(user.id)) redirect("/");
+  const { next } = await searchParams;
+  const redirectTo = next?.startsWith("/") && !next.startsWith("//") ? next : "/";
+
+  if (await isUserVerified(user.id)) redirect(redirectTo);
 
   return (
     <div className="min-h-screen bg-linear-to-b from-orange-50 via-stone-50/50 to-white flex items-center justify-center p-5">
@@ -41,7 +48,7 @@ export default async function SignupPage() {
             본인인증을 완료하면 바로 이용할 수 있어요
           </p>
 
-          <SignupForm />
+          <SignupForm next={redirectTo} />
 
           <p className="text-center text-sm mt-6">
             <Link

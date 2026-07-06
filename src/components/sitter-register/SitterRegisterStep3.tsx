@@ -121,6 +121,7 @@ export default function SitterRegisterStep3({
             <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
               {activityPhotos.previews.map((src, i) => (
                 <div key={i} className="relative w-full aspect-square">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={src}
                     alt={`활동 사진 ${i + 1}`}

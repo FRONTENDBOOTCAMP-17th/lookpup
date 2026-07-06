@@ -370,6 +370,7 @@ function CareRecordField({
             className="w-full bg-orange-50 border-2 border-dashed border-orange-200 rounded-xl overflow-hidden hover:bg-orange-100 transition-colors"
           >
             {previewUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={previewUrl}
                 alt="미리보기"
@@ -602,12 +603,14 @@ export default function CareRecordModal({
   const [selectedType, setSelectedType] = useState<CareRecordType | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  useEffect(() => {
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
     if (!open) {
       setStep("select");
       setSelectedType(null);
     }
-  }, [open]);
+  }
 
   if (!open) return null;
 

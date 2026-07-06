@@ -1,7 +1,7 @@
 import type { z } from "zod";
 import type { sitterRegisterSchema } from "@/schemas/sitterRegister";
 
-export type SitterServiceId = "visit" | "foster" | "walk" | "hotel";
+export type SitterServiceId = "visit" | "foster" | "walk" | "pickup";
 export type SitterAnimalId = "small_dog" | "medium_dog" | "large_dog" | "cat";
 
 export type SitterRegisterFormValues = z.infer<typeof sitterRegisterSchema>;

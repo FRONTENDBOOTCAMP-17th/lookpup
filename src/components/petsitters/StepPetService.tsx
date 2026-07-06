@@ -1,7 +1,7 @@
 "use client";
 
 import { useFormContext } from "react-hook-form";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Check } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -16,14 +16,23 @@ const SERVICES: { key: string; label: string; emoji: string; desc: string }[] = 
   { key: "visit", label: "방문돌봄", emoji: "🏠", desc: "보호자님 집에서 돌봄" },
   { key: "home", label: "위탁돌봄", emoji: "🏡", desc: "펫시터 집에서 돌봄" },
   { key: "walk", label: "산책", emoji: "🚶", desc: "반려동물 산책 서비스" },
-  { key: "hotel", label: "펫호텔", emoji: "🏨", desc: "장기 위탁 돌봄" },
+  { key: "pickup", label: "픽업", emoji: "🚗", desc: "반려동물 픽업 서비스" },
 ];
 
 const SERVICE_KEY_TO_TYPE: Record<string, string> = {
   visit: "방문돌봄",
   home: "위탁돌봄",
   walk: "산책",
-  hotel: "호텔",
+  pickup: "픽업",
+};
+
+// service_type이 한글 라벨/영문 enum(walk/care/hotel/pickup)으로 혼재 저장돼 있어,
+// 서비스 제공 여부 판정 시 두 표기를 모두 허용한다.
+const SERVICE_KEY_TO_ENUM: Record<string, string> = {
+  visit: "care",
+  home: "hotel",
+  walk: "walk",
+  pickup: "pickup",
 };
 
 function formatDateRange(range: DateRange | undefined): string {
@@ -43,14 +52,12 @@ export default function StepPetService({
   sitterServices: SitterService[];
   sitter: SitterBookingInfo;
 }) {
-  const router = useRouter();
   const { watch, setValue, formState: { errors } } = useFormContext<Step2Values>();
   const { dateRange, petIds, togglePet } = useBookingStore();
 
-  const nights = dateRange?.from && dateRange?.to
-    ? Math.max(1, differenceInDays(dateRange.to, dateRange.from))
+  const days = dateRange?.from && dateRange?.to
+    ? Math.max(1, differenceInDays(dateRange.to, dateRange.from) + 1)
     : 1;
-  const total = sitter.pricePerDay * nights;
 
   function handleTogglePet(id: string, name: string) {
     togglePet(id, name);
@@ -60,6 +67,14 @@ export default function StepPetService({
     setValue("petIds", next, { shouldValidate: true });
   }
   const selectedService = watch("selectedService");
+
+  // 표시 금액은 base_price가 아니라 '선택한 서비스'의 단가 × 일수로 계산한다.
+  // 실제 결제(reservations.ts)와 동일한 매칭·폴백을 사용해 표시 금액 = 청구 금액을 보장.
+  const matchedService =
+    sitter.services.find(
+      (s) => s.service_type === SERVICE_KEY_TO_TYPE[selectedService || "visit"],
+    ) ?? sitter.services[0];
+  const total = (matchedService?.price ?? 0) * days;
 
   const petNames = petIds
     .map((id) => pets.find((p) => p.id === id)?.name ?? "")
@@ -112,13 +127,12 @@ export default function StepPetService({
             );
           })}
 
-          <button
-            type="button"
-            onClick={() => router.push("/pet-register")}
-            className="w-full min-h-11 h-14 rounded-2xl border-2 border-dashed border-orange-100 text-gray-400 text-sm font-medium hover:border-orange-500/50 hover:text-orange-500 transition-colors"
+          <Link
+            href="/pet-register"
+            className="w-full min-h-11 h-14 rounded-2xl border-2 border-dashed border-orange-100 text-gray-400 text-sm font-medium hover:border-orange-500/50 hover:text-orange-500 transition-colors flex items-center justify-center"
           >
             + 반려동물 추가
-          </button>
+          </Link>
         </div>
       </div>
 
@@ -131,7 +145,9 @@ export default function StepPetService({
           {SERVICES.map((svc) => {
             const selected = selectedService === svc.key;
             const available = sitterServices.some(
-              (s) => s.service_type === SERVICE_KEY_TO_TYPE[svc.key],
+              (s) =>
+                s.service_type === SERVICE_KEY_TO_TYPE[svc.key] ||
+                s.service_type === SERVICE_KEY_TO_ENUM[svc.key],
             );
             return (
               <button

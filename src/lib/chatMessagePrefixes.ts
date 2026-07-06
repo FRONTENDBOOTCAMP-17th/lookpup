@@ -18,3 +18,15 @@ export const RESERVATION_ACCEPTED_PREFIX = "__reservation_accepted__:";
 export const RESERVATION_REJECTED_PREFIX = "__reservation_rejected__";
 export const RESERVATION_EDIT_PREFIX = "__reservation_edit__:";
 export const RESERVATION_EDIT_RESPONSE_PREFIX = "__reservation_edit_response__:";
+
+export const CHAT_MESSAGE_MAX_LENGTH = 1000;
+export const CHAT_PREVIEW_MAX_LENGTH = 25;
+
+export function truncatePreview(
+  text: string,
+  maxLength: number = CHAT_PREVIEW_MAX_LENGTH,
+): string {
+  return text.length > maxLength
+    ? `${text.slice(0, maxLength)}...`
+    : text;
+}

@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/utils/supabase/client";
 import { useUserStore } from "@/store/userStore";
 import { getMySitterProfile } from "@/app/actions/sitters";
@@ -13,6 +14,7 @@ export default function UserProvider({
 }) {
   const router = useRouter();
   const pathname = usePathname();
+  const queryClient = useQueryClient();
   const { setUser, setSitter, clearUser, setDeletedAccount, isDeletedAccount } =
     useUserStore();
 
@@ -75,6 +77,7 @@ export default function UserProvider({
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
+      queryClient.invalidateQueries({ queryKey: ["sitter"] });
       if (session?.user) {
         loadUser(session.user.id);
       } else {
@@ -83,7 +86,7 @@ export default function UserProvider({
     });
 
     return () => subscription.unsubscribe();
-  }, [setUser, clearUser, setDeletedAccount]);
+  }, [setUser, clearUser, setDeletedAccount, queryClient]);
 
   return <>{children}</>;
 }

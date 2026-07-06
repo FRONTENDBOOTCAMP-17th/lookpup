@@ -11,7 +11,7 @@ interface PetsitterListItem {
   neighborhood: string;
   rating: number;
   reviewCount: number;
-  price: number;
+  price: number | null;
   services: string[];
   distanceKm: number;
 }
@@ -44,8 +44,13 @@ export default function PetsitterListPanel({
       <div className="p-4 md:p-6">
         <p className="text-stone-900 text-lg font-semibold mb-4">{listHeading}</p>
         <div className="flex flex-col gap-4">
-          {sitters.map((sitter) => (
-            <div key={sitter.id} ref={(el) => registerCardRef(sitter.id, el)}>
+          {sitters.map((sitter, i) => (
+            <div
+              key={sitter.id}
+              ref={(el) => registerCardRef(sitter.id, el)}
+              className="animate-list-fade-in"
+              style={{ animationDelay: `${Math.min(i, 8) * 0.05}s` }}
+            >
               <PetsitterCard
                 sitter={sitter}
                 isSelected={selectedSitterId === sitter.id}

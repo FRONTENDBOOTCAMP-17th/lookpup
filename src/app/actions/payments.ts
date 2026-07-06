@@ -13,18 +13,25 @@ async function getAuthUser() {
   return user;
 }
 
-export async function getActiveReservationBySitter(sitterId: string) {
+export async function getActiveReservationBySitter(
+  sitterId: string,
+  options?: { includePaid?: boolean },
+) {
   const user = await getAuthUser();
   if (!user) return null;
 
   const db = createServiceClient();
+
+  const statuses = options?.includePaid
+    ? ["accepted", "in_progress", "paid"]
+    : ["accepted", "in_progress"];
 
   const { data } = await db
     .from("reservations")
     .select("id")
     .eq("owner_id", user.id)
     .eq("sitter_id", sitterId)
-    .in("status", ["accepted", "in_progress"])
+    .in("status", statuses)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -35,7 +42,6 @@ export async function getActiveReservationBySitter(sitterId: string) {
 export async function createPayment(
   reservationId: string,
   payMethod: "CARD" | "VIRTUAL_ACCOUNT" | "TRANSFER",
-  requestedAmount?: number,
 ) {
   const user = await getAuthUser();
   if (!user) {
@@ -83,17 +89,19 @@ export async function createPayment(
     return { error: { code: "CONFLICT", message: "이미 결제된 예약입니다." } };
   }
 
-  const amount = requestedAmount ?? reservation.total_price;
+  const amount = reservation.total_price;
+  if (amount < 1000) {
+    return {
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "예약 금액이 올바르지 않습니다. 관리자에게 문의해주세요.",
+      },
+    };
+  }
+
   const platformFee = Math.floor(amount * FEE_RATE);
   const settleAmount = amount - platformFee;
   const paymentId = `pay_${reservationId.replace(/-/g, "")}_${Date.now()}`;
-
-  if (requestedAmount && requestedAmount !== reservation.total_price) {
-    await db
-      .from("reservations")
-      .update({ total_price: requestedAmount })
-      .eq("id", reservationId);
-  }
 
   const { error } = await db.from("payments").insert({
     reservation_id: reservationId,
@@ -121,9 +129,7 @@ export async function createPayment(
 }
 
 export async function createExtraPayment(
-  reservationId: string,
-  amount: number,
-  reason: string,
+  extraChargeId: string,
   payMethod: "CARD" | "VIRTUAL_ACCOUNT" | "TRANSFER" = "CARD",
 ) {
   const user = await getAuthUser();
@@ -131,20 +137,33 @@ export async function createExtraPayment(
     return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
   }
 
-  if (amount < 1000 || amount > 500000) {
+  const db = createServiceClient();
+
+  const { data: pendingCharge } = await db
+    .from("extra_charges")
+    .select("id, amount, reason, reservation_id, owner_id")
+    .eq("id", extraChargeId)
+    .eq("status", "pending")
+    .maybeSingle();
+
+  if (!pendingCharge) {
     return {
       error: {
-        code: "VALIDATION_ERROR",
-        message: "추가금은 1,000원 이상 500,000원 이하여야 합니다.",
+        code: "NOT_FOUND",
+        message: "결제할 추가금 요청을 찾을 수 없습니다. 새로고침 후 다시 시도해주세요.",
       },
     };
   }
 
-  const db = createServiceClient();
+  if (pendingCharge.owner_id !== user.id) {
+    return { error: { code: "FORBIDDEN", message: "결제 권한이 없습니다." } };
+  }
+
+  const reservationId = pendingCharge.reservation_id;
 
   const { data: reservation } = await db
     .from("reservations")
-    .select(`id, owner_id, sitter_id, status, sitters!inner(users!inner(full_name))`)
+    .select(`id, sitter_id, status, sitters!inner(users!inner(full_name))`)
     .eq("id", reservationId)
     .single();
 
@@ -154,15 +173,21 @@ export async function createExtraPayment(
     };
   }
 
-  if (reservation.owner_id !== user.id) {
-    return { error: { code: "FORBIDDEN", message: "결제 권한이 없습니다." } };
-  }
-
   if (!["in_progress", "paid"].includes(reservation.status)) {
     return {
       error: {
         code: "FORBIDDEN",
         message: "진행 중인 예약에만 추가금을 결제할 수 있습니다.",
+      },
+    };
+  }
+
+  const amount = pendingCharge.amount;
+  if (amount < 1000 || amount > 500000) {
+    return {
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "추가금은 1,000원 이상 500,000원 이하여야 합니다.",
       },
     };
   }
@@ -188,26 +213,14 @@ export async function createExtraPayment(
     return { error: { code: "INTERNAL_ERROR", message: error.message } };
   }
 
-  const { data: pendingCharge } = await db
+  await db
     .from("extra_charges")
-    .select("id")
-    .eq("reservation_id", reservationId)
-    .eq("status", "pending")
-    .eq("amount", amount)
-    .order("requested_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (pendingCharge) {
-    await db
-      .from("extra_charges")
-      .update({
-        status: "approved",
-        payment_id: newPayment.id,
-        responded_at: new Date().toISOString(),
-      })
-      .eq("id", pendingCharge.id);
-  }
+    .update({
+      status: "approved",
+      payment_id: newPayment.id,
+      responded_at: new Date().toISOString(),
+    })
+    .eq("id", pendingCharge.id);
 
   const sitter = reservation.sitters as unknown as {
     users: { full_name: string };
@@ -215,8 +228,49 @@ export async function createExtraPayment(
   const orderName = `${sitter.users.full_name} 펫시팅 추가 서비스`;
 
   return {
-    data: { payment_id: paymentId, amount, order_name: orderName, reason },
+    data: {
+      payment_id: paymentId,
+      amount,
+      order_name: orderName,
+      reason: pendingCharge.reason,
+    },
   };
+}
+
+export async function cancelPendingPayment(paymentId: string) {
+  const user = await getAuthUser();
+  if (!user) {
+    return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
+  }
+
+  const db = createServiceClient();
+
+  const { data: payment } = await db
+    .from("payments")
+    .select("id, owner_id, status")
+    .eq("payment_id", paymentId)
+    .maybeSingle();
+
+  if (!payment || payment.owner_id !== user.id) {
+    return { data: { ok: true } };
+  }
+
+  if (payment.status !== "ready") {
+    return { data: { ok: true } };
+  }
+
+  await db
+    .from("payments")
+    .update({ status: "failed" })
+    .eq("id", payment.id);
+
+  await db
+    .from("extra_charges")
+    .update({ status: "pending", payment_id: null })
+    .eq("payment_id", payment.id)
+    .eq("status", "approved");
+
+  return { data: { ok: true } };
 }
 
 export async function verifyAndConfirmPayment(paymentId: string) {

@@ -1,18 +1,19 @@
 "use server";
 
-import { createClient } from "@/utils/supabase/server";
+import { getServerUser } from "@/utils/supabase/serverUser";
 import { createServiceClient } from "@/utils/supabase/service";
 import { fuzzCoordinate } from "@/utils/geoPrivacy";
 import type { TablesUpdate } from "@/types/database.types";
 
+type RequestType = "visit" | "foster" | "walk" | "pickup";
+
 interface ServiceInput {
-  service_type: "walk" | "care" | "hotel" | "pickup";
+  service_type: RequestType;
   title: string;
   price: number;
   description?: string | null;
 }
 
-type RequestType = "visit" | "foster" | "walk" | "hotel";
 type AnimalType = "small_dog" | "medium_dog" | "large_dog" | "cat";
 
 interface SitterInput {
@@ -33,10 +34,7 @@ interface SitterInput {
 }
 
 async function getAuthUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await getServerUser();
   return user;
 }
 
@@ -75,7 +73,7 @@ export async function createSitter(input: SitterInput) {
     };
   }
 
-  const validRequestTypes: RequestType[] = ["visit", "foster", "walk", "hotel"];
+  const validRequestTypes: RequestType[] = ["visit", "foster", "walk", "pickup"];
   if (
     input.request_type &&
     input.request_type.some((t) => !validRequestTypes.includes(t))
@@ -224,8 +222,7 @@ export async function updateSitter(
 }
 
 export async function getMySitterProfile() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getServerUser();
 
   if (!user) {
     return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
@@ -235,7 +232,7 @@ export async function getMySitterProfile() {
 
   const { data, error } = await db
     .from("sitters")
-    .select("id, available_area, display_area, career, introduction, rating, latitude, longitude, request_type, available_animals, activity_photo_urls, services(title, is_active, deleted_at)")
+    .select("id, status, available_area, display_area, career, introduction, rating, latitude, longitude, request_type, available_animals, activity_photo_urls, services(title, is_active, deleted_at)")
     .eq("user_id", user.id)
     .single();
 
@@ -251,6 +248,7 @@ export async function getMySitterProfile() {
   return {
     data: {
       id: data.id,
+      status: data.status,
       availableArea: data.available_area ?? "",
       displayArea: data.display_area ?? null,
       career: data.career ?? null,
@@ -288,8 +286,7 @@ interface UpdateSitterProfileInput {
 }
 
 export async function updateSitterProfile(input: UpdateSitterProfileInput) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getServerUser();
 
   if (!user) {
     return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };

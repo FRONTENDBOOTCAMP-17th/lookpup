@@ -1,8 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Building2, ArrowRight } from "lucide-react";
+import { Building2, ArrowRight } from "lucide-react";
 import Header from "@/components/layout/Header";
 import EarningsSummaryCards from "@/components/myprofile/earnings/EarningsSummaryCards";
 import EarningsChart from "@/components/myprofile/earnings/EarningsChart";
@@ -18,7 +17,6 @@ export default function EarningsClient({
   initialData?: EarningsData | null;
   hasBankAccount?: boolean;
 }) {
-  const router = useRouter();
   const { data, isLoading } = useEarnings(initialData ?? undefined);
   const earnings = data ?? { total: 0, thisMonth: 0, thisWeek: 0, monthly: [], transactions: [] };
 
@@ -34,7 +32,7 @@ export default function EarningsClient({
         </div>
       </div>
 
-      <div className="w-full max-w-[1200px] mx-auto px-4 md:px-6 pt-6 md:pt-12 pb-10 md:pb-20">
+      <div className="w-full max-w-[1280px] mx-auto px-4 sm:px-10 pt-6 md:pt-12 pb-10 md:pb-20">
         {/* 데스크탑 타이틀 */}
         <div className="hidden md:flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
@@ -61,12 +59,11 @@ export default function EarningsClient({
               <p className="text-white font-bold leading-tight">정산 계좌를 등록해주세요</p>
               <p className="text-white/85 text-xs mt-1">계좌 등록 후 수익금을 정산받을 수 있어요</p>
             </div>
-            <div className="flex items-center gap-1 shrink-0 text-white text-sm font-semibold pl-2">
-              <span className="hidden sm:inline">등록하기</span>
-              <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
-            </div>
+            <ArrowRight size={20} className="text-white/80 shrink-0" />
           </Link>
         )}
+
+        <EarningsChart isLoading={isLoading} monthly={earnings.monthly} />
 
         <EarningsSummaryCards
           isLoading={isLoading}
@@ -74,8 +71,6 @@ export default function EarningsClient({
           thisMonth={earnings.thisMonth}
           thisWeek={earnings.thisWeek}
         />
-
-        <EarningsChart isLoading={isLoading} monthly={earnings.monthly} />
 
         <EarningsTransactions isLoading={isLoading} transactions={earnings.transactions} />
       </div>

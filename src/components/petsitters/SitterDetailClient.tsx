@@ -4,13 +4,12 @@ import { useState } from "react";
 import Link from "next/link";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
-import Avatar from "@/components/ui/Avatar";
+import LoadingPage from "@/components/common/LoadingPage";
 import BackButton from "@/components/common/BackButton";
 import Pill from "@/components/ui/Pill";
 import { MapPin, ChevronLeft } from "lucide-react";
 import StarRow from "@/components/ui/StarRow";
 import StatGrid from "@/components/ui/StatGrid";
-import { useUserStore } from "@/store/userStore";
 import { useSitterDetail } from "@/hooks/queries/useSitterDetail";
 import { useSitterReviews } from "@/hooks/queries/useSitterReviews";
 import SitterIntroTab from "./SitterIntroTab";
@@ -38,7 +37,6 @@ export default function SitterDetailClient({
   roomId?: string;
 }) {
   const [activeTab, setActiveTab] = useState<Tab>("소개");
-  const currentUserId = useUserStore((s) => s.user?.id ?? null);
 
   const isFromChat = from === "chat" && !!roomId;
   const backHref = isFromChat ? `/chat?roomId=${roomId}` : "/petsitters";
@@ -47,7 +45,7 @@ export default function SitterDetailClient({
   const { data: sitter, isLoading, isError } = useSitterDetail(sitterId);
   const { data: reviews = [] } = useSitterReviews(sitterId);
 
-  const isSelf = !!currentUserId && currentUserId === sitter?.user_id;
+  const isSelf = !!sitter?.is_self;
 
   const serviceLabels = sitter
     ? [
@@ -71,11 +69,7 @@ export default function SitterDetailClient({
 
   const renderTabContent = () => {
     if (isLoading) {
-      return (
-        <div className="flex items-center justify-center py-20 text-gray-400 text-sm">
-          불러오는 중...
-        </div>
-      );
+      return <LoadingPage />;
     }
     if (isError || !sitter) {
       return (

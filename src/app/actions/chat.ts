@@ -15,6 +15,8 @@ import {
   SERVICE_START_PREFIX,
   RESERVATION_EDIT_PREFIX,
   RESERVATION_EDIT_RESPONSE_PREFIX,
+  CHAT_MESSAGE_MAX_LENGTH,
+  truncatePreview,
 } from "@/lib/chatMessagePrefixes";
 
 async function getAuthUser() {
@@ -23,6 +25,20 @@ async function getAuthUser() {
     data: { user },
   } = await supabase.auth.getUser();
   return user;
+}
+
+function isRecipientActive(
+  room: {
+    owner_id: string | null;
+    owner_left?: boolean | null;
+    sitter_left?: boolean | null;
+  },
+  recipientId: string | null | undefined,
+): recipientId is string {
+  if (!recipientId) return false;
+  const left =
+    recipientId === room.owner_id ? room.owner_left : room.sitter_left;
+  return !left;
 }
 
 export interface RoomApiItem {
@@ -46,6 +62,7 @@ export interface RoomApiItem {
   reservation_service_title: string | null;
   reservation_pet_names: string[];
   reservation_start_datetime: string | null;
+  recipient_left: boolean;
 }
 
 export async function getChatRoomsData(): Promise<
@@ -75,7 +92,7 @@ export async function getChatRoomsData(): Promise<
     .from("chat_rooms")
     .select(
       `id, room_type, owner_id, sitter_id, reservation_id, request_id,
-       last_message, last_message_at,
+       last_message, last_message_at, owner_left, sitter_left,
        owner:users!owner_id(full_name, profile_image),
        sitter:sitters!sitter_id(
          user_id,
@@ -233,6 +250,7 @@ export async function getChatRoomsData(): Promise<
           : null,
       last_message: room.last_message ?? null,
       last_message_at: room.last_message_at ?? null,
+      recipient_left: isOwner ? room.sitter_left : room.owner_left,
     };
   });
 
@@ -394,11 +412,22 @@ export async function sendMessage(roomId: string, content: string) {
     };
   }
 
+  const trimmed = content.trim();
+
+  if (trimmed.length > CHAT_MESSAGE_MAX_LENGTH) {
+    return {
+      error: {
+        code: "VALIDATION_ERROR",
+        message: `메시지는 ${CHAT_MESSAGE_MAX_LENGTH}자 이내로 입력해주세요.`,
+      },
+    };
+  }
+
   const db = createServiceClient();
 
   const { data: room } = await db
     .from("chat_rooms")
-    .select("id, owner_id, sitters!inner(user_id)")
+    .select("id, owner_id, owner_left, sitter_left, sitters!inner(user_id)")
     .eq("id", roomId)
     .single();
 
@@ -417,11 +446,23 @@ export async function sendMessage(roomId: string, content: string) {
     };
   }
 
+  const recipientId =
+    user.id === room.owner_id ? room.sitters.user_id : room.owner_id;
+
+  if (!isRecipientActive(room, recipientId)) {
+    return {
+      error: {
+        code: "RECIPIENT_LEFT",
+        message: "상대방이 채팅을 종료하여 메시지를 보낼 수 없습니다.",
+      },
+    };
+  }
+
   const now = new Date().toISOString();
 
   const { data: message, error: msgError } = await db
     .from("messages")
-    .insert({ room_id: roomId, sender_id: user.id, content: content.trim() })
+    .insert({ room_id: roomId, sender_id: user.id, content: trimmed })
     .select()
     .single();
 
@@ -431,11 +472,9 @@ export async function sendMessage(roomId: string, content: string) {
 
   await db
     .from("chat_rooms")
-    .update({ last_message: content.trim(), last_message_at: now })
+    .update({ last_message: truncatePreview(trimmed), last_message_at: now })
     .eq("id", roomId);
 
-  const recipientId =
-    user.id === room.owner_id ? room.sitters.user_id : room.owner_id;
   const chatLink = `/chat?roomId=${roomId}`;
 
   const { data: sender } = await db
@@ -485,7 +524,7 @@ export async function sendImageMessage(roomId: string, imageUrl: string) {
 
   const { data: room } = await db
     .from("chat_rooms")
-    .select("id, owner_id, sitters!inner(user_id)")
+    .select("id, owner_id, owner_left, sitter_left, sitters!inner(user_id)")
     .eq("id", roomId)
     .single();
 
@@ -500,6 +539,18 @@ export async function sendImageMessage(roomId: string, imageUrl: string) {
       error: {
         code: "FORBIDDEN",
         message: "채팅방 참여자만 메시지를 보낼 수 있습니다.",
+      },
+    };
+  }
+
+  const recipientId =
+    user.id === room.owner_id ? room.sitters.user_id : room.owner_id;
+
+  if (!isRecipientActive(room, recipientId)) {
+    return {
+      error: {
+        code: "RECIPIENT_LEFT",
+        message: "상대방이 채팅을 종료하여 더 이상 메시지를 보낼 수 없습니다.",
       },
     };
   }
@@ -525,8 +576,6 @@ export async function sendImageMessage(roomId: string, imageUrl: string) {
     .update({ last_message: "사진", last_message_at: now })
     .eq("id", roomId);
 
-  const recipientId =
-    user.id === room.owner_id ? room.sitters.user_id : room.owner_id;
   const chatLink = `/chat?roomId=${roomId}`;
 
   const { data: sender } = await db
@@ -629,7 +678,92 @@ export async function sendPaymentRequestMessage(
 
   const db = createServiceClient();
   const now = new Date().toISOString();
-  const content = `${PAYMENT_REQUEST_PREFIX}${JSON.stringify(data)}`;
+
+  const { data: room } = await db
+    .from("chat_rooms")
+    .select("id, owner_id, owner_left, sitter_left, sitters!inner(id, user_id)")
+    .eq("id", roomId)
+    .single();
+
+  if (!room) {
+    return {
+      error: { code: "NOT_FOUND", message: "채팅방을 찾을 수 없습니다." },
+    };
+  }
+
+  if (room.owner_id !== user.id && room.sitters.user_id !== user.id) {
+    return {
+      error: {
+        code: "FORBIDDEN",
+        message: "채팅방 참여자만 메시지를 보낼 수 있습니다.",
+      },
+    };
+  }
+
+  if (data.isExtra && !reservationId) {
+    return {
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "추가금을 요청할 예약을 찾을 수 없습니다.",
+      },
+    };
+  }
+
+  if (data.isExtra && (data.amount < 1000 || data.amount > 500000)) {
+    return {
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "추가금은 1,000원 이상 500,000원 이하여야 합니다.",
+      },
+    };
+  }
+
+  let extraChargeId: string | undefined;
+  if (data.isExtra && reservationId && room) {
+    const { data: reservation } = await db
+      .from("reservations")
+      .select("id, owner_id, sitter_id")
+      .eq("id", reservationId)
+      .maybeSingle();
+
+    if (
+      !reservation ||
+      reservation.owner_id !== room.owner_id ||
+      reservation.sitter_id !== room.sitters.id
+    ) {
+      return {
+        error: {
+          code: "FORBIDDEN",
+          message: "이 채팅방과 관련 없는 예약입니다.",
+        },
+      };
+    }
+
+    const { data: extraCharge, error: extraChargeError } = await db
+      .from("extra_charges")
+      .insert({
+        reservation_id: reservationId,
+        sitter_id: room.sitters.id,
+        owner_id: room.owner_id,
+        amount: data.amount,
+        reason: data.reason,
+        status: "pending",
+      })
+      .select("id")
+      .single();
+
+    if (extraChargeError || !extraCharge) {
+      return {
+        error: {
+          code: "INTERNAL_ERROR",
+          message: extraChargeError?.message ?? "추가금 요청 생성에 실패했습니다.",
+        },
+      };
+    }
+    extraChargeId = extraCharge.id;
+  }
+
+  const content = `${PAYMENT_REQUEST_PREFIX}${JSON.stringify({ ...data, extraChargeId })}`;
 
   const { data: message, error } = await db
     .from("messages")
@@ -638,6 +772,9 @@ export async function sendPaymentRequestMessage(
     .single();
 
   if (error) {
+    if (extraChargeId) {
+      await db.from("extra_charges").delete().eq("id", extraChargeId);
+    }
     return { error: { code: "INTERNAL_ERROR", message: error.message } };
   }
 
@@ -646,33 +783,16 @@ export async function sendPaymentRequestMessage(
     .update({ last_message: "결제 요청", last_message_at: now })
     .eq("id", roomId);
 
-  const { data: room } = await db
-    .from("chat_rooms")
-    .select("id, owner_id, sitters!inner(id, user_id)")
-    .eq("id", roomId)
-    .single();
-
   if (room) {
     const recipientId =
       user.id === room.owner_id ? room.sitters.user_id : room.owner_id;
-    if (recipientId) {
+    if (isRecipientActive(room, recipientId)) {
       await createNotification({
         userId: recipientId,
         type: "message",
         title: "결제 요청이 도착했어요",
         content: `${data.amount.toLocaleString("ko-KR")}원 결제 요청이 왔어요.`,
         linkUrl: `/chat?roomId=${roomId}`,
-      });
-    }
-
-    if (data.isExtra && reservationId) {
-      await db.from("extra_charges").insert({
-        reservation_id: reservationId,
-        sitter_id: room.sitters.id,
-        owner_id: room.owner_id,
-        amount: data.amount,
-        reason: data.reason,
-        status: "pending",
       });
     }
   }
@@ -735,7 +855,7 @@ export async function sendAutoPaymentRequestMessage(
 
   const { data: room } = await db
     .from("chat_rooms")
-    .select("id, owner_id, sitters!inner(user_id)")
+    .select("id, owner_id, owner_left, sitter_left, sitters!inner(user_id)")
     .eq("id", roomId)
     .single();
 
@@ -773,13 +893,15 @@ export async function sendAutoPaymentRequestMessage(
     .update({ last_message: "결제 요청", last_message_at: now })
     .eq("id", roomId);
 
-  await createNotification({
-    userId: user.id,
-    type: "message",
-    title: "결제 요청이 도착했어요",
-    content: `${data.amount.toLocaleString("ko-KR")}원 결제 요청이 왔어요.`,
-    linkUrl: `/chat?roomId=${roomId}`,
-  });
+  if (isRecipientActive(room, user.id)) {
+    await createNotification({
+      userId: user.id,
+      type: "message",
+      title: "결제 요청이 도착했어요",
+      content: `${data.amount.toLocaleString("ko-KR")}원 결제 요청이 왔어요.`,
+      linkUrl: `/chat?roomId=${roomId}`,
+    });
+  }
 
   return { data: message };
 }
@@ -890,7 +1012,7 @@ export async function sendServiceCompleteMessage(
 
   const { data: room } = await db
     .from("chat_rooms")
-    .select("id, owner_id, sitters!inner(user_id)")
+    .select("id, owner_id, owner_left, sitter_left, sitters!inner(user_id)")
     .eq("id", roomId)
     .single();
 
@@ -964,7 +1086,7 @@ export async function sendServiceCompleteMessage(
     .update({ last_message: "서비스 완료", last_message_at: now })
     .eq("id", roomId);
 
-  if (room.owner_id) {
+  if (isRecipientActive(room, room.owner_id)) {
     await createNotification({
       userId: room.owner_id,
       type: "message",
@@ -990,7 +1112,7 @@ export async function sendServiceStartMessage(
 
   const { data: room } = await db
     .from("chat_rooms")
-    .select("id, owner_id, sitters!inner(user_id)")
+    .select("id, owner_id, owner_left, sitter_left, sitters!inner(user_id)")
     .eq("id", roomId)
     .single();
 
@@ -1060,7 +1182,7 @@ export async function sendServiceStartMessage(
     .update({ last_message: "서비스 시작", last_message_at: now })
     .eq("id", roomId);
 
-  if (room.owner_id) {
+  if (isRecipientActive(room, room.owner_id)) {
     await createNotification({
       userId: room.owner_id,
       type: "message",
@@ -1141,7 +1263,7 @@ export async function sendReservationEditMessage(
 
   const { data: room } = await db
     .from("chat_rooms")
-    .select("id, owner_id, sitters!inner(user_id)")
+    .select("id, owner_id, owner_left, sitter_left, sitters!inner(user_id)")
     .eq("id", roomId)
     .single();
 
@@ -1184,7 +1306,7 @@ export async function sendReservationEditMessage(
   const sitterForNotif = room.sitters as unknown as { user_id: string };
   const recipientId =
     user.id === room.owner_id ? sitterForNotif.user_id : room.owner_id;
-  if (recipientId) {
+  if (isRecipientActive(room, recipientId)) {
     await createNotification({
       userId: recipientId,
       type: "message",
@@ -1210,7 +1332,7 @@ export async function sendReservationEditResponseMessage(
 
   const { data: room } = await db
     .from("chat_rooms")
-    .select("id, owner_id, sitters!inner(user_id)")
+    .select("id, owner_id, owner_left, sitter_left, sitters!inner(user_id)")
     .eq("id", roomId)
     .single();
 
@@ -1253,7 +1375,7 @@ export async function sendReservationEditResponseMessage(
 
   const recipientId =
     user.id === room.owner_id ? sitter.user_id : room.owner_id;
-  if (recipientId) {
+  if (isRecipientActive(room, recipientId)) {
     await createNotification({
       userId: recipientId,
       type: "message",

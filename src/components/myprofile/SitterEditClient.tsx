@@ -1,22 +1,32 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus, X, Eye, Camera, MapPin, Check } from "lucide-react";
 import Header from "@/components/layout/Header";
-import { MobileBackButton, DesktopBackButton } from "@/components/common/BackButton";
+import {
+  MobileBackButton,
+  DesktopBackButton,
+} from "@/components/common/BackButton";
 import SectionCard from "@/components/common/SectionCard";
 import { CustomModal } from "@/components/common/CustomModal";
 import Avatar from "@/components/ui/Avatar";
 import StatGrid from "@/components/ui/StatGrid";
 import SitterProfileCard from "@/components/sitter/SitterProfileCard";
 import { useUserStore, type SitterData } from "@/store/userStore";
-import { updateSitterProfile, getMySitterProfile, getSitterServices } from "@/app/actions/sitters";
+import {
+  updateSitterProfile,
+  getMySitterProfile,
+  getSitterServices,
+} from "@/app/actions/sitters";
 import { updateProfile } from "@/app/actions/users";
 import { uploadToCloudinary } from "@/utils/cloudinary";
-import LocationPickerWithMap, { type LocationValue } from "@/components/LocationPickerWithMap";
+import LocationPickerWithMap, {
+  type LocationValue,
+} from "@/components/LocationPickerWithMap";
 
-const SERVICE_OPTIONS = ["방문돌봄", "위탁돌봄", "산책", "호텔"];
+const SERVICE_OPTIONS = ["방문돌봄", "위탁돌봄", "산책", "픽업"];
 
 const PET_OPTIONS = [
   "강아지 소형 (7kg 미만)",
@@ -82,7 +92,15 @@ const EMPTY_FORM = {
 const TABS = ["소개", "서비스", "위치"] as const;
 type Tab = (typeof TABS)[number];
 
-function ToggleChip({ label, selected, onToggle }: { label: string; selected: boolean; onToggle: () => void }) {
+function ToggleChip({
+  label,
+  selected,
+  onToggle,
+}: {
+  label: string;
+  selected: boolean;
+  onToggle: () => void;
+}) {
   return (
     <button
       type="button"
@@ -97,7 +115,13 @@ function ToggleChip({ label, selected, onToggle }: { label: string; selected: bo
   );
 }
 
-function ServiceRow({ item, onChange }: { item: ServiceItem; onChange: (updated: ServiceItem) => void }) {
+function ServiceRow({
+  item,
+  onChange,
+}: {
+  item: ServiceItem;
+  onChange: (updated: ServiceItem) => void;
+}) {
   return (
     <div className="bg-orange-50 rounded-xl p-4 space-y-2">
       <input
@@ -115,11 +139,15 @@ function ServiceRow({ item, onChange }: { item: ServiceItem; onChange: (updated:
         <div className="relative">
           <input
             value={item.price}
-            onChange={(e) => onChange({ ...item, price: e.target.value.replace(/\D/g, "") })}
+            onChange={(e) =>
+              onChange({ ...item, price: e.target.value.replace(/\D/g, "") })
+            }
             placeholder="가격"
             className="w-28 h-9 pl-3 pr-7 bg-white border border-orange-100 rounded-[10px] text-sm text-right text-orange-500 font-bold outline-none focus:border-orange-300"
           />
-          <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">원</span>
+          <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">
+            원
+          </span>
         </div>
       </div>
       <input
@@ -136,8 +164,17 @@ export default function SitterEditClient({
   initialProfile,
   initialServices,
 }: {
-  initialProfile?: { user: { fullName: string; profileImage: string | null }; sitter: SitterData } | null;
-  initialServices?: { id: string; title: string; price: number; description: string | null; is_active: boolean }[];
+  initialProfile?: {
+    user: { fullName: string; profileImage: string | null };
+    sitter: SitterData;
+  } | null;
+  initialServices?: {
+    id: string;
+    title: string;
+    price: number;
+    description: string | null;
+    is_active: boolean;
+  }[];
 }) {
   const router = useRouter();
   const { user, sitter, setSitter, setUser } = useUserStore();
@@ -152,24 +189,40 @@ export default function SitterEditClient({
   const [form, setForm] = useState(EMPTY_FORM);
   const [profilePreview, setProfilePreview] = useState<string | null>(null);
   const profilePhotoFileRef = useRef<File | null>(null);
-  const [locationValue, setLocationValue] = useState<LocationValue | null>(null);
+  const [locationValue, setLocationValue] = useState<LocationValue | null>(
+    null,
+  );
   const [activeTab, setActiveTab] = useState<Tab>("소개");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const photoFilesRef = useRef<(File | null)[]>([null, null, null, null, null, null]);
+  const photoFilesRef = useRef<(File | null)[]>([
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+  ]);
 
   const formInitialized = useRef(false);
 
   const initForm = (
     u: { fullName: string; profileImage: string | null },
     s: SitterData,
-    services: { id: string; title: string; price: number; description: string | null }[],
+    services: {
+      id: string;
+      title: string;
+      price: number;
+      description: string | null;
+    }[],
   ) => {
     sitterIdRef.current = s.id;
     setProfilePreview(u.profileImage);
 
     const photoSlots: (string | null)[] = [null, null, null, null, null, null];
-    s.activityPhotoUrls.forEach((url, i) => { if (i < 6) photoSlots[i] = url; });
+    s.activityPhotoUrls.forEach((url, i) => {
+      if (i < 6) photoSlots[i] = url;
+    });
 
     if (s.latitude && s.longitude && s.availableArea) {
       setLocationValue({
@@ -229,16 +282,27 @@ export default function SitterEditClient({
 
   const toggleServiceEnabled = (id: number) =>
     setForm((f) => {
-      const serviceList = f.serviceList.map((s) => (s.id === id ? { ...s, enabled: !s.enabled } : s));
-      return { ...f, serviceList, services: serviceList.filter((s) => s.enabled).map((s) => s.name) };
+      const serviceList = f.serviceList.map((s) =>
+        s.id === id ? { ...s, enabled: !s.enabled } : s,
+      );
+      return {
+        ...f,
+        serviceList,
+        services: serviceList.filter((s) => s.enabled).map((s) => s.name),
+      };
     });
 
   const togglePet = (p: string) =>
-    setForm((f) => ({ ...f, pets: f.pets.includes(p) ? f.pets.filter((x) => x !== p) : [...f.pets, p] }));
+    setForm((f) => ({
+      ...f,
+      pets: f.pets.includes(p) ? f.pets.filter((x) => x !== p) : [...f.pets, p],
+    }));
 
   const updateServiceItem = (updated: ServiceItem) =>
     setForm((f) => {
-      const serviceList = f.serviceList.map((s) => (s.id === updated.id ? updated : s));
+      const serviceList = f.serviceList.map((s) =>
+        s.id === updated.id ? updated : s,
+      );
       return { ...f, serviceList };
     });
 
@@ -284,7 +348,10 @@ export default function SitterEditClient({
     setSaving(true);
     try {
       if (profilePhotoFileRef.current) {
-        const profileUrl = await uploadToCloudinary(profilePhotoFileRef.current, "users/profile");
+        const profileUrl = await uploadToCloudinary(
+          profilePhotoFileRef.current,
+          "users/profile",
+        );
         const profileResult = await updateProfile(profileUrl);
         if ("data" in profileResult && profileResult.data && user) {
           setUser({ ...user, profileImage: profileUrl });
@@ -297,7 +364,9 @@ export default function SitterEditClient({
         const file = photoFilesRef.current[i];
         if (!photo) continue;
         if (file) {
-          finalPhotoUrls.push(await uploadToCloudinary(file, "sitters/activity-photos"));
+          finalPhotoUrls.push(
+            await uploadToCloudinary(file, "sitters/activity-photos"),
+          );
         } else {
           finalPhotoUrls.push(photo);
         }
@@ -312,8 +381,17 @@ export default function SitterEditClient({
         career: form.career,
         availableAnimals: form.pets.map((p) => LABEL_TO_ANIMAL[p] ?? p),
         activityPhotoUrls: finalPhotoUrls,
-        services: form.serviceList.filter((s) => s.enabled).map((s) => ({ id: s.dbId, title: s.name, price: Number(s.price) || 0, description: s.desc })),
-        deletedServiceIds: form.serviceList.filter((s) => !s.enabled && s.dbId).map((s) => s.dbId!),
+        services: form.serviceList
+          .filter((s) => s.enabled)
+          .map((s) => ({
+            id: s.dbId,
+            title: s.name,
+            price: Number(s.price) || 0,
+            description: s.desc,
+          })),
+        deletedServiceIds: form.serviceList
+          .filter((s) => !s.enabled && s.dbId)
+          .map((s) => s.dbId!),
       });
 
       if (result?.error) {
@@ -337,7 +415,10 @@ export default function SitterEditClient({
 
   const stats = [
     { label: "경력", value: form.career || "-" },
-    { label: "완료", value: form.completedCount > 0 ? `${form.completedCount}+` : "-" },
+    {
+      label: "완료",
+      value: form.completedCount > 0 ? `${form.completedCount}+` : "-",
+    },
   ];
 
   if (loading) {
@@ -365,7 +446,9 @@ export default function SitterEditClient({
               placeholder="보호자에게 보여질 자기소개를 작성해 주세요."
               className="w-full px-4 py-3 bg-white border border-orange-100 rounded-[10px] text-[15px] text-stone-900 placeholder:text-gray-400 outline-none focus:border-orange-300 resize-none leading-6"
             />
-            <span className="block text-xs text-gray-400 mt-1">{form.bio.length}자</span>
+            <span className="block text-xs text-gray-400 mt-1">
+              {form.bio.length}자
+            </span>
           </SectionCard>
 
           <SectionCard className="p-6 gap-0 md:hidden">
@@ -376,7 +459,9 @@ export default function SitterEditClient({
                 min={0}
                 max={50}
                 value={form.career}
-                onChange={(e) => setForm((f) => ({ ...f, career: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, career: e.target.value }))
+                }
                 className="w-24 h-12 px-3 bg-orange-50 border border-orange-100 rounded-[10px] text-2xl font-bold text-orange-500 text-center outline-none focus:border-orange-300"
               />
               <span className="text-sm text-gray-500">년</span>
@@ -387,22 +472,35 @@ export default function SitterEditClient({
             <h3 className="font-bold text-stone-900 mb-4">돌봄 가능</h3>
             <div className="flex flex-wrap gap-2">
               {PET_OPTIONS.map((p) => (
-                <ToggleChip key={p} label={p} selected={form.pets.includes(p)} onToggle={() => togglePet(p)} />
+                <ToggleChip
+                  key={p}
+                  label={p}
+                  selected={form.pets.includes(p)}
+                  onToggle={() => togglePet(p)}
+                />
               ))}
             </div>
-            <p className="mt-3 text-xs text-gray-400">돌볼 수 있는 반려동물 유형을 모두 선택해 주세요.</p>
+            <p className="mt-3 text-xs text-gray-400">
+              돌볼 수 있는 반려동물 유형을 모두 선택해 주세요.
+            </p>
           </SectionCard>
 
           <SectionCard className="p-6 gap-0">
             <h3 className="font-bold text-stone-900 mb-1">사진</h3>
-            <p className="text-xs text-gray-400 mb-4">최대 6장까지 등록할 수 있습니다.</p>
+            <p className="text-xs text-gray-400 mb-4">
+              최대 6장까지 등록할 수 있습니다.
+            </p>
             <div className="grid grid-cols-3 gap-3">
               {form.photos.map((photo, idx) => (
                 <div key={idx} className="relative group">
                   {photo ? (
                     <>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={photo} alt={`사진 ${idx + 1}`} className="aspect-square w-full rounded-xl object-cover" />
+                      <img
+                        src={photo}
+                        alt={`사진 ${idx + 1}`}
+                        className="aspect-square w-full rounded-xl object-cover"
+                      />
                       <button
                         type="button"
                         onClick={() => removePhoto(idx)}
@@ -418,7 +516,9 @@ export default function SitterEditClient({
                       className="aspect-square w-full rounded-xl border border-dashed border-orange-100 flex flex-col items-center justify-center gap-2 hover:bg-orange-50 transition-colors"
                     >
                       <Plus size={20} className="text-gray-400" />
-                      <span className="text-xs font-medium text-gray-500">사진 추가</span>
+                      <span className="text-xs font-medium text-gray-500">
+                        사진 추가
+                      </span>
                     </button>
                   )}
                 </div>
@@ -434,7 +534,16 @@ export default function SitterEditClient({
             <h3 className="font-bold text-stone-900 mb-4">제공 서비스</h3>
             <div className="flex flex-wrap gap-2">
               {SERVICE_OPTIONS.map((s) => (
-                <ToggleChip key={s} label={s} selected={form.services.includes(s)} onToggle={() => toggleServiceEnabled(form.serviceList.find((item) => item.name === s)!.id)} />
+                <ToggleChip
+                  key={s}
+                  label={s}
+                  selected={form.services.includes(s)}
+                  onToggle={() =>
+                    toggleServiceEnabled(
+                      form.serviceList.find((item) => item.name === s)!.id,
+                    )
+                  }
+                />
               ))}
             </div>
           </SectionCard>
@@ -442,9 +551,15 @@ export default function SitterEditClient({
             <SectionCard className="p-6 gap-0">
               <h3 className="font-bold text-stone-900 mb-4">서비스 및 가격</h3>
               <div className="space-y-3">
-                {form.serviceList.filter((item) => item.enabled).map((item) => (
-                  <ServiceRow key={item.id} item={item} onChange={updateServiceItem} />
-                ))}
+                {form.serviceList
+                  .filter((item) => item.enabled)
+                  .map((item) => (
+                    <ServiceRow
+                      key={item.id}
+                      item={item}
+                      onChange={updateServiceItem}
+                    />
+                  ))}
               </div>
             </SectionCard>
           )}
@@ -454,7 +569,10 @@ export default function SitterEditClient({
       {activeTab === "위치" && (
         <SectionCard className="p-6 gap-0">
           <h3 className="font-bold text-stone-900 mb-4">활동 지역</h3>
-          <LocationPickerWithMap value={locationValue} onChange={setLocationValue} />
+          <LocationPickerWithMap
+            value={locationValue}
+            onChange={setLocationValue}
+          />
         </SectionCard>
       )}
     </>
@@ -476,7 +594,11 @@ export default function SitterEditClient({
               initial: form.fullName[0] ?? "?",
               src: profilePreview ?? user?.profileImage,
               verified: user?.isVerified ?? false,
-              location: locationValue?.displayArea ?? sitter?.displayArea ?? sitter?.availableArea ?? "위치 탭에서 설정하세요",
+              location:
+                locationValue?.displayArea ??
+                sitter?.displayArea ??
+                sitter?.availableArea ??
+                "위치 탭에서 설정하세요",
               rating: sitter?.rating,
               reviewCount: sitter?.reviewCount,
               services: form.services,
@@ -493,10 +615,25 @@ export default function SitterEditClient({
               </button>
             }
           />
+          <p className="mt-2 text-xs text-gray-400">
+            * 보호자 프로필 사진과 동일한 사진으로 적용됩니다.
+          </p>
         </div>
 
-        <input ref={profileFileRef} type="file" accept="image/*" className="hidden" onChange={handleProfileFileChange} />
-        <input ref={photoFileRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoFileChange} />
+        <input
+          ref={profileFileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleProfileFileChange}
+        />
+        <input
+          ref={photoFileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handlePhotoFileChange}
+        />
 
         <div className="bg-orange-50 border-b border-orange-100 px-5 sticky top-0 z-10">
           <div className="flex gap-6">
@@ -507,7 +644,9 @@ export default function SitterEditClient({
                 className={`pb-3 text-sm font-semibold transition-colors relative ${activeTab === tab ? "text-orange-500" : "text-gray-400"}`}
               >
                 {tab}
-                {activeTab === tab && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-500 rounded-t-full" />}
+                {activeTab === tab && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-500 rounded-t-full" />
+                )}
               </button>
             ))}
           </div>
@@ -521,15 +660,24 @@ export default function SitterEditClient({
           <div className="flex items-center gap-3 mb-8">
             <DesktopBackButton />
             <div>
-              <h1 className="text-xl font-bold text-stone-900">펫시터 프로필 수정</h1>
-              <p className="text-sm text-gray-400">등록한 프로필 정보를 수정할 수 있습니다.</p>
+              <h1 className="text-xl font-bold text-stone-900">
+                펫시터 프로필 수정
+              </h1>
+              <p className="text-sm text-gray-400">
+                등록한 프로필 정보를 수정할 수 있습니다.
+              </p>
             </div>
           </div>
 
           <div className="flex gap-8 items-start">
             <SectionCard className="w-85.25 shrink-0 items-center gap-0">
               <div className="relative w-full aspect-square rounded-xl bg-linear-to-br from-gray-100 to-gray-200 mb-4 overflow-hidden flex items-center justify-center">
-                <Avatar initial={form.fullName[0] ?? "?"} size="2xl" variant="dark" src={profilePreview ?? user?.profileImage} />
+                <Avatar
+                  initial={form.fullName[0] ?? "?"}
+                  size="2xl"
+                  variant="dark"
+                  src={profilePreview ?? user?.profileImage}
+                />
                 <button
                   type="button"
                   onClick={() => profileFileRef.current?.click()}
@@ -539,6 +687,9 @@ export default function SitterEditClient({
                   사진 변경
                 </button>
               </div>
+              <p className="mb-4 text-xs text-gray-400 text-center">
+                * 보호자 프로필 사진과 동일한 사진으로 적용됩니다.
+              </p>
 
               <input
                 value={form.fullName}
@@ -553,7 +704,9 @@ export default function SitterEditClient({
                 className="flex items-center gap-1 text-gray-500 mb-4 w-full justify-center hover:text-orange-500 transition-colors"
               >
                 <MapPin size={14} className="shrink-0 text-orange-400" />
-                <span className="text-sm truncate">{locationValue?.displayArea ?? "위치 탭에서 설정"}</span>
+                <span className="text-sm truncate">
+                  {locationValue?.displayArea ?? "위치 탭에서 설정"}
+                </span>
               </button>
 
               <StatGrid stats={stats} className="w-full mb-4" />
@@ -566,7 +719,9 @@ export default function SitterEditClient({
                     min={0}
                     max={50}
                     value={form.career}
-                    onChange={(e) => setForm((f) => ({ ...f, career: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, career: e.target.value }))
+                    }
                     className="flex-1 h-10 px-3 bg-white border border-orange-100 rounded-[10px] text-xl font-bold text-orange-500 text-center outline-none focus:border-orange-300"
                   />
                   <span className="text-sm text-gray-500">년</span>
@@ -581,11 +736,15 @@ export default function SitterEditClient({
                     key={tab}
                     onClick={() => setActiveTab(tab)}
                     className={`pb-3 text-lg font-semibold relative transition-colors ${
-                      activeTab === tab ? "text-orange-500" : "text-gray-500 hover:text-stone-900"
+                      activeTab === tab
+                        ? "text-orange-500"
+                        : "text-gray-500 hover:text-stone-900"
                     }`}
                   >
                     {tab}
-                    {activeTab === tab && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-500" />}
+                    {activeTab === tab && (
+                      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-500" />
+                    )}
                   </button>
                 ))}
               </div>
@@ -604,14 +763,13 @@ export default function SitterEditClient({
           >
             취소
           </button>
-          <button
-            type="button"
-            onClick={() => router.push("/myprofile/sitter-profile")}
+          <Link
+            href="/myprofile/sitter-profile"
             className="flex-1 md:flex-none md:w-40 h-12 border border-orange-500 rounded-[10px] text-base font-semibold text-orange-500 flex items-center justify-center gap-2 hover:bg-orange-50 transition-colors"
           >
             <Eye size={16} />
             미리보기
-          </button>
+          </Link>
           <button
             type="button"
             onClick={handleSave}

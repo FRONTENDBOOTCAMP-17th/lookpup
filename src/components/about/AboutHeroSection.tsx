@@ -1,9 +1,10 @@
 import Image from "next/image";
+import ScrollReveal from "@/components/common/ScrollReveal";
 
 export default function AboutHeroSection() {
   return (
     <section className="bg-gradient-to-b from-white via-white to-orange-50 py-16 md:py-20">
-      <div className="mx-auto flex flex-col items-center text-center">
+      <ScrollReveal className="mx-auto flex flex-col items-center text-center">
         {/* 로고 */}
         <div className="mb-4 flex flex-col items-center gap-2">
           <span className="text-orange-500 text-base md:text-lg font-bold tracking-widest uppercase">
@@ -34,7 +35,7 @@ export default function AboutHeroSection() {
           인증된 시터 검색부터 예약, 결제, 후기까지
           <br className="md:hidden" /> 하나의 서비스로 경험해보세요.
         </p>
-      </div>
+      </ScrollReveal>
     </section>
   );
 }

@@ -19,8 +19,8 @@ import PetsitterListPanel from "@/components/petsitters/PetsitterListPanel";
 const SERVICE_TYPE_MAP: Record<string, string> = {
   walk: "산책",
   care: "방문돌봄",
-  hotel: "위탁돌봄",
   pickup: "픽업",
+  foster: "위탁돌봄",
 };
 
 export default function PetsitterSearchClient() {
@@ -41,14 +41,17 @@ export default function PetsitterSearchClient() {
   const { data: rawSitters = [] } = useSitters({ district: urlDistrict, dong: urlDong });
 
   const sitters = rawSitters.map((row) => {
-    const name = row.full_name ?? "시터";
-    const { city, district, neighborhood } = parseArea(row.available_area);
+    const name = row.display_name ?? "시터";
+    const { city, district, neighborhood } = parseArea(row.display_area);
     const serviceTypes = (row.service_types as string[])
       .map((t) => SERVICE_TYPE_MAP[t] ?? t)
       .filter(Boolean);
+    const servicePrices: Record<string, number> = {};
+    for (const [rawType, price] of Object.entries(row.service_prices ?? {})) {
+      servicePrices[SERVICE_TYPE_MAP[rawType] ?? rawType] = price;
+    }
     return {
       id: row.id,
-      user_id: row.user_id ?? null,
       name,
       initial: name.charAt(0),
       profileImage: row.profile_image ?? null,
@@ -57,7 +60,10 @@ export default function PetsitterSearchClient() {
       neighborhood,
       rating: parseFloat(String(row.rating ?? 0)),
       reviewCount: row.review_count,
-      price: row.base_price ?? 0,
+      price:
+        activeFilter === "전체"
+          ? null
+          : (servicePrices[activeFilter] ?? row.base_price ?? 0),
       services: [...new Set(serviceTypes)],
       lat: parseFloat(String(row.latitude)),
       lng: parseFloat(String(row.longitude)),
@@ -74,7 +80,6 @@ export default function PetsitterSearchClient() {
     locationError,
     showLocationModal,
     dismissLocationModal,
-    currentUserId,
     requestLocation,
   } = usePetsitterLocation({ urlCity, urlDistrict, urlDong });
 
@@ -103,12 +108,7 @@ export default function PetsitterSearchClient() {
   });
 
   // ── 필터/거리 계산 ───────────────────────────────────────────
-  const visibleSitters = sitters.filter((sitter) => {
-    if (!currentUserId) return true;
-    return sitter.user_id !== currentUserId;
-  });
-
-  const sittersWithDistance = visibleSitters.map((sitter) => ({
+  const sittersWithDistance = sitters.map((sitter) => ({
     ...sitter,
     distanceKm: calculateDistanceKm(basePosition, { lat: sitter.lat, lng: sitter.lng }),
   }));

@@ -17,6 +17,7 @@ export interface UserProfile {
 
 export interface SitterData {
   id: string;
+  status: string;
   availableArea: string;
   displayArea: string | null;
   career: string | null;

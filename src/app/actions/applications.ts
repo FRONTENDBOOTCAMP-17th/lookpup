@@ -21,11 +21,11 @@ export async function createApplication(
     return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
   }
 
-  if (input.proposed_price != null && input.proposed_price < 0) {
+  if (input.proposed_price != null && input.proposed_price < 1000) {
     return {
       error: {
         code: "VALIDATION_ERROR",
-        message: "제안 금액은 0 이상이어야 합니다.",
+        message: "제안 금액은 1,000원 이상이어야 합니다.",
       },
     };
   }
@@ -34,13 +34,22 @@ export async function createApplication(
 
   const { data: sitter } = await db
     .from("sitters")
-    .select("id")
+    .select("id, status")
     .eq("user_id", user.id)
     .maybeSingle();
 
   if (!sitter) {
     return {
       error: { code: "FORBIDDEN", message: "펫시터만 지원할 수 있습니다." },
+    };
+  }
+
+  if (sitter.status !== "approved") {
+    return {
+      error: {
+        code: "FORBIDDEN",
+        message: "승인된 펫시터만 지원할 수 있습니다.",
+      },
     };
   }
 
@@ -110,13 +119,20 @@ export async function createApplication(
     .eq("sitter_id", sitter.id)
     .maybeSingle();
 
+  let roomId = existingRoom?.id ?? null;
+
   if (!existingRoom) {
-    await db.from("chat_rooms").insert({
-      room_type: "request",
-      owner_id: requestRow.owner_id,
-      sitter_id: sitter.id,
-      request_id: requestId,
-    });
+    const { data: newRoom } = await db
+      .from("chat_rooms")
+      .insert({
+        room_type: "request",
+        owner_id: requestRow.owner_id,
+        sitter_id: sitter.id,
+        request_id: requestId,
+      })
+      .select("id")
+      .single();
+    roomId = newRoom?.id ?? null;
   }
 
   const { data: sitterUser } = await db
@@ -134,7 +150,7 @@ export async function createApplication(
     linkUrl: `/board/${requestId}`,
   });
 
-  return { data };
+  return { data, roomId };
 }
 
 export async function getRequestDetailsForReservation(roomId: string) {
@@ -272,6 +288,21 @@ export async function updateApplication(
     if (requestRow.status !== "open") {
       return {
         error: { code: "FORBIDDEN", message: "이미 매칭된 구인글입니다." },
+      };
+    }
+
+    const { data: applicantSitter } = await db
+      .from("sitters")
+      .select("status")
+      .eq("id", application.sitter_id)
+      .single();
+
+    if (applicantSitter?.status !== "approved") {
+      return {
+        error: {
+          code: "FORBIDDEN",
+          message: "승인된 펫시터만 선택할 수 있습니다.",
+        },
       };
     }
 

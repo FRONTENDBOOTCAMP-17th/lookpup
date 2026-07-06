@@ -13,12 +13,19 @@ const PROTECTED_PREFIXES = [
 ];
 
 function isProtected(pathname: string): boolean {
-  if (PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix))) return true;
+  if (PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix)))
+    return true;
   if (pathname.startsWith("/petsitters")) return pathname.includes("/book");
   if (pathname.startsWith("/board")) {
     return pathname.startsWith("/board/write") || pathname.endsWith("/edit");
   }
   return false;
+}
+
+const BOOKING_PATH_PATTERN = /^\/petsitters\/[^/]+\/book\/?$/;
+
+function requiresVerification(pathname: string): boolean {
+  return BOOKING_PATH_PATTERN.test(pathname);
 }
 
 export async function proxy(request: NextRequest) {
@@ -72,13 +79,23 @@ export async function proxy(request: NextRequest) {
 
     const { data: userRow } = await supabase
       .from("users")
-      .select("suspended_until")
+      .select("suspended_until, is_verified")
       .eq("id", user.id)
       .single();
 
-    if (userRow?.suspended_until && new Date(userRow.suspended_until) > new Date()) {
+    if (
+      userRow?.suspended_until &&
+      new Date(userRow.suspended_until) > new Date()
+    ) {
       const url = new URL("/suspended", request.url);
       url.searchParams.set("until", userRow.suspended_until);
+      return NextResponse.redirect(url);
+    }
+
+    // 본인인증 미완료 상태로 예약 페이지 접근 시 인증 페이지로
+    if (requiresVerification(pathname) && !userRow?.is_verified) {
+      const url = new URL("/auth/verification", request.url);
+      url.searchParams.set("next", pathname);
       return NextResponse.redirect(url);
     }
   }
@@ -91,4 +108,3 @@ export const config = {
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
-

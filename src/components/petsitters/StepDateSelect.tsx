@@ -35,13 +35,13 @@ export default function StepDateSelect({
   sitter: SitterBookingInfo;
   bookedRanges: { from: Date; to: Date }[];
 }) {
-  const { register, watch, setValue, formState: { errors } } = useFormContext<Step1Values>();
+  const { watch, setValue, formState: { errors } } = useFormContext<Step1Values>();
   const { dateRange, setDateRange } = useBookingStore();
   const startTime = watch("startTime") ?? "";
   const endTime = watch("endTime") ?? "";
 
-  const nights = dateRange?.from && dateRange?.to
-    ? Math.max(1, differenceInDays(dateRange.to, dateRange.from))
+  const days = dateRange?.from && dateRange?.to
+    ? Math.max(1, differenceInDays(dateRange.to, dateRange.from) + 1)
     : 1;
 
   function handleDateChange(range: DateRange | undefined) {
@@ -71,9 +71,9 @@ export default function StepDateSelect({
               <span className="text-orange-500 text-sm sm:text-base font-semibold">
                 {formatDateRange(dateRange)}
               </span>
-              {nights > 1 && (
+              {days > 1 && (
                 <span className="ml-auto text-orange-500 text-sm font-medium shrink-0">
-                  {nights}일
+                  {days}일
                 </span>
               )}
             </div>

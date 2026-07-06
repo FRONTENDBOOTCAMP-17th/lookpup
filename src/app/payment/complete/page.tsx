@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
+import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 
@@ -40,12 +41,12 @@ function PayCompleteContent() {
               결제가 성공적으로 완료되었습니다.
             </p>
           </div>
-          <button
-            onClick={() => router.push("/")}
-            className="w-full h-12 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl transition-colors"
+          <Link
+            href="/"
+            className="w-full h-12 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl transition-colors flex items-center justify-center"
           >
             Home으로 돌아가기
-          </button>
+          </Link>
         </>
       )}
 

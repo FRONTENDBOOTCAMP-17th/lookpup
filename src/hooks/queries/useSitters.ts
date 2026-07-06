@@ -1,18 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/client";
 
 interface SitterRow {
   id: string;
-  user_id?: string | null;
-  available_area: string | null;
   display_area: string | null;
   latitude: number | null;
   longitude: number | null;
   base_price: number | null;
   rating: number | null;
-  full_name: string | null;
+  display_name: string | null;
   profile_image: string | null;
   service_types: string[];
+  service_prices: Record<string, number>;
   review_count: number;
 }
 
@@ -25,6 +24,7 @@ export function useSitters(filters: SitterFilters) {
   return useQuery({
     queryKey: ["sitters", filters] as const,
     queryFn: async () => {
+      const supabase = createClient();
       const { data, error } = await supabase.rpc("get_petsitters_filtered", {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         p_district: (filters.district || null) as any,
@@ -51,6 +51,7 @@ export function useSitters(filters: SitterFilters) {
 
       return rows.map((row) => ({
         ...row,
+        service_prices: row.service_prices ?? {},
         review_count: reviewCounts.get(row.id) ?? 0,
       }));
     },

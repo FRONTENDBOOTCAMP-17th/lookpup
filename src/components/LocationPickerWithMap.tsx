@@ -29,8 +29,8 @@ export default function LocationPickerWithMap({
   className = "",
 }: LocationPickerWithMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<any>(null);
-  const markerRef = useRef<any>(null);
+  const mapRef = useRef<kakao.maps.Map | null>(null);
+  const markerRef = useRef<kakao.maps.Marker | null>(null);
 
   const [query, setQuery] = useState(value?.address ?? "");
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
@@ -241,21 +241,17 @@ export default function LocationPickerWithMap({
       {/* 지도 미리보기 */}
       <div>
         <p className="text-sm font-medium text-stone-900 mb-2">지도 미리보기</p>
-        {value ? (
-          <div className="rounded-xl overflow-hidden border border-[#ffe9d6] h-56">
-            <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
-          </div>
-        ) : (
-          <div
-            ref={containerRef}
-            className="h-56 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl border border-[#ffe9d6] flex flex-col items-center justify-center gap-2"
-          >
-            <MapPin size={28} className="text-orange-300" />
-            <span className="text-sm text-gray-400">
-              주소를 검색하면 지도가 표시됩니다
-            </span>
-          </div>
-        )}
+        <div className="relative rounded-xl overflow-hidden border border-[#ffe9d6] h-56">
+          <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
+          {!value && (
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-50 to-orange-100 flex flex-col items-center justify-center gap-2 pointer-events-none">
+              <MapPin size={28} className="text-orange-300" />
+              <span className="text-sm text-gray-400">
+                주소를 검색하면 지도가 표시됩니다
+              </span>
+            </div>
+          )}
+        </div>
         {value && (
           <p className="mt-2 text-xs text-gray-500 flex items-center gap-1">
             <MapPin size={12} className="text-orange-400 shrink-0" />

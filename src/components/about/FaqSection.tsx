@@ -1,3 +1,5 @@
+import ScrollReveal from "@/components/common/ScrollReveal";
+
 const FAQS = [
   {
     q: "서비스 중 반려동물이 다쳤을 경우 어떻게 되나요?",
@@ -25,33 +27,34 @@ export default function FaqSection() {
   return (
     <section className="py-16 md:py-20">
       <div className="max-w-[1280px] mx-auto px-4 sm:px-10">
-        <h2 className="text-2xl md:text-3xl font-bold text-stone-900 text-center mb-4">
-          자주 묻는 질문
-        </h2>
-        <p className="text-gray-500 text-center mb-10 md:mb-14">
-          궁금한 점을 미리 확인하세요
-        </p>
+        <ScrollReveal>
+          <h2 className="text-2xl md:text-3xl font-bold text-stone-900 text-center mb-4">
+            자주 묻는 질문
+          </h2>
+          <p className="text-gray-500 text-center mb-10 md:mb-14">
+            궁금한 점을 미리 확인하세요
+          </p>
+        </ScrollReveal>
         <div className="flex flex-col gap-4">
-          {FAQS.map(({ q, a }) => (
-            <div
-              key={q}
-              className="p-5 bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100 flex items-start gap-4"
-            >
-              <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center shrink-0">
-                <span
-                  className="text-white text-base font-bold"
-                  aria-label="질문"
-                >
-                  Q
-                </span>
+          {FAQS.map(({ q, a }, index) => (
+            <ScrollReveal key={q} delay={index * 0.06}>
+              <div className="p-5 bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100 flex items-start gap-4">
+                <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center shrink-0">
+                  <span
+                    className="text-white text-base font-bold"
+                    aria-label="질문"
+                  >
+                    Q
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-stone-900 text-lg font-semibold mb-2">
+                    {q}
+                  </h3>
+                  <p className="text-gray-500 text-base leading-6">{a}</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-stone-900 text-lg font-semibold mb-2">
-                  {q}
-                </h3>
-                <p className="text-gray-500 text-base leading-6">{a}</p>
-              </div>
-            </div>
+            </ScrollReveal>
           ))}
         </div>
       </div>

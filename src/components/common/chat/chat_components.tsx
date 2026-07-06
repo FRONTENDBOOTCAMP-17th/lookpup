@@ -18,6 +18,7 @@ import {
   CalendarRange,
 } from "lucide-react";
 import Avatar from "@/components/ui/Avatar";
+import { CHAT_MESSAGE_MAX_LENGTH } from "@/lib/chatMessagePrefixes";
 import SitterProfileCard, {
   type SitterProfile,
 } from "@/components/sitter/SitterProfileCard";
@@ -36,6 +37,7 @@ export type ChatRoom = {
   lastMessage: string;
   time: string;
   unread: number;
+  recipientLeft: boolean;
 };
 
 // 지원 목록의 각 목록
@@ -57,6 +59,7 @@ export type Applicant = {
   services?: string[];
   experience?: string;
   completedJobs?: string;
+  recipientLeft: boolean;
 };
 
 export type ReservationRequest = {
@@ -73,6 +76,7 @@ export type ReservationRequest = {
   time: string;
   unread: number;
   reservationStatus: string | null;
+  recipientLeft: boolean;
 };
 
 // 채팅방 나가기 제한
@@ -112,6 +116,7 @@ export type PaymentData = {
   sentByMe?: boolean;
   isExtra?: boolean;
   costItems?: CostItem[];
+  extraChargeId?: string;
 };
 
 export type ApplicationData = {
@@ -594,6 +599,7 @@ type MessageBubbleProps = {
   onServiceConfirm?: (reservationId: string) => void;
   isServiceConfirmed?: boolean;
   isServiceConfirming?: boolean;
+  isReviewWritten?: boolean;
   onReservationEditConfirm?: (
     messageId: string,
     reservationId: string,
@@ -623,6 +629,7 @@ function MessageBubbleImpl({
   onServiceConfirm,
   isServiceConfirmed,
   isServiceConfirming,
+  isReviewWritten,
   onReservationEditConfirm,
   onReservationEditReject,
   confirmedEditIds,
@@ -873,7 +880,7 @@ function MessageBubbleImpl({
           senderInitial={senderInitial}
           senderProfileImage={senderProfileImage}
           data={msg.serviceCompleteConfirmedData}
-          canWriteReview={sentByMe}
+          canWriteReview={sentByMe && !isReviewWritten}
           onWriteReview={() => onWriteReview?.(confirmedReservationId)}
           onLeaveChat={onLeaveChat}
         />
@@ -957,6 +964,15 @@ function MessageBubbleImpl({
     );
   }
   if (msg.from === "divider") {
+    if (msg.text.startsWith("[돌봄기록]")) {
+      return (
+        <div className="flex justify-center">
+          <span className="px-4 py-1 bg-orange-300 rounded-full text-white text-sm">
+            {msg.text}
+          </span>
+        </div>
+      );
+    }
     return (
       <div className="flex justify-center">
         <span className="px-4 py-1 bg-white rounded-full text-gray-500 text-sm">
@@ -990,8 +1006,8 @@ function MessageBubbleImpl({
               />
             </>
           ) : (
-            <div className="max-w-xs px-5 py-4 bg-white rounded-tl-sm rounded-tr-2xl rounded-bl-2xl rounded-br-2xl shadow-sm">
-              <p className="text-stone-900 text-sm leading-6">{msg.text}</p>
+            <div className="max-w-xs px-5 py-4 bg-orange-500 rounded-tl-sm rounded-tr-2xl rounded-bl-2xl rounded-br-2xl shadow-sm">
+              <p className="text-white text-sm leading-6">{msg.text}</p>
             </div>
           )}
           <p className="text-gray-500 text-xs mt-1 pl-3">{msg.time}</p>
@@ -1463,6 +1479,7 @@ function ChatInputImpl({
             e.key === "Enter" && !e.nativeEvent.isComposing && onSend?.()
           }
           placeholder="메시지를 입력하세요"
+          maxLength={CHAT_MESSAGE_MAX_LENGTH}
           className="flex-1 h-14 px-5 py-4 bg-orange-50 rounded-2xl text-base text-stone-900 placeholder-stone-900/50 outline-none"
         />
         <button

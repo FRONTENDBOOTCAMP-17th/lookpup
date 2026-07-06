@@ -1096,26 +1096,24 @@ export type Database = {
       get_petsitters_filtered: {
         Args: { p_district?: string; p_dong?: string }
         Returns: {
-          available_area: string
           base_price: number
           display_area: string
-          full_name: string
+          display_name: string
           id: string
           latitude: number
           longitude: number
           profile_image: string
           rating: number
+          service_prices: Json
           service_types: string[]
-          user_id: string
         }[]
       }
       get_petsitters_for_map: {
         Args: never
         Returns: {
-          available_area: string
           base_price: number
           display_area: string
-          full_name: string
+          display_name: string
           id: string
           latitude: number
           longitude: number

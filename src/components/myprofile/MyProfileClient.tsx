@@ -4,7 +4,11 @@ import { useState, useEffect, type ReactNode } from "react";
 import Link from "next/link";
 import Script from "next/script";
 import { useRouter } from "next/navigation";
-import { useUserStore, type UserProfile, type SitterData } from "@/store/userStore";
+import {
+  useUserStore,
+  type UserProfile,
+  type SitterData,
+} from "@/store/userStore";
 import {
   ChevronRight,
   Dog,
@@ -79,24 +83,84 @@ function MenuIcon({
 const OWNER_MENU: MenuItem[] = [
   { id: "profile", icon: User, label: "내 프로필", link: "/myprofile" },
   { id: "pets", icon: Dog, label: "내 반려동물", link: "/myprofile/mypets" },
-  { id: "bookings", icon: Calendar, label: "예약 내역", link: "/myprofile/booking-history?role=owner" },
-  { id: "posts", icon: FileText, label: "게시글 관리", link: "/myprofile/posts" },
-  { id: "reviews", icon: BookOpen, label: "후기 관리", link: "/myprofile/reviews" },
-  { id: "settings", icon: Settings, label: "설정", link: "/myprofile/settings" },
+  {
+    id: "bookings",
+    icon: Calendar,
+    label: "예약 내역",
+    link: "/myprofile/booking-history?role=owner",
+  },
+  {
+    id: "posts",
+    icon: FileText,
+    label: "게시글 관리",
+    link: "/myprofile/posts",
+  },
+  {
+    id: "reviews",
+    icon: BookOpen,
+    label: "후기 관리",
+    link: "/myprofile/reviews",
+  },
+  {
+    id: "settings",
+    icon: Settings,
+    label: "설정",
+    link: "/myprofile/settings",
+  },
   { id: "terms", icon: HelpCircle, label: "이용약관", link: "/terms" },
-  { id: "report", icon: AlertTriangle, label: "신고하기", link: "/myprofile/report" },
-  { id: "withdraw", icon: UserX, label: "회원 탈퇴", link: "/myprofile/settings/withdraw" },
+  {
+    id: "report",
+    icon: AlertTriangle,
+    label: "신고하기",
+    link: "/myprofile/report",
+  },
+  {
+    id: "withdraw",
+    icon: UserX,
+    label: "회원 탈퇴",
+    link: "/myprofile/settings/withdraw",
+  },
 ];
 
 const SITTER_MENU: MenuItem[] = [
   { id: "profile", icon: User, label: "내 프로필", link: "/myprofile" },
-  { id: "bookings", icon: Calendar, label: "예약 내역", link: "/myprofile/booking-history?role=sitter" },
-  { id: "reviews", icon: BookOpen, label: "후기 관리", link: "/myprofile/reviews" },
-  { id: "earnings", icon: Wallet, label: "수익 관리", link: "/myprofile/earnings" },
-  { id: "settings", icon: Settings, label: "설정", link: "/myprofile/settings" },
+  {
+    id: "bookings",
+    icon: Calendar,
+    label: "예약 내역",
+    link: "/myprofile/booking-history?role=sitter",
+  },
+  {
+    id: "reviews",
+    icon: BookOpen,
+    label: "후기 관리",
+    link: "/myprofile/reviews",
+  },
+  {
+    id: "earnings",
+    icon: Wallet,
+    label: "수익 관리",
+    link: "/myprofile/earnings",
+  },
+  {
+    id: "settings",
+    icon: Settings,
+    label: "설정",
+    link: "/myprofile/settings",
+  },
   { id: "terms", icon: HelpCircle, label: "이용약관", link: "/terms" },
-  { id: "report", icon: AlertTriangle, label: "신고하기", link: "/myprofile/report" },
-  { id: "withdraw", icon: UserX, label: "회원 탈퇴", link: "/myprofile/settings/withdraw" },
+  {
+    id: "report",
+    icon: AlertTriangle,
+    label: "신고하기",
+    link: "/myprofile/report",
+  },
+  {
+    id: "withdraw",
+    icon: UserX,
+    label: "회원 탈퇴",
+    link: "/myprofile/settings/withdraw",
+  },
 ];
 
 function SidebarItem({
@@ -127,14 +191,22 @@ function SidebarItem({
         <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-orange-500 rounded-r-full" />
       )}
       <MenuIcon icon={Icon} size={16} color={iconColor} />
-      <span className={`text-sm font-medium ${selected ? "text-orange-500" : "text-stone-900"}`}>
+      <span
+        className={`text-sm font-medium ${selected ? "text-orange-500" : "text-stone-900"}`}
+      >
         {item.label}
       </span>
     </button>
   );
 }
 
-function IconHoverAction({ label, children }: { label: string; children: ReactNode }) {
+function IconHoverAction({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
   return (
     <HoverCard openDelay={150} closeDelay={80}>
       <HoverCardTrigger asChild>{children}</HoverCardTrigger>
@@ -197,19 +269,35 @@ export default function MyProfileClient({
   const [selectedMenu, setSelectedMenu] = useState("profile");
   const [locationData, setLocationData] = useState<LocationData | null>(null);
   const [showLocationModal, setShowLocationModal] = useState(false);
-
-  useEffect(() => {
+  const [prevUserLocation, setPrevUserLocation] = useState({
+    address: user?.address,
+    latitude: user?.latitude,
+    longitude: user?.longitude,
+    displayArea: user?.displayArea,
+  });
+  if (
+    user?.address !== prevUserLocation.address ||
+    user?.latitude !== prevUserLocation.latitude ||
+    user?.longitude !== prevUserLocation.longitude ||
+    user?.displayArea !== prevUserLocation.displayArea
+  ) {
+    setPrevUserLocation({
+      address: user?.address,
+      latitude: user?.latitude,
+      longitude: user?.longitude,
+      displayArea: user?.displayArea,
+    });
     if (!user?.address || user.latitude == null || user.longitude == null) {
       setLocationData(null);
-      return;
+    } else {
+      setLocationData({
+        address: user.address,
+        lat: user.latitude,
+        lng: user.longitude,
+        dong: user.displayArea || user.address,
+      });
     }
-    setLocationData({
-      address: user.address,
-      lat: user.latitude,
-      lng: user.longitude,
-      dong: user.displayArea || user.address,
-    });
-  }, [user?.address, user?.latitude, user?.longitude, user?.displayArea]);
+  }
 
   const menuItems = userType === "owner" ? OWNER_MENU : SITTER_MENU;
   const ownerProfile = user
@@ -298,7 +386,7 @@ export default function MyProfileClient({
 
       {/* 데스크탑 레이아웃 */}
       <div className="hidden md:block flex-1">
-        <div className="max-w-[1200px] mx-auto px-6 py-12">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-10 py-12">
           <div className="flex gap-6">
             {/* 사이드바 */}
             <div className="w-72 shrink-0">
@@ -342,7 +430,10 @@ export default function MyProfileClient({
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-gray-500">평점</span>
                       <div className="flex items-center gap-1">
-                        <Star size={12} className="fill-amber-400 text-amber-400" />
+                        <Star
+                          size={12}
+                          className="fill-amber-400 text-amber-400"
+                        />
                         <span className="text-sm font-bold text-stone-900">
                           {sitter?.rating.toFixed(1) ?? "-"}
                         </span>
@@ -355,8 +446,12 @@ export default function MyProfileClient({
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-500">이번 달 수익</span>
-                      <span className="text-sm font-bold text-orange-500">-</span>
+                      <span className="text-xs text-gray-500">
+                        이번 달 수익
+                      </span>
+                      <span className="text-sm font-bold text-orange-500">
+                        -
+                      </span>
                     </div>
                   </div>
                 )}
@@ -380,7 +475,9 @@ export default function MyProfileClient({
             <div className="flex-1 min-w-0">
               {selectedMenu === "profile" && (
                 <div className="space-y-5">
-                  <h2 className="text-xl font-bold text-stone-900">내 프로필</h2>
+                  <h2 className="text-xl font-bold text-stone-900">
+                    내 프로필
+                  </h2>
 
                   {userType === "owner" && ownerProfile && (
                     <SitterProfileCard
@@ -404,19 +501,26 @@ export default function MyProfileClient({
                           menuItems.length,
                         );
                         return (
-                          <button
+                          <Link
                             key={item.id}
-                            onClick={() => router.push(item.link)}
-                            className="flex items-center gap-3 p-4 bg-orange-50 hover:bg-orange-100 rounded-xl transition-colors text-left"
+                            href={item.link}
+                            className="flex items-center gap-3 p-4 bg-orange-50 hover:bg-orange-100 rounded-xl transition-colors"
                           >
                             <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-white shadow-sm border border-orange-100">
-                              <MenuIcon icon={Icon} size={16} color={iconColor} />
+                              <MenuIcon
+                                icon={Icon}
+                                size={16}
+                                color={iconColor}
+                              />
                             </div>
                             <span className="text-sm font-medium text-stone-900">
                               {item.label}
                             </span>
-                            <ChevronRight size={16} className="text-gray-500 ml-auto" />
-                          </button>
+                            <ChevronRight
+                              size={16}
+                              className="text-gray-500 ml-auto"
+                            />
+                          </Link>
                         );
                       })}
                     </div>
@@ -427,8 +531,12 @@ export default function MyProfileClient({
                       <Link href="/sitter-register">
                         <div className="bg-gradient-to-r from-orange-500 to-stone-600 rounded-2xl p-7 flex items-center justify-between hover:opacity-90 transition-opacity">
                           <div>
-                            <h3 className="font-bold text-white text-lg mb-1">펫시터로 활동하기</h3>
-                            <p className="text-white/80 text-sm">추가 수입을 만들어보세요</p>
+                            <h3 className="font-bold text-white text-lg mb-1">
+                              펫시터로 활동하기
+                            </h3>
+                            <p className="text-white/80 text-sm">
+                              추가 수입을 만들어보세요
+                            </p>
                           </div>
                           <ChevronRight size={32} className="text-white" />
                         </div>
@@ -482,8 +590,12 @@ export default function MyProfileClient({
               <div className="bg-gradient-to-r from-orange-500 to-stone-600 rounded-2xl p-5 mb-5">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h4 className="text-white font-semibold text-sm mb-0.5">펫시터로 활동하기</h4>
-                    <p className="text-xs text-white/80">추가 수입을 만들어보세요</p>
+                    <h4 className="text-white font-semibold text-sm mb-0.5">
+                      펫시터로 활동하기
+                    </h4>
+                    <p className="text-xs text-white/80">
+                      추가 수입을 만들어보세요
+                    </p>
                   </div>
                   <ChevronRight size={28} className="text-white" />
                 </div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { useMounted } from "@/hooks/useMounted";
 import { CreditCard, X } from "lucide-react";
 
 type RequestType = "extra" | "payment";
@@ -30,14 +31,12 @@ export function CustomModalPayment({
   isAlreadyPaid = false,
   onSubmit,
 }: CustomModalPaymentProps) {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useMounted();
   const [requestType, setRequestType] = useState<RequestType>("payment");
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-
-  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     if (!open) return;
@@ -57,7 +56,11 @@ export function CustomModalPayment({
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [open, onClose]);
 
-  useEffect(() => {
+  const [prevOpen, setPrevOpen] = useState(open);
+  const [prevIsAlreadyPaid, setPrevIsAlreadyPaid] = useState(isAlreadyPaid);
+  if (open !== prevOpen || isAlreadyPaid !== prevIsAlreadyPaid) {
+    setPrevOpen(open);
+    setPrevIsAlreadyPaid(isAlreadyPaid);
     if (open) {
       setRequestType(isAlreadyPaid ? "extra" : "payment");
     } else {
@@ -66,7 +69,7 @@ export function CustomModalPayment({
       setSubmitError(null);
       setSubmitting(false);
     }
-  }, [open, isAlreadyPaid]);
+  }
 
   if (!open || !mounted) return null;
 

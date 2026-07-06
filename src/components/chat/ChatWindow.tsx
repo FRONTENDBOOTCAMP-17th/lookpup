@@ -26,13 +26,19 @@ interface MessageListProps {
   payingNow: boolean;
   isPaymentPending: boolean;
   confirmedServiceIds: Set<string>;
+  reviewedReservationIds: Set<string>;
   isServiceConfirming: boolean;
   confirmedEditIds: Set<string>;
   reservationEditAction: ReservationEditActionState;
   hasMore: boolean;
   loadingMore: boolean;
   onLoadMore: () => void;
-  onPaymentRequest: (data: { amount: number; reason: string; messageId: string }) => void;
+  onPaymentRequest: (data: {
+    amount: number;
+    reason: string;
+    messageId: string;
+    extraChargeId?: string;
+  }) => void;
   onNavigateToPost: (postId: string) => void;
   onGoToChat: () => void;
   onServiceConfirm: (id: string) => void;
@@ -61,6 +67,7 @@ function MessageListImpl({
   payingNow,
   isPaymentPending,
   confirmedServiceIds,
+  reviewedReservationIds,
   isServiceConfirming,
   confirmedEditIds,
   reservationEditAction,
@@ -76,26 +83,52 @@ function MessageListImpl({
   onWriteReview,
   onLeaveChat,
 }: MessageListProps) {
+  // realtime 채널이 같은 메시지를 중복 전달할 수 있어 id 기준으로 dedupe.
+  const dedupedMessages = useMemo(() => {
+    const seen = new Set<string>();
+    return messages.filter((m) => {
+      if (seen.has(m.id)) return false;
+      seen.add(m.id);
+      return true;
+    });
+  }, [messages]);
+
   const paymentPaidByMessageId = useMemo(() => {
-    const hasBasePaymentComplete = messages.some((m) => {
+    const hasBasePaymentComplete = dedupedMessages.some((m) => {
       if (m.from !== "payment_complete") return false;
       if (!m.paymentRequestMessageId) return true;
-      const ref = messages.find((r) => r.id === m.paymentRequestMessageId);
-      return ref?.paymentData?.isExtra === false;
+      const ref = dedupedMessages.find(
+        (r) => r.id === m.paymentRequestMessageId,
+      );
+      return ref?.paymentData?.isExtra !== true;
     });
     const map = new Map<string, boolean>();
-    for (const msg of messages) {
+    for (const msg of dedupedMessages) {
       if (msg.from !== "payment_request") continue;
       const isPaid =
-        messages.some(
+        dedupedMessages.some(
           (m) =>
             m.from === "payment_complete" &&
             m.paymentRequestMessageId === msg.id,
-        ) || (msg.paymentData?.isExtra === false && hasBasePaymentComplete);
+        ) ||
+        (msg.paymentData?.isExtra !== true && hasBasePaymentComplete);
       map.set(msg.id, isPaid);
     }
     return map;
-  }, [messages]);
+  }, [dedupedMessages]);
+
+  // 기본 결제 요청은 방마다 하나의 예약만 결제 가능하므로, 가장 최근 요청만
+  // 활성화하고 이전에 보낸 요청들은 "새 결제 요청이 전송되었어요"로 막아둔다.
+  // (추가금 요청은 각각 별개로 결제 가능하므로 대상에서 제외)
+  const lastBaseRequestId = useMemo(() => {
+    for (let i = dedupedMessages.length - 1; i >= 0; i--) {
+      const m = dedupedMessages[i];
+      if (m.from === "payment_request" && m.paymentData?.isExtra !== true) {
+        return m.id;
+      }
+    }
+    return null;
+  }, [dedupedMessages]);
 
   return (
     <>
@@ -110,7 +143,7 @@ function MessageListImpl({
           </button>
         </div>
       )}
-      {messages.map((msg) => {
+      {dedupedMessages.map((msg) => {
         const postId =
           msg.applicationData?.postId ||
           msg.paymentData?.postId ||
@@ -128,12 +161,15 @@ function MessageListImpl({
             onPaymentRequest={
               msg.from === "payment_request" &&
               msg.paymentData &&
-              msg.paymentData.amount > 0
+              msg.paymentData.amount > 0 &&
+              (msg.paymentData.isExtra === true ||
+                msg.id === lastBaseRequestId)
                 ? () =>
                     onPaymentRequest({
                       amount: msg.paymentData!.amount,
                       reason: msg.paymentData!.reason,
                       messageId: msg.id,
+                      extraChargeId: msg.paymentData!.extraChargeId,
                     })
                 : undefined
             }
@@ -147,6 +183,12 @@ function MessageListImpl({
               confirmedServiceIds.has(msg.serviceCompleteData.reservationId)
             }
             isServiceConfirming={isServiceConfirming}
+            isReviewWritten={
+              !!msg.serviceCompleteConfirmedData?.reservationId &&
+              reviewedReservationIds.has(
+                msg.serviceCompleteConfirmedData.reservationId,
+              )
+            }
             onReservationEditConfirm={onReservationEditConfirm}
             onReservationEditReject={onReservationEditReject}
             confirmedEditIds={confirmedEditIds}
@@ -188,6 +230,7 @@ export interface ChatWindowProps {
   confirmedEditIds: Set<string>;
   reservationEditAction: ReservationEditActionState;
   confirmedServiceIds: Set<string>;
+  reviewedReservationIds: Set<string>;
   payingNow: boolean;
   isPaymentPending: boolean;
   isServiceConfirming: boolean;
@@ -203,6 +246,7 @@ export interface ChatWindowProps {
   sending: boolean;
   sendError: string | null;
   isRejectedApplicant: boolean;
+  isRecipientLeft: boolean;
   showApplicantActions: boolean;
   applicationActionError: string | null;
   actioningId: string | null;
@@ -218,7 +262,12 @@ export interface ChatWindowProps {
   onSend: () => void;
   onLoadMore: () => void;
 
-  onPayNow: (data: { amount: number; reason: string; messageId: string }) => void;
+  onPayNow: (data: {
+    amount: number;
+    reason: string;
+    messageId: string;
+    extraChargeId?: string;
+  }) => void;
   onOpenPaymentModal: () => void;
   onOpenCareRecord: () => void;
   onServiceStart: () => void;
@@ -265,6 +314,7 @@ function ChatWindowImpl({
   confirmedEditIds,
   reservationEditAction,
   confirmedServiceIds,
+  reviewedReservationIds,
   payingNow,
   isPaymentPending,
   isServiceConfirming,
@@ -279,6 +329,7 @@ function ChatWindowImpl({
   sending,
   sendError,
   isRejectedApplicant,
+  isRecipientLeft,
   showApplicantActions,
   applicationActionError,
   actioningId,
@@ -346,7 +397,7 @@ function ChatWindowImpl({
           : undefined
       }
       onReservationEdit={
-        activeTab === "one_on_one"
+        activeTab === "one_on_one" && !hasServiceStarted
           ? () => {
               setPlusMenuOpen(false);
               onOpenReservationEdit();
@@ -372,6 +423,7 @@ function ChatWindowImpl({
       payingNow={payingNow}
       isPaymentPending={isPaymentPending}
       confirmedServiceIds={confirmedServiceIds}
+      reviewedReservationIds={reviewedReservationIds}
       isServiceConfirming={isServiceConfirming}
       confirmedEditIds={confirmedEditIds}
       reservationEditAction={reservationEditAction}
@@ -463,7 +515,7 @@ function ChatWindowImpl({
         {/* 메시지 영역 */}
         <div
           ref={mobileScrollRef}
-          className="flex-1 min-h-0 overflow-y-auto bg-orange-50"
+          className="flex-1 min-h-0 overflow-y-auto bg-white"
         >
           <div
             className="px-4 py-4 flex flex-col gap-4"
@@ -509,6 +561,10 @@ function ChatWindowImpl({
         {isRejectedApplicant ? (
           <div className="px-4 py-3 bg-stone-50 border-t border-stone-200 text-center text-xs text-stone-400 shrink-0">
             지원이 거절되어 메시지를 보낼 수 없습니다.
+          </div>
+        ) : isRecipientLeft ? (
+          <div className="px-4 py-3 bg-stone-50 border-t border-stone-200 text-center text-xs text-stone-400 shrink-0">
+            상대방이 채팅을 종료하여 메시지를 보낼 수 없습니다.
           </div>
         ) : (
           <>
@@ -625,6 +681,10 @@ function ChatWindowImpl({
       {isRejectedApplicant ? (
         <div className="px-8 py-4 bg-stone-50 border-t border-stone-200 text-center text-sm text-stone-400 shrink-0">
           지원이 거절되어 메시지를 보낼 수 없습니다.
+        </div>
+      ) : isRecipientLeft ? (
+        <div className="px-8 py-4 bg-stone-50 border-t border-stone-200 text-center text-sm text-stone-400 shrink-0">
+          상대방이 채팅을 종료하여 메시지를 보낼 수 없습니다.
         </div>
       ) : (
         <>

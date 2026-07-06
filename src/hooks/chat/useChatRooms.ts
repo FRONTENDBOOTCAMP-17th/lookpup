@@ -28,6 +28,7 @@ import {
   RESERVATION_REJECTED_PREFIX,
   RESERVATION_EDIT_PREFIX,
   RESERVATION_EDIT_RESPONSE_PREFIX,
+  truncatePreview,
 } from "@/lib/chatMessagePrefixes";
 
 function isReservationStatusChangeMessage(content: string): boolean {
@@ -100,7 +101,7 @@ function formatPreview(content: string): string {
       return "예약 수정 응답";
     }
   }
-  return content;
+  return truncatePreview(content);
 }
 
 function transformRoomsData(data: RoomApiItem[]): {
@@ -124,6 +125,7 @@ function transformRoomsData(data: RoomApiItem[]): {
       lastMessage: formatPreview(r.last_message ?? ""),
       time: formatTime(r.last_message_at),
       unread: r.unread_count ?? 0,
+      recipientLeft: r.recipient_left,
     }));
 
   const requestRooms = data.filter((r) => r.room_type === "request");
@@ -140,6 +142,7 @@ function transformRoomsData(data: RoomApiItem[]): {
     time: formatTime(r.last_message_at),
     unread: r.unread_count ?? 0,
     applicationStatus: r.application_status ?? null,
+    recipientLeft: r.recipient_left,
   }));
 
   const reservationRequestList = data
@@ -158,6 +161,7 @@ function transformRoomsData(data: RoomApiItem[]): {
       time: formatTime(r.last_message_at),
       unread: r.unread_count ?? 0,
       reservationStatus: r.reservation_status ?? null,
+      recipientLeft: r.recipient_left,
     }));
 
   const seen = new Set<string>();
@@ -272,19 +276,20 @@ export function useChatRooms(
   const updateRoomPreview = useCallback(
     (roomId: string, content: string, createdAt: string) => {
       const time = formatTime(createdAt);
+      const preview = truncatePreview(content);
       setRooms((prev) =>
         prev.map((r) =>
-          r.id === roomId ? { ...r, lastMessage: content, time } : r,
+          r.id === roomId ? { ...r, lastMessage: preview, time } : r,
         ),
       );
       setApplicants((prev) =>
         prev.map((a) =>
-          a.id === roomId ? { ...a, preview: content, time } : a,
+          a.id === roomId ? { ...a, preview, time } : a,
         ),
       );
       setReservationRequests((prev) =>
         prev.map((rr) =>
-          rr.id === roomId ? { ...rr, preview: content, time } : rr,
+          rr.id === roomId ? { ...rr, preview, time } : rr,
         ),
       );
     },

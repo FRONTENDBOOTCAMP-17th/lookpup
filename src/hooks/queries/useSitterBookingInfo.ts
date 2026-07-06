@@ -10,6 +10,7 @@ export interface SitterBookingInfo {
   id: string;
   name: string;
   initial: string;
+  profileImage: string | null;
   pricePerDay: number;
   services: SitterService[];
 }
@@ -24,6 +25,7 @@ const SITTER_SERVICE_LABEL: Record<string, string> = {
 type SitterApiResponse = {
   id: string;
   full_name: string;
+  profile_image: string | null;
   base_price: number | null;
   request_type: string[];
   services: (SitterService & { is_active: boolean })[];
@@ -44,6 +46,7 @@ export function useSitterBookingInfo(sitterId: string) {
         id: data.id,
         name: data.full_name ?? "",
         initial: (data.full_name ?? "?").charAt(0),
+        profileImage: data.profile_image ?? null,
         pricePerDay: data.base_price ?? primary?.price ?? 0,
         services: activeServices,
       } satisfies SitterBookingInfo;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { DateRange } from "react-day-picker";
 import {
@@ -242,12 +243,12 @@ export default function BoardEditClient({
             <p className="text-stone-900 text-lg font-semibold">
               예약 완료된 게시글은 수정할 수 없습니다.
             </p>
-            <button
-              onClick={() => router.push(`/board/${id}`)}
-              className="h-11 px-6 rounded-xl bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-colors"
+            <Link
+              href={`/board/${id}`}
+              className="h-11 px-6 rounded-xl bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-colors flex items-center justify-center"
             >
               상세 페이지로 돌아가기
-            </button>
+            </Link>
           </div>
         </main>
         <Footer />

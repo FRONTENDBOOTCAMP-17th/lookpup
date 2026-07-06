@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Plus,
@@ -813,7 +814,7 @@ export default function MyPetsClient({ initialPets }: MyPetsClientProps) {
       </div>
 
       {/* 데스크탑 콘텐츠 */}
-      <div className="hidden md:block w-full max-w-[1200px] mx-auto px-6 pt-10 pb-20">
+      <div className="hidden md:block w-full max-w-[1280px] mx-auto px-4 sm:px-10 pt-10 pb-20">
         <div className="flex items-start justify-between mb-8">
           <div className="flex items-center gap-4">
             <DesktopBackButton />
@@ -852,12 +853,12 @@ export default function MyPetsClient({ initialPets }: MyPetsClientProps) {
                     반려동물 선택
                   </button>
                 )}
-                <button
-                  onClick={handleAddPet}
+                <Link
+                  href="/pet-register"
                   className="h-11 px-5 rounded-xl bg-orange-500 text-white font-semibold hover:bg-orange-600 transition-colors flex items-center gap-2 text-sm"
                 >
                   <Plus size={16} /> 반려동물 추가
-                </button>
+                </Link>
               </>
             )}
           </div>

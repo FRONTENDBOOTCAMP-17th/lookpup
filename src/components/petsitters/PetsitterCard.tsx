@@ -14,7 +14,7 @@ interface Sitter {
   neighborhood: string;
   rating: number;
   reviewCount: number;
-  price: number;
+  price: number | null;
   services: string[];
 }
 
@@ -56,7 +56,7 @@ export default function PetsitterCard({
             <div className="flex items-center gap-1 mt-1">
               <MapPin size={14} className="text-gray-400" />
               <span className="text-gray-500 text-sm">
-                {sitter.district} {sitter.neighborhood}
+                {[sitter.district, sitter.neighborhood].filter(Boolean).join(" ")}
               </span>
               <span className="text-gray-400 text-xs">· {formatDistance(distance)}</span>
             </div>
@@ -75,9 +75,11 @@ export default function PetsitterCard({
             <span className="text-stone-900 text-base font-bold">{sitter.rating.toFixed(1)}</span>
             <span className="text-gray-500 text-sm">({sitter.reviewCount})</span>
           </div>
-          <span className="text-orange-500 text-base font-semibold">
-            {sitter.price.toLocaleString()}원~
-          </span>
+          {sitter.price != null && (
+            <span className="text-orange-500 text-base font-semibold">
+              {sitter.price.toLocaleString()}원~
+            </span>
+          )}
         </div>
       </div>
     </div>

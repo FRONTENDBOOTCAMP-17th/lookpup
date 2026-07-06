@@ -53,6 +53,7 @@ import {
   getReservationRequestDetails,
   updateReservationDetails,
 } from "@/app/actions/reservations";
+import { getReviewedReservationIds } from "@/app/actions/reviews";
 import type { ActiveReservation } from "@/components/common/chat/ServiceCompleteModal";
 import { usePortOne } from "@/hooks/usePortOne";
 import { uploadToCloudinary } from "@/utils/cloudinary";
@@ -66,6 +67,7 @@ import {
   createExtraPayment,
   getActiveReservationBySitter,
   verifyAndConfirmPayment,
+  cancelPendingPayment,
 } from "@/app/actions/payments";
 import type { ReservationDetails } from "@/components/common/chat/ReservationConfirmModal";
 import { useChatRooms } from "@/hooks/chat/useChatRooms";
@@ -222,6 +224,10 @@ function ChatPageContent({
     new Set(),
   );
   const checkedReservationIdsRef = useRef(new Set<string>());
+  const [reviewedReservationIds, setReviewedReservationIds] = useState<
+    Set<string>
+  >(new Set());
+  const checkedReviewReservationIdsRef = useRef(new Set<string>());
   const [isServiceConfirming, setIsServiceConfirming] = useState(false);
   const [pendingServiceConfirmId, setPendingServiceConfirmId] = useState<
     string | null
@@ -349,14 +355,23 @@ function ChatPageContent({
     [messages],
   );
 
+  const [prevActiveRoomId, setPrevActiveRoomId] = useState(activeRoomId);
+  if (activeRoomId !== prevActiveRoomId) {
+    setPrevActiveRoomId(activeRoomId);
+    if (activeRoomId) {
+      setSendError(null);
+      setInput("");
+      setConfirmedServiceIds(new Set());
+      setReviewedReservationIds(new Set());
+    }
+  }
+
   useEffect(() => {
     if (!activeRoomId) return;
     markRoomAsRead(activeRoomId);
     markRoomRead(activeRoomId);
-    setSendError(null);
-    setInput("");
-    setConfirmedServiceIds(new Set());
     checkedReservationIdsRef.current = new Set();
+    checkedReviewReservationIdsRef.current = new Set();
   }, [activeRoomId, markRoomAsRead]);
 
   useLayoutEffect(() => {
@@ -431,6 +446,7 @@ function ChatPageContent({
   useEffect(() => {
     if (!acceptedDirectRoomId) return;
     clearAcceptedDirectRoomId();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setActiveTab("one_on_one");
     setSelectedRoomId(acceptedDirectRoomId);
     setSelectedReservationRequestId(null);
@@ -475,6 +491,30 @@ function ChatPageContent({
       if (completed.length > 0) {
         setConfirmedServiceIds((prev) => new Set([...prev, ...completed]));
       }
+    });
+  }, [messages]);
+
+  useEffect(() => {
+    const uncheckedIds = messages
+      .filter(
+        (m) =>
+          m.from === "service_complete_confirmed" &&
+          m.sentByMe &&
+          m.serviceCompleteConfirmedData?.reservationId &&
+          !checkedReviewReservationIdsRef.current.has(
+            m.serviceCompleteConfirmedData.reservationId,
+          ),
+      )
+      .map((m) => m.serviceCompleteConfirmedData!.reservationId);
+
+    if (uncheckedIds.length === 0) return;
+    uncheckedIds.forEach((id) =>
+      checkedReviewReservationIdsRef.current.add(id),
+    );
+
+    getReviewedReservationIds(uncheckedIds).then(({ data }) => {
+      if (!data || data.length === 0) return;
+      setReviewedReservationIds((prev) => new Set([...prev, ...data]));
     });
   }, [messages]);
 
@@ -739,7 +779,7 @@ function ChatPageContent({
   const handlePaymentSubmit = useCallback(
     async (data: { type: string; amount: number; reason: string }) => {
       if (!activeRoomId) return;
-      const isBasePaid = paymentState?.paid === true || isPaymentAlreadyPaid;
+      const isBasePaid = isPaymentAlreadyPaid;
       if (data.type !== "extra" && isBasePaid) {
         setSendError("이미 결제된 예약입니다. 추가금 요청을 이용해주세요.");
         return;
@@ -754,7 +794,9 @@ function ChatPageContent({
         const reservationId = isExtra
           ? (selectedRoom?.reservationId ??
             (selectedRoom?.sitterId
-              ? await getActiveReservationBySitter(selectedRoom.sitterId)
+              ? await getActiveReservationBySitter(selectedRoom.sitterId, {
+                  includePaid: true,
+                })
               : null))
           : undefined;
         const result = await sendPaymentRequestMessage(
@@ -785,7 +827,6 @@ function ChatPageContent({
     },
     [
       activeRoomId,
-      paymentState,
       isPaymentAlreadyPaid,
       selectedRoom,
       deliverMessage,
@@ -794,7 +835,12 @@ function ChatPageContent({
   );
 
   const handlePayNow = useCallback(
-    async (data: { amount: number; reason: string; messageId: string }) => {
+    async (data: {
+      amount: number;
+      reason: string;
+      messageId: string;
+      extraChargeId?: string;
+    }) => {
       if (payingNow || isPaymentPending || !activeRoomId) return;
 
       const totalAmount = Number(data.amount);
@@ -804,26 +850,10 @@ function ChatPageContent({
 
       let portonePaymentId = `pay_${Date.now()}`;
       let orderName = data.reason || "서비스 결제";
+      let chargeAmount = totalAmount;
 
-      const reservationId =
-        selectedRoom?.reservationId ??
-        (selectedRoom?.sitterId
-          ? await getActiveReservationBySitter(selectedRoom.sitterId)
-          : null);
-
-      if (!reservationId) {
-        setSendError("예약 정보를 찾을 수 없습니다.");
-        setPayingNow(false);
-        return;
-      }
-
-      const payResult = await createPayment(reservationId, "CARD", totalAmount);
-      if (payResult.error?.code === "FORBIDDEN") {
-        const extraResult = await createExtraPayment(
-          reservationId,
-          totalAmount,
-          data.reason ?? "추가 서비스",
-        );
+      if (data.extraChargeId) {
+        const extraResult = await createExtraPayment(data.extraChargeId);
         if (extraResult.error) {
           setSendError(extraResult.error.message);
           setPayingNow(false);
@@ -831,20 +861,36 @@ function ChatPageContent({
         }
         portonePaymentId = extraResult.data!.payment_id;
         orderName = extraResult.data!.order_name;
-      } else if (payResult.error) {
-        setSendError(payResult.error.message);
-        setPayingNow(false);
-        return;
+        chargeAmount = extraResult.data!.amount;
       } else {
+        const reservationId =
+          selectedRoom?.reservationId ??
+          (selectedRoom?.sitterId
+            ? await getActiveReservationBySitter(selectedRoom.sitterId)
+            : null);
+
+        if (!reservationId) {
+          setSendError("예약 정보를 찾을 수 없습니다.");
+          setPayingNow(false);
+          return;
+        }
+
+        const payResult = await createPayment(reservationId, "CARD");
+        if (payResult.error) {
+          setSendError(payResult.error.message);
+          setPayingNow(false);
+          return;
+        }
         portonePaymentId = payResult.data!.payment_id;
         orderName = payResult.data!.order_name;
+        chargeAmount = payResult.data!.amount;
       }
 
       requestPayment(
         {
           paymentId: portonePaymentId,
           orderName,
-          totalAmount,
+          totalAmount: chargeAmount,
           currency: "KRW",
           payMethod: "CARD",
           redirectUrl: `${window.location.origin}/payment/complete`,
@@ -859,7 +905,7 @@ function ChatPageContent({
                 return;
               }
               const result = await sendPaymentCompleteMessage(activeRoomId, {
-                amount: totalAmount,
+                amount: chargeAmount,
                 paymentRequestMessageId: data.messageId,
               });
               if (result.data) {
@@ -874,7 +920,8 @@ function ChatPageContent({
               setPayingNow(false);
             }
           },
-          onFail: () => {
+          onFail: async () => {
+            await cancelPendingPayment(portonePaymentId);
             setPayingNow(false);
           },
         },
@@ -1579,6 +1626,15 @@ function ChatPageContent({
     selectedApplicantId !== null &&
     rejectedIds.has(selectedApplicantId);
 
+  const isRecipientLeft =
+    activeTab === "one_on_one"
+      ? !!selectedRoom?.recipientLeft
+      : activeTab === "applicants"
+        ? !!selectedApplicant?.recipientLeft
+        : activeTab === "reservations"
+          ? !!selectedReservationRequest?.recipientLeft
+          : false;
+
   const confirmedPostTitle = selectedApplicant
     ? (posts.find((p) => p.id === selectedApplicant.postId)?.title ?? "")
     : "";
@@ -1784,6 +1840,7 @@ function ChatPageContent({
     confirmedEditIds,
     reservationEditAction,
     confirmedServiceIds,
+    reviewedReservationIds,
     payingNow,
     isPaymentPending,
     isServiceConfirming,
@@ -1798,6 +1855,7 @@ function ChatPageContent({
     sending,
     sendError,
     isRejectedApplicant,
+    isRecipientLeft,
     showApplicantActions,
     applicationActionError,
     actioningId,
@@ -1869,7 +1927,7 @@ function ChatPageContent({
         </div>
 
         {/* 데스크톱 */}
-        <div className="hidden md:flex flex-1 bg-orange-50 overflow-hidden">
+        <div className="hidden md:flex flex-1 bg-white overflow-hidden">
           <ChatSidebar
             {...sharedSidebarProps}
             className="w-96 bg-white border-r border-orange-100 flex flex-col shrink-0"
@@ -1958,7 +2016,7 @@ function ChatPageContent({
         open={paymentModalOpen}
         onClose={() => setPaymentModalOpen(false)}
         paymentAmount={paymentReservationAmount}
-        isAlreadyPaid={isPaymentAlreadyPaid || paymentState?.paid === true}
+        isAlreadyPaid={isPaymentAlreadyPaid}
         onSubmit={handlePaymentSubmit}
       />
 
