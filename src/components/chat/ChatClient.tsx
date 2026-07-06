@@ -66,6 +66,7 @@ import {
   createExtraPayment,
   getActiveReservationBySitter,
   verifyAndConfirmPayment,
+  cancelPendingPayment,
 } from "@/app/actions/payments";
 import type { ReservationDetails } from "@/components/common/chat/ReservationConfirmModal";
 import { useChatRooms } from "@/hooks/chat/useChatRooms";
@@ -888,7 +889,8 @@ function ChatPageContent({
               setPayingNow(false);
             }
           },
-          onFail: () => {
+          onFail: async () => {
+            await cancelPendingPayment(portonePaymentId);
             setPayingNow(false);
           },
         },
