@@ -36,6 +36,7 @@ interface MessageListProps {
     amount: number;
     reason: string;
     messageId: string;
+    extraChargeId?: string;
   }) => void;
   onNavigateToPost: (postId: string) => void;
   onGoToChat: () => void;
@@ -151,6 +152,7 @@ function MessageListImpl({
                       amount: msg.paymentData!.amount,
                       reason: msg.paymentData!.reason,
                       messageId: msg.id,
+                      extraChargeId: msg.paymentData!.extraChargeId,
                     })
                 : undefined
             }
@@ -240,6 +242,7 @@ export interface ChatWindowProps {
     amount: number;
     reason: string;
     messageId: string;
+    extraChargeId?: string;
   }) => void;
   onOpenPaymentModal: () => void;
   onOpenCareRecord: () => void;

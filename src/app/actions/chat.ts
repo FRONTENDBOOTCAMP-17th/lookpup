@@ -665,7 +665,92 @@ export async function sendPaymentRequestMessage(
 
   const db = createServiceClient();
   const now = new Date().toISOString();
-  const content = `${PAYMENT_REQUEST_PREFIX}${JSON.stringify(data)}`;
+
+  const { data: room } = await db
+    .from("chat_rooms")
+    .select("id, owner_id, owner_left, sitter_left, sitters!inner(id, user_id)")
+    .eq("id", roomId)
+    .single();
+
+  if (!room) {
+    return {
+      error: { code: "NOT_FOUND", message: "채팅방을 찾을 수 없습니다." },
+    };
+  }
+
+  if (room.owner_id !== user.id && room.sitters.user_id !== user.id) {
+    return {
+      error: {
+        code: "FORBIDDEN",
+        message: "채팅방 참여자만 메시지를 보낼 수 있습니다.",
+      },
+    };
+  }
+
+  if (data.isExtra && !reservationId) {
+    return {
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "추가금을 요청할 예약을 찾을 수 없습니다.",
+      },
+    };
+  }
+
+  if (data.isExtra && (data.amount < 1000 || data.amount > 500000)) {
+    return {
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "추가금은 1,000원 이상 500,000원 이하여야 합니다.",
+      },
+    };
+  }
+
+  let extraChargeId: string | undefined;
+  if (data.isExtra && reservationId && room) {
+    const { data: reservation } = await db
+      .from("reservations")
+      .select("id, owner_id, sitter_id")
+      .eq("id", reservationId)
+      .maybeSingle();
+
+    if (
+      !reservation ||
+      reservation.owner_id !== room.owner_id ||
+      reservation.sitter_id !== room.sitters.id
+    ) {
+      return {
+        error: {
+          code: "FORBIDDEN",
+          message: "이 채팅방과 관련 없는 예약입니다.",
+        },
+      };
+    }
+
+    const { data: extraCharge, error: extraChargeError } = await db
+      .from("extra_charges")
+      .insert({
+        reservation_id: reservationId,
+        sitter_id: room.sitters.id,
+        owner_id: room.owner_id,
+        amount: data.amount,
+        reason: data.reason,
+        status: "pending",
+      })
+      .select("id")
+      .single();
+
+    if (extraChargeError || !extraCharge) {
+      return {
+        error: {
+          code: "INTERNAL_ERROR",
+          message: extraChargeError?.message ?? "추가금 요청 생성에 실패했습니다.",
+        },
+      };
+    }
+    extraChargeId = extraCharge.id;
+  }
+
+  const content = `${PAYMENT_REQUEST_PREFIX}${JSON.stringify({ ...data, extraChargeId })}`;
 
   const { data: message, error } = await db
     .from("messages")
@@ -674,6 +759,9 @@ export async function sendPaymentRequestMessage(
     .single();
 
   if (error) {
+    if (extraChargeId) {
+      await db.from("extra_charges").delete().eq("id", extraChargeId);
+    }
     return { error: { code: "INTERNAL_ERROR", message: error.message } };
   }
 
@@ -681,12 +769,6 @@ export async function sendPaymentRequestMessage(
     .from("chat_rooms")
     .update({ last_message: "결제 요청", last_message_at: now })
     .eq("id", roomId);
-
-  const { data: room } = await db
-    .from("chat_rooms")
-    .select("id, owner_id, owner_left, sitter_left, sitters!inner(id, user_id)")
-    .eq("id", roomId)
-    .single();
 
   if (room) {
     const recipientId =
@@ -698,17 +780,6 @@ export async function sendPaymentRequestMessage(
         title: "결제 요청이 도착했어요",
         content: `${data.amount.toLocaleString("ko-KR")}원 결제 요청이 왔어요.`,
         linkUrl: `/chat?roomId=${roomId}`,
-      });
-    }
-
-    if (data.isExtra && reservationId) {
-      await db.from("extra_charges").insert({
-        reservation_id: reservationId,
-        sitter_id: room.sitters.id,
-        owner_id: room.owner_id,
-        amount: data.amount,
-        reason: data.reason,
-        status: "pending",
       });
     }
   }

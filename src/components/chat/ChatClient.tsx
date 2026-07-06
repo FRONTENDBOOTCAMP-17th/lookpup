@@ -762,7 +762,9 @@ function ChatPageContent({
         const reservationId = isExtra
           ? (selectedRoom?.reservationId ??
             (selectedRoom?.sitterId
-              ? await getActiveReservationBySitter(selectedRoom.sitterId)
+              ? await getActiveReservationBySitter(selectedRoom.sitterId, {
+                  includePaid: true,
+                })
               : null))
           : undefined;
         const result = await sendPaymentRequestMessage(
@@ -801,7 +803,12 @@ function ChatPageContent({
   );
 
   const handlePayNow = useCallback(
-    async (data: { amount: number; reason: string; messageId: string }) => {
+    async (data: {
+      amount: number;
+      reason: string;
+      messageId: string;
+      extraChargeId?: string;
+    }) => {
       if (payingNow || isPaymentPending || !activeRoomId) return;
 
       const totalAmount = Number(data.amount);
@@ -811,23 +818,10 @@ function ChatPageContent({
 
       let portonePaymentId = `pay_${Date.now()}`;
       let orderName = data.reason || "서비스 결제";
-
-      const reservationId =
-        selectedRoom?.reservationId ??
-        (selectedRoom?.sitterId
-          ? await getActiveReservationBySitter(selectedRoom.sitterId)
-          : null);
-
-      if (!reservationId) {
-        setSendError("예약 정보를 찾을 수 없습니다.");
-        setPayingNow(false);
-        return;
-      }
-
-      const payResult = await createPayment(reservationId, "CARD");
       let chargeAmount = totalAmount;
-      if (payResult.error?.code === "FORBIDDEN") {
-        const extraResult = await createExtraPayment(reservationId);
+
+      if (data.extraChargeId) {
+        const extraResult = await createExtraPayment(data.extraChargeId);
         if (extraResult.error) {
           setSendError(extraResult.error.message);
           setPayingNow(false);
@@ -836,11 +830,25 @@ function ChatPageContent({
         portonePaymentId = extraResult.data!.payment_id;
         orderName = extraResult.data!.order_name;
         chargeAmount = extraResult.data!.amount;
-      } else if (payResult.error) {
-        setSendError(payResult.error.message);
-        setPayingNow(false);
-        return;
       } else {
+        const reservationId =
+          selectedRoom?.reservationId ??
+          (selectedRoom?.sitterId
+            ? await getActiveReservationBySitter(selectedRoom.sitterId)
+            : null);
+
+        if (!reservationId) {
+          setSendError("예약 정보를 찾을 수 없습니다.");
+          setPayingNow(false);
+          return;
+        }
+
+        const payResult = await createPayment(reservationId, "CARD");
+        if (payResult.error) {
+          setSendError(payResult.error.message);
+          setPayingNow(false);
+          return;
+        }
         portonePaymentId = payResult.data!.payment_id;
         orderName = payResult.data!.order_name;
         chargeAmount = payResult.data!.amount;

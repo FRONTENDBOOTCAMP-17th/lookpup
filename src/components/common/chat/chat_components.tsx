@@ -115,6 +115,7 @@ export type PaymentData = {
   sentByMe?: boolean;
   isExtra?: boolean;
   costItems?: CostItem[];
+  extraChargeId?: string;
 };
 
 export type ApplicationData = {
