@@ -18,6 +18,7 @@ import {
   CalendarRange,
 } from "lucide-react";
 import Avatar from "@/components/ui/Avatar";
+import { CHAT_MESSAGE_MAX_LENGTH } from "@/lib/chatMessagePrefixes";
 import SitterProfileCard, {
   type SitterProfile,
 } from "@/components/sitter/SitterProfileCard";
@@ -1476,6 +1477,7 @@ function ChatInputImpl({
             e.key === "Enter" && !e.nativeEvent.isComposing && onSend?.()
           }
           placeholder="메시지를 입력하세요"
+          maxLength={CHAT_MESSAGE_MAX_LENGTH}
           className="flex-1 h-14 px-5 py-4 bg-orange-50 rounded-2xl text-base text-stone-900 placeholder-stone-900/50 outline-none"
         />
         <button

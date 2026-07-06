@@ -15,6 +15,8 @@ import {
   SERVICE_START_PREFIX,
   RESERVATION_EDIT_PREFIX,
   RESERVATION_EDIT_RESPONSE_PREFIX,
+  CHAT_MESSAGE_MAX_LENGTH,
+  truncatePreview,
 } from "@/lib/chatMessagePrefixes";
 
 async function getAuthUser() {
@@ -410,6 +412,17 @@ export async function sendMessage(roomId: string, content: string) {
     };
   }
 
+  const trimmed = content.trim();
+
+  if (trimmed.length > CHAT_MESSAGE_MAX_LENGTH) {
+    return {
+      error: {
+        code: "VALIDATION_ERROR",
+        message: `메시지는 ${CHAT_MESSAGE_MAX_LENGTH}자 이내로 입력해주세요.`,
+      },
+    };
+  }
+
   const db = createServiceClient();
 
   const { data: room } = await db
@@ -449,7 +462,7 @@ export async function sendMessage(roomId: string, content: string) {
 
   const { data: message, error: msgError } = await db
     .from("messages")
-    .insert({ room_id: roomId, sender_id: user.id, content: content.trim() })
+    .insert({ room_id: roomId, sender_id: user.id, content: trimmed })
     .select()
     .single();
 
@@ -459,7 +472,7 @@ export async function sendMessage(roomId: string, content: string) {
 
   await db
     .from("chat_rooms")
-    .update({ last_message: content.trim(), last_message_at: now })
+    .update({ last_message: truncatePreview(trimmed), last_message_at: now })
     .eq("id", roomId);
 
   const chatLink = `/chat?roomId=${roomId}`;
