@@ -237,6 +237,42 @@ export async function createExtraPayment(
   };
 }
 
+export async function cancelPendingPayment(paymentId: string) {
+  const user = await getAuthUser();
+  if (!user) {
+    return { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } };
+  }
+
+  const db = createServiceClient();
+
+  const { data: payment } = await db
+    .from("payments")
+    .select("id, owner_id, status")
+    .eq("payment_id", paymentId)
+    .maybeSingle();
+
+  if (!payment || payment.owner_id !== user.id) {
+    return { data: { ok: true } };
+  }
+
+  if (payment.status !== "ready") {
+    return { data: { ok: true } };
+  }
+
+  await db
+    .from("payments")
+    .update({ status: "failed" })
+    .eq("id", payment.id);
+
+  await db
+    .from("extra_charges")
+    .update({ status: "pending", payment_id: null })
+    .eq("payment_id", payment.id)
+    .eq("status", "approved");
+
+  return { data: { ok: true } };
+}
+
 export async function verifyAndConfirmPayment(paymentId: string) {
   const user = await getAuthUser();
   if (!user) {

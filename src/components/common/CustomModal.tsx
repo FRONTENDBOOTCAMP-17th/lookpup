@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useId, useState, type ReactNode } from 'react';
+import { useEffect, useId, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { useMounted } from '@/hooks/useMounted';
 import {
   AlertCircle,
   AlertTriangle,
@@ -166,9 +167,7 @@ export function CustomModal({
 }: CustomModalProps) {
   const titleId = useId();
   const descId = useId();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
+  const mounted = useMounted();
 
   // Merge preset + direct props (direct props win)
   const base: ModalConfig = preset ? modalPresets[preset] : {};

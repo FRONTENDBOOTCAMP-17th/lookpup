@@ -603,12 +603,14 @@ export default function CareRecordModal({
   const [selectedType, setSelectedType] = useState<CareRecordType | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  useEffect(() => {
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
     if (!open) {
       setStep("select");
       setSelectedType(null);
     }
-  }, [open]);
+  }
 
   if (!open) return null;
 
