@@ -6,16 +6,11 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Bell,
-  Calendar,
-  CheckCircle,
   ChevronRight,
-  ClipboardList,
-  FileText,
   LogOut,
   MessageSquare,
   ShieldCheck,
   User,
-  XCircle,
 } from "lucide-react";
 import { signOut } from "@/app/actions/auth";
 import { markAllNotificationsRead, markNotificationRead } from "@/app/actions/notifications";
@@ -23,6 +18,7 @@ import { createClient } from "@/utils/supabase/client";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { useUserStore } from "@/store/userStore";
 import { loadNotificationPrefs, getNotificationCategory } from "@/lib/notificationPrefs";
+import { getNotificationIcon } from "@/lib/notificationIcons";
 
 type Notification = {
   id: string;
@@ -34,24 +30,6 @@ type Notification = {
   created_at: string;
 };
 
-function getNotifIcon(type: string) {
-  switch (type) {
-    case "application":
-      return { icon: <Calendar size={14} className="text-orange-500" />, bg: "bg-orange-50" };
-    case "application_selected":
-      return { icon: <CheckCircle size={14} className="text-green-700" />, bg: "bg-green-100" };
-    case "application_rejected":
-      return { icon: <XCircle size={14} className="text-red-500" />, bg: "bg-red-50" };
-    case "care_record":
-      return { icon: <ClipboardList size={14} className="text-teal-600" />, bg: "bg-teal-50" };
-    case "message":
-      return { icon: <MessageSquare size={14} className="text-sky-600" />, bg: "bg-sky-100" };
-    case "review":
-      return { icon: <FileText size={14} className="text-purple-800" />, bg: "bg-pink-100" };
-    default:
-      return { icon: <Bell size={14} className="text-orange-500" />, bg: "bg-orange-50" };
-  }
-}
 
 function relativeTime(iso: string) {
   const diff = Date.now() - new Date(iso).getTime();
@@ -172,7 +150,7 @@ export default function HeaderAuth() {
               </div>
             ) : (
               notifications.map((notif, i) => {
-                const { icon, bg } = getNotifIcon(notif.type);
+                const { icon, iconBg } = getNotificationIcon(notif.type, 14);
                 return (
                   <button
                     key={notif.id}
@@ -184,7 +162,7 @@ export default function HeaderAuth() {
                     })}
                     className={`w-full text-left px-4 py-3 flex items-start gap-3 hover:bg-orange-50/50 transition-colors ${i < notifications.length - 1 ? "border-b border-[#ffe9d6]" : ""} ${notif.is_read ? "opacity-70" : ""}`}
                   >
-                    <div className={`w-8 h-8 ${bg} rounded-lg flex items-center justify-center shrink-0 mt-0.5`}>{icon}</div>
+                    <div className={`w-8 h-8 ${iconBg} rounded-lg flex items-center justify-center shrink-0 mt-0.5`}>{icon}</div>
                     <div className="flex-1 min-w-0">
                       <p className={`text-xs leading-4 truncate ${notif.is_read ? "text-gray-500" : "text-stone-900 font-medium"}`}>{notif.title}</p>
                       <p className="text-xs text-gray-400 leading-4 mt-0.5 truncate">{notif.content}</p>

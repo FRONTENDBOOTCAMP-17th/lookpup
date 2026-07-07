@@ -162,6 +162,7 @@ export default function SitterDetailClient({
               {/* 데스크톱 프로필 카드 */}
               <div className="hidden md:flex flex-col items-center bg-white rounded-2xl shadow-[0px_2px_12px_rgba(232,116,42,0.10)] border border-orange-100 p-5">
                 {sitter?.profile_image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={sitter.profile_image}
                     alt={`${name} 프로필`}

@@ -2,16 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
-import {
-  Calendar,
-  MessageSquare,
-  CheckCircle,
-  FileText,
-  Bell,
-  XCircle,
-  ClipboardList,
-} from "lucide-react";
 import { markNotificationRead } from "@/app/actions/notifications";
+import { getNotificationIcon } from "@/lib/notificationIcons";
 
 type Props = {
   id: string;
@@ -38,26 +30,6 @@ function getFallbackLink(type: string): string | null {
       return "/myprofile/booking-history";
     default:
       return null;
-  }
-}
-
-function getNotificationIcon(type: string): { icon: React.ReactNode; iconBg: string } {
-  switch (type) {
-    case "application":
-      return { icon: <Calendar size={16} className="text-orange-500" />, iconBg: "bg-orange-50" };
-    case "application_selected":
-      return { icon: <CheckCircle size={16} className="text-green-700" />, iconBg: "bg-green-100" };
-    case "application_rejected":
-      return { icon: <XCircle size={16} className="text-red-500" />, iconBg: "bg-red-50" };
-    case "care_record":
-      return { icon: <ClipboardList size={16} className="text-teal-600" />, iconBg: "bg-teal-50" };
-    case "message":
-      return { icon: <MessageSquare size={16} className="text-sky-600" />, iconBg: "bg-sky-100" };
-    case "review":
-    case "review_received":
-      return { icon: <FileText size={16} className="text-purple-800" />, iconBg: "bg-pink-100" };
-    default:
-      return { icon: <Bell size={16} className="text-orange-500" />, iconBg: "bg-orange-50" };
   }
 }
 

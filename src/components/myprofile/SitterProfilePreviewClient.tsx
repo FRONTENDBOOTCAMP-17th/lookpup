@@ -189,6 +189,7 @@ export default function SitterProfilePreviewClient({
                 <SectionCard key={rv.id} className="p-5 gap-0">
                   <div className="flex items-center gap-3 mb-3">
                     {rv.owner?.profile_image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={rv.owner.profile_image}
                         alt={rv.owner.full_name ?? "보호자"}
