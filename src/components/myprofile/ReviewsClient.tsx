@@ -310,7 +310,7 @@ export default function ReviewsClient({
       controller.abort();
       writtenFetchedRef.current = false;
     };
-  }, [activeTab]);
+  }, [activeTab, writtenReviews]);
 
   useEffect(() => {
     if (activeTab !== "received" || receivedFetchedRef.current || receivedReviews !== null)
@@ -349,7 +349,7 @@ export default function ReviewsClient({
       controller.abort();
       receivedFetchedRef.current = false;
     };
-  }, [activeTab, sitterId]);
+  }, [activeTab, sitterId, receivedReviews]);
 
   const handleDeleteWritten = (id: string) => {
     setWrittenReviews((prev) => (prev ? prev.filter((r) => r.id !== id) : []));
