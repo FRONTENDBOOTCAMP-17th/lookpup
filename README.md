@@ -31,7 +31,7 @@
 보호자는 원하는 조건의 펫시터를 찾아 예약하고, 펫시터는 프로필을 등록해 돌봄 서비스를 제공할 수 있습니다.
 
 <p>
-  <a href=".\docs\readme\멋쟁이사자처럼 파이널 - 봐주개(멍발자들)_v3.pdf">
+  <a href="./docs/readme/멋쟁이사자처럼%20파이널%20-%20봐주개(멍발자들)_v3.pdf">
     <img src="https://img.shields.io/badge/▶_발표자료-FF8A3D?style=for-the-badge&logoColor=white" />
   </a>
 </p>
@@ -93,12 +93,14 @@
   </tr>
 </table>
 
-### 펫시터 검색 및 예약하기 시연
+### 펫시터 검색 및 예약 시연영상
 
+[![Pet Sitter Search and Reservation Demo](https://img.youtube.com/vi/RMwk7nT5-hk/maxresdefault.jpg)](https://youtu.be/RMwk7nT5-hk)
 <video src=".\docs\readme\Pet_Sitter_Search_and_Reservation_Demo.mp4" controls width="600"></video>
 
-### 실시간 채팅 시연 (예약요청, 예약 승인, 결제)
+### 실시간 채팅 시연영상 (예약요청, 예약 승인, 결제)
 
+[![Pet Sitter Search and Reservation Demo](https://img.youtube.com/vi/RMwk7nT5-hk/maxresdefault.jpg)](https://youtu.be/Yeakc86gLkc)
 <video src=".\docs\readme\Real_Time_Chat_Demo.mp4" controls width="600"></video>
 
 ### 결제 (tosspayments 연동)
@@ -150,8 +152,9 @@
   </tr>
 </table>
 
-### 게시판 글 작성 및 펫시터 지원 시연
+### 게시판 글 작성 및 펫시터 지원 시연영상
 
+[![Pet Sitter Search and Reservation Demo](https://img.youtube.com/vi/RMwk7nT5-hk/maxresdefault.jpg)](https://youtu.be/h8CnrhZ2-6I)
 <video src=".\docs\readme\Board_Post_Creation_Demo.mp4" controls width="600"></video>
 
 ### 정산(수익) 관리
