@@ -103,6 +103,8 @@ export function SimpleTimePicker({
         ampm,
       }),
     );
+    // value/onChange를 deps에 넣으면 무한 루프·매 렌더 재호출이 생겨 의도적으로 제외
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hour, minute, ampm, formatStr, use12HourFormat]);
 
   const _hourIn24h = useMemo(() => {

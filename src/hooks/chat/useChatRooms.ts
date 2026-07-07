@@ -470,6 +470,8 @@ export function useChatRooms(
     return () => {
       const supabase = broadcastSupabaseRef.current;
       if (supabase) {
+        // 언마운트 시점의 최신 채널 목록을 정리해야 하므로 ref를 그대로 읽음(의도적)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         broadcastChannelsRef.current.forEach((ch) =>
           supabase.removeChannel(ch),
         );
