@@ -190,7 +190,7 @@ export default function HeaderAuth() {
             className="ml-1 size-9 rounded-full bg-gradient-to-br from-orange-500 to-orange-300 flex items-center justify-center text-white text-sm font-bold leading-5 hover:ring-2 hover:ring-orange-200 transition cursor-pointer"
           >
             {user?.profileImage ? (
-              <Image src={user.profileImage} alt="" width={36} height={36} className="rounded-full object-cover" />
+              <Image src={user.profileImage} alt="" width={36} height={36} className="w-9 h-9 rounded-full object-cover" />
             ) : (
               user?.fullName?.charAt(0) ?? "?"
             )}
