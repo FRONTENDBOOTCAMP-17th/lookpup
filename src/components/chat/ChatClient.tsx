@@ -338,13 +338,6 @@ function ChatPageContent({
     ? reservationRequests.find((rr) => rr.id === selectedReservationRequestId)
     : undefined;
 
-  const lastPaymentReqId = useMemo(() => {
-    for (let i = messages.length - 1; i >= 0; i--) {
-      if (messages[i].from === "payment_request") return messages[i].id;
-    }
-    return null;
-  }, [messages]);
-
   const isPaymentComplete = paymentState?.paid === true;
   const hasServiceStarted = useMemo(
     () => messages.some((m) => m.from === "service_start"),
@@ -1499,7 +1492,7 @@ function ChatPageContent({
     return { label: "채팅중", className: "bg-orange-50 text-orange-500" };
   }
 
-  function getHeaderSub() {
+  const getHeaderSub = useCallback(() => {
     if (activeTab === "one_on_one") return selectedRoom?.sub ?? "";
     if (activeTab === "reservations") {
       const status = selectedReservationRequest?.reservationStatus;
@@ -1514,9 +1507,17 @@ function ChatPageContent({
     if (selectedApplicantId !== null && rejectedIds.has(selectedApplicantId))
       return "구인글 채팅 · 거절됨";
     return "구인글 채팅 · 지원자";
-  }
+  }, [
+    activeTab,
+    selectedRoom,
+    selectedReservationRequest,
+    confirmedIds,
+    selectedApplicant,
+    selectedApplicantId,
+    rejectedIds,
+  ]);
 
-  function getReportUrl() {
+  const getReportUrl = useCallback(() => {
     let targetId = "";
     let targetName = "";
     let targetImage: string | null = null;
@@ -1558,21 +1559,18 @@ function ChatPageContent({
     if (service) params.set("service", service);
     if (targetImage) params.set("targetImage", targetImage);
     return `/myprofile/report?${params.toString()}`;
-  }
+  }, [
+    activeTab,
+    selectedRoom,
+    selectedReservationRequest,
+    selectedApplicant,
+    userId,
+    getHeaderSub,
+  ]);
 
   const handleReport = useCallback(
     () => router.push(getReportUrl()),
-    [
-      activeTab,
-      selectedRoom,
-      selectedReservationRequest,
-      selectedApplicant,
-      userId,
-      confirmedIds,
-      rejectedIds,
-      selectedApplicantId,
-      router,
-    ],
+    [router, getReportUrl],
   );
 
   const roomName =
@@ -1837,8 +1835,6 @@ function ChatPageContent({
     messagesEndRef,
     hasMore,
     loadingMore,
-    paymentState,
-    lastPaymentReqId,
     confirmedEditIds,
     reservationEditAction,
     confirmedServiceIds,

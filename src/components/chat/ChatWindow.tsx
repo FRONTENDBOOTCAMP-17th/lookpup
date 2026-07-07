@@ -13,16 +13,12 @@ import {
   type Badge,
   type ReservationEditActionState,
 } from "@/components/common/chat/chat_components";
-import type { PaymentStateInfo } from "@/hooks/chat/useChatMessages";
-
 interface MessageListProps {
   messages: Message[];
   senderInitial: string;
   senderProfileImage: string | null;
   isCurrentUserSitter: boolean;
   selectedApplicantPostId: string | undefined;
-  lastPaymentReqId: string | null;
-  paymentState: PaymentStateInfo | null;
   payingNow: boolean;
   isPaymentPending: boolean;
   confirmedServiceIds: Set<string>;
@@ -62,8 +58,6 @@ function MessageListImpl({
   senderProfileImage,
   isCurrentUserSitter,
   selectedApplicantPostId,
-  lastPaymentReqId,
-  paymentState,
   payingNow,
   isPaymentPending,
   confirmedServiceIds,
@@ -225,8 +219,6 @@ export interface ChatWindowProps {
   messagesEndRef: React.RefObject<HTMLDivElement | null>;
   hasMore: boolean;
   loadingMore: boolean;
-  paymentState: PaymentStateInfo | null;
-  lastPaymentReqId: string | null;
   confirmedEditIds: Set<string>;
   reservationEditAction: ReservationEditActionState;
   confirmedServiceIds: Set<string>;
@@ -309,8 +301,6 @@ function ChatWindowImpl({
   messagesEndRef,
   hasMore,
   loadingMore,
-  paymentState,
-  lastPaymentReqId,
   confirmedEditIds,
   reservationEditAction,
   confirmedServiceIds,
@@ -418,8 +408,6 @@ function ChatWindowImpl({
       senderProfileImage={roomProfileImage}
       isCurrentUserSitter={isCurrentUserSitter}
       selectedApplicantPostId={selectedApplicantPostId}
-      lastPaymentReqId={lastPaymentReqId}
-      paymentState={paymentState}
       payingNow={payingNow}
       isPaymentPending={isPaymentPending}
       confirmedServiceIds={confirmedServiceIds}

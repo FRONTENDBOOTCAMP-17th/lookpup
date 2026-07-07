@@ -125,12 +125,6 @@ export default function KakaoMap({
   }, []);
 
   useEffect(() => {
-    if (window.kakao?.maps) {
-      window.kakao.maps.load(initMap);
-    }
-  }, []);
-
-  useEffect(() => {
     if (mapRef.current && center) {
       mapRef.current.panTo(new window.kakao.maps.LatLng(center.lat, center.lng));
     }
@@ -381,10 +375,14 @@ export default function KakaoMap({
     if (mapRef.current) {
       drawMarkers();
     }
+    // drawMarkers는 ref로 최신 값을 읽으므로 의도적으로 제외
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [markers, selectedMarkerId]);
 
   useEffect(() => {
     showSelectedMarker(selectedMarkerId);
+    // 위와 동일한 이유로 의도적으로 제외
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedMarkerId]);
 
   return (
@@ -392,7 +390,7 @@ export default function KakaoMap({
       <Script
         src={`//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_KEY}&autoload=false&libraries=services`}
         strategy="afterInteractive"
-        onLoad={() => window.kakao.maps.load(initMap)}
+        onReady={() => window.kakao.maps.load(initMap)}
       />
       <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
     </div>
