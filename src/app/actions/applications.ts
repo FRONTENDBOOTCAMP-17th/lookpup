@@ -147,7 +147,7 @@ export async function createApplication(
     type: "application",
     title: "새로운 지원자가 도착했어요",
     content: `${sitterName}님이 구인글에 지원했습니다.`,
-    linkUrl: `/board/${requestId}`,
+    linkUrl: roomId ? `/chat?roomId=${roomId}` : `/board/${requestId}`,
   });
 
   return { data, roomId };

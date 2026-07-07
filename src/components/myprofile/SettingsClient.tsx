@@ -62,11 +62,6 @@ const NOTIFICATION_ITEMS: {
     description: "새로운 메시지가 도착하면 알림을 받습니다",
   },
   {
-    id: "review",
-    label: "리뷰 알림",
-    description: "새로운 리뷰가 등록되면 알림을 받습니다",
-  },
-  {
     id: "marketing",
     label: "마케팅 알림",
     description: "이벤트 및 프로모션 소식을 받습니다",

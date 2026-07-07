@@ -1096,7 +1096,7 @@ export async function createPetsitterReservationRequest(
       type: "reservation",
       title: "새로운 예약 요청이 도착했어요",
       content: "보호자가 예약을 요청했습니다. 확인해주세요.",
-      linkUrl: `/chat`,
+      linkUrl: `/chat?roomId=${room.id}`,
     });
   }
 
@@ -1443,7 +1443,7 @@ export async function rejectReservationRequest(reservationId: string) {
     type: "reservation",
     title: "예약 요청이 거절되었어요",
     content: "펫시터가 예약 요청을 거절했습니다.",
-    linkUrl: `/chat`,
+    linkUrl: `/chat?roomId=${room.id}`,
   });
 
   return { data: { ok: true, message: insertedMessage } };
