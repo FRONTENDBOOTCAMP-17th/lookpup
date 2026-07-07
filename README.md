@@ -1,12 +1,12 @@
 <div align="center">
   <img src="./public/lookpup_logo.png" alt="봐주개 로고" width="500" />
 </div>
-
-> 믿고 맡기는 우리 동네 펫시터 매칭 - 봐주개
-
-**개발 기간**: 2026.05.28 ~ 2026.07.08
-
-<div>
+<p align="center">
+  <strong>🗓️ 개발 기간</strong><br/>
+  <span>2026.05.28 ~ 2026.07.08</span>
+</p>
+<br>
+<div align="center">
   <img src="https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white" />
   <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" />
   <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" />
@@ -23,34 +23,142 @@
 - [프로젝트 구조](#-프로젝트-구조)
 - [시작하기](#-시작하기)
 - [팀원](#-팀원)
+- [문서](#-문서)
 
 ## 📝 프로젝트 소개
 
 봐주개는 반려동물 보호자와 펫시터를 연결해주는 매칭 플랫폼입니다.
 보호자는 원하는 조건의 펫시터를 찾아 예약하고, 펫시터는 프로필을 등록해 돌봄 서비스를 제공할 수 있습니다.
 
+<p>
+  <a href=".\docs\readme\멋쟁이사자처럼 파이널 - 봐주개(멍발자들)_v3.pdf">
+    <img src="https://img.shields.io/badge/▶_발표자료-FF8A3D?style=for-the-badge&logoColor=white" />
+  </a>
+</p>
+
 ## ✨ 주요 기능
 
-- 회원가입 / 로그인 (일반 사용자, 펫시터)
-- 반려동물 등록 및 관리
-- 펫시터 등록 및 검색
-- 예약 요청 / 예약 관리
-- 실시간 채팅
-- 결제 (포트원 연동)
-- 리뷰 작성 및 조회
-- 알림
-- 게시판
-- 정산(수익) 관리
-- 관리자 페이지
+### 로그인 및 본인인증
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="./docs/readme/1_login.png" alt="로그인" width="400" /><br/>
+      <sub>로그인</sub>
+    </td>
+    <td align="center">
+      <img src="./docs/readme/1_Identity.png" alt="본인인증" width="400" /><br/>
+      <sub>본인인증</sub>
+    </td>
+  </tr>
+</table>
+
+### 반려동물 등록 및 관리
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="./docs/readme/2_pets_list.png" alt="반려동물 관리" width="400" /><br/>
+      <sub>반려동물 관리</sub>
+    </td>
+    <td align="center">
+      <img src="./docs/readme/2_pets.png" alt="반려동물 등록" width="400" /><br/>
+      <sub>반려동물 등록</sub>
+    </td>
+  </tr>
+</table>
+
+### 펫시터 등록
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="" alt="펫시터 등록" width="400" /><br/>
+      <sub>펫시터 등록</sub>
+    </td>
+    <td align="center">
+      <img src="" alt="펫시터 검색" width="400" /><br/>
+      <sub>펫시터 검색</sub>
+    </td>
+  </tr>
+</table>
+
+### 펫시터 검색 및 예약하기 시연
+
+<video src="" controls width="600"></video>
+
+### 실시간 채팅 시연 (예약요청, 예약 승인, 결제)
+
+<img src="" alt="실시간 채팅" width="600" /><br/>
+<sub>실시간 채팅</sub>
+
+### 결제 (tosspayments 연동)
+
+<img src="./docs/readme/5_toss.png" alt="결제" width="600" /><br/>
+<sub>결제</sub>
+
+### 리뷰 작성 및 조회
+
+<img src="" alt="리뷰 작성 및 조회" width="600" /><br/>
+<sub>리뷰 작성 및 조회</sub>
+
+### 알림
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="./docs/readme/7_notification_m.png" alt="알림 호버" width="400" /><br/>
+      <sub>알림 호버</sub>
+    </td>
+    <td align="center">
+      <img src="./docs/readme/7_no.png" alt="알림" width="400" /><br/>
+      <sub>알림</sub>
+    </td>
+  </tr>
+</table>
+
+### 게시판 글 작성 및 펫시터 지원 시연
+
+<video src="" controls width="600"></video>
+
+### 정산(수익) 관리
+
+<img src="./docs/readme/9_settlement_management.png" alt="정산(수익) 관리" width="600" /><br/>
+<sub>정산(수익) 관리</sub>
+
+### 관리자 페이지
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="./docs/readme/10_report_management.png" alt="신고 관리" width="400" /><br/>
+      <sub>신고 관리</sub>
+    </td>
+    <td align="center">
+      <img src="./docs/readme/10_reservation_status_management.png" alt="예약 상태 관리" width="400" /><br/>
+      <sub>예약 상태 관리</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="./docs/readme/10_Pet_Sitter_Approval.png" alt="펫시터 승인" width="400" /><br/>
+      <sub>펫시터 승인</sub>
+    </td>
+    <td></td>
+  </tr>
+</table>
 
 ## 🛠 기술 스택
 
-- **Framework**: Next.js 16, React 19, TypeScript
-- **Styling**: Tailwind CSS, Radix UI, shadcn
-- **State/Data**: TanStack Query, Zustand, React Hook Form, Zod
-- **Backend/DB**: Supabase
-- **결제**: PortOne
-- **기타**: Recharts, date-fns
+| 구분               | 기술 스택                                     |
+| ------------------ | --------------------------------------------- |
+| **Framework**      | Next.js 16, React 19, TypeScript              |
+| **Styling**        | Tailwind CSS, Radix UI, shadcn                |
+| **State / Data**   | TanStack Query, Zustand, React Hook Form, Zod |
+| **Backend / DB**   | Supabase                                      |
+| **Authentication** | Supabase Auth, PortOne 본인인증               |
+| **Payment**        | Toss Payments                                 |
+| **Etc**            | Recharts, date-fns                            |
 
 ## 📚 주요 라이브러리
 
@@ -257,3 +365,41 @@ NEXT_PUBLIC_SITE_URL=
 | 박규나 | 팀원 | @Gyu-me          |
 | 이우현 | 팀원 | @sealheal        |
 | 최영은 | 팀원 | @0sliverchoi321z |
+
+## 📄 문서
+
+프로젝트 진행 중 작성한 API 명세와 일자별 개발 리포트는 [`docs`](./docs) 폴더에서 확인할 수 있습니다.
+
+- [API 명세서](./docs/API_SPEC_FINAL.md)
+- [API 사용 가이드](./docs/API_USAGE.md)
+
+<details>
+<summary>일자별 개발 리포트 (펼쳐보기)</summary>
+
+- [2026-06-08](./docs/REPORT_2026-06-08.md)
+- [2026-06-09](./docs/REPORT_2026-06-09.md)
+- [2026-06-10](./docs/REPORT_2026-06-10.md)
+- [2026-06-11](./docs/REPORT_2026-06-11.md)
+- [2026-06-14](./docs/REPORT_2026-06-14.md)
+- [2026-06-15](./docs/REPORT_2026-06-15.md)
+- [2026-06-16](./docs/REPORT_2026-06-16.md)
+- [2026-06-17](./docs/REPORT_2026-06-17.md)
+- [2026-06-18](./docs/REPORT_2026-06-18.md)
+- [2026-06-19](./docs/REPORT_2026-06-19.md)
+- [2026-06-22](./docs/REPORT_2026-06-22.md)
+- [2026-06-23](./docs/REPORT_2026-06-23.md)
+- [2026-06-24](./docs/REPORT_2026-06-24.md)
+- [2026-06-25](./docs/REPORT_2026-06-25.md)
+- [2026-06-28](./docs/REPORT_2026-06-28.md)
+- [2026-06-29](./docs/REPORT_2026-06-29.md)
+- [2026-06-30](./docs/REPORT_2026-06-30.md)
+- [2026-07-01](./docs/REPORT_2026-07-01.md)
+- [2026-07-02](./docs/REPORT_2026-07-02.md)
+- [2026-07-05](./docs/REPORT_2026-07-05.md)
+- [2026-07-06](./docs/REPORT_2026-07-06.md)
+
+</details>
+
+## 📜 라이선스
+
+이 프로젝트는 [MIT License](./LICENSE.md)를 따릅니다.
