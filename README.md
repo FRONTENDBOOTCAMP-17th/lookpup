@@ -95,13 +95,27 @@
 
 ### 펫시터 검색 및 예약 시연영상
 
-[![Pet Sitter Search and Reservation Demo](https://img.youtube.com/vi/RMwk7nT5-hk/maxresdefault.jpg)](https://youtu.be/RMwk7nT5-hk)
-<video src=".\docs\readme\Pet_Sitter_Search_and_Reservation_Demo.mp4" controls width="600"></video>
+<p style="color: #6B7280;">
+  아래 버튼을 클릭하면 시연 영상을 시청하실 수 있습니다.
+</p>
+
+<p>
+  <a href="https://youtu.be/RMwk7nT5-hk">
+    <img src="./docs/readme/play_button.png" alt="Pet Sitter Search and Reservation Demo" width="100" />
+  </a>
+</p>
 
 ### 실시간 채팅 시연영상 (예약요청, 예약 승인, 결제)
 
-[![Pet Sitter Search and Reservation Demo](https://img.youtube.com/vi/RMwk7nT5-hk/maxresdefault.jpg)](https://youtu.be/Yeakc86gLkc)
-<video src=".\docs\readme\Real_Time_Chat_Demo.mp4" controls width="600"></video>
+<p style="color: #6B7280;">
+  아래 버튼을 클릭하면 시연 영상을 시청하실 수 있습니다.
+</>
+
+<p >
+  <a href="https://youtu.be/Yeakc86gLkc">
+    <img src="./docs/readme/play_button.png" alt="Pet Sitter Search and Reservation Demo" width="100" />
+  </a>
+</p>
 
 ### 결제 (tosspayments 연동)
 
@@ -154,8 +168,15 @@
 
 ### 게시판 글 작성 및 펫시터 지원 시연영상
 
-[![Pet Sitter Search and Reservation Demo](https://img.youtube.com/vi/RMwk7nT5-hk/maxresdefault.jpg)](https://youtu.be/h8CnrhZ2-6I)
-<video src=".\docs\readme\Board_Post_Creation_Demo.mp4" controls width="600"></video>
+<p style="color: #6B7280;">
+  아래 버튼을 클릭하면 시연 영상을 시청하실 수 있습니다.
+</p>
+
+<p>
+  <a href="https://youtu.be/h8CnrhZ2-6I">
+    <img src="./docs/readme/play_button.png" alt="Pet Sitter Search and Reservation Demo" width="100" />
+  </a>
+</p>
 
 ### 정산(수익) 관리
 
