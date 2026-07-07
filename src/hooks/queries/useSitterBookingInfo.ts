@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 export interface SitterService {
   id: string;
   service_type: string;
+  title: string;
   price: number;
 }
 
@@ -40,7 +41,7 @@ export function useSitterBookingInfo(sitterId: string) {
       const { data } = (await res.json()) as { data: SitterApiResponse };
       const activeServices = data.services
         .filter((s) => s.is_active)
-        .map(({ id, service_type, price }) => ({ id, service_type, price }));
+        .map(({ id, service_type, title, price }) => ({ id, service_type, title, price }));
       const primary = activeServices[0];
       return {
         id: data.id,
