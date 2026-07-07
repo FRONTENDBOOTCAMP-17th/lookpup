@@ -99,7 +99,7 @@ export default function BookingClient({ sitterId }: { sitterId: string }) {
     if (!ok || isSubmitting || !sitter) return;
 
     const service = sitter.services.find(
-      (s) => s.service_type === SERVICE_KEY_TO_TYPE[selectedService ?? "visit"],
+      (s) => s.title === SERVICE_KEY_TO_TYPE[selectedService ?? "visit"],
     ) ?? sitter.services[0];
     if (!service) return;
 
