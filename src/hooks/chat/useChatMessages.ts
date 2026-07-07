@@ -372,7 +372,6 @@ export function useChatMessages(
     return () => controller.abort();
   }, [activeRoomId, userId, refreshKey]);
 
-  // Realtime broadcast 구독
   useEffect(() => {
     if (!activeRoomId || !userId) return;
 

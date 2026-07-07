@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -52,7 +52,7 @@ export default function HeaderAuth() {
   const [, startTransition] = useTransition();
   const userId = user?.id;
 
-  const fetchUnreadCount = () => {
+  const fetchUnreadCount = useCallback(() => {
     fetch("/api/notifications?limit=1")
       .then((res) => res.json())
       .then((json) => {
@@ -70,7 +70,7 @@ export default function HeaderAuth() {
         setUnreadCount(filteredTotal);
       })
       .catch(() => {});
-  };
+  }, [setUnreadCount]);
 
   const fetchNotifications = () => {
     fetch("/api/notifications?limit=5")
@@ -87,7 +87,7 @@ export default function HeaderAuth() {
   useEffect(() => {
     if (!isLoggedIn) { setUnreadCount(0); return; }
     fetchUnreadCount();
-  }, [isLoggedIn, pathname]);
+  }, [isLoggedIn, pathname, fetchUnreadCount, setUnreadCount]);
 
   useEffect(() => {
     if (!isLoggedIn || !userId) return;
@@ -102,7 +102,7 @@ export default function HeaderAuth() {
       }, fetchUnreadCount)
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [isLoggedIn, userId]);
+  }, [isLoggedIn, userId, fetchUnreadCount]);
 
   if (isLoading) return <div className="w-24 shrink-0" />;
 
@@ -121,7 +121,6 @@ export default function HeaderAuth() {
 
   return (
     <div className="flex items-center gap-2 shrink-0">
-      {/* 알림 */}
       <HoverCard openDelay={120} closeDelay={150} onOpenChange={(open) => { if (open) fetchNotifications(); }}>
         <HoverCardTrigger asChild>
           <button type="button" aria-label="알림 보기" className="relative p-2 rounded-full hover:bg-orange-50 transition-colors">
@@ -183,7 +182,6 @@ export default function HeaderAuth() {
         </HoverCardContent>
       </HoverCard>
 
-      {/* 아바타 드롭다운 */}
       <HoverCard openDelay={80} closeDelay={100}>
         <HoverCardTrigger asChild>
           <button

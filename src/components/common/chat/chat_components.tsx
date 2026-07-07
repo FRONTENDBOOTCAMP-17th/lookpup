@@ -23,7 +23,6 @@ import SitterProfileCard, {
   type SitterProfile,
 } from "@/components/sitter/SitterProfileCard";
 
-// 1:1 채팅의 각 목록
 export type ChatRoom = {
   id: string;
   ownerId: string | null;
@@ -40,7 +39,6 @@ export type ChatRoom = {
   recipientLeft: boolean;
 };
 
-// 지원 목록의 각 목록
 export type Applicant = {
   id: string;
   sitterId: string | null;
@@ -79,7 +77,6 @@ export type ReservationRequest = {
   recipientLeft: boolean;
 };
 
-// 채팅방 나가기 제한
 const ACTIVE_RESERVATION_STATUSES = new Set([
   "pending",
   "accepted",
@@ -179,7 +176,6 @@ export type ReservationEditActionState = {
   type: "confirm" | "reject";
 } | null;
 
-// 채팅창 메시지
 export type Message = {
   id: string;
   from:
@@ -217,13 +213,11 @@ export type Message = {
   sentByMe?: boolean;
 };
 
-// 우측 상단 상태 배지
 export type Badge = {
   label: string;
   className: string;
 };
 
-// 새 메시지 알림 뱃지 (1:1 채팅 / 지원 목록 / 예약 목록 공통)
 function UnreadBadge({ count }: { count: number }) {
   if (count <= 0) return null;
   return (
@@ -233,7 +227,6 @@ function UnreadBadge({ count }: { count: number }) {
   );
 }
 
-// 별점 표시 (지원 목록 / 예약 목록 공통)
 function RatingDisplay({ rating }: { rating: number }) {
   return (
     <span className="flex items-center gap-1 text-sm text-gray-400">
@@ -243,7 +236,6 @@ function RatingDisplay({ rating }: { rating: number }) {
   );
 }
 
-// 편집 관련
 type ChatRoomItemProps = {
   room: ChatRoom;
   isSelected: boolean;
@@ -309,7 +301,6 @@ function ChatRoomItemImpl({
 
 export const ChatRoomItem = memo(ChatRoomItemImpl);
 
-// 지원 목록 카드
 type ApplicantCardProps = {
   applicant: Applicant;
   badge: Badge | null;
@@ -434,7 +425,6 @@ function ApplicantCardImpl({
 
 export const ApplicantCard = memo(ApplicantCardImpl);
 
-// 채팅창 헤더
 type ChatWindowHeaderProps = {
   initial: string;
   src?: string | null;
@@ -586,7 +576,6 @@ function ChatImageLightbox({
   );
 }
 
-// 채팅 메시지 관련
 type MessageBubbleProps = {
   msg: Message;
   senderInitial: string;
@@ -1150,7 +1139,6 @@ export function ProfilePopup({
   );
 }
 
-// 선택 확정 안내 카드 (보호자용)
 type ConfirmationCardProps = {
   postTitle: string;
   sitterInitial: string;
@@ -1217,7 +1205,6 @@ export function ConfirmationCard({
   );
 }
 
-// 선택 확정 안내 카드 (펫시터용)
 type SitterConfirmationCardProps = {
   postTitle: string;
   ownerInitial: string;
@@ -1284,7 +1271,6 @@ export function SitterConfirmationCard({
   );
 }
 
-// 지원 거절 안내 카드 (보호자용)
 export function OwnerRejectionCard() {
   return (
     <div className="flex justify-end">
@@ -1310,7 +1296,6 @@ export function OwnerRejectionCard() {
   );
 }
 
-// 지원 거절 안내 카드 (펫시터용)
 export function SitterRejectionCard() {
   return (
     <div className="flex justify-end">
@@ -1343,7 +1328,6 @@ export function SitterRejectionCard() {
   );
 }
 
-// 예약 취소 안내 카드
 export function ReservationCanceledCard({ sentByMe }: { sentByMe: boolean }) {
   return (
     <div className="flex justify-end">
@@ -1371,7 +1355,6 @@ export function ReservationCanceledCard({ sentByMe }: { sentByMe: boolean }) {
   );
 }
 
-// + 버튼 패널
 type ChatPlusPanelProps = {
   onPaymentRequest?: () => void;
   onSendCareRecord?: () => void;
@@ -1438,7 +1421,6 @@ function ChatPlusPanelImpl({
 
 export const ChatPlusPanel = memo(ChatPlusPanelImpl);
 
-// + 버튼
 type ChatInputProps = {
   input: string;
   onChange: (value: string) => void;
@@ -1497,7 +1479,6 @@ function ChatInputImpl({
 
 export const ChatInput = memo(ChatInputImpl);
 
-// 지원 목록 탭 : 구인글별 지원자 목록 그룹
 type Post = {
   id: string;
   title: string;
@@ -1585,7 +1566,6 @@ function ApplicantPostGroupImpl({
 
 export const ApplicantPostGroup = memo(ApplicantPostGroupImpl);
 
-// 예약 목록 카드 (펫시터 찾기 직접 예약)
 type ReservationRequestCardProps = {
   reservationRequest: ReservationRequest;
   isSelected: boolean;
@@ -1719,7 +1699,6 @@ function ReservationRequestCardImpl({
 
 export const ReservationRequestCard = memo(ReservationRequestCardImpl);
 
-// 결제 요청 카드 (보호자용 - 결제하기 버튼 포함)
 type PaymentRequestCardProps = {
   amount: number;
   reason: string;
@@ -1872,7 +1851,6 @@ export function PaymentRequestCard({
   );
 }
 
-// 결제 요청 알림 카드 (펫시터용 - 내가 요청 보낸 쪽)
 type SitterPaymentRequestCardProps = {
   amount: number;
   reason: string;
@@ -1984,7 +1962,6 @@ function formatServiceDate(iso: string): string {
   });
 }
 
-// 서비스 완료 카드 (보호자용 - 확인 버튼 포함)
 type ServiceCompleteCardProps = {
   confirmed: boolean;
   onConfirm: () => void;
@@ -2087,7 +2064,6 @@ export function ServiceCompleteCard({
   );
 }
 
-// 서비스 완료 알림 카드 (펫시터)
 export function SitterServiceCompleteCard({
   data,
 }: {
@@ -2160,7 +2136,6 @@ export function SitterServiceCompleteCard({
   );
 }
 
-// 서비스 최종 완료 안내 카드 (보호자 확인 완료 - 보호자/펫시터 공통)
 type ServiceCompletedCardProps = {
   sentByMe: boolean;
   senderInitial: string;
@@ -2292,7 +2267,6 @@ export function ServiceCompletedCard({
   );
 }
 
-// 서비스 시작 알림 카드 (보호자용)
 type ServiceStartCardProps = {
   otherInitial: string;
   otherProfileImage?: string | null;
@@ -2369,7 +2343,6 @@ export function ServiceStartCard({
   );
 }
 
-// 서비스 시작 알림 카드 (펫시터용)
 export function SitterServiceStartCard({
   data,
 }: {
@@ -2442,7 +2415,6 @@ export function SitterServiceStartCard({
   );
 }
 
-// 결제 완료 카드 (보호자 + 펫시터 모두)
 type PaymentCompleteCardProps = {
   amount: number;
   sentByMe?: boolean;
@@ -2499,7 +2471,6 @@ export function PaymentCompleteCard({
   return <div className="flex justify-end">{inner}</div>;
 }
 
-// 예약 요청 메시지 카드
 type ReservationRequestMessageCardProps = {
   data: ReservationRequestData;
   senderInitial: string;
@@ -2580,7 +2551,6 @@ export function ReservationRequestMessageCard({
   );
 }
 
-// 예약 확정 메시지 카드
 type ReservationAcceptedMessageCardProps = {
   data: ReservationAcceptedData;
   senderInitial: string;
@@ -2659,7 +2629,6 @@ export function ReservationAcceptedMessageCard({
   );
 }
 
-// 예약 거절 메시지 카드
 export function ReservationRejectedMessageCard({
   sentByMe,
 }: {
@@ -2693,7 +2662,6 @@ export function ReservationRejectedMessageCard({
   );
 }
 
-// 예약 수정 요청 카드
 
 function fmtDt(iso: string) {
   return new Date(iso).toLocaleString("ko-KR", {
@@ -2705,7 +2673,6 @@ function fmtDt(iso: string) {
   });
 }
 
-// 예약 수정 승인 카드
 export function ReservationEditAcceptedCard({
   sentByMe,
 }: {
@@ -2737,7 +2704,6 @@ export function ReservationEditAcceptedCard({
   );
 }
 
-// 예약 수정 거절 카드
 export function ReservationEditRejectedCard({
   sentByMe,
 }: {

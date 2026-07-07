@@ -13,7 +13,6 @@ function LoginPageContent() {
 
   const callbackUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=${encodeURIComponent(next)}`;
 
-  // 카카오 로그인
   const signInWithKakao = async () => {
     await supabase.auth.signInWithOAuth({
       provider: "kakao",
@@ -21,7 +20,6 @@ function LoginPageContent() {
     });
   };
 
-  // 구글 로그인
   const signInWithGoogle = async () => {
     await supabase.auth.signInWithOAuth({
       provider: "google",
@@ -32,7 +30,6 @@ function LoginPageContent() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-50 via-stone-50/50 to-white flex items-center justify-center p-5">
       <div className="w-[460px] flex flex-col items-start">
-        {/* 로고 */}
         <div className="w-full flex flex-col items-center gap-2 mb-8">
           <Link href="/">
             <Image
@@ -46,7 +43,6 @@ function LoginPageContent() {
           <p className="text-gray-500 text-base">반려동물 돌봄 플랫폼</p>
         </div>
 
-        {/* 카드 */}
         <div className="w-full p-8 bg-white rounded-2xl shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] border border-orange-100 flex flex-col">
           <h1 className="text-2xl font-bold text-stone-900 text-center mb-2">
             로그인
@@ -55,9 +51,7 @@ function LoginPageContent() {
             카카오 또는 구글 계정으로 로그인하세요
           </p>
 
-          {/* 소셜 로그인 버튼 */}
           <div className="flex flex-col gap-3">
-            {/* 카카오 */}
             <button
               onClick={signInWithKakao}
               className="w-full h-14 rounded-xl flex items-center justify-center gap-3 transition-colors"
@@ -76,7 +70,6 @@ function LoginPageContent() {
               </span>
             </button>
 
-            {/* 구글 */}
             <button
               onClick={signInWithGoogle}
               className="w-full h-14 bg-white hover:bg-gray-50 border border-orange-100 rounded-xl flex items-center justify-center gap-3 transition-colors"
@@ -105,7 +98,6 @@ function LoginPageContent() {
             </button>
           </div>
 
-          {/* 약관 동의 안내 */}
           <p className="text-center text-gray-500 text-xs mt-5 leading-5">
             계속 진행하면{" "}
             <Link href="/terms" className="underline hover:text-stone-700">

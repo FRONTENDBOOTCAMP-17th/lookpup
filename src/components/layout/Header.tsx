@@ -38,7 +38,6 @@ export default function Header() {
         </div>
       </div>
 
-      {/* 모바일 헤더 */}
       <HeaderMobileMenu navItems={NAV_ITEMS} />
     </header>
   );

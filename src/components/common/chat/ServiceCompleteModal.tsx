@@ -107,7 +107,6 @@ export function ServiceCompleteModal({
         className="relative flex flex-col bg-white rounded-[20px] shadow-[0px_20px_60px_0px_rgba(232,116,42,0.20)] w-[calc(100%-32px)] max-w-[480px] max-h-[90vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
         <div className="px-6 pt-6 pb-4 border-b border-orange-100 shrink-0">
           <button
             type="button"
@@ -140,7 +139,6 @@ export function ServiceCompleteModal({
           </p>
         </div>
 
-        {/* 안내 */}
         {variant === "start" && (
           <div className="mx-6 mt-4 bg-amber-50 rounded-xl px-4 py-3 text-amber-700 text-xs leading-relaxed shrink-0">
             서비스를 시작해야 돌봄기록을 전송할 수 있습니다.
@@ -150,7 +148,6 @@ export function ServiceCompleteModal({
           </div>
         )}
 
-        {/* Content */}
         <div className="flex-1 overflow-y-auto px-6 py-4">
           {loading ? (
             <div className="py-10 text-center text-sm text-stone-400">

@@ -37,7 +37,6 @@ export default function PetsitterSearchClient() {
 
   const [activeFilter, setActiveFilter] = useState<PetsitterFilter>("전체");
 
-  // ── 시터 목록 (TanStack Query) ───────────────────────────────
   const { data: rawSitters = [] } = useSitters({ district: urlDistrict, dong: urlDong });
 
   const sitters = rawSitters.map((row) => {
@@ -70,7 +69,6 @@ export default function PetsitterSearchClient() {
     };
   });
 
-  // ── 위치 상태 ────────────────────────────────────────────────
   const {
     basePosition,
     setBasePosition,
@@ -83,13 +81,11 @@ export default function PetsitterSearchClient() {
     requestLocation,
   } = usePetsitterLocation({ urlCity, urlDistrict, urlDong });
 
-  // ── 시터 선택 상태 ───────────────────────────────────────────
   const { selectedSitterId, setSelectedSitterId, registerCardRef } = useSitterSelection(
     sitters,
     urlSelected,
   );
 
-  // ── 지역 검색 자동완성 ────────────────────────────────────────
   const {
     areaQuery,
     setAreaQuery,
@@ -107,7 +103,6 @@ export default function PetsitterSearchClient() {
     onClear: () => setSelectedSitterId(null),
   });
 
-  // ── 필터/거리 계산 ───────────────────────────────────────────
   const sittersWithDistance = sitters.map((sitter) => ({
     ...sitter,
     distanceKm: calculateDistanceKm(basePosition, { lat: sitter.lat, lng: sitter.lng }),

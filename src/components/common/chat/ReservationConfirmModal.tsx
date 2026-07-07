@@ -174,7 +174,6 @@ export function ReservationConfirmModal({
         className="relative flex flex-col bg-white rounded-[20px] shadow-[0px_20px_60px_0px_rgba(232,116,42,0.20)] w-[calc(100%-32px)] max-w-[480px] max-h-[90vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
         <div className="px-6 pt-6 pb-4 border-b border-orange-100 shrink-0">
           <button
             type="button"
@@ -190,7 +189,6 @@ export function ReservationConfirmModal({
           </p>
         </div>
 
-        {/* Content */}
         <div className="flex-1 overflow-y-auto px-6 py-2">
           {loading ? (
             <div className="py-10 text-center text-sm text-stone-400">불러오는 중...</div>
@@ -294,10 +292,8 @@ export function ReservationConfirmModal({
           )}
         </div>
 
-        {/* Divider */}
         <div className="h-px bg-orange-100 shrink-0" />
 
-        {/* Buttons */}
         <div className="px-6 py-4 flex gap-3 shrink-0">
           {editMode ? (
             <>

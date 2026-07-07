@@ -283,14 +283,10 @@ export function useChatRooms(
         ),
       );
       setApplicants((prev) =>
-        prev.map((a) =>
-          a.id === roomId ? { ...a, preview, time } : a,
-        ),
+        prev.map((a) => (a.id === roomId ? { ...a, preview, time } : a)),
       );
       setReservationRequests((prev) =>
-        prev.map((rr) =>
-          rr.id === roomId ? { ...rr, preview, time } : rr,
-        ),
+        prev.map((rr) => (rr.id === roomId ? { ...rr, preview, time } : rr)),
       );
     },
     [],
@@ -407,7 +403,7 @@ export function useChatRooms(
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [userId, fetchRooms]);
+  }, [userId, fetchRooms, updateRoomPreview]);
 
   useEffect(() => {
     if (!userId) return;
@@ -464,7 +460,15 @@ export function useChatRooms(
         .subscribe();
       broadcastChannelsRef.current.push(ch);
     });
-  }, [rooms, applicants, userId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    rooms,
+    applicants,
+    userId,
+    fetchRooms,
+    incrementUnread,
+    updateRoomPreview,
+  ]);
 
   useEffect(() => {
     return () => {
@@ -496,7 +500,9 @@ export function useChatRooms(
       const res = await fetch(`/api/chat/rooms/${id}`, { method: "DELETE" });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        return { error: body?.error?.message ?? "채팅방 나가기에 실패했습니다." };
+        return {
+          error: body?.error?.message ?? "채팅방 나가기에 실패했습니다.",
+        };
       }
       setRooms((prev) => prev.filter((r) => r.id !== id));
       return {};
@@ -510,7 +516,9 @@ export function useChatRooms(
       const res = await fetch(`/api/chat/rooms/${id}`, { method: "DELETE" });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        return { error: body?.error?.message ?? "채팅방 나가기에 실패했습니다." };
+        return {
+          error: body?.error?.message ?? "채팅방 나가기에 실패했습니다.",
+        };
       }
       setApplicants((prev) => prev.filter((a) => a.id !== id));
       if (applicant) {
@@ -526,20 +534,25 @@ export function useChatRooms(
     [applicants],
   );
 
-  const updateApplicantStatus = useCallback((roomId: string, status: string) => {
-    setApplicants((prev) =>
-      prev.map((a) =>
-        a.id === roomId ? { ...a, applicationStatus: status } : a,
-      ),
-    );
-  }, []);
+  const updateApplicantStatus = useCallback(
+    (roomId: string, status: string) => {
+      setApplicants((prev) =>
+        prev.map((a) =>
+          a.id === roomId ? { ...a, applicationStatus: status } : a,
+        ),
+      );
+    },
+    [],
+  );
 
   const deleteReservationRequest = useCallback(
     async (id: string): Promise<{ error?: string }> => {
       const res = await fetch(`/api/chat/rooms/${id}`, { method: "DELETE" });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        return { error: body?.error?.message ?? "채팅방 나가기에 실패했습니다." };
+        return {
+          error: body?.error?.message ?? "채팅방 나가기에 실패했습니다.",
+        };
       }
       setReservationRequests((prev) => prev.filter((rr) => rr.id !== id));
       return {};

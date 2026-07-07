@@ -124,7 +124,6 @@ export default function NotificationsClient() {
       <Header />
       <main className="flex-1 bg-orange-50 min-h-screen">
         <div className="max-w-[720px] mx-auto px-6 pt-12 pb-20">
-          {/* 페이지 헤더 */}
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-4">
               <Link
@@ -149,14 +148,12 @@ export default function NotificationsClient() {
             )}
           </div>
 
-          {/* 로딩 */}
           {isLoading && (
             <div className="bg-white rounded-2xl border border-orange-100 overflow-hidden">
               <LoadingPage className="py-10" />
             </div>
           )}
 
-          {/* 알림 없음 */}
           {!isLoading && notifications.length === 0 && (
             <div className="bg-white rounded-2xl border border-orange-100 overflow-hidden">
               <div className="py-10 flex flex-col items-center gap-2 text-gray-400">
@@ -166,7 +163,6 @@ export default function NotificationsClient() {
             </div>
           )}
 
-          {/* 오늘 알림 */}
           {!isLoading && todayList.length > 0 && (
             <div className="mb-6">
               <p className="px-1 text-gray-500 text-xs uppercase tracking-tight mb-3">오늘</p>
@@ -188,7 +184,6 @@ export default function NotificationsClient() {
             </div>
           )}
 
-          {/* 이전 알림 */}
           {!isLoading && prevList.length > 0 && (
             <div>
               <p className="px-1 text-gray-500 text-xs uppercase tracking-tight mb-3">이전 알림</p>

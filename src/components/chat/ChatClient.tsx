@@ -1471,7 +1471,6 @@ function ChatPageContent({
       );
   }, [activeItem, activeRoomId, userId, router]);
 
-  // ---- header helpers (called during render) ----
   function getHeaderBadge() {
     if (activeTab === "one_on_one")
       return { label: "진행중", className: "bg-orange-50 text-orange-500" };
@@ -1897,7 +1896,6 @@ function ChatPageContent({
       <Header />
 
       <main className="flex flex-col flex-1 overflow-hidden">
-        {/* 모바일 */}
         <div className="md:hidden flex flex-col flex-1 overflow-hidden">
           {mobileChatView === "list" ? (
             <ChatSidebar
@@ -1924,7 +1922,6 @@ function ChatPageContent({
           )}
         </div>
 
-        {/* 데스크톱 */}
         <div className="hidden md:flex flex-1 bg-white overflow-hidden">
           <ChatSidebar
             {...sharedSidebarProps}

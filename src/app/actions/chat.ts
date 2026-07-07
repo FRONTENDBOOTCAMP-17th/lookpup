@@ -284,10 +284,12 @@ export async function findOrCreateRoom(input: {
     const { data } = await db
       .from("chat_rooms")
       .select("id")
-      .eq("reservation_id", input.reservation_id)
+      .eq("owner_id", user.id)
+      .eq("sitter_id", input.sitter_id)
       .eq("room_type", "direct")
-      .maybeSingle();
-    existingRoom = data;
+      .order("created_at", { ascending: false })
+      .limit(1);
+    existingRoom = data?.[0] ?? null;
   } else {
     const [{ data: otherSitter }, { data: mySitter }] = await Promise.all([
       db
@@ -756,7 +758,8 @@ export async function sendPaymentRequestMessage(
       return {
         error: {
           code: "INTERNAL_ERROR",
-          message: extraChargeError?.message ?? "추가금 요청 생성에 실패했습니다.",
+          message:
+            extraChargeError?.message ?? "추가금 요청 생성에 실패했습니다.",
         },
       };
     }

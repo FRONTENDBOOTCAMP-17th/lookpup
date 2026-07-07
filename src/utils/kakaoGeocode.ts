@@ -113,8 +113,6 @@ export function searchPlaceToCoord(query: string): Promise<CoordResult | null> {
   });
 }
 
-// ── 지역/장소 통합 자동완성 ───────────────────────────────────
-
 export interface AreaSuggestion {
   type: 'area';
   label: string;    // 예: "서울특별시 마포구 아현동"

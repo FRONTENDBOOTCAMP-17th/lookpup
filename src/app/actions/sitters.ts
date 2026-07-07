@@ -153,7 +153,6 @@ export async function createSitter(input: SitterInput) {
     }
   }
 
-  // 프로필 사진 및 role 업데이트
   const userUpdates: TablesUpdate<"users"> = { role: "both" };
   if (profile_photo_url) userUpdates.profile_image = profile_photo_url;
   await db.from("users").update(userUpdates).eq("id", user.id);

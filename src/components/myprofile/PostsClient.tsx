@@ -392,7 +392,6 @@ export default function PostsClient({
     <div className="min-h-screen flex flex-col bg-orange-50">
       <Header />
 
-      {/* 모바일 헤더 */}
       <div className="md:hidden sticky top-16 z-50 bg-white border-b border-orange-100">
         <div className="h-14 px-5 flex items-center gap-3">
           <MobileBackButton />

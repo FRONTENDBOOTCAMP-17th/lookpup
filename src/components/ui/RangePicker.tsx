@@ -125,7 +125,6 @@ export default function RangePicker({ value, onChange, bookedRanges = [] }: Prop
 
   return (
     <div className="select-none bg-white rounded-2xl border border-[#ffe9d6] p-4 sm:p-6">
-      {/* 월 네비게이션 */}
       <div className="flex items-center justify-between mb-6">
         <button
           onClick={() => setMonth((m) => subMonths(m, 1))}
@@ -144,7 +143,6 @@ export default function RangePicker({ value, onChange, bookedRanges = [] }: Prop
         </button>
       </div>
 
-      {/* 요일 헤더 */}
       <div className="grid grid-cols-7 mb-2">
         {DAY_LABELS.map((d) => (
           <div
@@ -156,7 +154,6 @@ export default function RangePicker({ value, onChange, bookedRanges = [] }: Prop
         ))}
       </div>
 
-      {/* 날짜 그리드 */}
       <div className="flex flex-col gap-1">
         {weeks.map((week, wi) => (
           <div key={wi} className="grid grid-cols-7">
@@ -169,7 +166,6 @@ export default function RangePicker({ value, onChange, bookedRanges = [] }: Prop
               const isToday = isSameDay(day, today);
               const disabled = past || booked;
 
-              // 범위 배경 막대
               let barClass = "";
               if (kind === "start")
                 barClass =

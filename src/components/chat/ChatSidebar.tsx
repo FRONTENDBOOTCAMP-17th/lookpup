@@ -176,7 +176,6 @@ function ChatSidebarImpl({
 
   return (
     <div className={className}>
-      {/* 헤더 */}
       <div
         className={`${px} ${pt} ${bgWhite}border-b border-orange-100 shrink-0`}
       >
@@ -194,7 +193,6 @@ function ChatSidebarImpl({
         <div className="flex">{tabBar}</div>
       </div>
 
-      {/* 검색창 */}
       <div
         className={`${px} py-3 ${bgWhite}border-b border-orange-100 shrink-0`}
       >
@@ -212,7 +210,6 @@ function ChatSidebarImpl({
         </div>
       </div>
 
-      {/* 목록 */}
       {isMobile ? (
         <ScrollArea className="flex-1 overflow-hidden">
           {loading && (

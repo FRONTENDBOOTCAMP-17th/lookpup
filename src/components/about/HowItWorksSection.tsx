@@ -41,7 +41,6 @@ export default function HowItWorksSection() {
           </p>
         </ScrollReveal>
 
-        {/* 보호자 플로우 */}
         <p className="text-orange-500 font-semibold text-center mb-6">보호자</p>
         <div className="flex flex-col md:flex-row md:items-start md:justify-between relative gap-6 md:gap-0 mb-14">
           <div className="hidden md:block absolute top-8 left-18 right-18 h-px border-t-2 border-dashed border-orange-100" />
@@ -64,7 +63,6 @@ export default function HowItWorksSection() {
           ))}
         </div>
 
-        {/* 펫시터 플로우 */}
         <p className="text-stone-600 font-semibold text-center mb-6">펫시터</p>
         <div className="flex flex-col md:flex-row md:items-start md:justify-between relative gap-6 md:gap-0">
           <div className="hidden md:block absolute top-8 left-18 right-18 h-px border-t-2 border-dashed border-stone-200" />
