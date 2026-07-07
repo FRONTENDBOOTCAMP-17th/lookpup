@@ -71,12 +71,6 @@ export default function LocationPickerWithMap({
     }
   }
 
-  useEffect(() => {
-    if (window.kakao?.maps) {
-      window.kakao.maps.load(initMap);
-    }
-  }, []);
-
   function buildDisplayAreaFromAddress(addr: string): string {
     const parts = addr.split(" ");
     if (parts.length >= 3) return parts.slice(1).join(" ");
@@ -170,7 +164,7 @@ export default function LocationPickerWithMap({
       <Script
         src={`//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_KEY}&autoload=false&libraries=services`}
         strategy="afterInteractive"
-        onLoad={() => window.kakao.maps.load(initMap)}
+        onReady={() => window.kakao.maps.load(initMap)}
       />
 
       {/* 주소 검색 */}
