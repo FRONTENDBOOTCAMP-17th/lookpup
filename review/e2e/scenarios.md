@@ -52,3 +52,20 @@
   - 자기 예약: 미해결 (reservations.ts 두 함수에 시터==본인 가드 없음).
 - 정산 콘솔: `["earnings"]` 쿼리 undefined 반환 경고(테스트 계정 수익 0). GoTrueClient 이중 인스턴스 경고 여전.
 - eslint 69→57 err. tsc 0.
+
+## 20차 실행 결과 (2026-07-07) — 33/33 PASS
+
+| ID | 시나리오 | 결과 |
+| --- | --- | --- |
+| L1~L12 · P1~P3 | 공개/정책 페이지 전수 | PASS (200). /terms 500 해결 유지 |
+| A1~A10 | 인증 후 마이프로필·정산·채팅·예약·예약내역·시터편집·알림·설정 | PASS (튕김 없음) |
+| A11 | 본인인증 페이지 /auth/verification (신규) | PASS (200) |
+| A12·A13 | 관리자 /admin·/admin/reports (비관리자 세션, 신규) | 정상 차단 (200이나 /로 redirect) |
+
+- **회귀 0.** 86커밋 delta인데 기존 라우트 무손상. 관리자 라우트는 admin/layout.tsx 서버 role 게이트로 비관리자 차단 확인(정석).
+- **보안 3종 전부 해결(실측):**
+  - 1원 결제: 해결 — createPayment 시그니처에서 클라 금액 제거, reservation.total_price만 사용(payments.ts:92). verifyAndConfirmPayment 포트원 재조회 대조(:315). /payment 페이지도 createPayment 경유(URL amount는 표시용).
+  - 공개 RPC PII: 해결 — anon get_petsitters_filtered 응답에서 user_id 사라짐, full_name→display_name, 전체주소→display_area(구·동), 좌표 소수점 3자리.
+  - 자기 예약: 해결 — reservations.ts:122-125·987-991 sitterUserId===user.id FORBIDDEN.
+- 잔여 [제안]: reviews anon owner_id/sitter_id UUID 노출(실측). GoTrueClient 이중 → 해결(모듈 싱글턴). useEarnings res.ok 체크 추가됨.
+- 정적: tsc 0, eslint 0 error/23 warn(19차 57 err→0), build 성공(59 라우트).
