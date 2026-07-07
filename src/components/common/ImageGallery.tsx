@@ -75,6 +75,7 @@ export function ImageLightbox({ urls, index, onClose, onIndexChange }: ImageLigh
               )}
             </div>
             {index !== null && (
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={urls[index]}
                 alt=""
@@ -134,6 +135,7 @@ export function ImageGallery({ urls }: ImageGalleryProps) {
               aria-label={`${i + 1}번째 후기 사진 크게 보기`}
               className="shrink-0 focus:outline-none"
             >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={url}
                 alt=""
