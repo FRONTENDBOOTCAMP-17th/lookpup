@@ -25,7 +25,6 @@ export async function GET(request: NextRequest) {
 
   const db = createServiceClient();
 
-  // sitter 역할이면 sitter 프로필 조회
   let sitterId: string | null = null;
   if (role === "sitter") {
     const { data: sitterProfile } = await db
@@ -43,7 +42,6 @@ export async function GET(request: NextRequest) {
     sitterId = sitterProfile.id;
   }
 
-  // 커서 기반 페이지네이션
   let cursorCreatedAt: string | null = null;
   if (cursor) {
     const { data: cursorItem } = await db
@@ -70,7 +68,6 @@ export async function GET(request: NextRequest) {
   } else if (role === "sitter" && sitterId) {
     query = query.eq("sitter_id", sitterId);
   } else {
-    // role 미지정 시 본인 관련 예약 전체
     query = query.or(`owner_id.eq.${user.id},sitter_id.in.(${sitterId ?? ""})`);
   }
 

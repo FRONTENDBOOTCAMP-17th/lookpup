@@ -768,7 +768,6 @@ export default function MyPetsClient({ initialPets }: MyPetsClientProps) {
     <div className="min-h-screen bg-orange-50">
       <Header />
 
-      {/* 모바일 헤더 */}
       <div className="md:hidden sticky top-16 z-50 bg-white border-b border-orange-100">
         <div className="h-14 px-5 flex items-center gap-3">
           {isSelectionMode ? (
@@ -813,7 +812,6 @@ export default function MyPetsClient({ initialPets }: MyPetsClientProps) {
         </div>
       </div>
 
-      {/* 데스크탑 콘텐츠 */}
       <div className="hidden md:block w-full max-w-[1280px] mx-auto px-4 sm:px-10 pt-10 pb-20">
         <div className="flex items-start justify-between mb-8">
           <div className="flex items-center gap-4">
@@ -883,7 +881,6 @@ export default function MyPetsClient({ initialPets }: MyPetsClientProps) {
         )}
       </div>
 
-      {/* 모바일 콘텐츠 */}
       <div className="md:hidden px-4 pt-4 pb-28">
         {pets.length === 0 ? (
           <EmptyState onAdd={handleAddPet} />

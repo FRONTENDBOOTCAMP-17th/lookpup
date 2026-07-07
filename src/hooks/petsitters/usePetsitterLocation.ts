@@ -84,7 +84,6 @@ export function usePetsitterLocation({
     );
   }
 
-  // URL 지역 파라미터로 지도 초기화
   useEffect(() => {
     if (!urlDistrict) return;
     const query = [urlCity, urlDistrict, urlDong].filter(Boolean).join(" ");
@@ -110,7 +109,6 @@ export function usePetsitterLocation({
     }
   }, [urlCity, urlDistrict, urlDong]);
 
-  // 위치 동의 확인 (TanStack Query 결과 기반, 최초 1회만 처리)
   useEffect(() => {
     if (!consent || consentHandledRef.current) return;
     consentHandledRef.current = true;

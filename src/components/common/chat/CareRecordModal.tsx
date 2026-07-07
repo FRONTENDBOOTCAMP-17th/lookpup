@@ -4,8 +4,6 @@ import { useState, useRef, useEffect } from "react";
 import { X, ChevronLeft, Clock, ImagePlus } from "lucide-react";
 import { uploadToCloudinary } from "@/utils/cloudinary";
 
-//타입 정의 
-
 export type CareRecordType =
   | "visit"
   | "check_in"
@@ -43,8 +41,6 @@ interface RecordTypeConfig {
   statusText: string;
   fields: FieldConfig[];
 }
-
-//설정 객체
 
 const SERVICE_TYPE_RECS: Record<ServiceType, CareRecordType[]> = {
   pickup: ["pickup_start", "pickup_done", "handover", "photo", "memo"],
@@ -231,8 +227,6 @@ export const CARE_RECORD_TYPES: RecordTypeConfig[] = [
   },
 ];
 
-// 서브 컴포넌트
-
 function CareRecordTypeCard({
   config,
   onClick,
@@ -411,7 +405,6 @@ function CareRecordField({
   );
 }
 
-//유형 선택 화면
 function CareRecordTypeSelect({
   serviceType,
   onSelect,
@@ -471,8 +464,6 @@ function CareRecordTypeSelect({
     </>
   );
 }
-
-//유형별 입력 폼 화면 
 
 function CareRecordForm({
   config,
@@ -562,8 +553,6 @@ function CareRecordForm({
   );
 }
 
-//페이로드 타입 (외부 사용) 
-
 export interface CareRecordPayload {
   reservationId?: string;
   roomId?: string;
@@ -577,8 +566,6 @@ export interface CareRecordPayload {
   imageUrls: string[];
   createdAt: string;
 }
-
-//메인 모달
 
 interface CareRecordModalProps {
   open: boolean;

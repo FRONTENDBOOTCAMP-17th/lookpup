@@ -4,11 +4,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 
-/**
- * 뒤로가기 버튼 유형 1
- * 회색 < 아이콘 + 텍스트, hover 시 주황색 전환.
- * 펫시터 프로필 상세 /구인 게시판 상세글
- */
 interface BackButtonProps {
   href: string;
   label?: string;
@@ -31,10 +26,6 @@ export default function BackButton({
   );
 }
 
-/**
- * 뒤로가기 버튼 유형 2
- * 마이프로필 페이지 헤더에서 사용.
- */
 interface HeaderBackButtonProps {
   onClick?: () => void;
   className?: string;

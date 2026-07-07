@@ -120,7 +120,6 @@ export function CustomModalPayment({
         className="relative w-[calc(100%-32px)] max-w-130 bg-white rounded-[20px] shadow-[0px_20px_60px_0px_rgba(249,115,22,0.30)] flex flex-col max-h-[90dvh]"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* 헤더 */}
         <div className="px-6 pt-6 pb-4 border-b border-orange-200 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 bg-orange-100 rounded-xl flex items-center justify-center shrink-0">
@@ -144,9 +143,7 @@ export function CustomModalPayment({
           </button>
         </div>
 
-        {/* 본문 */}
         <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-6">
-          {/* 안내 */}
           <div className="bg-amber-50 rounded-xl px-4 py-3 text-amber-700 text-xs leading-relaxed">
             결제가 완료되어야 서비스를 시작할 수 있습니다.
             <br />
@@ -157,7 +154,6 @@ export function CustomModalPayment({
             <span className="font-semibold">서비스 시작</span>을 꼭 눌러주세요.
           </div>
 
-          {/* 요청 유형 */}
           <div>
             <p className="text-[#281A0E] text-sm font-semibold mb-3">
               요청 유형
@@ -207,7 +203,6 @@ export function CustomModalPayment({
             </div>
           </div>
 
-          {/* 요청 금액 */}
           <div>
             <p className="text-[#281A0E] text-sm font-semibold mb-2">
               요청 금액<span className="text-red-500">*</span>
@@ -235,7 +230,6 @@ export function CustomModalPayment({
             </p>
           </div>
 
-          {/* 요청 사유 — 추가금 요청 시에만 표시 */}
           {requestType === "extra" && (
             <div>
               <div className="flex items-center justify-between mb-2">
@@ -258,7 +252,6 @@ export function CustomModalPayment({
             </div>
           )}
 
-          {/* 총 요청 금액 */}
           <div className="bg-orange-50 rounded-2xl border border-orange-200 px-5 py-5 flex items-center justify-between">
             <span className="text-orange-900 text-sm font-semibold">
               총 요청 금액
@@ -284,7 +277,6 @@ export function CustomModalPayment({
           )}
         </div>
 
-        {/* 푸터 */}
         <div className="px-6 pt-4 pb-6 border-t border-orange-200 flex gap-3 shrink-0">
           <button
             type="button"

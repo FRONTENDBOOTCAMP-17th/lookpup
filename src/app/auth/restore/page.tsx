@@ -43,7 +43,6 @@ export default function RestorePage() {
   return (
     <div className="min-h-screen bg-[#FFF8F3] flex flex-col items-center justify-center px-6">
       <div className="w-full max-w-sm">
-        {/* 아이콘 */}
         <div className="flex flex-col items-center mb-8">
           <div className="w-20 h-20 rounded-full bg-[#FFF0E8] flex items-center justify-center mb-4">
             <PawPrint size={36} className="text-[var(--color-orange-500)]" />
@@ -51,7 +50,6 @@ export default function RestorePage() {
           <h1 className="text-2xl font-bold text-[#281A0E]">봐주개</h1>
         </div>
 
-        {/* 안내 카드 */}
         <div className="bg-white border border-[#FFE9D6] rounded-2xl p-6 mb-4">
           <div className="flex items-start gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center shrink-0">
@@ -84,7 +82,6 @@ export default function RestorePage() {
           <p className="text-sm text-red-500 text-center mb-3">{error}</p>
         )}
 
-        {/* 버튼 */}
         <div className="flex flex-col gap-3">
           <button
             type="button"

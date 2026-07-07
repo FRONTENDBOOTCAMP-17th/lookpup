@@ -156,8 +156,7 @@ function MessageListImpl({
               msg.from === "payment_request" &&
               msg.paymentData &&
               msg.paymentData.amount > 0 &&
-              (msg.paymentData.isExtra === true ||
-                msg.id === lastBaseRequestId)
+              (msg.paymentData.isExtra === true || msg.id === lastBaseRequestId)
                 ? () =>
                     onPaymentRequest({
                       amount: msg.paymentData!.amount,
@@ -432,7 +431,6 @@ function ChatWindowImpl({
   if (isMobile) {
     return (
       <div className="flex flex-col h-full">
-        {/* 헤더 */}
         <div className="h-14 px-4 bg-white border-b border-orange-100 flex items-center gap-3 shrink-0">
           <button onClick={onBack} className="p-1 -ml-1">
             <ChevronLeft size={24} className="text-stone-900" />
@@ -500,7 +498,6 @@ function ChatWindowImpl({
           </div>
         </div>
 
-        {/* 메시지 영역 */}
         <div
           ref={mobileScrollRef}
           className="flex-1 min-h-0 overflow-y-auto bg-white"
@@ -515,7 +512,6 @@ function ChatWindowImpl({
           </div>
         </div>
 
-        {/* 지원자 거절/확정 버튼 */}
         {showApplicantActions && (
           <div className="px-4 py-2.5 bg-white border-t border-orange-100 flex flex-col gap-1 shrink-0">
             {applicationActionError && (
@@ -542,10 +538,8 @@ function ChatWindowImpl({
           </div>
         )}
 
-        {/* + 버튼 패널 */}
         {plusPanel}
 
-        {/* 입력창 */}
         {isRejectedApplicant ? (
           <div className="px-4 py-3 bg-stone-50 border-t border-stone-200 text-center text-xs text-stone-400 shrink-0">
             지원이 거절되어 메시지를 보낼 수 없습니다.

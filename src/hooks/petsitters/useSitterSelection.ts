@@ -18,7 +18,6 @@ export function useSitterSelection(sitters: SelectableSitter[], urlSelected: str
   const [selectedSitterId, setSelectedSitterId] = useState<string | null>(urlSelected || null);
   const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
-  // 선택된 시터 URL 반영
   useEffect(() => {
     if (!selectedSitterId) return;
     const sitter = sitters.find((s) => s.id === selectedSitterId);
@@ -35,7 +34,6 @@ export function useSitterSelection(sitters: SelectableSitter[], urlSelected: str
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSitterId]);
 
-  // 카드 스크롤 동기화
   useEffect(() => {
     if (selectedSitterId === null) return;
     const card = cardRefs.current.get(selectedSitterId);

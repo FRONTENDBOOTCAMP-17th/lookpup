@@ -5,7 +5,6 @@ import HeroButtons from "@/components/home/HeroButtons";
 export default function HeroSection() {
   return (
     <section className="bg-gradient-to-b from-orange-50 via-stone-50/20 to-white min-h-[600px] flex items-center overflow-hidden relative">
-      {/* 배경 🐾 */}
       <span className="absolute left-20 top-20 text-6xl opacity-5 select-none pointer-events-none">
         🐾
       </span>
@@ -17,8 +16,6 @@ export default function HeroSection() {
       </span>
 
       <div className="max-w-[1280px] mx-auto px-4 sm:px-10 py-16 md:py-20 w-full flex flex-col lg:flex-row items-center justify-between gap-12">
-        {/* 텍스트 */}
-
         <div className="flex-1 max-w-[560px] flex flex-col items-center lg:items-start text-center lg:text-left">
           <div
             className="animate-hero-text inline-flex items-center px-3 py-1 bg-orange-50 rounded-full border border-orange-100 mb-6"
@@ -75,9 +72,7 @@ export default function HeroSection() {
           </div>
         </div>
 
-        {/* 플로팅 카드 */}
         <div className="hidden lg:block relative w-[420px] h-[480px] shrink-0">
-          {/* 카드 1 */}
           <div
             className="animate-hero-card absolute top-12 left-8 w-80 shadow-[0px_4px_20px_0px_rgba(232,116,42,0.15)] rounded-2xl z-10"
             style={{ animationDelay: "0s", "--hero-rotate": "-3deg" } as React.CSSProperties}
@@ -123,7 +118,6 @@ export default function HeroSection() {
             </div>
           </div>
 
-          {/* 카드 2 */}
           <div
             className="animate-hero-card absolute bottom-20 right-0 w-72 opacity-80 shadow-lg rounded-2xl"
             style={
@@ -154,7 +148,6 @@ export default function HeroSection() {
             </div>
           </div>
 
-          {/* 배지들 */}
           <div
             className="animate-hero-card absolute top-0 right-8 px-4 py-3 bg-white rounded-2xl shadow-lg flex items-center gap-2 z-20"
             style={{ animationDelay: "0.3s" }}

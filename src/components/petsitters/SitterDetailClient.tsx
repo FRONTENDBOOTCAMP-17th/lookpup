@@ -119,7 +119,6 @@ export default function SitterDetailClient({
         <div className="md:max-w-7xl md:mx-auto md:px-10 md:pb-12">
           <div className="md:flex md:gap-8 md:items-start">
             <div className="md:w-85.25 md:shrink-0">
-              {/* 모바일 이미지 헤더 */}
               <div
                 className="md:hidden relative w-full h-44 bg-linear-to-br from-gray-100 to-gray-200"
                 style={
@@ -159,7 +158,6 @@ export default function SitterDetailClient({
                 </div>
               </div>
 
-              {/* 데스크톱 프로필 카드 */}
               <div className="hidden md:flex flex-col items-center bg-white rounded-2xl shadow-[0px_2px_12px_rgba(232,116,42,0.10)] border border-orange-100 p-5">
                 {sitter?.profile_image ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -218,7 +216,6 @@ export default function SitterDetailClient({
             </div>
 
             <div className="flex-1 min-w-0">
-              {/* 모바일 전용: 별점 / 서비스 태그 / 통계 */}
               <div className="md:hidden bg-white">
                 <div className="px-5 py-3 flex items-center gap-1.5">
                   <StarRow size={13} count={Math.round(rating)} />
@@ -235,7 +232,6 @@ export default function SitterDetailClient({
                 <StatGrid stats={stats} className="px-5 pb-5" />
               </div>
 
-              {/* 탭 바 */}
               <div className="bg-white md:bg-transparent border-b border-orange-100 px-5 md:px-0 sticky top-0 md:static z-10">
                 <div className="flex gap-6 md:gap-8">
                   {TABS.map((tab) => (
@@ -265,7 +261,6 @@ export default function SitterDetailClient({
         </div>
       </div>
 
-      {/* 모바일 예약하기 고정 버튼 */}
       <div className="fixed bottom-0 left-0 right-0 md:hidden z-40 bg-white border-t border-orange-100 px-5 py-3">
         {isSelf ? (
           <div className="block w-full py-3.5 bg-gray-200 text-gray-400 font-semibold rounded-xl text-sm text-center cursor-not-allowed">

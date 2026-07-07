@@ -339,7 +339,6 @@ export default function BoardWriteClient() {
           </div>
 
           <div className="flex flex-col gap-6 pt-8">
-            {/* 서비스 선택 */}
             <div className="bg-white rounded-2xl border border-orange-100 p-7">
               <h2 className="text-lg font-semibold text-stone-900">
                 어떤 돌봄이 필요하신가요?
@@ -433,7 +432,6 @@ export default function BoardWriteClient() {
               </div>
             </div>
 
-            {/* 날짜·시간 */}
             <div className="bg-white rounded-2xl border border-orange-100 p-4 sm:p-7">
               <h2 className="text-lg font-semibold text-stone-900">
                 날짜 · 시간
@@ -482,7 +480,6 @@ export default function BoardWriteClient() {
               </div>
             </div>
 
-            {/* 돌봄 장소 */}
             <div className="bg-white rounded-2xl border border-orange-100 p-7">
               <h2 className="text-lg font-semibold text-stone-900">
                 돌봄 장소
@@ -634,7 +631,6 @@ export default function BoardWriteClient() {
               </p>
             </div>
 
-            {/* 반려동물 */}
             <div className="bg-white rounded-2xl border border-orange-100 p-7">
               <h2 className="text-xl font-bold text-stone-900 mb-1">
                 함께할 반려동물을 선택해주세요
@@ -701,7 +697,6 @@ export default function BoardWriteClient() {
               </div>
             </div>
 
-            {/* 상세 내용 */}
             <div className="bg-white rounded-2xl border border-orange-100 p-7">
               <div className="flex flex-col gap-2 mb-6">
                 <div className="flex items-center justify-between">
@@ -775,7 +770,6 @@ export default function BoardWriteClient() {
               </div>
             </div>
 
-            {/* 펫시터 조건 */}
             <div className="bg-white rounded-2xl border border-orange-100 p-7">
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
