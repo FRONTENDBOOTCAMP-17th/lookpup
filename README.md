@@ -135,7 +135,7 @@
   <tr>
     <td align="center">
       <img src=".\docs\readme\6_review_write.png" alt="후기 작성" width="600" /><br/>
-      <sub>펫시터 정보 입력</sub>
+      <sub>후기 작성 </sub>
     </td>
   </tr>
   <tr>
