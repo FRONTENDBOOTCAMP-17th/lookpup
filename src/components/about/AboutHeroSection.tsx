@@ -5,7 +5,6 @@ export default function AboutHeroSection() {
   return (
     <section className="bg-gradient-to-b from-white via-white to-orange-50 py-16 md:py-20">
       <ScrollReveal className="mx-auto flex flex-col items-center text-center">
-        {/* 로고 */}
         <div className="mb-4 flex flex-col items-center gap-2">
           <span className="text-orange-500 text-base md:text-lg font-bold tracking-widest uppercase">
             lookpup

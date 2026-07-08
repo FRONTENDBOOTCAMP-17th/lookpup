@@ -74,7 +74,6 @@ export default function PetRegisterClient() {
             onSubmit={onSubmit}
             className="w-full p-7 bg-white rounded-2xl border border-orange-100 shadow-[0px_2px_12px_0px_rgba(232,116,42,0.10)] flex flex-col"
           >
-            {/* Photos */}
             <section className="flex flex-col">
               <label className="text-stone-900 text-sm font-medium leading-5">사진</label>
               <div className="pt-3 flex items-start gap-3 overflow-x-auto">
@@ -113,7 +112,6 @@ export default function PetRegisterClient() {
               </div>
             </section>
 
-            {/* Pet Type */}
             <section className="pt-6 flex flex-col">
               <label className="text-stone-900 text-sm font-medium leading-5">동물 종류</label>
               <div className="pt-3 flex gap-3">
@@ -137,7 +135,6 @@ export default function PetRegisterClient() {
               </div>
             </section>
 
-            {/* Name */}
             <section className="pt-6 flex flex-col">
               <label className="text-stone-900 text-sm font-medium leading-5 mb-2">이름</label>
               <input
@@ -148,7 +145,6 @@ export default function PetRegisterClient() {
               />
             </section>
 
-            {/* Breed */}
             <section className="pt-6 flex flex-col">
               <label className="text-stone-900 text-sm font-medium leading-5 mb-2">품종</label>
               <input
@@ -159,7 +155,6 @@ export default function PetRegisterClient() {
               />
             </section>
 
-            {/* Age & Weight */}
             <section className="pt-6">
               <div className="flex gap-4">
                 <div className="flex-1 flex flex-col">
@@ -187,7 +182,6 @@ export default function PetRegisterClient() {
               </div>
             </section>
 
-            {/* Gender */}
             <section className="pt-6 flex flex-col">
               <label className="text-stone-900 text-sm font-medium leading-5">성별</label>
               <div className="pt-3 flex gap-3">
@@ -210,7 +204,6 @@ export default function PetRegisterClient() {
               </div>
             </section>
 
-            {/* Neutered */}
             <section className="pt-6">
               <button
                 type="button"
@@ -234,7 +227,6 @@ export default function PetRegisterClient() {
               </button>
             </section>
 
-            {/* Notes */}
             <section className="pt-6 flex flex-col">
               <label className="text-stone-900 text-sm font-medium leading-5 mb-2">특이사항</label>
               <textarea
@@ -249,7 +241,6 @@ export default function PetRegisterClient() {
               </div>
             </section>
 
-            {/* Common Notes Tags */}
             <section className="pt-6 flex flex-col">
               <label className="text-stone-900 text-sm font-medium leading-5">자주 선택되는 특이사항</label>
               <div className="pt-3 flex flex-wrap gap-2">
@@ -270,7 +261,6 @@ export default function PetRegisterClient() {
               </div>
             </section>
 
-            {/* Buttons */}
             <div className="pt-8 flex gap-3">
               <button
                 type="button"

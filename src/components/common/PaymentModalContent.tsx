@@ -1,7 +1,5 @@
 interface PaymentModalContentProps {
-  /** 예약 금액 (원) */
   amount?: number;
-  /** 수수료율 (기본값: 0.05 = 5%) */
   feeRate?: number;
 }
 

@@ -18,8 +18,6 @@ import {
 import { cn } from '@/lib/utils';
 import { modalPresets, type PresetKey } from './modalPresets';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 export type ModalType =
   | 'info'
   | 'success'
@@ -49,15 +47,10 @@ interface CustomModalProps extends ModalConfig {
   onClose?: () => void;
   onConfirm?: () => void;
   children?: ReactNode;
-  /** 오버레이 클릭 시 닫기 (기본값: true) */
   closeOnOverlay?: boolean;
-  /** ESC 키로 닫기 (기본값: true) */
   closeOnEsc?: boolean;
-  /** 우상단 X 버튼 표시 (기본값: true) */
   showCloseButton?: boolean;
 }
-
-// ─── Style maps ───────────────────────────────────────────────────────────────
 
 type TypeConfig = {
   iconBg: string;
@@ -146,8 +139,6 @@ const SIZE_CLASS: Record<ModalSize, string> = {
   large: 'w-[calc(100%-32px)] max-w-[600px]',
 };
 
-// ─── Component ────────────────────────────────────────────────────────────────
-
 export function CustomModal({
   open,
   preset,
@@ -157,7 +148,6 @@ export function CustomModal({
   closeOnOverlay = true,
   closeOnEsc = true,
   showCloseButton = true,
-  // Direct props — override preset values when provided
   type: typeProp,
   size: sizeProp,
   title: titleProp,
@@ -169,7 +159,6 @@ export function CustomModal({
   const descId = useId();
   const mounted = useMounted();
 
-  // Merge preset + direct props (direct props win)
   const base: ModalConfig = preset ? modalPresets[preset] : {};
   const type: ModalType = typeProp ?? base.type ?? 'info';
   const size: ModalSize = sizeProp ?? base.size ?? 'medium';
@@ -181,7 +170,6 @@ export function CustomModal({
   const { iconBg, Icon, iconColor, confirmBg, confirmHover } = TYPE_CONFIG[type];
   const hasCancel = Boolean(cancelText);
 
-  // ESC to close
   useEffect(() => {
     if (!closeOnEsc || !open) return;
     const onKeyDown = (e: KeyboardEvent) => {
@@ -191,7 +179,6 @@ export function CustomModal({
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [open, closeOnEsc, onClose]);
 
-  // Lock body scroll
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
@@ -208,10 +195,8 @@ export function CustomModal({
       className="fixed inset-0 z-50 flex items-center justify-center"
       onClick={closeOnOverlay ? onClose : undefined}
     >
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/40" aria-hidden="true" />
 
-      {/* Dialog box */}
       <div
         role="dialog"
         aria-modal="true"
@@ -224,7 +209,6 @@ export function CustomModal({
         )}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* X close button */}
         {showCloseButton && onClose && (
           <button
             type="button"
@@ -236,7 +220,6 @@ export function CustomModal({
           </button>
         )}
 
-        {/* Header */}
         <div className="px-7 pt-8 pb-6 flex flex-col items-center gap-4">
           <div className={cn('w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0', iconBg)}>
             <Icon className={cn('w-7 h-7', iconColor)} />
@@ -253,10 +236,8 @@ export function CustomModal({
           </div>
         </div>
 
-        {/* Divider */}
         <div className="h-px bg-orange-100" />
 
-        {/* Optional children content */}
         {children && (
           <>
             <div className="px-7 py-5">{children}</div>
@@ -264,7 +245,6 @@ export function CustomModal({
           </>
         )}
 
-        {/* Buttons */}
         <div className="px-7 py-5 flex gap-3">
           {hasCancel && (
             <button

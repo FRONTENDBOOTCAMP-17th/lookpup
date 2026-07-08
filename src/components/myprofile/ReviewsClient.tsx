@@ -310,7 +310,7 @@ export default function ReviewsClient({
       controller.abort();
       writtenFetchedRef.current = false;
     };
-  }, [activeTab]);
+  }, [activeTab, writtenReviews]);
 
   useEffect(() => {
     if (activeTab !== "received" || receivedFetchedRef.current || receivedReviews !== null)
@@ -320,6 +320,8 @@ export default function ReviewsClient({
     receivedFetchedRef.current = true;
 
     if (sitterId === null) {
+      // 서버 fetch 분기와 세트로 묶인 초기화라 effect가 맞는 위치
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setReceivedReviews([]);
       return;
     }
@@ -347,7 +349,7 @@ export default function ReviewsClient({
       controller.abort();
       receivedFetchedRef.current = false;
     };
-  }, [activeTab, sitterId]);
+  }, [activeTab, sitterId, receivedReviews]);
 
   const handleDeleteWritten = (id: string) => {
     setWrittenReviews((prev) => (prev ? prev.filter((r) => r.id !== id) : []));

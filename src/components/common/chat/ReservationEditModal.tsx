@@ -90,6 +90,8 @@ export default function ReservationEditModal({ open, roomId, onClose, onSubmit }
 
   useEffect(() => {
     if (!open) return;
+    // 뒤이은 예약 목록 fetch 시작 전 초기화라 effect가 맞는 위치
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setStep("select");
     setSelected(null);
     setFetchError(null);
@@ -175,7 +177,6 @@ export default function ReservationEditModal({ open, roomId, onClose, onSubmit }
         className="w-full sm:max-w-[480px] bg-white rounded-t-2xl sm:rounded-2xl shadow-xl flex flex-col max-h-[92vh]"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* 헤더 */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-orange-100 shrink-0">
           <div className="flex items-center gap-1">
             {step !== "select" && (
@@ -200,7 +201,6 @@ export default function ReservationEditModal({ open, roomId, onClose, onSubmit }
           </button>
         </div>
 
-        {/* 단계 표시바 */}
         <div className="flex px-5 py-2 gap-1.5 shrink-0">
           {(["select", "edit", "confirm"] as Step[]).map((s, i) => (
             <div
@@ -216,7 +216,6 @@ export default function ReservationEditModal({ open, roomId, onClose, onSubmit }
           ))}
         </div>
 
-        {/* Step 1: 예약 선택 */}
         {step === "select" && (
           <div className="px-5 py-4 overflow-y-auto">
             {loading && (
@@ -267,16 +266,13 @@ export default function ReservationEditModal({ open, roomId, onClose, onSubmit }
           </div>
         )}
 
-        {/* Step 2: 수정 내용 입력 */}
         {step === "edit" && selected && (
           <div className="px-5 py-4 overflow-y-auto flex flex-col gap-4">
-            {/* 캘린더 */}
             <div>
               <p className="text-sm font-medium text-stone-700 mb-2">날짜 선택</p>
               <RangePicker value={dateRange} onChange={setDateRange} />
             </div>
 
-            {/* 시간 선택 */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium text-stone-700 mb-1.5">
@@ -302,7 +298,6 @@ export default function ReservationEditModal({ open, roomId, onClose, onSubmit }
               </div>
             </div>
 
-            {/* 메모 */}
             <div>
               <label className="block text-sm font-medium text-stone-700 mb-1.5">
                 메모
@@ -329,7 +324,6 @@ export default function ReservationEditModal({ open, roomId, onClose, onSubmit }
           </div>
         )}
 
-        {/* Step 3: 변경사항 확인 */}
         {step === "confirm" && selected && proposed && (
           <div className="px-5 py-4 overflow-y-auto flex flex-col gap-4">
             <p className="text-sm text-stone-500">
@@ -358,7 +352,6 @@ export default function ReservationEditModal({ open, roomId, onClose, onSubmit }
               </div>
             </div>
 
-            {/* 선택 날짜 요약 */}
             {dateRange?.from && (
               <p className="text-xs text-stone-400 text-center">
                 {fmtRange(dateRange.from, dateRange.to, startTime, endTime)}

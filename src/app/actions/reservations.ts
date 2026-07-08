@@ -12,9 +12,6 @@ import {
   SERVICE_COMPLETE_CONFIRMED_PREFIX,
 } from "@/lib/chatMessagePrefixes";
 
-const FEE_RATE = 0.05;
-
-
 interface ReservationInput {
   sitter_id: string;
   service_id: string;
@@ -96,7 +93,6 @@ export async function createReservation(input: ReservationInput) {
     };
   }
 
-  // 서비스 존재 및 해당 시터 소유 확인 + 가격 조회
   const { data: service } = await db
     .from("services")
     .select("id, sitter_id, price, is_active, sitters!inner(user_id)")
@@ -195,7 +191,6 @@ export async function updateReservation(
     };
   }
 
-  // 현재 상태에서 요청 상태로 전이 가능한지 확인
   if (!VALID_TRANSITIONS[input.status].includes(reservation.status)) {
     return {
       error: {
@@ -275,14 +270,15 @@ export async function cancelReservationAndNotify(
   const user = await getAuthUser();
   if (!user) return result;
 
-  const { data: roomByReservation } = await db
+  const { data: roomsByReservation } = await db
     .from("chat_rooms")
     .select("id")
     .eq("reservation_id", id)
     .eq("room_type", "direct")
-    .maybeSingle();
+    .order("created_at", { ascending: false })
+    .limit(1);
 
-  let room = roomByReservation;
+  let room = roomsByReservation?.[0] ?? null;
   if (!room) {
     const { data: reservation } = await db
       .from("reservations")
@@ -290,14 +286,15 @@ export async function cancelReservationAndNotify(
       .eq("id", id)
       .single();
     if (reservation) {
-      const { data: fallbackRoom } = await db
+      const { data: fallbackRooms } = await db
         .from("chat_rooms")
         .select("id")
         .eq("owner_id", reservation.owner_id)
         .eq("sitter_id", reservation.sitter_id)
         .eq("room_type", "direct")
-        .maybeSingle();
-      room = fallbackRoom;
+        .order("created_at", { ascending: false })
+        .limit(1);
+      room = fallbackRooms?.[0] ?? null;
     }
   }
 
@@ -360,7 +357,9 @@ export async function getActiveReservationsForRoom(roomId: string) {
 
   const { data, error } = room.reservation_id
     ? await activeQuery.eq("id", room.reservation_id)
-    : await activeQuery.eq("owner_id", room.owner_id).eq("sitter_id", room.sitter_id);
+    : await activeQuery
+        .eq("owner_id", room.owner_id)
+        .eq("sitter_id", room.sitter_id);
 
   if (error) {
     return { error: { code: "INTERNAL_ERROR", message: error.message } };
@@ -398,7 +397,8 @@ export async function getActiveReservationsForRoom(roomId: string) {
       startDatetime: r.start_datetime ?? null,
       endDatetime: r.end_datetime ?? null,
       totalPrice: paidTotal || (r.total_price ?? 0),
-      isBasePaid: r.status === "paid" || r.status === "in_progress" || paidTotal > 0,
+      isBasePaid:
+        r.status === "paid" || r.status === "in_progress" || paidTotal > 0,
       serviceTitle,
       petName: firstPet?.name ?? null,
     };
@@ -493,22 +493,24 @@ export async function ownerConfirmServiceComplete(reservationId: string) {
     .eq("id", reservation.sitter_id)
     .single();
 
-  const { data: roomByReservation } = await db
+  const { data: roomsByReservation } = await db
     .from("chat_rooms")
     .select("id")
     .eq("reservation_id", reservationId)
-    .maybeSingle();
+    .order("created_at", { ascending: false })
+    .limit(1);
 
-  let room = roomByReservation;
+  let room = roomsByReservation?.[0] ?? null;
   if (!room) {
-    const { data: fallbackRoom } = await db
+    const { data: fallbackRooms } = await db
       .from("chat_rooms")
       .select("id")
       .eq("owner_id", reservation.owner_id)
       .eq("sitter_id", reservation.sitter_id)
       .eq("room_type", "direct")
-      .maybeSingle();
-    room = fallbackRoom;
+      .order("created_at", { ascending: false })
+      .limit(1);
+    room = fallbackRooms?.[0] ?? null;
   }
 
   let completionMessage = null;
@@ -536,9 +538,8 @@ export async function ownerConfirmServiceComplete(reservationId: string) {
       service?.title ||
       SERVICE_TYPE_LABEL_MAP[service?.service_type ?? ""] ||
       "펫시팅 서비스";
-    const petName = (
-      items?.[0]?.pets as { name: string } | null | undefined
-    )?.name;
+    const petName = (items?.[0]?.pets as { name: string } | null | undefined)
+      ?.name;
 
     const completionContent = `${SERVICE_COMPLETE_CONFIRMED_PREFIX}${JSON.stringify(
       {
@@ -553,7 +554,11 @@ export async function ownerConfirmServiceComplete(reservationId: string) {
 
     const { data: insertedMessage, error: messageError } = await db
       .from("messages")
-      .insert({ room_id: room.id, sender_id: user.id, content: completionContent })
+      .insert({
+        room_id: room.id,
+        sender_id: user.id,
+        content: completionContent,
+      })
       .select()
       .single();
     if (messageError) {
@@ -656,10 +661,14 @@ export async function getMyReservations() {
     const service = r.services as { title: string } | null;
     const items = (r.reservation_items as ItemRow[]) ?? [];
     const firstPet = items[0]?.pets;
-    // reservation_id가 unique라 PostgREST가 reviews를 단일 객체로 임베드할 수 있어
-    // 배열/객체 두 형태 모두 안전하게 처리
-    const review = r.reviews as unknown as { id: string } | { id: string }[] | null;
-    const reviewWritten = Array.isArray(review) ? review.length > 0 : review != null;
+
+    const review = r.reviews as unknown as
+      | { id: string }
+      | { id: string }[]
+      | null;
+    const reviewWritten = Array.isArray(review)
+      ? review.length > 0
+      : review != null;
 
     return {
       id: r.id,
@@ -735,7 +744,11 @@ export async function getMySitterReservations() {
 
     type OwnerRow = { full_name: string; profile_image: string | null } | null;
     type SitterRow = { available_area: string } | null;
-    type PetRow = { name: string; breed: string | null; animal_type: string } | null;
+    type PetRow = {
+      name: string;
+      breed: string | null;
+      animal_type: string;
+    } | null;
     type ItemRow = { pets: PetRow };
 
     const owner = r.users as OwnerRow;
@@ -825,7 +838,11 @@ export async function getReservationById(id: string) {
   type SitterRow = {
     available_area: string;
     rating: number;
-    users: { full_name: string; is_verified: boolean; profile_image: string | null } | null;
+    users: {
+      full_name: string;
+      is_verified: boolean;
+      profile_image: string | null;
+    } | null;
   } | null;
   type PetRow = {
     name: string;
@@ -842,8 +859,13 @@ export async function getReservationById(id: string) {
   const firstPet = items[0]?.pets;
   // reservation_id가 unique라 PostgREST가 reviews를 단일 객체로 임베드할 수 있어
   // 배열/객체 두 형태 모두 안전하게 처리
-  const review = r.reviews as unknown as { id: string } | { id: string }[] | null;
-  const reviewWritten = Array.isArray(review) ? review.length > 0 : review != null;
+  const review = r.reviews as unknown as
+    | { id: string }
+    | { id: string }[]
+    | null;
+  const reviewWritten = Array.isArray(review)
+    ? review.length > 0
+    : review != null;
 
   const { count: reviewCount } = await db
     .from("reviews")
@@ -877,6 +899,7 @@ export async function getReservationById(id: string) {
       },
       price: r.total_price,
       reviewWritten,
+      isSitter,
     },
   };
 }
@@ -945,8 +968,14 @@ export async function createPetsitterReservationRequest(
     .maybeSingle();
 
   const activeStatuses = ["pending", "accepted", "paid", "in_progress"];
-  const reservationStatus = (existingRoom?.reservations as { status: string } | null)?.status;
-  if (existingRoom && reservationStatus && activeStatuses.includes(reservationStatus))
+  const reservationStatus = (
+    existingRoom?.reservations as { status: string } | null
+  )?.status;
+  if (
+    existingRoom &&
+    reservationStatus &&
+    activeStatuses.includes(reservationStatus)
+  )
     return {
       error: {
         code: "CONFLICT",
@@ -1098,7 +1127,7 @@ export async function createPetsitterReservationRequest(
       type: "reservation",
       title: "새로운 예약 요청이 도착했어요",
       content: "보호자가 예약을 요청했습니다. 확인해주세요.",
-      linkUrl: `/chat`,
+      linkUrl: `/chat?roomId=${room.id}`,
     });
   }
 
@@ -1168,10 +1197,7 @@ export async function acceptReservationRequest(reservationId: string) {
       error: { code: "INTERNAL_ERROR", message: reservationError.message },
     };
 
-  await db
-    .from("chat_rooms")
-    .update({ room_type: "direct" })
-    .eq("id", room.id);
+  await db.from("chat_rooms").update({ room_type: "direct" }).eq("id", room.id);
   const directRoomId = room.id;
 
   const msgContent = `${RESERVATION_ACCEPTED_PREFIX}${JSON.stringify({
@@ -1268,7 +1294,9 @@ export async function getReadyReservationsForRoom(roomId: string) {
 
   const { data, error } = room.reservation_id
     ? await readyQuery.eq("id", room.reservation_id)
-    : await readyQuery.eq("owner_id", room.owner_id).eq("sitter_id", room.sitter_id);
+    : await readyQuery
+        .eq("owner_id", room.owner_id)
+        .eq("sitter_id", room.sitter_id);
 
   if (error)
     return { error: { code: "INTERNAL_ERROR", message: error.message } };
@@ -1445,7 +1473,7 @@ export async function rejectReservationRequest(reservationId: string) {
     type: "reservation",
     title: "예약 요청이 거절되었어요",
     content: "펫시터가 예약 요청을 거절했습니다.",
-    linkUrl: `/chat`,
+    linkUrl: `/chat?roomId=${room.id}`,
   });
 
   return { data: { ok: true, message: insertedMessage } };
@@ -1527,12 +1555,19 @@ export async function getReservationsByRoom(roomId: string) {
     .single();
 
   if (!room) {
-    return { error: { code: "NOT_FOUND", message: "채팅방을 찾을 수 없습니다." } };
+    return {
+      error: { code: "NOT_FOUND", message: "채팅방을 찾을 수 없습니다." },
+    };
   }
 
   const sitterRow = room.sitters as unknown as { user_id: string };
   if (room.owner_id !== user.id && sitterRow.user_id !== user.id) {
-    return { error: { code: "FORBIDDEN", message: "채팅방 참여자만 조회할 수 있습니다." } };
+    return {
+      error: {
+        code: "FORBIDDEN",
+        message: "채팅방 참여자만 조회할 수 있습니다.",
+      },
+    };
   }
 
   const reservationsQuery = db
@@ -1556,7 +1591,9 @@ export async function getReservationsByRoom(roomId: string) {
 
   const reservations = (data ?? []).map((item) => {
     const { reservation_items, ...rest } = item as typeof item & {
-      reservation_items: { pets: { id: string; name: string; animal_type: string } }[] | null;
+      reservation_items:
+        | { pets: { id: string; name: string; animal_type: string } }[]
+        | null;
     };
     return {
       ...rest,
@@ -1578,7 +1615,10 @@ export async function updateReservationDetails(
 
   if (new Date(input.end_datetime) <= new Date(input.start_datetime)) {
     return {
-      error: { code: "VALIDATION_ERROR", message: "종료일은 시작일 이후여야 합니다." },
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "종료일은 시작일 이후여야 합니다.",
+      },
     };
   }
 
@@ -1591,12 +1631,19 @@ export async function updateReservationDetails(
     .single();
 
   if (!reservation) {
-    return { error: { code: "NOT_FOUND", message: "예약을 찾을 수 없습니다." } };
+    return {
+      error: { code: "NOT_FOUND", message: "예약을 찾을 수 없습니다." },
+    };
   }
 
-  if (!["pending", "accepted", "paid", "in_progress"].includes(reservation.status)) {
+  if (
+    !["pending", "accepted", "paid", "in_progress"].includes(reservation.status)
+  ) {
     return {
-      error: { code: "FORBIDDEN", message: "완료되거나 취소된 예약은 수정할 수 없습니다." },
+      error: {
+        code: "FORBIDDEN",
+        message: "완료되거나 취소된 예약은 수정할 수 없습니다.",
+      },
     };
   }
 
@@ -1610,7 +1657,12 @@ export async function updateReservationDetails(
   const isSitter = sitterProfile?.id === reservation.sitter_id;
 
   if (!isOwner && !isSitter) {
-    return { error: { code: "FORBIDDEN", message: "예약 당사자만 수정할 수 있습니다." } };
+    return {
+      error: {
+        code: "FORBIDDEN",
+        message: "예약 당사자만 수정할 수 있습니다.",
+      },
+    };
   }
 
   const { data, error } = await db

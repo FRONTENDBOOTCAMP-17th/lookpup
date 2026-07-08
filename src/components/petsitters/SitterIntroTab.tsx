@@ -35,6 +35,7 @@ export default function SitterIntroTab({ sitter }: { sitter: SitterDetail }) {
                 onClick={() => setLightboxIndex(idx)}
                 className="focus:outline-none"
               >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={url}
                   alt={`활동 사진 ${idx + 1}`}

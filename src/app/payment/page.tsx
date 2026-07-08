@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CreditCard, ChevronLeft } from "lucide-react";
@@ -8,6 +8,9 @@ import Header from "@/components/layout/Header";
 import { CustomModal } from "@/components/common/CustomModal";
 import { usePortOne } from "@/hooks/usePortOne";
 import { createPayment } from "@/app/actions/payments";
+import { useUserStore } from "@/store/userStore";
+
+const FEE_RATE = 0.05;
 
 function formatKRW(value: number) {
   return value.toLocaleString("ko-KR") + "원";
@@ -21,13 +24,13 @@ function PriceBreakdown({
   feeRate: number;
 }) {
   const fee = Math.round(amount * feeRate);
-  const total = amount + fee;
+  const base = amount - fee;
 
   return (
     <div className="w-full bg-orange-50 rounded-xl border border-orange-100 overflow-hidden">
       <div className="px-4 py-3 border-b border-orange-100 flex justify-between items-center">
         <span className="text-gray-500 text-sm">예약 금액</span>
-        <span className="text-stone-900 text-sm">{formatKRW(amount)}</span>
+        <span className="text-stone-900 text-sm">{formatKRW(base)}</span>
       </div>
       <div className="px-4 py-3 border-b border-orange-100 flex justify-between items-center">
         <span className="text-gray-500 text-sm">
@@ -38,7 +41,7 @@ function PriceBreakdown({
       <div className="px-4 py-3.5 bg-white flex justify-between items-center">
         <span className="text-stone-900 text-sm font-bold">총 결제 금액</span>
         <span className="text-orange-500 text-base font-bold">
-          {formatKRW(total)}
+          {formatKRW(amount)}
         </span>
       </div>
     </div>
@@ -49,10 +52,9 @@ function PaymentPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isPending, requestPayment } = usePortOne();
+  const user = useUserStore((state) => state.user);
 
   const reservationId = searchParams.get("reservationId");
-  const displayAmount = Number(searchParams.get("amount") ?? 0);
-  const feeRate = Number(searchParams.get("fee") ?? 0.05);
   const source = searchParams.get("source") ?? "chat";
   const roomId = searchParams.get("roomId");
   const postId = searchParams.get("postId");
@@ -63,6 +65,40 @@ function PaymentPageContent() {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
+
+  const [amount, setAmount] = useState<number | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!reservationId) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const res = await fetch(`/api/reservations/${reservationId}`);
+        const json = await res.json();
+        if (cancelled) return;
+
+        if (!res.ok || !json.data) {
+          setLoadError(
+            json?.error?.message ?? "예약 정보를 불러올 수 없습니다.",
+          );
+          return;
+        }
+
+        setAmount(json.data.total_price);
+      } catch {
+        if (!cancelled) {
+          setLoadError("예약 정보를 불러오는 중 오류가 발생했습니다.");
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [reservationId]);
 
   function getBackHref() {
     if (source === "chat" && roomId) return `/chat?roomId=${roomId}`;
@@ -84,20 +120,20 @@ function PaymentPageContent() {
       return;
     }
 
-    const { payment_id, amount, order_name } = result.data!;
+    const { payment_id, amount: chargeAmount, order_name } = result.data!;
 
     requestPayment(
       {
         paymentId: payment_id,
         orderName: order_name,
-        totalAmount: amount,
+        totalAmount: chargeAmount,
         currency: "KRW",
         payMethod: "CARD",
         redirectUrl: `${window.location.origin}/payment/complete`,
         customer: {
-          fullName: "테스트",
-          phoneNumber: "010-0000-0000",
-          email: "test@test.com",
+          fullName: user?.fullName || "고객",
+          phoneNumber: user?.phoneNumber || "010-0000-0000",
+          email: user?.email || "",
         },
       },
       {
@@ -120,6 +156,36 @@ function PaymentPageContent() {
   function handleCancelConfirm() {
     setShowCancelModal(false);
     router.push(getBackHref());
+  }
+
+  if (!reservationId || loadError) {
+    return (
+      <>
+        <Header />
+        <main className="min-h-screen bg-orange-50 flex flex-col items-center justify-center px-4 py-8 sm:py-12 gap-4">
+          <p className="text-stone-900 text-base font-semibold">
+            {loadError ?? "예약 정보가 없습니다."}
+          </p>
+          <Link
+            href={getBackHref()}
+            className="h-11 px-5 rounded-[10px] bg-orange-500 hover:bg-orange-600 text-white text-base font-semibold flex items-center justify-center transition-colors"
+          >
+            돌아가기
+          </Link>
+        </main>
+      </>
+    );
+  }
+
+  if (amount === null) {
+    return (
+      <>
+        <Header />
+        <main className="min-h-screen bg-orange-50 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-full border-4 border-orange-200 border-t-orange-500 animate-spin" />
+        </main>
+      </>
+    );
   }
 
   return (
@@ -176,7 +242,7 @@ function PaymentPageContent() {
             </div>
 
             <div className="w-full max-w-sm sm:max-w-96">
-              <PriceBreakdown amount={displayAmount} feeRate={feeRate} />
+              <PriceBreakdown amount={amount} feeRate={FEE_RATE} />
             </div>
           </div>
 
@@ -193,8 +259,7 @@ function PaymentPageContent() {
               }}
               className="w-full max-w-sm sm:max-w-96 min-h-11 h-11 bg-orange-500 hover:bg-orange-600 text-white text-base font-semibold rounded-[10px] transition-colors"
             >
-              결제하기{" "}
-              {formatKRW(displayAmount + Math.round(displayAmount * feeRate))}
+              결제하기 {formatKRW(amount)}
             </button>
             <button
               onClick={() => setShowCancelModal(true)}
@@ -226,7 +291,7 @@ function PaymentPageContent() {
         closeOnOverlay={!isPending}
         confirmText={isPending ? "결제 중..." : "결제하기"}
       >
-        <PriceBreakdown amount={displayAmount} feeRate={feeRate} />
+        <PriceBreakdown amount={amount} feeRate={FEE_RATE} />
       </CustomModal>
 
       <CustomModal

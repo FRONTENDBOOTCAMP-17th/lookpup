@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { createServiceClient } from "@/utils/supabase/service";
-import BoardEditClient from "@/components/board/BoardEditClient";
+import BoardEditClient, { type PostData } from "@/components/board/BoardEditClient";
 import { mapPetRow } from "@/lib/board";
 import type { PetRow } from "@/types/board";
 
@@ -39,7 +39,7 @@ export default async function BoardEditPage({
   return (
     <BoardEditClient
       id={id}
-      initialData={post as any}
+      initialData={post as unknown as PostData}
       initialPets={initialPets}
     />
   );

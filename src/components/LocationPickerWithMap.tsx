@@ -40,11 +40,12 @@ export default function LocationPickerWithMap({
     value ? { lat: value.lat, lng: value.lng } : null,
   );
 
-  // 검색어 변경 시 자동완성 요청 (300ms debounce)
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     const q = query.trim();
     if (q.length < 2) {
+      // 디바운스 검색 effect의 일부 — 검색어가 짧아 API 호출 없이 목록만 비우는 분기
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSuggestions([]);
       return;
     }
@@ -55,7 +56,6 @@ export default function LocationPickerWithMap({
     }, 300);
   }, [query]);
 
-  // 지도 초기화
   function initMap() {
     if (!containerRef.current || !window.kakao?.maps || mapRef.current) return;
     const center = selectedRef.current ?? { lat: 37.5665, lng: 126.978 };
@@ -68,12 +68,6 @@ export default function LocationPickerWithMap({
       placeMarker(selectedRef.current.lat, selectedRef.current.lng);
     }
   }
-
-  useEffect(() => {
-    if (window.kakao?.maps) {
-      window.kakao.maps.load(initMap);
-    }
-  }, []);
 
   function buildDisplayAreaFromAddress(addr: string): string {
     const parts = addr.split(" ");
@@ -168,10 +162,9 @@ export default function LocationPickerWithMap({
       <Script
         src={`//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_KEY}&autoload=false&libraries=services`}
         strategy="afterInteractive"
-        onLoad={() => window.kakao.maps.load(initMap)}
+        onReady={() => window.kakao.maps.load(initMap)}
       />
 
-      {/* 주소 검색 */}
       <div className="relative">
         <label className="block text-sm font-medium text-stone-900 mb-2">
           기준 주소 *
@@ -205,7 +198,6 @@ export default function LocationPickerWithMap({
           )}
         </div>
 
-        {/* 자동완성 드롭다운 */}
         {showSuggestions && suggestions.length > 0 && (
           <ul className="absolute z-50 top-full mt-1 w-full bg-white border border-[#ffe9d6] rounded-xl shadow-lg overflow-hidden">
             {suggestions.map((s, i) => (
@@ -238,7 +230,6 @@ export default function LocationPickerWithMap({
         )}
       </div>
 
-      {/* 지도 미리보기 */}
       <div>
         <p className="text-sm font-medium text-stone-900 mb-2">지도 미리보기</p>
         <div className="relative rounded-xl overflow-hidden border border-[#ffe9d6] h-56">

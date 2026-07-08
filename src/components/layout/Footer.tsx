@@ -4,10 +4,8 @@ import Image from "next/image";
 export default function Footer() {
   return (
     <footer className="bg-stone-900">
-      {/* 메인 푸터 */}
       <div className="max-w-[1280px] mx-auto px-6 md:px-10 py-16">
         <div className="flex flex-col md:flex-row justify-between items-start gap-10">
-          {/* 브랜드 */}
           <div>
             <Link href="/" className="mb-2 inline-block">
               <Image
@@ -23,7 +21,6 @@ export default function Footer() {
             </p>
           </div>
 
-          {/* 링크 */}
           <div className="flex gap-12 md:gap-16">
             <div className="flex flex-col gap-4">
               <span className="text-white text-base font-semibold">서비스</span>
@@ -69,7 +66,6 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* 저작권 */}
       <div className="border-t border-slate-800">
         <div className="max-w-[1280px] mx-auto px-10 py-4">
           <p className="text-center text-gray-500 text-xs">

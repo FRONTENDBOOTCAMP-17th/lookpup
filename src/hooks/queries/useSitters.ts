@@ -26,10 +26,8 @@ export function useSitters(filters: SitterFilters) {
     queryFn: async () => {
       const supabase = createClient();
       const { data, error } = await supabase.rpc("get_petsitters_filtered", {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        p_district: (filters.district || null) as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        p_dong: (filters.dong || null) as any,
+        p_district: filters.district || undefined,
+        p_dong: filters.dong || undefined,
       });
       if (error) throw error;
       const rows = (data as Omit<SitterRow, "review_count">[]).filter(

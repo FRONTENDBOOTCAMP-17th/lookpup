@@ -25,7 +25,6 @@ export async function completeSignup(identityVerificationId: string) {
   if (!user) redirect("/auth/login");
 
   try {
-    //포트원 V2 API로 본인인증 결과 검증
     const portoneRes = await fetch(
       `https://api.portone.io/identity-verifications/${identityVerificationId}`,
       {
@@ -64,7 +63,6 @@ export async function completeSignup(identityVerificationId: string) {
 
     if (duplicatePhone) return { error: "이미 가입된 전화번호입니다." };
 
-    // 본인인증 시 정보 UPDATE is_verified가 false에서 true
     const { error: updateError } = await db
       .from("users")
       .update({

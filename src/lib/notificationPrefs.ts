@@ -25,20 +25,13 @@ export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
   marketing: false,
 };
 
-// notifications.type 값 → 설정 카테고리 매핑
-// "마케팅 알림"은 실제로 발행되는 type이 없어 항상 무효(영향 없음)
 const TYPE_TO_CATEGORY: Record<string, NotificationCategory> = {
   application: "reservation",
   application_selected: "reservation",
   application_rejected: "reservation",
-  reservation_requested: "reservation",
-  reservation_accepted: "reservation",
-  reservation_rejected: "reservation",
-  reservation_completed: "reservation",
-  reservation_canceled: "reservation",
+  reservation: "reservation",
   care_record: "reservation",
   message: "chat",
-  chat_message: "chat",
   review_received: "review",
 };
 

@@ -8,7 +8,7 @@ import { test, expect, Page } from "@playwright/test";
 // Kakao Map은 도메인 미등록으로 빈 캔버스 — known limitation.
 // networkidle 금지 (Supabase Realtime websocket으로 hang).
 
-const IMG = "../images/2026-07-06";
+const IMG = "../images/2026-07-07";
 const AUTH_STATE = ".auth/lookpup.json";
 
 async function visit(page: Page, path: string) {
@@ -241,6 +241,26 @@ test.describe("인증 후", () => {
     await visit(page, "/myprofile/settings");
     await shot(page, "A10-settings");
     assertLoggedIn(page, "A10");
+  });
+
+  // ── 20차 신규 흐름 (본인인증 게이트 · 관리자) ────────────────────────────
+  test("A11 본인인증 페이지 /auth/verification", async ({ page }) => {
+    await visit(page, "/auth/verification");
+    await shot(page, "A11-verification");
+    // 로그인 세션은 유효하므로 /auth/login 로 튕기지 않아야 함
+    expect(page.url().includes("/auth/login")).toBe(false);
+  });
+
+  test("A12 관리자 대시보드 /admin (권한 게이트 확인)", async ({ page }) => {
+    const s = await visit(page, "/admin");
+    await shot(page, "A12-admin");
+    console.log(`[A12] /admin -> HTTP ${s}, url=${page.url()}`);
+  });
+
+  test("A13 관리자 신고 관리 /admin/reports", async ({ page }) => {
+    const s = await visit(page, "/admin/reports");
+    await shot(page, "A13-admin-reports");
+    console.log(`[A13] /admin/reports -> HTTP ${s}, url=${page.url()}`);
   });
 });
 

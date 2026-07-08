@@ -25,7 +25,6 @@ export function ReportModalContent({
 }: ReportModalContentProps) {
   return (
     <div className="flex flex-col gap-4">
-      {/* Radio list */}
       <fieldset>
         <legend className="sr-only">신고 사유</legend>
         <div className="flex flex-col gap-2">
@@ -50,7 +49,6 @@ export function ReportModalContent({
         </div>
       </fieldset>
 
-      {/* Textarea */}
       <textarea
         value={additionalText}
         onChange={(e) => onAdditionalTextChange(e.target.value)}

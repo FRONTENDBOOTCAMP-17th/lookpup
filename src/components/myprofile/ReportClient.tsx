@@ -66,6 +66,8 @@ export default function ReportClient() {
 
   useEffect(() => {
     const urls = images.map((file) => URL.createObjectURL(file));
+    // 브라우저 blob URL 생성/해제 라이프사이클 관리라 effect의 cleanup이 필요한 경우
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPreviewUrls(urls);
     return () => {
       urls.forEach((url) => URL.revokeObjectURL(url));

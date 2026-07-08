@@ -404,7 +404,6 @@ export async function cancelPayment(paymentId: string, reason: string) {
     };
   }
 
-  // PortOne V2 전액 취소 요청
   const portoneRes = await fetch(
     `https://api.portone.io/payments/${paymentId}/cancel`,
     {

@@ -170,9 +170,14 @@ export default function BoardListClient() {
       .finally(() => setPostsLoading(false));
   }, []);
 
-  useEffect(() => {
+  const [prevFilters, setPrevFilters] = useState({ activeCategory, searchQuery });
+  if (
+    activeCategory !== prevFilters.activeCategory ||
+    searchQuery !== prevFilters.searchQuery
+  ) {
+    setPrevFilters({ activeCategory, searchQuery });
     setCurrentPage(1);
-  }, [activeCategory, searchQuery]);
+  }
 
   const filtered = posts.filter((p) => {
     const matchCategory =

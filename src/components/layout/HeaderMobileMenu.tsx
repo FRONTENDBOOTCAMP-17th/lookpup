@@ -27,7 +27,11 @@ export default function HeaderMobileMenu({ navItems }: { navItems: readonly NavI
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
-  useEffect(() => { setOpen(false); }, [pathname]);
+  const [prevPathname, setPrevPathname] = useState(pathname);
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname);
+    setOpen(false);
+  }
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -41,7 +45,6 @@ export default function HeaderMobileMenu({ navItems }: { navItems: readonly NavI
 
   return (
     <div ref={menuRef} className="md:hidden w-full bg-white">
-      {/* 모바일 헤더 바 */}
       <div className="h-16 px-5 flex items-center justify-between">
         <Link href="/" className="shrink-0" aria-label="봐주개 홈으로 이동">
           <Image
@@ -101,7 +104,6 @@ export default function HeaderMobileMenu({ navItems }: { navItems: readonly NavI
         </div>
       </div>
 
-      {/* 드롭다운 */}
       {open && (
         <div className="w-full bg-white border-t border-orange-100 border-b shadow-[0px_4px_20px_0px_rgba(40,26,14,0.10)]">
           {!isLoading && isLoggedIn && (

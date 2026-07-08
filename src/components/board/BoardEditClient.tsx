@@ -34,7 +34,7 @@ import {
 } from "@/lib/board";
 import type { Pet, PetRow } from "@/types/board";
 
-type PostData = {
+export type PostData = {
   status: string;
   request_type: string;
   budget: number;
@@ -142,6 +142,8 @@ export default function BoardEditClient({
     formInitialized.current = true;
 
     if (initialData) {
+      // formInitialized ref로 최초 1회만 실행되는 초기화 (prop 또는 아래 fetch로 폼을 채움)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       initFromData(initialData);
       if (initialPets) setPets(initialPets);
       return;
@@ -289,7 +291,6 @@ export default function BoardEditClient({
           </div>
 
           <div className="flex flex-col gap-4 pt-8">
-            {/* 서비스 유형 + 예산 */}
             <div className="bg-white rounded-2xl border border-[#ffe9d6] p-7">
               <h2 className="text-lg font-semibold text-[#281a0e]">
                 어떤 돌봄이 필요하신가요?
@@ -368,7 +369,6 @@ export default function BoardEditClient({
               </div>
             </div>
 
-            {/* 날짜·시간 */}
             <div className="bg-white rounded-2xl border border-[#ffe9d6] p-4 sm:p-7">
               <h2 className="text-lg font-semibold text-[#281a0e]">
                 날짜 · 시간
@@ -415,7 +415,6 @@ export default function BoardEditClient({
               </div>
             </div>
 
-            {/* 돌봄 장소 */}
             <div className="bg-white rounded-2xl border border-[#ffe9d6] p-7">
               <h2 className="text-lg font-semibold text-[#281a0e]">
                 돌봄 장소
@@ -518,7 +517,6 @@ export default function BoardEditClient({
               </p>
             </div>
 
-            {/* 반려동물 선택 */}
             <div className="bg-white rounded-2xl border border-[#ffe9d6] p-7">
               <h2 className="text-xl font-bold text-[#281a0e] mb-1">
                 함께할 반려동물을 선택해주세요
@@ -571,7 +569,6 @@ export default function BoardEditClient({
               </div>
             </div>
 
-            {/* 제목 + 상세 내용 */}
             <div className="bg-white rounded-2xl border border-[#ffe9d6] p-7">
               <div className="flex flex-col gap-2 mb-6">
                 <div className="flex items-center justify-between">
@@ -618,7 +615,6 @@ export default function BoardEditClient({
               </div>
             </div>
 
-            {/* 펫시터 조건 */}
             <div className="bg-white rounded-2xl border border-[#ffe9d6] p-7">
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">

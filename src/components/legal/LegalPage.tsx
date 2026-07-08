@@ -22,16 +22,11 @@ function isTitledItem(item: ArticleItem): item is TitledItem {
 }
 
 type LegalPageProps = {
-  /** 모바일 헤더 · 데스크탑 타이틀에 쓰이는 문서 이름 (예: "이용약관") */
   title: string;
-  /** 데스크탑 타이틀 아래 부제 */
   subtitle: string;
-  /** 흰색 박스 상단 제목 (예: "봐주개 이용약관") */
   heading: string;
-  /** 흰색 박스 상단 소개 문단 */
   intro: ReactNode;
   articles: LegalArticle[];
-  /** 적용일자 박스 문장 */
   effectiveDate: string;
   /** [텍스트] 형태로 감싼 단어를 링크로 변환하는 맵 */
   linkMap?: Record<string, string>;
@@ -72,7 +67,6 @@ export default function LegalPage({
     <div className="min-h-screen bg-orange-50">
       <Header />
 
-      {/* 모바일 헤더 */}
       <div className="md:hidden sticky top-16 z-50 bg-white border-b border-orange-100">
         <div className="h-14 px-5 flex items-center gap-3">
           <button onClick={() => router.back()} className="p-1 -ml-1">
@@ -83,7 +77,6 @@ export default function LegalPage({
       </div>
 
       <div className="w-full max-w-[1280px] mx-auto px-4 sm:px-10 pt-6 md:pt-12 pb-16">
-        {/* 데스크탑 타이틀 */}
         <div className="hidden md:flex items-center gap-4 mb-8">
           <button
             onClick={() => router.back()}
@@ -98,15 +91,12 @@ export default function LegalPage({
         </div>
 
         <div className="flex flex-col gap-4">
-          {/* 소개 + 조항 전체 박스 */}
           <SectionCard className="p-6 gap-6">
-            {/* 소개 */}
             <div>
               <h1 className="text-xl font-bold text-stone-900 mb-4">{heading}</h1>
               {intro}
             </div>
 
-            {/* 조항 목록 */}
             {articles.map((article, index) => (
               <div key={article.title}>
                 {index > 0 && <div className="border-t border-orange-100 mb-6" />}
@@ -150,7 +140,6 @@ export default function LegalPage({
             ))}
           </SectionCard>
 
-          {/* 적용일자 */}
           <div className="bg-orange-50 rounded-2xl border border-orange-100 px-6 py-4">
             <p className="text-sm font-semibold text-[var(--color-orange-500)]">
               적용일자

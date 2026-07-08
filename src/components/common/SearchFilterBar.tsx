@@ -21,10 +21,6 @@ interface SearchFilterBarProps {
   rightAction?: ReactNode;
 }
 
-/**
- * 검색 입력창 + 필터 버튼 + 필터 탭을 묶은 공통 바.
- * 펫시터 찾기 / 구인게시판
- */
 export default function SearchFilterBar({
   placeholder = "검색",
   filters,
@@ -55,7 +51,6 @@ export default function SearchFilterBar({
 
   return (
     <div className={`flex flex-col gap-4 ${className}`}>
-      {/* 검색 입력창 + 필터 버튼 */}
       {(!hideSearch || !hideSort) && <div className="flex gap-2 md:gap-3">
         {!hideSearch && (
           <div className="flex-1 flex items-center gap-2 px-3 md:px-4 py-3 bg-orange-50 rounded-xl min-w-0">
@@ -70,7 +65,6 @@ export default function SearchFilterBar({
           </div>
         )}
 
-        {/* 정렬 버튼 or 커스텀 액션 */}
         {!hideSort && (rightAction ? (
           <div className="shrink-0 ml-auto">{rightAction}</div>
         ) : (
@@ -112,7 +106,6 @@ export default function SearchFilterBar({
         ))}
       </div>}
 
-      {/* 필터 탭 */}
       <ScrollArea className="w-full">
         <div className="flex gap-2 pb-1">
           {filters.map((f) => (

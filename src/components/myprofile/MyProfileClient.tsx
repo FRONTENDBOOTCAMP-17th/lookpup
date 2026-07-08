@@ -349,7 +349,6 @@ export default function MyProfileClient({
         onSave={(data) => setLocationData(data)}
       />
 
-      {/* 모바일 프로필 */}
       <div className="md:hidden bg-linear-to-br from-orange-500 to-orange-300 rounded-b-3xl px-5 pt-8 pb-8 shrink-0">
         <div className="flex items-center gap-4 mb-6">
           <AvatarMobile
@@ -384,11 +383,9 @@ export default function MyProfileClient({
         )}
       </div>
 
-      {/* 데스크탑 레이아웃 */}
       <div className="hidden md:block flex-1">
         <div className="max-w-[1280px] mx-auto px-4 sm:px-10 py-12">
           <div className="flex gap-6">
-            {/* 사이드바 */}
             <div className="w-72 shrink-0">
               <SectionCard className="sticky top-24 gap-0 overflow-hidden">
                 <div className="text-center pb-5 mb-4 border-b border-orange-100">
@@ -471,7 +468,6 @@ export default function MyProfileClient({
               </SectionCard>
             </div>
 
-            {/* 우측 콘텐츠 */}
             <div className="flex-1 min-w-0">
               {selectedMenu === "profile" && (
                 <div className="space-y-5">
@@ -549,7 +545,6 @@ export default function MyProfileClient({
         </div>
       </div>
 
-      {/* 모바일 메뉴 */}
       <div className="md:hidden flex-1 overflow-y-auto px-5 py-6">
         {userType === "owner" && ownerProfile && (
           <SitterProfileCard

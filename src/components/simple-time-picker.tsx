@@ -83,8 +83,12 @@ export function SimpleTimePicker({
   // Sync from value/use12HourFormat during render (not in an effect) to avoid
   // react-hooks/set-state-in-effect and a stale-state double-click bug.
   const [prevValueTime, setPrevValueTime] = useState(value.getTime());
-  const [prevUse12HourFormat, setPrevUse12HourFormat] = useState(use12HourFormat);
-  if (value.getTime() !== prevValueTime || use12HourFormat !== prevUse12HourFormat) {
+  const [prevUse12HourFormat, setPrevUse12HourFormat] =
+    useState(use12HourFormat);
+  if (
+    value.getTime() !== prevValueTime ||
+    use12HourFormat !== prevUse12HourFormat
+  ) {
     setPrevValueTime(value.getTime());
     setPrevUse12HourFormat(use12HourFormat);
     setAmpm(format(value, "a") === "AM" ? AM_VALUE : PM_VALUE);
@@ -103,6 +107,8 @@ export function SimpleTimePicker({
         ampm,
       }),
     );
+    // value/onChange를 deps에 넣으면 무한 루프·매 렌더 재호출이 생겨 의도적으로 제외
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hour, minute, ampm, formatStr, use12HourFormat]);
 
   const _hourIn24h = useMemo(() => {
@@ -203,6 +209,7 @@ export function SimpleTimePicker({
       }
       setHour(v.value);
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [setHour, use12HourFormat, value, formatStr, minute, ampm],
   );
 
@@ -254,7 +261,10 @@ export function SimpleTimePicker({
   return (
     <Popover open={open} onOpenChange={setOpen} modal={modal}>
       <PopoverTrigger asChild>
+        {/* Radix Popover.Trigger가 asChild일 때 aria-controls/aria-haspopup을
+            자동으로 주입해줘서 실제로는 누락이 아님 (정적 분석 오탐) */}
         <div
+          // eslint-disable-next-line jsx-a11y/role-has-required-aria-props
           role="combobox"
           aria-expanded={open}
           className={cn(

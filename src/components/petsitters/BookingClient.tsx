@@ -47,7 +47,6 @@ export default function BookingClient({ sitterId }: { sitterId: string }) {
 
   const { dateRange, petIds, note } = useBookingStore();
 
-  // step별 개별 form — 각 단계에서 독립적으로 검증
   const step1Form = useForm<Step1Values>({
     resolver: zodResolver(step1Schema),
     mode: "onChange",
@@ -64,7 +63,8 @@ export default function BookingClient({ sitterId }: { sitterId: string }) {
     defaultValues: { note: "" },
   });
 
-  // 현재 step의 폼에서 값 읽기
+  // react-hook-form의 watch()는 메모이제이션 불가능한 함수를 반환하는 걸로 알려진 라이브러리 제약
+  // eslint-disable-next-line react-hooks/incompatible-library
   const startTime = step1Form.watch("startTime") ?? "";
   const endTime = step1Form.watch("endTime") ?? "";
   const selectedService = (step2Form.watch("selectedService") || null) as ServiceKey | null;
@@ -99,7 +99,7 @@ export default function BookingClient({ sitterId }: { sitterId: string }) {
     if (!ok || isSubmitting || !sitter) return;
 
     const service = sitter.services.find(
-      (s) => s.service_type === SERVICE_KEY_TO_TYPE[selectedService ?? "visit"],
+      (s) => s.title === SERVICE_KEY_TO_TYPE[selectedService ?? "visit"],
     ) ?? sitter.services[0];
     if (!service) return;
 

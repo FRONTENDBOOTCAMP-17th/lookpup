@@ -26,6 +26,8 @@ export function useBankAccount(initialBankAccount?: BankAccount | null) {
   useEffect(() => {
     if (initialBankAccount !== undefined) {
       if (initialBankAccount) {
+        // initialBankAccount prop 또는 아래 fetch로 폼을 채우는 초기화 로직
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setBankForm({
           bank_name: initialBankAccount.bank_name,
           account_number: initialBankAccount.account_number,

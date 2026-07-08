@@ -30,7 +30,6 @@ export async function GET(request: Request) {
         if (existingUser?.is_verified)
           return NextResponse.redirect(`${origin}${next}`);
 
-        //신규 유저면 기본 정보만 INSERT
         if (!existingUser) {
           const { error: insertError } = await db.from("users").insert({
             id: user.id,

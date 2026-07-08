@@ -47,7 +47,6 @@ export default function LocationEditModal({
   const miniMapRef = useRef<kakao.maps.Map | null>(null);
   const miniMarkerRef = useRef<kakao.maps.Marker | null>(null);
 
-  // 모달 열릴 때 초기값 설정
   const [prevOpen, setPrevOpen] = useState(open);
   const [prevInitialData, setPrevInitialData] = useState(initialData);
   if (open !== prevOpen || initialData !== prevInitialData) {
@@ -63,7 +62,6 @@ export default function LocationEditModal({
     }
   }
 
-  // 모달 닫힐 때 미니맵 인스턴스 초기화
   useEffect(() => {
     if (!open) {
       miniMapRef.current = null;
@@ -244,7 +242,6 @@ export default function LocationEditModal({
           </button>
         </div>
 
-        {/* 주소 검색 입력 */}
         <div className="relative mb-3">
           <MapPin
             size={15}
@@ -286,7 +283,6 @@ export default function LocationEditModal({
           )}
         </div>
 
-        {/* 미니맵 미리보기 */}
         {pendingLocation ? (
           <div className="mb-3">
             <div
@@ -310,7 +306,6 @@ export default function LocationEditModal({
           </p>
         )}
 
-        {/* 상세주소 입력 */}
         <input
           type="text"
           value={detailInput}
@@ -319,7 +314,6 @@ export default function LocationEditModal({
           className="w-full h-10 px-3 mb-3 bg-white border border-orange-100 rounded-xl text-sm text-stone-900 placeholder:text-gray-400 outline-none focus:border-orange-300 transition"
         />
 
-        {/* 현재 위치 사용 */}
         <button
           type="button"
           onClick={handleUseCurrentLocation}
